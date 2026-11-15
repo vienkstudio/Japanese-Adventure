@@ -13,66 +13,75 @@
     const st = document.createElement('style');
     st.id = 'css-town';
     st.textContent = `
-.t-street{background:linear-gradient(180deg,#bfe3ff 0%,#e9f6ff 55%,#f3e9dc 55%,#f3e9dc 100%);border-radius:20px;padding:18px 18px 10px;margin-bottom:12px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
-.t-street h2{margin:0;color:var(--red)}
-.t-skyline{font-size:2em;letter-spacing:6px;white-space:nowrap;overflow:hidden;margin-top:6px;opacity:.9}
-.t-road{height:16px;margin:6px -18px 0;background:repeating-linear-gradient(90deg,#666 0 30px,#fff 30px 50px);background-size:100% 3px;background-repeat:repeat-x;background-position:center;background-color:#666}
+.t-street{position:relative;overflow:hidden;border-radius:14px;padding:16px 16px 10px;margin-bottom:12px;border:2px solid var(--ink);box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 4px var(--line),var(--shadow);
+  background:radial-gradient(circle at calc(100% - 30px) 28px,var(--shu) 0 18px,transparent 19px),linear-gradient(180deg,#efd9a8 0%,#f7ecd2 62%,var(--ai) 62%)}
+.t-street h2{margin:0;color:var(--ai)}
+.t-skyline{font-size:1.9em;letter-spacing:6px;white-space:nowrap;overflow:hidden;margin-top:6px}
+.t-road{height:12px;margin:6px -16px 0;background-image:var(--sgd);background-size:40px 20px;opacity:.9}
 .t-filter{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .t-block{margin:18px 0 6px;display:flex;align-items:center;gap:8px}
-.t-block .t-sign{background:#fff;border:2px solid var(--ink);border-radius:8px;padding:2px 12px;font-weight:bold;box-shadow:2px 2px 0 var(--ink)}
-.t-block .t-line{flex:1;border-top:3px dashed #c9b8a3}
-.t-card{border-top:8px solid var(--tc,#ccc);overflow:hidden}
-.t-card .icon{font-size:3em}
+.t-block .t-sign{background:var(--ai);color:#f5eedc;border:2px solid var(--ink);border-radius:4px;padding:1px 12px;font-weight:bold;font-family:var(--serif);box-shadow:2px 2px 0 var(--ink)}
+.t-block .t-line{flex:1;border-top:2px dotted var(--line)}
+.t-card{border-top:8px solid var(--tc,#ccc)!important;overflow:hidden}
+.t-card .icon{font-size:2.8em}
 .t-card h3{margin:6px 0 2px}
-.t-card .t-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:.88em}
+.t-card .t-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:.85em}
 .t-card .t-done{position:absolute;top:8px;right:10px;font-size:1.3em}
-.t-card.locked .t-lockmsg{color:var(--red);font-weight:bold}
-.t-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-left:10px solid var(--tc,#ccc)}
-.t-head .t-icon{font-size:3.4em;line-height:1}
-.t-head .t-info{flex:1;min-width:200px}
+.t-card.locked .t-lockmsg{color:var(--shu);font-weight:bold}
+.t-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-left:10px solid var(--tc,#ccc)!important}
+.t-head .t-icon{font-size:3.2em;line-height:1}
+.t-head .t-info{flex:1;min-width:180px}
 .t-head h2{margin:0}
-.t-mission{background:linear-gradient(135deg,#3a2a6b,#7b3fa0);color:#fff;border-radius:14px;padding:10px 16px;font-weight:bold;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
-.t-mission .bar{flex:1;min-width:120px;background:rgba(255,255,255,.3)}
-.t-tips summary{cursor:pointer;font-weight:bold}
+.t-mission{background:var(--ai);background-image:var(--sgd);background-size:40px 20px;color:#f5eedc;border:2px solid var(--ink);border-radius:10px;padding:10px 14px;font-weight:bold;font-family:var(--serif);display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.t-mission .bar{flex:1;min-width:120px}
+.t-tips summary{cursor:pointer;font-weight:bold;font-family:var(--serif)}
 .t-tips ul{margin:8px 0 0;padding-left:1.3em}
-.t-words{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.t-words{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .t-word{cursor:pointer}
-.t-word:hover{border-color:var(--red2)}
-.t-word .t-emo{font-size:2em;line-height:1}
-.t-word .t-jp{font-size:1.6em;font-weight:bold;margin:4px 0 0;word-break:break-all}
-.t-word .t-kana{color:var(--blue)}
-.t-word .t-rom{color:var(--muted);font-size:.88em}
-.t-word .t-zh{font-size:1.08em;margin:2px 0}
-.t-word .t-hint{font-size:.85em;color:#9a6a2a;background:#fff6e6;border-radius:8px;padding:2px 8px;display:inline-block}
+.t-word .t-emo{font-size:1.9em;line-height:1}
+.t-word .t-lv{position:absolute;top:8px;right:8px}
+.t-word .t-jp{font-size:1.5em;font-weight:bold;margin:4px 0 2px;word-break:break-all}
+.t-word .t-kana{color:var(--ai2)}
+.t-word .t-rom{color:var(--muted);font-size:.86em}
+.t-word .t-zh{font-size:1.05em;margin:2px 0}
+.t-word .t-hint{font-size:.83em;color:#7a4a1a;background:var(--soft);border-radius:4px;padding:1px 7px;display:inline-block}
 .t-word .t-use{font-size:.85em;margin-top:4px}
 .t-word .track-btn{margin-top:8px}
-.t-phr .t-jp{font-size:1.35em}
+.t-phr .t-jp{font-size:1.3em}
 .t-dlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .t-dbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
-.t-aidsw{cursor:pointer;user-select:none;font-size:.92em}
-.t-chat{background:#f6f1ea;border-radius:14px;padding:12px;min-height:80px;max-height:60vh;overflow:auto}
+.t-sw{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.t-aidsw{cursor:pointer;user-select:none;font-size:.85em;border:1.5px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--card);display:inline-flex;align-items:center;gap:4px}
+.t-chat{background:var(--paper2);background-image:var(--sg);background-size:40px 20px;border:2px solid var(--ink);border-radius:12px;padding:12px;min-height:80px;max-height:56vh;overflow:auto}
 .t-chat .bubble .j{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.t-aid{font-size:.88em;color:var(--muted)}
+.t-aid{font-size:.86em;color:var(--muted)}
 .t-noaid .t-aid{display:none}
+.t-listen .bubble.npc:not(.rev) .j span,.t-listen .bubble.npc:not(.rev) .t-aid{filter:blur(7px);user-select:none}
+.t-listen .bubble.npc:not(.rev)::after{content:"👆 點一下顯示文字";display:block;font-size:.75em;color:var(--shu)}
 .t-opts{grid-template-columns:1fr!important;max-width:600px}
-.t-opts .choice{font-size:1.1em;text-align:left;padding:10px 14px}
+.t-opts .choice{font-size:1.08em;text-align:left;padding:10px 14px}
 .t-opts .choice .t-aid{display:block}
 .t-opts .choice.ok .t-aid,.t-opts .choice.ng .t-aid{color:#fff}
-.t-opts .choice:disabled{cursor:default}
-.t-fb-ok{color:var(--green);font-weight:bold}
-.t-fb-ng{color:var(--red);font-weight:bold}
+.t-mic{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+.t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:2.5px solid var(--ink);background:var(--shu);color:#fff;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
+.t-micbtn.on{animation:tmic 1s infinite}
+.t-micbtn:disabled{background:#b9ae99;cursor:not-allowed}
+.t-heard{font-size:.9em;min-height:1.3em;text-align:center}
+@keyframes tmic{0%{box-shadow:0 4px 0 var(--ink),0 0 0 0 rgba(199,62,46,.6)}100%{box-shadow:0 4px 0 var(--ink),0 0 0 16px rgba(199,62,46,0)}}
+.t-fb-ok{color:var(--matcha);font-weight:bold}
+.t-fb-ng{color:var(--shu);font-weight:bold}
 .t-sum{text-align:center}
 .t-sum .t-big{font-size:2.2em}
 .t-quiz .q-mid{word-break:break-all}
-.t-quiz .choice{font-size:1.1em}
+.t-quiz .choice{font-size:1.08em}
 .t-err{text-align:center}
 .t-err .t-big{font-size:3.5em}
 @media(max-width:640px){
   .t-words{grid-template-columns:1fr 1fr}
-  .t-word .t-jp{font-size:1.3em}
-  .t-head .t-icon{font-size:2.6em}
+  .t-word .t-jp{font-size:1.25em}
+  .t-head .t-icon{font-size:2.5em}
   .bubble{max-width:92%}
-  .t-skyline{font-size:1.5em}
+  .t-skyline{font-size:1.45em}
 }
 @media(max-width:400px){.t-words{grid-template-columns:1fr}}
 `;
@@ -88,6 +97,46 @@
   let townFilter = 'all';
   let aidOn = true;                 // 初學者模式：顯示讀音/中文
   const tabMem = {};                // 每個場景記住目前分頁
+  let listenOn = false;             // 聽力挑戰：對方的話先模糊
+  let micOn = false;                // 口說模式：預設用說的回答
+
+  /* ---------------- JLPT 分級 ---------------- */
+  const lvOf = (jp, kind) => (window.CARDS ? CARDS.levelOf(jp, kind) : 'x');
+  const lvCls = lv => (lv || 'x').toLowerCase();
+  const lvBadge = lv => (window.CARDS ? CARDS.badge(lv) : '');
+
+  /* ---------------- 語音辨識（口述回答） ---------------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const toHira = s => String(s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  const normJP = s => toHira(s).replace(/[\s、。，,．.！!？?「」『』（）()・〜~ー-]/g, '').toLowerCase();
+  function lev(a, b) {
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let p = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; }
+    return p[n];
+  }
+  const simil = (a, b) => { a = normJP(a); b = normJP(b); if (!a || !b) return 0; return 1 - lev(a, b) / Math.max(a.length, b.length); };
+  // 聽一句日文：cb(alternatives[])、err(code)
+  function listenJP(cb, err) {
+    if (!SR) { err('unsupported'); return null; }
+    let r;
+    try {
+      r = new SR(); r.lang = 'ja-JP'; r.interimResults = false; r.maxAlternatives = 5;
+      let got = false;
+      r.onresult = e => { got = true; cb(Array.from(e.results[0]).map(a => a.transcript)); };
+      r.onerror = e => { got = true; err(e.error || 'error'); };
+      r.onend = () => { if (!got) err('no-speech'); };
+      r.start();
+    } catch (e) { err('blocked'); return null; }
+    return r;
+  }
+  const micErr = c => ({ 'not-allowed': '麥克風權限被拒絕（或此網站環境不允許），請改用點選作答', 'service-not-allowed': '此環境不允許語音辨識，請改用點選作答', unsupported: '這個瀏覽器不支援語音辨識（建議用 Chrome／Android 或 Safari），請改用點選', 'no-speech': '沒聽到聲音，再按一次 🎤 說說看', blocked: '無法啟動麥克風，請改用點選作答', 'audio-capture': '找不到麥克風' }[c] || ('語音辨識失敗（' + c + '），請改用點選'));
+  // 從選項中找最接近說出來的句子
+  function bestMatch(alts, cs) {
+    let best = null, score = 0;
+    alts.forEach(t => cs.forEach(c => { const v = Math.max(simil(t, c.jp), simil(t, c.kana || c.jp)); if (v > score) { score = v; best = c; } }));
+    return { best, score };
+  }
 
   function trackHTML(id) {
     const on = Tracker.has(id);
@@ -167,7 +216,7 @@
       el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { townFilter = b.dataset.f; App.render(); });
       el.querySelectorAll('.t-card[data-id]').forEach(c => c.onclick = () => {
         const s = findScene(c.dataset.id); if (!s) return;
-        if (!unlocked(s)) App.toast(`🔒 「${esc(s.name)}」需要 Lv.${s.unlockLevel || 1} 才能進入（目前 Lv.${App.level}），去冒險地圖累積經驗值吧！`);
+        if (!unlocked(s)) App.toast(`🔒 「${esc(s.name)}」需要 Lv.${s.unlockLevel || 1} 才能進入（目前 Lv.${App.level}），去冒險地圖累積經驗值，或到「🎯 練習」不受等級限制直接練！`);
         else App.go('scene', { id: s.id });
       });
     }
@@ -181,7 +230,7 @@
       const sc = findScene(params.id);
       if (!sc) return errorView(el, '找不到這個場景', params.id ? `場景「${params.id}」不存在或資料尚未載入。` : '沒有指定場景。');
       const mission = params.mission || '';
-      if (!mission && !unlocked(sc)) {
+      if (!mission && !params.free && !unlocked(sc)) {
         el.innerHTML = `<div class="panel t-err"><div class="t-big">🔒</div><h2>${esc(sc.icon || '')} ${esc(sc.name)} 尚未解鎖</h2>
           <p>需要 <b>Lv.${sc.unlockLevel || 1}</b>，你目前是 Lv.${App.level}。</p><p class="muted">到冒險地圖完成任務累積經驗值就能解鎖！</p>
           <button class="btn" id="tBack">🏙️ 返回日本街道</button><button class="btn primary" id="tMap">🗺️ 冒險地圖</button></div>`;
@@ -198,21 +247,21 @@
         </div>
         ${tips.length ? `<div class="panel t-tips"><details${mission ? '' : ' open'}><summary>🎌 文化小知識（${tips.length}）</summary><ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details></div>` : ''}
         <div id="tBody"></div>`;
-      el.querySelector('#tBack').onclick = () => App.go(mission ? 'map' : 'town');
+      el.querySelector('#tBack').onclick = () => App.go(mission ? 'map' : params.free ? 'practice' : 'town');
       const body = el.querySelector('#tBody');
       if (mission) return missionMode(body, sc, mission);
 
-      const TABS = [['vocab', '📚 單字'], ['phrase', '💬 常用句'], ['dialog', '🎭 對話演練'], ['quiz', '⚡ 小測驗']];
+      const TABS = [['vocab', '📚 單字'], ['phrase', '💬 常用句'], ['dialog', '🎭 對話演練'], ['quiz', '⚡ 小測驗']].concat((window.MENUS || {})[sc.id] ? [['menu', '🧾 互動菜單']] : []);
       body.innerHTML = `<div class="tabs t-tabs">${TABS.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div><div class="panel" id="tPane"></div>`;
       const pane = body.querySelector('#tPane');
       const show = k => {
         tabMem[sc.id] = k;
         body.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === k));
         if (window.speechSynthesis) speechSynthesis.cancel();
-        ({ vocab: () => wordsView(pane, sc, 'word'), phrase: () => wordsView(pane, sc, 'phrase'), dialog: () => dialogMenu(pane, sc), quiz: () => quizIntro(pane, sc) })[k]();
+        ({ vocab: () => wordsView(pane, sc, 'word'), phrase: () => wordsView(pane, sc, 'phrase'), dialog: () => dialogMenu(pane, sc), quiz: () => quizIntro(pane, sc), menu: () => { tabMem[sc.id] = 'vocab'; App.go('menu', { id: sc.id }); } })[k]();
       };
       body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => show(b.dataset.t));
-      show(tabMem[sc.id] || 'vocab');
+      show(params.tab || tabMem[sc.id] || 'vocab');
     }
   });
 
@@ -221,12 +270,15 @@
     const list = arr(kind === 'word' ? sc.vocab : sc.phrases);
     if (!list.length) { pane.innerHTML = '<p class="muted center">這個場景還沒有資料。</p>'; return; }
     const items = {};
-    pane.innerHTML = `<p class="muted" style="margin-top:0">👆 點卡片聽發音・不熟的按「＋ 加入不會清單」</p>
+    pane.innerHTML = `<p class="muted" style="margin-top:0">👆 點卡片聽發音・底線顏色＝JLPT 參考分級</p>
+      <div class="lv-legend" style="margin-bottom:8px">${['N5', 'N4', 'N3', 'N2', 'N1', 'x'].map(lvBadge).join('')}</div>
       <div class="t-words${kind === 'phrase' ? ' t-phr' : ''}">${list.map((w, i) => {
         const it = App.wordItem(w, sc.name, kind); items[it.id] = it;
+        const lv = lvOf(w.jp, kind);
         return `<div class="card t-word" data-i="${i}">
+          <span class="t-lv">${lvBadge(lv)}</span>
           ${w.emoji ? `<div class="t-emo">${esc(w.emoji)}</div>` : ''}
-          <div class="t-jp jp">${esc(w.jp)} <span style="font-size:.6em">🔊</span></div>
+          <div class="t-jp jp"><span class="lv-u ${lvCls(lv)}">${esc(w.jp)}</span> <span style="font-size:.6em">🔊</span></div>
           ${w.kana && w.kana !== w.jp ? `<div class="t-kana jp">${esc(w.kana)}</div>` : ''}
           ${w.romaji ? `<div class="t-rom">${esc(w.romaji)}</div>` : ''}
           <div class="t-zh">${esc(w.zh || '')}</div>
@@ -279,15 +331,22 @@
     opts = opts || {};
     const steps = arr(d.steps);
     const res = { total: steps.length, first: 0, wrong: [] };
-    host.innerHTML = `<label class="t-aidsw"><input type="checkbox" class="t-aidcb"${aidOn ? ' checked' : ''}> 初學者模式：顯示中文/讀音</label>
-      <div class="chat t-chat${aidOn ? '' : ' t-noaid'}"></div>
-      <div class="t-ask${aidOn ? '' : ' t-noaid'}"><div class="choices t-opts"></div><div class="feedback"></div><div class="center t-nx"></div></div>`;
+    if (opts.mic != null) micOn = !!opts.mic;
+    host.innerHTML = `<div class="t-sw">
+        <label class="t-aidsw"><input type="checkbox" class="t-aidcb"${aidOn ? ' checked' : ''}> 中文/讀音</label>
+        <label class="t-aidsw"><input type="checkbox" class="t-lscb"${listenOn ? ' checked' : ''}> 🎧 聽力挑戰</label>
+        <label class="t-aidsw"><input type="checkbox" class="t-miccb"${micOn ? ' checked' : ''}> 🎤 用說的回答</label></div>
+      <div class="chat t-chat${aidOn ? '' : ' t-noaid'}${listenOn ? ' t-listen' : ''}"></div>
+      <div class="t-ask${aidOn ? '' : ' t-noaid'}"><div class="t-micbox"></div><div class="choices t-opts"></div><div class="feedback"></div><div class="center t-nx"></div></div>`;
     const chat = host.querySelector('.t-chat'), ask = host.querySelector('.t-ask');
-    const opBox = host.querySelector('.t-opts'), fb = host.querySelector('.feedback'), nx = host.querySelector('.t-nx');
+    const opBox = host.querySelector('.t-opts'), fb = host.querySelector('.feedback'), nx = host.querySelector('.t-nx'), micBox = host.querySelector('.t-micbox');
     host.querySelector('.t-aidcb').onchange = e => {
       aidOn = e.target.checked;
       chat.classList.toggle('t-noaid', !aidOn); ask.classList.toggle('t-noaid', !aidOn);
     };
+    host.querySelector('.t-lscb').onchange = e => { listenOn = e.target.checked; chat.classList.toggle('t-listen', listenOn); };
+    let curMic = null;
+    host.querySelector('.t-miccb').onchange = e => { micOn = e.target.checked; if (curMic) curMic(); };
     const scroll = () => { chat.scrollTop = chat.scrollHeight; };
     const bubble = (cls, who, jp, kana, romaji, zh) => {
       const b = document.createElement('div');
@@ -297,13 +356,15 @@
         ${kana && kana !== jp ? `<div class="t-aid jp">${esc(kana)}</div>` : ''}
         ${romaji ? `<div class="t-aid">${esc(romaji)}</div>` : ''}
         ${zh ? `<div class="t-aid">🀄 ${esc(zh)}</div>` : ''}`;
-      b.querySelector('.speak').onclick = () => App.speak(kana || jp);
+      b.querySelector('.speak').onclick = e => { e.stopPropagation(); App.speak(kana || jp); };
+      if (cls === 'npc') b.onclick = () => b.classList.add('rev');
       chat.appendChild(b); scroll();
       return b;
     };
 
     function step(i) {
-      opBox.innerHTML = ''; fb.innerHTML = ''; nx.innerHTML = '';
+      opBox.innerHTML = ''; fb.innerHTML = ''; nx.innerHTML = ''; micBox.innerHTML = ''; curMic = null;
+      chat.querySelectorAll('.bubble.npc').forEach(b => b.classList.add('rev'));
       if (i >= steps.length) { ask.style.display = 'none'; onDone(res); return; }
       const s = steps[i];
       bubble('npc', `${s.emoji || '🙂'} ${s.speaker || '對方'}`, s.jp, s.kana, s.romaji, s.zh);
@@ -346,7 +407,28 @@
           }
         };
         opBox.appendChild(btn);
+        c._btn = btn;
       });
+      // 口說：說出其中一個選項，辨識後自動選取
+      const drawMic = () => {
+        if (!micOn) { micBox.innerHTML = ''; opBox.style.display = ''; return; }
+        micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn" title="按下後用日文說出回答"${SR ? '' : ' disabled'}>🎤</button>
+          <div style="text-align:left;font-size:.88em">按 🎤 用日文回答<br><span class="muted">說出下方任一句；也可直接點選</span></div></div><div class="t-heard muted">${SR ? '' : esc(micErr('unsupported'))}</div>`;
+        const mb = micBox.querySelector('.t-micbtn'), heard = micBox.querySelector('.t-heard');
+        mb.onclick = () => {
+          if (finished || mb.classList.contains('on')) return;
+          mb.classList.add('on'); heard.textContent = '🎙️ 聆聽中…請說日文';
+          listenJP(alts => {
+            mb.classList.remove('on');
+            const live = cs.filter(c => !c._btn.disabled);
+            const { best, score } = bestMatch(alts, live);
+            heard.innerHTML = `聽到：「<span class="jp">${esc(alts[0] || '')}</span>」${best ? `（相似度 ${Math.round(score * 100)}%）` : ''}`;
+            if (best && score >= 0.5) best._btn.click();
+            else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上選項，再說一次或直接點選</b>';
+          }, code => { mb.classList.remove('on'); heard.textContent = micErr(code); });
+        };
+      };
+      curMic = drawMic; drawMic();
     }
     step(0);
   }
@@ -401,10 +483,14 @@
   }
 
   /* ---------------- 小測驗 ---------------- */
-  function pool(sc) {
-    return arr(sc.vocab).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'word' }))
-      .concat(arr(sc.phrases).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'phrase' })));
+  // 題庫：kinds = ['word','phrase']；每題記住來源場景名稱
+  function poolOf(list, kinds) {
+    kinds = kinds || ['word', 'phrase'];
+    return list.flatMap(sc => [].concat(
+      kinds.includes('word') ? arr(sc.vocab).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'word', s: sc.name })) : [],
+      kinds.includes('phrase') ? arr(sc.phrases).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'phrase', s: sc.name })) : []));
   }
+  const pool = sc => poolOf([sc]);
   function quizIntro(pane, sc) {
     const P = pool(sc);
     if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
@@ -414,13 +500,19 @@
     pane.querySelector('#tGo').onclick = () => quiz(pane, sc);
   }
   function quiz(pane, sc) {
-    const P = pool(sc);
-    const qs = App.sample(P, Math.min(10, P.length)).map(p => {
+    quizRun(pane, pool(sc), { count: 10, reason: '場景小測驗', onEnd: () => quizIntro(pane, sc), retry: () => quiz(pane, sc) });
+  }
+  // 通用測驗：P 題庫、opts {count, reason, onEnd, retry, back}
+  function quizRun(pane, P, opts) {
+    opts = opts || {};
+    const qs = App.sample(P, Math.min(opts.count || 10, P.length)).map(p => {
       const type = App.sample(['j2z', 'z2j', 'listen'], 1)[0];
       const key = type === 'j2z' ? 'zh' : 'jp';
-      const others = P.filter(o => o !== p && o.w[key] !== p.w[key]);
+      const near = P.filter(o => o.kind === p.kind && o.s === p.s), far = P.filter(o => o.kind === p.kind);
       const uniq = [];
-      App.shuffle(others).forEach(o => { if (uniq.length < 3 && !uniq.some(u => u.w[key] === o.w[key])) uniq.push(o); });
+      [App.shuffle(near), App.shuffle(far), App.shuffle(P)].forEach(L => L.forEach(o => {
+        if (uniq.length < 3 && o !== p && o.w[key] !== p.w[key] && !uniq.some(u => u.w[key] === o.w[key])) uniq.push(o);
+      }));
       return { p, type, key, opts: App.shuffle([p].concat(uniq)) };
     });
     let i = 0, correct = 0;
@@ -428,17 +520,18 @@
     const one = () => {
       if (i >= qs.length) return end();
       const Q = qs[i], w = Q.p.w;
-      const it = App.wordItem(w, sc.name, Q.p.kind);
+      const it = App.wordItem(w, Q.p.s, Q.p.kind);
+      const lv = lvOf(w.jp, Q.p.kind);
       const prompt = Q.type === 'j2z'
-        ? `<div class="muted">這是什麼意思？</div><div class="q-mid jp">${esc(w.jp)}</div>${w.kana && w.kana !== w.jp ? `<div class="jp muted">${esc(w.kana)}</div>` : ''}`
+        ? `<div class="muted">這是什麼意思？ ${lvBadge(lv)}</div><div class="q-mid jp"><span class="lv-u ${lvCls(lv)}">${esc(w.jp)}</span></div>${w.kana && w.kana !== w.jp ? `<div class="jp muted">${esc(w.kana)}</div>` : ''}`
         : Q.type === 'z2j'
-          ? `<div class="muted">日文怎麼說？</div><div class="q-mid">${esc(w.emoji || '')} ${esc(w.zh)}</div>`
-          : `<div class="muted">聽聽看，選出聽到的字</div><div class="q-big"><button class="btn primary" id="tPlay" style="font-size:.5em">🔊 再聽一次</button></div>`;
+          ? `<div class="muted">日文怎麼說？ ${lvBadge(lv)}</div><div class="q-mid">${esc(w.emoji || '')} ${esc(w.zh)}</div>`
+          : `<div class="muted">聽聽看，選出聽到的${Q.p.kind === 'phrase' ? '句子' : '字'} ${lvBadge(lv)}</div><div class="q-big"><button class="btn primary" id="tPlay" style="font-size:.5em">🔊 再聽一次</button></div>`;
       pane.innerHTML = `<div class="t-quiz">
-        <div class="t-dbar"><b>第 ${i + 1} / ${qs.length} 題</b><span class="muted">答對 ${correct}</span></div>
+        <div class="t-dbar"><b>第 ${i + 1} / ${qs.length} 題</b><span class="muted">${esc(Q.p.s || '')}・答對 ${correct}</span></div>
         <div class="bar" style="margin:6px 0 10px"><div style="width:${i / qs.length * 100}%"></div></div>
         <div class="center">${prompt}</div>
-        <div class="choices">${Q.opts.map((o, k) => `<button class="choice${Q.key === 'jp' ? ' jp' : ''}" data-k="${k}">${esc(o.w[Q.key])}</button>`).join('')}</div>
+        <div class="choices${Q.p.kind === 'phrase' && Q.key === 'jp' ? ' t-opts' : ''}">${Q.opts.map((o, k) => `<button class="choice${Q.key === 'jp' ? ' jp' : ''}" data-k="${k}">${esc(o.w[Q.key])}</button>`).join('')}</div>
         <div class="feedback"></div><div class="center t-nx"></div></div>`;
       const fb = pane.querySelector('.feedback'), nx = pane.querySelector('.t-nx');
       const say = () => App.speak(w.kana || w.jp);
@@ -453,7 +546,7 @@
           if (!wrong.some(x => x.id === it.id)) wrong.push(it);
           fb.innerHTML = `<span class="t-fb-ng">❌ 答錯了</span>`;
         }
-        fb.innerHTML += ` <span class="jp">${esc(w.jp)}</span>${w.kana && w.kana !== w.jp ? `（${esc(w.kana)}）` : ''} ${esc(w.romaji || '')} ＝ ${esc(w.zh)}
+        fb.innerHTML += ` <span class="jp lv-u ${lvCls(lv)}">${esc(w.jp)}</span>${w.kana && w.kana !== w.jp ? `（${esc(w.kana)}）` : ''} ${esc(w.romaji || '')} ＝ ${esc(w.zh)}
           ${w.hint ? `<div class="muted">${esc(w.hint)}</div>` : ''}<div>${trackHTML(it.id)}</div>`;
         bindTrack(fb, { [it.id]: it });
         if (Q.type !== 'listen') say();
@@ -463,16 +556,82 @@
     };
     const end = () => {
       const stars = starsOf(correct / qs.length);
-      const r = correct ? App.addXP(Math.max(1, Math.round(correct / 2)), '場景小測驗') : { gained: 0 };
-      quizIntro(pane, sc);
+      const r = correct ? App.addXP(Math.max(1, Math.round(correct / 2)), opts.reason || '小測驗') : { gained: 0 };
+      opts.onEnd && opts.onEnd();
       App.showResult({
         title: stars ? '測驗完成！' : '再接再厲！',
         stars, correct, total: qs.length, gained: r.gained, wrong,
-        retry: () => quiz(pane, sc)
+        retry: opts.retry, back: opts.back
       });
     };
     one();
   }
 
-  window.TownAPI = { scenes, findScene, isUnlocked: unlocked };
+  /* ---------------- 路由：drill（自由練習，不受解鎖限制） ----------------
+     params: {scenes:[id], kind:'word'|'phrase'|'mix'|'dialog'|'speak', count, title, dialog?:index} */
+  function runDialogs(pane, list, onAll, opts) {
+    const queue = [];
+    list.forEach(({ sc, d }) => { if (arr(d.steps).length) queue.push({ sc, d }); });
+    const total = queue.reduce((n, x) => n + x.d.steps.length, 0);
+    let first = 0; const wrong = [];
+    const next = k => {
+      if (k >= queue.length) return onAll({ total, first, wrong });
+      const { sc, d } = queue[k];
+      pane.innerHTML = `<div class="t-dbar"><h3 style="margin:0">${esc(sc.icon || '')} ${esc(d.title || '對話')}</h3><span class="muted">第 ${k + 1} / ${queue.length} 段</span></div><div id="tRun"></div>`;
+      runDialogue(pane.querySelector('#tRun'), sc, d, res => {
+        first += res.first;
+        res.wrong.forEach(w => { if (!wrong.some(x => x.id === w.id)) wrong.push(w); });
+        const box = document.createElement('div'); box.className = 't-sum';
+        box.innerHTML = `<p>本段一次答對 <b>${res.first}</b> / ${res.total}</p><button class="btn primary">${k + 1 < queue.length ? '下一段 ➜' : '查看結果 🏁'}</button>`;
+        pane.querySelector('#tRun').appendChild(box);
+        box.querySelector('button').onclick = () => next(k + 1);
+        box.scrollIntoView && box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, opts);
+    };
+    if (!queue.length) { pane.innerHTML = '<p class="muted center">這裡還沒有對話資料。</p>'; return; }
+    next(0);
+  }
+  App.register('drill', {
+    title: '自由練習', icon: '🎯', nav: false,
+    render(el, params) {
+      params = params || {};
+      const list = arr(params.scenes).map(findScene).filter(Boolean);
+      if (!list.length) return errorView(el, '沒有選到場景', '請回「練習」重新選擇。');
+      const kind = params.kind || 'mix';
+      const KN = { word: '📚 單字測驗', phrase: '💬 句子測驗', mix: '⚡ 綜合測驗', dialog: '🎭 對話演練', speak: '🎤 口說對話' };
+      const one = list.length === 1 ? list[0] : null;
+      el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || '#c73e2e' : '#c73e2e')}">
+          <div class="t-icon">${esc(one ? one.icon : '🗾')}</div>
+          <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
+          <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>
+        <div class="panel" id="tPane"></div>`;
+      el.querySelector('#tBack').onclick = () => App.go('practice');
+      const pane = el.querySelector('#tPane');
+      const again = () => App.go('drill', params);
+      if (kind === 'dialog' || kind === 'speak') {
+        const ds = list.flatMap(sc => arr(sc.dialogues).map((d, i) => ({ sc, d, i }))).filter(x => params.dialog == null || x.i === +params.dialog);
+        const pick = params.dialog != null ? ds : App.sample(ds, Math.min(params.count || 3, ds.length));
+        runDialogs(pane, pick, res => {
+          const stars = starsOf(res.total ? res.first / res.total : 0);
+          list.forEach(sc => { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[sc.id] = true; });
+          App.save();
+          const r = App.addXP(10 * pick.length, '對話練習');
+          pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>練習完成</h3><p>一次答對 ${res.first} / ${res.total}</p>
+            <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`;
+          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go('practice');
+          App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: { label: '🎯 練習選單', route: 'practice' } });
+        }, { mic: kind === 'speak' });
+        return;
+      }
+      const P = poolOf(list, kind === 'word' ? ['word'] : kind === 'phrase' ? ['phrase'] : ['word', 'phrase']);
+      if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
+      quizRun(pane, P, {
+        count: params.count || 10, reason: '自由練習',
+        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go('practice'); },
+        retry: again, back: { label: '🎯 練習選單', route: 'practice' }
+      });
+    }
+  });
+
+  window.TownAPI = { scenes, findScene, isUnlocked: unlocked, runDialogue, quizRun, poolOf, listenJP, bestMatch, micErr, hasSR: !!SR, lvOf };
 })();

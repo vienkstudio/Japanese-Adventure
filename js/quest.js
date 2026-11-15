@@ -15,11 +15,12 @@
 .q-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .q-top .q-av{font-size:3em}
 .q-top .q-inf{flex:1;min-width:200px}
-.q-chap{margin:22px 0 8px;border-radius:20px;padding:16px 18px;color:#fff;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.q-chap h3{margin:0;font-size:1.3em}
+.q-chap{margin:22px 0 8px;border-radius:12px;padding:14px 16px;color:#f5eedc;border:2px solid var(--ink);box-shadow:inset 0 0 0 3px transparent,inset 0 0 0 4px rgba(245,238,220,.55),var(--shadow);position:relative;overflow:hidden}
+.q-chap::before{content:"";position:absolute;inset:0;background-image:var(--sgd);background-size:40px 20px;opacity:.35;mix-blend-mode:soft-light;pointer-events:none}
+.q-chap h3{margin:0;font-size:1.2em;color:#fff;position:relative}
 .q-chap .q-cdesc{opacity:.92;font-size:.92em}
 .q-chap .q-cbar{height:8px;background:rgba(255,255,255,.35);border-radius:4px;overflow:hidden;margin-top:8px}
-.q-chap .q-cbar div{height:100%;background:#fff;transition:width .3s}
+.q-chap .q-cbar div{height:100%;background:var(--gold);transition:width .3s}
 .q-chap .q-cmeta{display:flex;justify-content:space-between;font-size:.85em;margin-top:4px;opacity:.95}
 .q-chap .q-cbig{position:absolute;right:12px;top:4px;font-size:3.6em;opacity:.25}
 .q-chap.done::after{content:"🏅 已完成";position:absolute;right:14px;bottom:10px;background:rgba(255,255,255,.25);padding:0 10px;border-radius:10px;font-size:.85em}
@@ -41,7 +42,7 @@
 .q-tag{display:inline-block;font-size:.72em;border-radius:8px;padding:0 7px;background:#eee;color:#555;margin-bottom:2px}
 .q-tag.kana{background:#ffecea;color:var(--red)}
 .q-tag.scene{background:#e6f0fb;color:var(--blue)}
-.q-tag.boss{background:#3a1f1f;color:#ffd76a}
+.q-tag.boss{background:#2a1c1c;color:var(--gold)}
 .q-st{color:var(--gold);letter-spacing:1px;font-size:.95em}
 .q-node.q-cur{border-color:var(--red);box-shadow:0 0 0 4px rgba(214,69,61,.18)}
 .q-here{position:absolute;top:-11px;left:14px;background:var(--red);color:#fff;font-size:.72em;padding:0 8px;border-radius:8px;z-index:2}
@@ -60,12 +61,12 @@
 .q-prog{display:flex;justify-content:space-between;font-size:.85em;color:var(--muted);margin:4px 2px 0}
 .q-combo{color:var(--red);font-weight:bold;animation:pop .25s}
 .q-ask{text-align:center;color:var(--muted);font-size:1.05em}
-.q-snd{display:block;margin:14px auto;font-size:3em;width:110px;height:110px;border-radius:50%;border:3px solid var(--blue);background:#eef6ff;cursor:pointer}
+.q-snd{display:block;margin:14px auto;font-size:3em;width:110px;height:110px;border-radius:50%;border:3px solid var(--ink);background:var(--soft);box-shadow:0 4px 0 var(--ink),inset 0 0 0 4px var(--soft),inset 0 0 0 6px var(--shu);cursor:pointer}
 .q-snd:hover{filter:brightness(.97)}
-.q-roma{font-size:3em;text-align:center;font-weight:bold;letter-spacing:2px;margin:10px 0}
+.q-roma{font-size:3em;text-align:center;font-weight:bold;font-family:var(--serif);letter-spacing:2px;margin:10px 0}
 .q-fb{border-radius:14px;padding:12px;margin-top:6px;text-align:left}
-.q-fb.ok{background:#e8f7ec;border:2px solid #b9e2c6}
-.q-fb.ng{background:#ffecea;border:2px solid #f5c2bd}
+.q-fb.ok{background:#e4ecd4;border:2px solid var(--matcha)}
+.q-fb.ng{background:#f8e0d8;border:2px solid var(--shu)}
 .q-fb .q-fh{font-weight:bold;font-size:1.1em}
 .q-fb .q-fk{font-size:1.8em;margin-right:6px}
 .q-fb .q-fr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -118,10 +119,10 @@
 
   /* ---------------- 章節與關卡 ---------------- */
   const CHAPTERS = [
-    { n: 1, name: '平假名之森', icon: '🌲', color: 'linear-gradient(135deg,#2e8b57,#6cbf6a)', desc: '從最基本的 46 個平假名開始，每一行都是一段森林小徑。' },
-    { n: 2, name: '片假名之城', icon: '🏯', color: 'linear-gradient(135deg,#2f6fb5,#6aa3e0)', desc: '片假名常用在外來語（咖啡、拉麵菜單上滿滿都是），和平假名一起記！' },
-    { n: 3, name: '濁音・拗音之谷', icon: '⛰️', color: 'linear-gradient(135deg,#8a5a2b,#d09a5b)', desc: '加兩點、加小圈、小字連讀，學會後幾乎所有日文都念得出來。' },
-    { n: 4, name: '日本街道任務', icon: '🗾', color: 'linear-gradient(135deg,#d6453d,#f08a5d)', desc: '走進日本真實場景，用學會的日文點餐、購物、問路、求助。' }
+    { n: 1, name: '平假名之森', icon: '🌲', color: '#4d6f31', desc: '從最基本的 46 個平假名開始，每一行都是一段森林小徑。' },
+    { n: 2, name: '片假名之城', icon: '🏯', color: '#24365c', desc: '片假名常用在外來語（咖啡、拉麵菜單上滿滿都是），和平假名一起記！' },
+    { n: 3, name: '濁音・拗音之谷', icon: '⛰️', color: '#8a5326', desc: '加兩點、加小圈、小字連讀，學會後幾乎所有日文都念得出來。' },
+    { n: 4, name: '日本街道任務', icon: '🗾', color: '#a8331f', desc: '走進日本真實場景，用學會的日文點餐、購物、問路、求助。' }
   ];
 
   const SCENE_META = {
@@ -231,7 +232,17 @@
     }
     App.go('quest', { id: q.id });
   }
-  window.QuestAPI = { isUnlocked, nextQuest, play };
+  // 自由練習：不受解鎖限制的自訂戰鬥 cfg = {title, icon, kana:[平假名], script:'h'|'k'|'both', count, boss, chapter}
+  function makeCustom(c) {
+    return { id: 'free', custom: true, chapter: c.chapter || 1, title: c.title || '自由練習', icon: c.icon || '🎯', type: 'kana',
+      kana: (c.kana || []).filter(h => ITEMS[h]), script: c.script || 'h', xp: 0, count: Math.max(4, c.count || 10), boss: !!c.boss, requires: [], minLevel: 1, raw: c };
+  }
+  function playCustom(cfg) { App.go('quest', { custom: cfg }); }
+  const kanaSets = () => ({
+    basic: keys('basic'), daku: keys('daku'), handaku: keys('handaku'), yoon: keys('yoon'),
+    rows: _GRID.map((r, i) => ({ name: (typeof ROW_NAMES !== 'undefined' && ROW_NAMES[i]) || (r.find(Boolean) + '行'), kana: r.filter(Boolean) }))
+  });
+  window.QuestAPI = { isUnlocked, nextQuest, play, playCustom, kanaSets };
 
   const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   function trackBtnHTML(id) {
@@ -282,21 +293,25 @@
     if (document.getElementById('css-quest-battle')) return;
     const st = document.createElement('style'); st.id = 'css-quest-battle';
     st.textContent = `
-.q-arena{position:relative;border-radius:20px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.18);
-  background:linear-gradient(180deg,var(--sky1,#7fd3ff) 0%,var(--sky2,#bfe9ff) 55%,var(--grd,#7ccf6a) 55%,var(--grd2,#5fb34f) 100%)}
-.q-arena.boss{--sky1:#2a1846;--sky2:#5a2a5e;--grd:#3b2a2a;--grd2:#2a1c1c}
-.q-arena.ch2{--sky1:#5b8def;--sky2:#a9c6ff;--grd:#a59a8a;--grd2:#857a6a}
-.q-arena.ch3{--sky1:#ffb36b;--sky2:#ffe0b0;--grd:#c48a4a;--grd2:#a06a32}
-.q-arena.ch4{--sky1:#ff8aa8;--sky2:#ffd1dc;--grd:#9aa0a6;--grd2:#7a8086}
+.q-arena{position:relative;border-radius:14px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:#fff;border:2px solid var(--ink);box-shadow:inset 0 0 0 3px rgba(245,238,220,.5),var(--shadow);
+  background:radial-gradient(circle at 80% 22%,var(--sun,#d9483b) 0 22px,transparent 23px),linear-gradient(180deg,var(--sky1,#efd9a8) 0%,var(--sky2,#f6e9cc) 56%,var(--grd,#5d7f3b) 56%,var(--grd2,#3f5c25) 100%)}
+.q-arena::before{content:"";position:absolute;left:28%;width:44%;top:12%;height:44.5%;background:linear-gradient(180deg,#fdfaf2 0 24%,var(--mtn,#3a5683) 24%);clip-path:polygon(50% 0,58% 6%,64% 4%,100% 100%,0 100%,36% 4%,42% 6%);opacity:.7}
+.q-arena::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;background-image:var(--sgd);background-size:40px 20px;opacity:.4;mix-blend-mode:soft-light;pointer-events:none}
+.q-fighters,.q-vs{position:relative;z-index:1}
+.q-vs{position:absolute}
+.q-arena.boss{--sky1:#1b1420;--sky2:#5a1e1e;--grd:#2a1c1c;--grd2:#140c0c;--sun:#e8c25a;--mtn:#140c0c}
+.q-arena.ch2{--sky1:#c9d6e3;--sky2:#eef0e6;--grd:#24365c;--grd2:#162443;--mtn:#5c6d86}
+.q-arena.ch3{--sky1:#f0b27a;--sky2:#f8dcb2;--grd:#8a5326;--grd2:#5e3415;--mtn:#7a3d24}
+.q-arena.ch4{--sky1:#f2c9c6;--sky2:#fbebe2;--grd:#6b5a4a;--grd2:#463a2f;--mtn:#8b5a6b}
 .q-fighters{display:flex;justify-content:space-between;align-items:flex-end;min-height:120px}
 .q-f{text-align:center;width:46%}
 .q-f .q-sp{font-size:4em;line-height:1;display:inline-block;filter:drop-shadow(0 4px 0 rgba(0,0,0,.2))}
 .q-f.q-heroF .q-sp{animation:float 2.4s ease-in-out infinite}
 .q-f.mon .q-sp{animation:qidle 1.6s ease-in-out infinite}
 .q-arena.boss .q-f.mon .q-sp{font-size:5.4em}
-.q-f .q-nm{font-weight:900;font-size:.85em;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q-hp{height:12px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;margin:4px auto 0;max-width:150px;border:2px solid rgba(255,255,255,.8)}
-.q-hp div{height:100%;background:linear-gradient(90deg,#ff4f4f,#ff9a3c);transition:width .35s}
+.q-f .q-nm{font-weight:900;font-size:.85em;font-family:var(--serif);text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-hp{height:12px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;margin:4px auto 0;max-width:150px;border:2px solid var(--ink);box-shadow:0 0 0 1.5px #f5eedc}
+.q-hp div{height:100%;background:repeating-linear-gradient(135deg,var(--shu) 0 6px,var(--shu2) 6px 12px);transition:width .35s}
 .q-hpn{font-size:.75em;font-weight:bold;text-shadow:0 1px 0 rgba(0,0,0,.4)}
 .q-hearts{font-size:1.25em;letter-spacing:1px}
 .q-f.mon.hit .q-sp{animation:qhit .4s}
@@ -311,25 +326,25 @@
 .q-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-weight:900;font-size:1.4em;opacity:.8;text-shadow:0 2px 0 rgba(0,0,0,.3)}
 .q-hud2{display:flex;align-items:center;gap:8px}
 .q-hud2 .q-tt{flex:1;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q-combo{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:var(--gold);color:#3b2a00;font-weight:900;border-radius:12px;padding:0 10px;animation:pop .25s}
-.q-intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.5em;font-weight:900;background:rgba(0,0,0,.45);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
+.q-combo{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);background:var(--shu);color:#fff;border:1.5px solid #f5eedc;font-weight:900;border-radius:6px;padding:0 10px;animation:pop .25s;font-family:var(--serif)}
+.q-intro{position:absolute;z-index:3;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.4em;font-weight:900;font-family:var(--serif);background:rgba(26,22,18,.62);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
 /* 地圖節點 */
 .q-path{position:relative;padding:10px 0 20px}
 .q-row{display:flex;justify-content:center;position:relative;height:118px}
 .q-nd{position:absolute;top:0;width:110px;text-align:center;cursor:pointer;transform:translateX(-50%)}
-.q-circ{width:76px;height:76px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2em;background:#fff;
-  box-shadow:0 6px 0 #c9c1e6,inset 0 0 0 4px #e6e1f5;transition:transform .1s;position:relative}
-.q-nd:active .q-circ{transform:translateY(4px);box-shadow:0 2px 0 #c9c1e6,inset 0 0 0 4px #e6e1f5}
-.q-nd.cl .q-circ{background:linear-gradient(180deg,#5be39a,#22b573);box-shadow:0 6px 0 #168a56}
-.q-nd.open .q-circ{background:linear-gradient(180deg,#ffe082,#ffc83d);box-shadow:0 6px 0 #c99300}
-.q-nd.lock .q-circ{background:#e8e5f0;box-shadow:0 6px 0 #c9c4d8;filter:grayscale(1);opacity:.7}
+.q-circ{width:74px;height:74px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.1em;background:var(--card);border:2.5px solid var(--ink);
+  box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--card),inset 0 0 0 4.5px var(--line);transition:transform .1s;position:relative}
+.q-nd:active .q-circ{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.q-nd.cl .q-circ{background:var(--matcha);box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--matcha),inset 0 0 0 4.5px rgba(255,255,255,.5)}
+.q-nd.open .q-circ{background:var(--gold);box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--gold),inset 0 0 0 4.5px rgba(255,255,255,.55)}
+.q-nd.lock .q-circ{background:var(--paper2);box-shadow:0 5px 0 #8a7e6a;border-color:#8a7e6a;filter:grayscale(1);opacity:.75}
 .q-nd.lock .q-circ::after{content:"🔒";position:absolute;right:-4px;bottom:-4px;font-size:.5em}
-.q-nd.boss .q-circ{width:92px;height:92px;font-size:2.8em;background:linear-gradient(180deg,#6a2a7a,#3a1446);box-shadow:0 6px 0 #22082c,0 0 0 4px var(--gold)}
-.q-nd.boss.cl .q-circ{background:linear-gradient(180deg,#ffe082,#ffb300)}
+.q-nd.boss .q-circ{width:90px;height:90px;font-size:2.7em;background:#2a1c1c;box-shadow:0 5px 0 var(--ink),0 0 0 4px var(--gold),inset 0 0 0 3px #2a1c1c,inset 0 0 0 4.5px var(--shu)}
+.q-nd.boss.cl .q-circ{background:var(--gold)}
 .q-nd.cur .q-circ{animation:qbob 1s ease-in-out infinite}
 .q-nd.cur .q-circ::before{content:"";position:absolute;inset:-8px;border-radius:50%;border:4px solid var(--red);animation:qpulse2 1.4s infinite}
-.q-nd .q-lbl{font-size:.78em;font-weight:bold;margin-top:6px;line-height:1.25;background:rgba(255,255,255,.85);border-radius:8px;padding:1px 4px;display:inline-block}
-.q-nd .q-s{color:#e09b00;font-size:.85em;letter-spacing:1px;line-height:1}
+.q-nd .q-lbl{font-size:.78em;font-weight:bold;margin-top:6px;line-height:1.25;background:var(--card);border:1.5px solid var(--ink);border-radius:4px;padding:1px 5px;display:inline-block;font-family:var(--serif)}
+.q-nd .q-s{color:var(--kin);font-size:.85em;letter-spacing:1px;line-height:1}
 .q-nd .q-me{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:1.8em;animation:float 1.6s ease-in-out infinite;z-index:2}
 .q-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 @keyframes qbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -351,6 +366,7 @@
   };
   function monsterOf(q) {
     if (q.boss) return [q.icon, q.title.replace(/^BOSS：/, '')];
+    if (q.custom) { const l = MONSTERS[q.chapter] || MONSTERS[1]; return l[Math.random() * l.length | 0]; }
     const list = MONSTERS[q.chapter] || MONSTERS[1];
     const idx = Q.filter(x => x.chapter === q.chapter && x.type === 'kana' && !x.boss).indexOf(q);
     return list[Math.max(0, idx) % list.length];
@@ -359,9 +375,10 @@
 
   function renderQuest(el, params) {
     keyHandler = null;
-    const q = byId(params.id);
-    if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('map'); return; }
-    if (!isUnlocked(q.id)) {
+    const q = params.custom ? makeCustom(params.custom) : byId(params.id);
+    const backR = q && q.custom ? 'practice' : 'map';
+    if (!q || (q.custom && q.kana.length < 2)) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('map'); return; }
+    if (!q.custom && !isUnlocked(q.id)) {
       el.innerHTML = `<div class="panel center"><div style="font-size:3em">🔒</div><h2>${App.esc(q.title)}</h2><ul style="text-align:left;display:inline-block">${lockReason(q).map(s => `<li>${s}</li>`).join('')}</ul><br><button class="btn primary" id="qBack">回冒險地圖</button></div>`;
       el.querySelector('#qBack').onclick = () => App.go('map'); return;
     }
@@ -389,7 +406,7 @@
       <div class="panel" id="qCard" style="margin-top:6px"></div>
     </div>`;
     const $ = s => el.querySelector(s);
-    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => App.go('map') }]);
+    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => App.go(backR) }]);
     const hearts = () => { $('#qHearts').textContent = '❤️'.repeat(G.hearts) + '🖤'.repeat(3 - G.hearts); };
     const hpBar = () => { $('#qHp').style.width = (G.hp / HP * 100) + '%'; $('#qHpn').textContent = `HP ${G.hp} / ${HP}`; };
     hearts(); hpBar();
@@ -477,6 +494,16 @@
       if (finished) return; finished = true;
       keyHandler = null;
       const wrong = [...G.wrong.values()];
+      if (q.custom) {
+        const win = G.hearts > 0 && G.hp <= 0, stars = win ? G.hearts : 0;
+        const r = G.correct ? App.addXP(Math.max(2, Math.round(G.correct * 1.5)), '自由練習') : { gained: 0 };
+        App.showResult({
+          title: win ? `🎉 打倒 ${mName}！` + (G.maxCombo >= 3 ? `（最高 ${G.maxCombo} 連擊）` : '') : `💀 被 ${mName} 打敗了…再挑戰一次！`,
+          stars, correct: G.correct, total: G.done, gained: r.gained, wrong,
+          retry: () => App.go('quest', { custom: q.raw }), back: { label: '🎯 換題目', route: 'practice' }
+        });
+        return;
+      }
       const nq = Q[Q.indexOf(q) + 1];
       if (G.hearts <= 0 || G.hp > 0) {
         App.completeQuest(q.id, 0, q.xp);
@@ -541,7 +568,7 @@
         <div class="q-cbar"><div style="width:${qs.length ? done / qs.length * 100 : 0}%"></div></div>
         <div class="q-cmeta"><span>完成 ${done} / ${qs.length}</span><span>⭐ ${st} / ${qs.length * 3}</span></div>
       </div><div class="q-path" data-ch="${ch.n}" style="height:${qs.length * 118 + 20}px">
-      <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${qs.length * 118 + 20}"><path d="${qs.map((q, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * 118 + 48}`).join(' ')}" fill="none" stroke="#d6cdee" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" stroke-dasharray="2 14"/></svg>`;
+      <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${qs.length * 118 + 20}"><path d="${qs.map((q, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * 118 + 48}`).join(' ')}" fill="none" stroke="#a8926a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" stroke-dasharray="2 14"/></svg>`;
       qs.forEach((q, i) => {
         const cl = App.isCleared(q.id), un = isUnlocked(q.id), isCur = cur && cur.id === q.id;
         const s = App.stars(q.id);
@@ -562,7 +589,7 @@
         const typ = q.boss ? '👑 BOSS 戰' : q.type === 'scene' ? '🏙️ 場景任務' : '⚔️ 假名戰鬥';
         App.modal(`<div style="font-size:3.4em">${q.icon}</div><h2 style="margin:.2em 0">${App.esc(q.title)}</h2>
           <p><span class="chip">${typ}</span> <span class="chip">首通 +${q.xp} XP</span>${q.type === 'kana' ? ` <span class="chip">怪物 HP ${q.count}</span>` : ''}</p>
-          <p style="font-size:1.6em;color:#e09b00">${starStr(App.stars(q.id))}</p>
+          <p style="font-size:1.6em;color:var(--kin)">${starStr(App.stars(q.id))}</p>
           <p class="muted" style="font-size:.9em">${q.type === 'kana' ? '答對＝攻擊，答錯會被反擊扣 ❤️。剩幾顆心就拿幾顆星！' : '在店裡和店員對話，選出正確的日文回應！'}</p>`,
           [{ label: '取消' }, { label: '⚔️ 開始', cls: 'primary', onClick: () => play(q.id) }]);
       } else showLocked(q);
