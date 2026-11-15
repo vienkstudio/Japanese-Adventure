@@ -76,37 +76,6 @@
     App.go('home');
   }
 
-  function renderLevels(el, current) {
-    el.innerHTML = `
-      <section class="trip-shell trip-select" aria-labelledby="trip-title">
-        <div class="trip-welcome">
-          <span class="trip-stamp" aria-hidden="true">東京</span>
-          <p class="trip-eyebrow">日語冒險</p>
-          <h1 id="trip-title">東京旅程</h1>
-          <p>控制旅人走到店家和車站，用日文處理旅途中的各種狀況。</p>
-        </div>
-        <div class="trip-intro">
-          <h2>選擇日文程度</h2>
-          <p>參考 JLPT 難度，可隨時切換。各程度分開保存進度。</p>
-        </div>
-        <div class="trip-levels">${levels.map((level, i) => (i === 0 ? '<p class="trip-group">🔰 從零開始（還不會五十音選這裡）</p>' : level.id === 'N5' ? '<p class="trip-group">🗾 會假名之後</p>' : '') + `
-          <button class="trip-level" type="button" data-level="${level.id}">
-            <span class="trip-level-id">${esc(tagOf(level))}</span>
-            <span><strong>${esc(level.label)}</strong><small>${esc(level.detail)}</small></span>
-            <span class="trip-level-arrow" aria-hidden="true">→</span>
-          </button>`).join('')}</div>
-        <div class="trip-links">
-          <button class="trip-link" type="button" id="trip-practice">🎮 所有場景小遊戲</button>
-          ${current ? '<button class="trip-link" type="button" id="trip-cancel-level">返回地圖</button>' : ''}
-        </div>
-      </section>`;
-    el.querySelectorAll('[data-level]').forEach(button => {
-      button.onclick = () => chooseLevel(levels.find(level => level.id === button.dataset.level));
-    });
-    el.querySelector('#trip-practice').onclick = () => App.go('practice-map');
-    el.querySelector('#trip-cancel-level')?.addEventListener('click', () => App.go('home'));
-  }
-
   function renderMap(el, level) {
     const run = tripRun(level);
     const cleared = stop => stopStars(level, run, stop) > 0;
@@ -125,32 +94,13 @@
       return `<div class="trip-tile trip-path"><div class="trip-lane" aria-hidden="true">${arms}</div>${building}</div>`;
     };
     el.innerHTML = `
-      <section class="trip-shell" aria-labelledby="trip-map-title">
-        <div class="trip-map-header">
-          <div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p><h1 id="trip-map-title">東京旅程</h1></div>
-          <button class="trip-secondary" type="button" id="trip-change">切換程度</button>
-        </div>
-        <div class="trip-map" style="--rows:${layout.length / width}" tabindex="0" aria-label="東京地圖。使用方向鍵移動，抵達地點後按 Enter 進入。" aria-keyshortcuts="ArrowUp ArrowLeft ArrowDown ArrowRight Enter">
+      <section class="trip-shell">
+        <div class="trip-map" style="--rows:${layout.length / width}" tabindex="0" aria-label="東京地圖。點店家就會走過去。">
           ${layout.map(tileHTML).join('')}
           <div class="trip-player" aria-hidden="true"><span>${esc(avatar && avatar !== '🧳' ? avatar : '🚶')}</span></div>
         </div>
-        <div class="trip-map-controls">
-          <div class="trip-dpad" role="group" aria-label="移動旅人">
-            <button type="button" data-direction="up" aria-label="向上">↑</button>
-            <button type="button" data-direction="left" aria-label="向左">←</button>
-            <button type="button" data-direction="down" aria-label="向下">↓</button>
-            <button type="button" data-direction="right" aria-label="向右">→</button>
-          </div>
-          <div class="trip-action">
-            <p class="trip-location" role="status"></p>
-            <button class="trip-primary" id="trip-enter" type="button">進入地點</button>
-          </div>
-        </div>
-        <p class="trip-route">🗓️ 照朋友的 9 天行程走：${['airport', 'station', 'hotel', 'konbini', 'shrine', 'drugstore', 'yakiniku', 'ramen', 'izakaya'].map(id => stops.find(s => s.id === id)).filter(Boolean).map(s => `<span class="${cleared(s) ? 'ok' : ''}">${s.icon}</span>`).join('→')}</p>
-        <div class="trip-links">
-          <span>旅程進度 ${count}／${stops.length} 站</span>
-          <button class="trip-link" type="button" id="trip-practice">🎮 場景小遊戲</button>
-        </div>
+        <div class="trip-go"><p class="trip-location" role="status"></p><button class="trip-primary" id="trip-enter" type="button">進入</button></div>
+        <p class="trip-count">完成 ${count}／${stops.length} 站</p>
       </section>`;
     const shell = el.querySelector('.trip-shell');
     const map = shell.querySelector('.trip-map');
@@ -165,8 +115,8 @@
     }
     function paintControls() {
       const stop = stopAt(run.tile);
-      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
-      enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入地點';
+      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點店家就會走過去';
+      enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入';
       enter.disabled = !stop;
       map.querySelectorAll('[data-tile]').forEach(button => {
         if (+button.dataset.tile === run.tile) button.setAttribute('aria-current', 'location');
@@ -176,7 +126,7 @@
     function enterStop() {
       const stop = stopAt(run.tile);
       if (moving || !stop) return;
-      App.go('trip-stop');
+      HUB.stop = null; App.go('trip-stop');
     }
     async function walk(path) {
       if (moving || !path.length) return;
@@ -221,12 +171,7 @@
         else walk(routeBetween(run.tile, target));
       };
     });
-    shell.querySelectorAll('[data-direction]').forEach(button => {
-      button.onclick = () => step(button.dataset.direction);
-    });
     enter.onclick = enterStop;
-    shell.querySelector('#trip-change').onclick = () => App.go('home', { choose: true });
-    shell.querySelector('#trip-practice').onclick = () => App.go('practice-map');
     paintPlayer();
     paintControls();
     if (matchMedia('(pointer: fine)').matches) map.focus({ preventScroll: true });
@@ -234,62 +179,49 @@
 
   /* ---------- 入門・五十音：閃卡／隨機選／講義／50音表 ---------- */
   const KSET = [['h', '平假名'], ['k', '片假名'], ['d', '濁音・半濁音'], ['y', '拗音']];
-  const KUI = { set: 'h', mode: 'flash', ok: 0, n: 0, streak: 0 };
+  const KUI = { set: 'h', ok: 0, n: 0, streak: 0 };
   function kanaPool(set) {
     if (set === 'h' || set === 'k') return KANA.map(r => ({ g: set === 'h' ? r[0] : r[1], h: r[0], r: r[2], hint: r[3], memo: set === 'h' ? r[5] : r[6], raw: r }));
     return (set === 'd' ? DAKU : YOON).flatMap(r => [{ g: r[0], h: r[0], r: r[2], hint: r[3] }, { g: r[1], h: r[0], r: r[2], hint: r[3] }]);
   }
   const kanaTrack = it => it.raw ? App.kanaItem(it.raw) : { id: 'kana:' + it.h, jp: it.g, kana: it.h, romaji: it.r, zh: '讀音 ' + it.r + '（諧音：' + it.hint + '）', source: '五十音' };
-  function renderKana(el, level) {
+  function renderKana(el) {
+    const pool = kanaPool(KUI.set);
     el.innerHTML = `<section class="trip-shell trip-kana">
-      <div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p><h1>五十音</h1></div>
-        <button class="trip-secondary" type="button" id="trip-change">切換程度</button></div>
-      <div class="kn-links"><a class="kn-tile" href="日文講義.html">📖<b>講義</b><small>圖解＋諧音</small></a><a class="kn-tile" href="50音訓練表.html">🎯<b>50音表</b><small>總表・書寫</small></a></div>
       <div class="tabs kn-sets">${KSET.map(([k, n]) => `<button data-set="${k}" class="${KUI.set === k ? 'on' : ''}">${n}</button>`).join('')}</div>
-      <div class="tabs kn-modes"><button data-mode="flash" class="${KUI.mode === 'flash' ? 'on' : ''}">🃏 閃卡</button><button data-mode="pick" class="${KUI.mode === 'pick' ? 'on' : ''}">✅ 隨機選</button></div>
       <div id="kn-body"></div>
+      <p class="kn-links"><a href="日文講義.html">📖 講義</a>・<a href="50音訓練表.html">🎯 50音表</a></p>
     </section>`;
-    el.querySelector('#trip-change').onclick = () => App.go('home', { choose: true });
-    el.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { KUI.set = b.dataset.set; renderKana(el, level); });
-    el.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { KUI.mode = b.dataset.mode; renderKana(el, level); });
-    const body = el.querySelector('#kn-body'), pool = kanaPool(KUI.set);
-    const pickOne = () => pool[Math.random() * pool.length | 0];
-    if (KUI.mode === 'flash') {
-      const card = () => {
-        const it = pickOne();
-        body.innerHTML = `<button class="kn-card" type="button"><span class="kn-g jp">${esc(it.g)}</span><span class="kn-back"><b>${esc(it.r)}</b><small>諧音「${esc(it.hint)}」</small>${it.memo ? `<small>${esc(it.memo)}</small>` : ''}</span><em>點一下翻面</em></button>
-          <div class="kn-row"><button class="btn" type="button" id="kn-no">😵 不會</button><button class="btn primary" type="button" id="kn-yes">😊 會了</button></div>`;
-        const c = body.querySelector('.kn-card');
-        c.onclick = () => { c.classList.add('flip'); App.speak(it.h); };
-        body.querySelector('#kn-no').onclick = () => { Tracker.add(kanaTrack(it), true); App.toast(`📌 ${it.g} 已加入不會清單`); card(); };
-        body.querySelector('#kn-yes').onclick = card;
-      };
-      card();
-    } else {
-      const ask = () => {
-        const it = pickOne(), opts = App.shuffle([it.r].concat(App.sample([...new Set(pool.map(x => x.r))].filter(r => r !== it.r), 3)));
-        body.innerHTML = `<p class="kn-score">答對 ${KUI.ok} / ${KUI.n}${KUI.streak >= 3 ? `　🔥${KUI.streak} 連對` : ''}</p>
-          <div class="kn-q jp">${esc(it.g)}</div><div class="choices">${opts.map(o => `<button class="choice" type="button">${esc(o)}</button>`).join('')}</div>`;
-        let done = false;
-        body.querySelectorAll('.choice').forEach(b => b.onclick = () => {
-          if (done) return; done = true;
-          const ok = b.textContent === it.r;
-          KUI.n++; if (ok) { KUI.ok++; KUI.streak++; } else { KUI.streak = 0; Tracker.add(kanaTrack(it), true); }
-          body.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (x.textContent === it.r) x.classList.add('ok'); });
-          if (!ok) b.classList.add('ng');
-          App.speak(it.h);
-          setTimeout(() => { if (body.isConnected) ask(); }, ok ? 700 : 1500);
-        });
-      };
-      ask();
-    }
+    el.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { KUI.set = b.dataset.set; renderKana(el); });
+    const body = el.querySelector('#kn-body');
+    const ask = () => {
+      const it = pool[Math.random() * pool.length | 0];
+      const opts = App.shuffle([it.r].concat(App.sample([...new Set(pool.map(x => x.r))].filter(r => r !== it.r), 3)));
+      body.innerHTML = `<p class="kn-score">${KUI.n ? `答對 ${KUI.ok}／${KUI.n}` : '這個怎麼念？點字可以聽'}${KUI.streak >= 3 ? `　🔥${KUI.streak}` : ''}</p>
+        <button class="kn-q jp" type="button">${esc(it.g)}</button><p class="kn-ans"></p>
+        <div class="choices">${opts.map(o => `<button class="choice" type="button">${esc(o)}</button>`).join('')}</div>`;
+      body.querySelector('.kn-q').onclick = () => App.speak(it.h);
+      let done = false;
+      body.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+        if (done) return; done = true;
+        const ok = b.textContent === it.r;
+        KUI.n++; if (ok) { KUI.ok++; KUI.streak++; } else { KUI.streak = 0; Tracker.add(kanaTrack(it), true); }
+        body.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (x.textContent === it.r) x.classList.add('ok'); });
+        if (!ok) b.classList.add('ng');
+        body.querySelector('.kn-ans').textContent = `${it.r}・諧音「${it.hint}」`;
+        App.speak(it.h);
+        setTimeout(() => { if (body.isConnected) ask(); }, ok ? 900 : 1800);
+      });
+    };
+    ask();
   }
 
-  function renderHome(el, params = {}) {
-    const level = selectedLevel();
-    if (level && level.kana && !params.choose) renderKana(el, level);
-    else if (level && !params.choose) renderMap(el, level);
-    else renderLevels(el, level);
+  function renderHome(el) {
+    const level = selectedLevel() || levels[0];
+    el.innerHTML = `<div class="tabs trip-lvbar">${levels.map(l => `<button data-level="${l.id}" class="${l === level ? 'on' : ''}">${esc(tagOf(l))}</button>`).join('')}</div><div id="trip-body"></div>`;
+    el.querySelectorAll('[data-level]').forEach(b => b.onclick = () => chooseLevel(levels.find(l => l.id === b.dataset.level)));
+    const body = el.querySelector('#trip-body');
+    if (level.kana) renderKana(body); else renderMap(body, level);
   }
 
   function renderEncounter(el) {
@@ -309,7 +241,7 @@
 
     function begin(rendered) {
       el.innerHTML = `<section class="trip-shell trip-event">${makeHeader()}${rendered}</section>`;
-      el.querySelector('#trip-back').onclick = () => App.go('trip-stop');
+      el.querySelector('#trip-back').onclick = () => App.go('home');
     }
 
     function finish() {
@@ -333,7 +265,7 @@
         stars, correct, total: n, gained: Math.max(0, gained), wrong: wrongItems,
         retry: () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); },
         back: { label: '🗺️ 回地圖', route: 'home' },
-        next: { label: '📍 回站內流程', route: 'trip-stop' }
+        next: { label: '下一關 ➜', route: 'trip-stop' }
       });
       begin(`<div class="trip-result">
         <p class="trip-eyebrow">${correct}／${events.length} 題答對</p>
@@ -409,28 +341,21 @@
   App.register('trip-event', { title: '旅遊情境', icon: '💬', nav: false, render: renderEncounter });
 
   /* ---------- 站內流程（Hub） ---------- */
-  function renderStopHub(el) {
+  const HUB = { stop: null, i: -1 };
+  function enterHub(stopId, steps) {   // 從第一個還沒過的關卡開始；全過了就從頭重玩
+    const first = steps.findIndex(x => !x.stars);
+    HUB.stop = stopId; HUB.i = (first < 0 ? 0 : first) - 1;
+  }
+  function renderStopHub() {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop) { App.go('home'); return; }
+    if (!stop || level.kana) { App.go('home'); return; }
     const steps = hubSteps(level, run, stop);
-    const cur = steps.find(s => !s.stars);
-    const [done, total] = stopProgress(level, run, stop);
-    el.innerHTML = `<section class="trip-shell trip-hub">
-      <div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p>
-        <h1>${stop.icon} ${esc(stop.name)}</h1></div>
-        <button class="trip-secondary" type="button" id="hub-back">返回地圖</button></div>
-      ${stop.story ? `<p class="trip-story">📅 ${esc(stop.day)}・${esc(stop.area)}｜${esc(stop.story)}</p>` : ''}
-      <p class="trip-hub-sub">照實際到店的順序一關一關玩。全部過關，這站就完成！　<b>${done}／${total}</b></p>
-      <ol class="trip-steps">${steps.map((s, i) => `<li class="trip-stepc${s.stars ? ' ok' : ''}${cur === s ? ' cur' : ''}" data-i="${i}">
-        <span class="trip-sn">${s.stars ? '✓' : i + 1}</span><span class="trip-si">${esc(s.icon)}</span>
-        <span class="trip-st"><b>${esc(s.name)}</b><small>${esc(s.sub)}</small></span>
-        <span class="trip-ss">${starStr(s.stars)}</span></li>`).join('')}</ol>
-      ${cur ? `<button class="trip-primary" type="button" id="hub-go">▶ ${esc(cur.name)}</button>` : `<p class="trip-hub-done">🎉 這站全部過關！${starStr(stopStars(level, run, stop))}</p>`}
-    </section>`;
-    el.querySelector('#hub-back').onclick = () => App.go('home');
-    el.querySelectorAll('[data-i]').forEach(li => li.onclick = () => steps[+li.dataset.i].go());
-    const g = el.querySelector('#hub-go'); if (g) g.onclick = () => cur.go();
+    if (HUB.stop !== stop.id) enterHub(stop.id, steps);
+    HUB.i++;
+    if (HUB.i >= steps.length) { HUB.stop = null; App.toast(stopStars(level, run, stop) ? `🎉 ${stop.name} 完成！` : `${stop.name} 還有關卡沒過，再進去挑戰`); App.go('home'); return; }
+    App.toast(`${stop.icon} ${stop.name}　${HUB.i + 1}／${steps.length}：${steps[HUB.i].name}`);
+    steps[HUB.i].go();
   }
   App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, render: renderStopHub });
   window.Travel = { renderHome };

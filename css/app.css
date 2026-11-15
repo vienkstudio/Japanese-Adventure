@@ -211,3 +211,9 @@ a{color:var(--pri)}
 @keyframes conf{to{transform:translate(var(--dx),110vh) rotate(var(--rot));}}
 body.fx-shake #main{animation:shake .35s}
 body.fx-flash::after{content:"";position:fixed;inset:0;background:rgba(255,107,91,.15);pointer-events:none;z-index:250;animation:fade .3s reverse forwards}
+
+/* LOGO（富士山＋腳掌）與頂列 */
+#top .logo .lg{width:34px;height:34px;display:inline-flex}
+#top .logo .lg svg{width:100%;height:100%}
+#playerChip{gap:6px}
+#playerChip .icon-btn{display:inline-flex;align-items:center;justify-content:center}

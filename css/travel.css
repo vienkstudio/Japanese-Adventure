@@ -220,17 +220,16 @@
 .trip-route span{filter:grayscale(1);opacity:.55}
 .trip-route span.ok{filter:none;opacity:1}
 /* 入門・五十音 */
-.kn-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
-.kn-tile{display:flex;flex-direction:column;align-items:center;padding:12px;border-radius:18px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06);text-decoration:none;color:var(--text,#222);font-size:1.4em}
-.kn-tile b{font-size:.62em}.kn-tile small{font-size:.48em;color:var(--muted,#888)}
-.kn-card{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:230px;border:none;border-radius:24px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.08);cursor:pointer;font-family:inherit;color:var(--text,#222)}
-.kn-g{font-size:5em;line-height:1.1;font-weight:700}
-.kn-back{display:none;flex-direction:column;align-items:center;gap:2px}
-.kn-back b{font-size:1.8em;color:var(--pri,#ff6b5b)}
-.kn-back small{color:var(--muted,#888);max-width:90%}
-.kn-card em{font-style:normal;font-size:.75em;color:#bbb;margin-top:6px}
-.kn-card.flip .kn-back{display:flex}.kn-card.flip em{display:none}
-.kn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.kn-row .btn{margin:0}
 .kn-score{text-align:center;color:var(--muted,#888);font-size:.88em;margin:6px 0 0}
 .kn-q{font-size:5em;text-align:center;font-weight:700;line-height:1.2;margin:4px 0}
+/* 簡化版 */
+.trip-lvbar{margin:4px 0 10px}
+.trip-lvbar button{min-width:52px}
+.trip-go{display:flex;align-items:center;gap:10px;margin-top:10px}
+.trip-go .trip-location{flex:1;margin:0;font-size:.9em}
+.trip-count{text-align:center;color:var(--muted,#888);font-size:.8em;margin:6px 0 0}
+.kn-q{display:block;margin:6px auto 0;border:none;background:none;font-size:5.4em;font-weight:700;line-height:1.15;cursor:pointer;color:var(--text,#222);font-family:inherit}
+.kn-ans{text-align:center;min-height:1.4em;margin:0;color:var(--pri,#ff6b5b);font-weight:700}
+.trip-kana .kn-links{text-align:center;font-size:.9em;margin-top:14px}
+.trip-kana .kn-q{font-size:5.4rem!important;padding:0;min-height:0;background:none!important;border:none!important;box-shadow:none!important;width:auto}
+.trip-kana .kn-links{display:block}

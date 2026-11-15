@@ -501,7 +501,7 @@
     });
   }
 
-  App.register('cards', { title: '字卡', icon: '🎴', nav: true, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
+  App.register('cards', { title: '字卡', icon: '🎴', nav: false, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
   App.register('practice', { title: '練習', icon: '🎯', nav: false, render() { setTimeout(() => App.go('practice-map'), 0); } });
 
   /* =========================================================
@@ -604,7 +604,7 @@
     // 依程度調整：耐心秒數、中文看板、讀音提示、小意外次數
     const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: true, inc: 1 };
     if (LV) GOPT.zh = DIFF.zh;
-    const back = TRIP ? { label: '📍 回站內流程', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
+    const back = TRIP ? { label: '下一關 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
     const key = id + ':m' + mi + (LV ? '@' + LV : ''), G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
     const N = m.type === 'qa' && m.seq ? Math.min(8, m.qs.length) : 5, PAT = DIFF.pat;   // 旅伴人數；依序對答的情境＝每個流程一位
     // 真實小意外：每局必出一次（店員講太快要請他重說／品項賣完）
@@ -620,10 +620,10 @@
         <div class="g-st"><span id="gH"></span><span id="gS">💯 0</span></div></div>
       <div class="g-queue" id="gQ"></div>
       <div class="g-pat"><span>⏳</span><div class="g-patb"><div id="gP"></div></div><span id="gC"></span></div>
-      <div class="g-opt"><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
+      <div class="g-opt"${LV ? ' hidden' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
       <div class="panel${GOPT.zh ? '' : ' m-noz'}${DIFF.aid ? '' : ' t-noaid'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
-    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(back.route, back.params) }]);
+    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(TRIP ? 'home' : back.route, TRIP ? null : back.params) }]);
     $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
     $('#gZh').onchange = e => { GOPT.zh = e.target.checked; pane.classList.toggle('m-noz', !GOPT.zh); };
     $('#gHelp').onclick = () => guide(true);
@@ -1046,7 +1046,7 @@
       pane.querySelector('#mSt').onclick = () => App.go(back.route, back.params);
       App.showResult({
         title: (stars ? `${m.name} 完成！` : '挑戰失敗，再試一次！') + `（💯 ${S.score}）`, stars, correct: S.ok, total: S.tot, gained: r.gained, wrong: S.wrong,
-        retry: () => App.go('menu', params), back: TRIP ? { label: '🗺️ 回東京地圖', route: 'home' } : back, next: stars ? nx : (TRIP ? back : null)
+        retry: () => App.go('menu', params), back: TRIP ? { label: '🏠 回地圖', route: 'home' } : back, next: stars ? nx : null
       });
     }
     hud(); guide(false); round();
