@@ -100,11 +100,62 @@
 .m-it .j{font-weight:900;font-size:1.02em;line-height:1.3}
 .m-it .k{font-size:.72em;color:var(--muted)}
 .m-it .z{font-size:.75em;color:var(--ai2)}
-.m-it .p{font-family:var(--serif);color:var(--shu);font-weight:900;font-size:.9em}
-.m-it .q{position:absolute;top:-8px;right:-6px;background:var(--shu);color:#fff;border:2px solid var(--paper);border-radius:50%;width:28px;height:28px;font-weight:900;display:flex;align-items:center;justify-content:center}
 .m-it.sel{background:#fff3c4}
 .m-noz .z{display:none}
-.m-tray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;min-height:30px}
+/* QR 平板點餐（無圖、直式和風菜單） */
+.m-list{margin:4px 0 0;padding-left:1.1em;line-height:1.5}
+.m-list b{font-size:1.08em}
+.g-first{position:relative;animation:hpulse 1.6s ease-in-out 3}
+.g-arrow{position:absolute;right:8px;top:-12px;background:var(--shu);color:#fff;font-size:.72em;font-weight:900;border-radius:8px;padding:1px 8px;animation:float 1.2s ease-in-out infinite}
+.m-situ{margin:8px 0 0;padding:6px 10px;border-left:4px solid var(--kin);background:var(--paper);font-size:.9em}
+.m-menu{margin-top:8px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);box-shadow:var(--shadow);overflow:hidden}
+.m-head{background:var(--ink);color:#f5eedc;text-align:center;font-family:var(--serif);font-weight:900;padding:6px;letter-spacing:2px}
+.m-tabs{display:flex;overflow-x:auto;border-bottom:2px solid var(--ink);scrollbar-width:none}
+.m-tabs::-webkit-scrollbar{display:none}
+.m-tabs button{flex:1 0 auto;border:none;border-right:1px solid var(--line);background:var(--paper2);padding:8px 12px;font-family:var(--serif);font-weight:900;color:var(--ink);cursor:pointer;min-height:40px}
+.m-tabs button.on{background:var(--shu);color:#fff}
+.m-rows{max-height:52vh;overflow:auto}
+.m-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px dashed #b9ae99}
+.m-row.sel{background:#fff3c4}
+.m-nm{flex:1;min-width:0;line-height:1.25}
+.m-nm b{display:block;font-size:1.05em}
+.m-nm small{display:block;font-size:.72em;color:var(--muted)}
+.m-nm small.z{color:var(--ai2)}
+.m-e{float:left;font-size:1.3em;margin-right:6px}
+.m-pr{font-family:var(--serif);font-weight:900;color:var(--shu);white-space:nowrap}
+.m-q{display:flex;align-items:center;gap:2px;flex:none}
+.m-q button{width:38px;height:38px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-size:1.2em;font-weight:900;cursor:pointer;color:var(--ink);line-height:1;padding:0}
+.m-q button:active{transform:scale(.92)}
+.m-q span{min-width:24px;text-align:center;font-weight:900;font-size:1.1em}
+.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + 6px);z-index:5;margin-top:8px;padding:8px 10px;border:2px solid var(--ink);border-radius:10px;background:#fffdf6;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+.m-cl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.m-cb{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.m-cb b{color:var(--shu);font-family:var(--serif)}
+.m-cb .btn{margin:0}
+/* 券売機 */
+.k-mac{margin-top:8px;border:3px solid var(--ink);border-radius:12px;background:#d9d4c7;padding:8px;box-shadow:var(--shadow)}
+.k-top{text-align:center;font-family:var(--serif);font-weight:900;letter-spacing:4px}
+.k-disp{background:#1d2a1d;color:#9ef59e;font-family:monospace;text-align:right;padding:6px 10px;border-radius:6px;margin:6px 0;font-size:1.1em}
+.k-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.k-b{border:2px solid var(--ink);border-radius:6px;background:#eee8da;padding:6px 2px;font-family:inherit;color:#8a8478;cursor:pointer;line-height:1.2;min-height:70px}
+.k-b small{display:block;font-size:.66em}
+.k-b b{display:block;font-family:var(--serif);font-size:.9em}
+.k-b.main{background:#f3e1c7}
+.k-b.lit{background:#fff7d6;color:var(--ink);box-shadow:0 0 0 2px var(--gold),0 0 12px rgba(255,200,61,.8)}
+.k-money{display:flex;gap:6px;margin:8px 0}
+.k-money button{flex:1;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:8px 0;font-weight:900;cursor:pointer;font-family:inherit}
+.k-tix{min-height:28px;margin-bottom:6px}
+/* 家系客製 */
+.o-board{margin-top:8px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);padding:8px}
+.o-row{margin-bottom:8px}
+.o-name{font-family:var(--serif);font-weight:900;margin-bottom:4px}
+.o-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.o-opts button{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:8px 2px;font-size:1.05em;font-weight:900;cursor:pointer;line-height:1.2;color:var(--ink)}
+.o-opts button small{display:block;font-size:.62em;font-weight:normal;color:var(--ai2)}
+.o-opts button.on{background:var(--ai);color:#f5eedc}
+.o-opts button.on small{color:#f5eedc}
+.g-steps{text-align:left;padding-left:1.3em;line-height:1.7}
+.g-note{text-align:left;font-size:.85em;background:var(--paper);border-left:4px solid var(--kin);padding:6px 10px}
 /* 字卡 */
 .c-card{perspective:1000px;max-width:440px;margin:8px auto;height:300px;cursor:pointer}
 .c-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
@@ -149,7 +200,7 @@
   const LEVELS = [
     { id: 'L1', name: '入門', sub: '五十音', worlds: ['ch1', 'ch2'] },
     { id: 'L2', name: '初級', sub: '濁音拗音', worlds: ['ch3'] },
-    { id: 'L3', name: '中級', sub: '生活場景', worlds: ['konbini', 'ramen', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] },
+    { id: 'L3', name: '中級', sub: '生活場景', worlds: ['konbini', 'ramen', 'yakiniku', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] },
     { id: 'L4', name: '高級', sub: '旅遊進階', worlds: ['izakaya', 'clothes', 'shrine', 'airport', 'emergency'] }
   ];
   const UI = { lv: '', deck: 'word', lvF: 'all', dF: 'all', ci: 0 };
@@ -302,7 +353,7 @@
     if ((stars | 0) > prev) { App.state.sit[key] = stars | 0; App.save(); if (!prev && App.noteClear) App.noteClear(); }
   }
   const menusOf = id => { const m = (window.MENUS || {})[id]; return Array.isArray(m) ? m : m ? [m] : []; };
-  const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求' };
+  const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求', qa: '對答', kenbaiki: '券売機', okonomi: '說喜好' };
   // 場景的所有細分關卡
   function stageNodes(id) {
     const ch = chapOf(id);
@@ -439,7 +490,8 @@
     mai: { jp: ['', '一枚', '二枚', '三枚'], k: ['', 'いちまい', 'にまい', 'さんまい'] },
     hon: { jp: ['', '一本', '二本', '三本'], k: ['', 'いっぽん', 'にほん', 'さんぼん'] },
     zen: { jp: ['', '一膳', '二膳', '三膳'], k: ['', 'いちぜん', 'にぜん', 'さんぜん'] },
-    soku: { jp: ['', '一足', '二足', '三足'], k: ['', 'いっそく', 'にそく', 'さんぞく'] }
+    soku: { jp: ['', '一足', '二足', '三足'], k: ['', 'いっそく', 'にそく', 'さんぞく'] },
+    nin: { jp: ['', '一人前', '二人前', '三人前'], k: ['', 'いちにんまえ', 'ににんまえ', 'さんにんまえ'] }
   };
   function yomi(n) {
     const D = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
@@ -468,6 +520,9 @@
   ];
 
   // 產生正確句與干擾句
+  // 說出口的品名：去掉括號註記（例：生ビール（中）→ 生ビール），或用資料裡的 sp／spk
+  const spJ = it => it.sp || String(it.jp).replace(/（[^）]*）/g, '');
+  const spK = it => it.spk || String(it.kana).replace(/（[^）]*）/g, '').replace(/\s.*$/, '');
   function build(m, t, o) {
     o = o || {};
     const x = Object.assign({}, t[0], o.item ? { it: o.item } : {}, o.qty ? { n: o.qty } : {});
@@ -477,8 +532,9 @@
     if (m.type === 'ask') { const tl = o.tail || m.tail || ASK_TAILS[0]; return { jp: `すみません、${x.it.jp}${tl.jp}`, kana: `すみません、${x.it.kana}${tl.kana}` }; }
     if (m.type === 'pref') { const tl = o.tail || m.tpl || { jp: 'でお願いします', kana: 'でおねがいします' }; return { jp: `${x.it.jp}${tl.jp}`, kana: `${x.it.kana}${tl.kana}` }; }
     const pre = m.pre || '', end = o.give ? 'あげます' : m.type === 'request' ? 'お願いします' : 'ください', endK = o.give ? 'あげます' : m.type === 'request' ? 'おねがいします' : 'ください';
-    const pr = y => (y.it.np ? '' : pre);   // np：不加「もう」（例：充電器是借，不是「再一個」）
-    return { jp: tt.map(y => `${y.it.jp}を${pr(y)}${q(y, 'jp')}`).join('と、') + end, kana: tt.map(y => `${y.it.kana}を${pr(y)}${q(y, 'k')}`).join('と、') + endK };
+    const pr = y => (y.it.np ? '' : pre);
+    const sm = m.type === 'request' ? 'すみません、' : '';   // 主動拜託店員時先說「すみません」   // np：不加「もう」（例：充電器是借，不是「再一個」）
+    return { jp: sm + tt.map(y => `${spJ(y.it)}を${pr(y)}${q(y, 'jp')}`).join('と、') + end, kana: sm + tt.map(y => `${spK(y.it)}を${pr(y)}${q(y, 'k')}`).join('と、') + endK };
   }
   function sayChoices(m, t) {
     const out = [Object.assign(build(m, t), { correct: true })];
@@ -504,28 +560,46 @@
 
   const FRIENDS = [['🧑', '阿哲'], ['👩', '小美'], ['👴', '阿公'], ['👧', '妹妹'], ['🧔', '大雄'], ['👩‍🦰', '小琪'], ['👵', '阿嬤'], ['🧑‍🦱', '阿凱']];
   const GOPT = { relax: false, zh: false };
+  const hasKanji = s => /[一-鿿]/.test(s || '');
+  const QRT = t => t === 'order' || t === 'ticket' || t === 'request';
+  const GUIDE = {
+    qr: ['👀 看旅伴的點單：上面是<b>菜單上的日文品名 ×數量</b>', '👆 在菜單找到品項，用 <b>＋／−</b> 調數量，確認底部購物車後按「注文する」', '🗣️ 再選（或說）出正確的日文，最後聽懂店員的回答'],
+    qa: ['👂 先聽店員問什麼（點 🔊 可以重聽）', '👀 看旅伴想怎麼做', '🗣️ 選出正確的日文回答，再聽店員怎麼回'],
+    kenbaiki: ['💴 先投錢：按 ¥1000／¥500／¥100', '🎫 錢夠的按鈕會亮，照旅伴的點單按下去買餐券', '💰 買完按「おつり」找零，答出找回多少錢'],
+    okonomi: ['👀 看旅伴要的「麵硬度・湯濃度・雞油量」', '👆 三排各選一個，按「決定」', '🗣️ 用日文一口氣說出來，再聽師傅確認'],
+    pick: ['👀 看旅伴想做什麼', '👆 在看板上點對的項目，按「就是這個」', '🗣️ 選出正確的日文，再聽對方回答']
+  };
+  const gKind = m => QRT(m.type) ? 'qr' : GUIDE[m.type] ? m.type : 'pick';
 
   function renderMenu(el, params) {
     params = params || {};
     { const host = el; el = document.createElement('div'); host.appendChild(el); }   // 換頁時舊計時器能偵測到自己已脫離畫面
     const id = params.id, mi = +params.m || 0, ms = menusOf(id), m = ms[mi], sc = findScene(id);
-    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回練習</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice'); return; }
+    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => App.go('home'); return; }
     const key = id + ':m' + mi, G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
     const N = 5, PAT = 45;   // 5 位旅伴、每位耐心 45 秒
     const S = { r: 0, hearts: 3, score: 0, combo: 0, best: 0, ok: 0, tot: 0, wrong: [], pat: PAT, timer: null, busy: false };
     const friends = App.sample(FRIENDS, N);
     el.innerHTML = `<div class="g-hud">
         <button class="btn sm" id="gX">✕</button>
-        <div class="g-ttl"><b>${esc(m.icon || '')} ${esc(m.name)}</b><small>${esc(sc.name)}・${esc(m.board.replace(/^\S+\s/, ''))}</small></div>
+        <div class="g-ttl"><b>${esc(m.icon || '')} ${esc(m.name)}</b><small>${esc(sc.name)}・${esc(m.board)}</small></div>
+        <button class="btn sm" id="gHelp" title="怎麼玩">❓</button>
         <div class="g-st"><span id="gH"></span><span id="gS">💯 0</span></div></div>
       <div class="g-queue" id="gQ"></div>
       <div class="g-pat"><span>⏳</span><div class="g-patb"><div id="gP"></div></div><span id="gC"></span></div>
       <div class="g-opt"><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
-      <div class="panel" id="mPane" style="margin-top:6px"></div>`;
+      <div class="panel${GOPT.zh ? '' : ' m-noz'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
     $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go('stage', { id }) }]);
     $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
-    $('#gZh').onchange = e => { GOPT.zh = e.target.checked; const b = pane.querySelector('.m-board'); if (b) b.classList.toggle('m-noz', !GOPT.zh); };
+    $('#gZh').onchange = e => { GOPT.zh = e.target.checked; pane.classList.toggle('m-noz', !GOPT.zh); };
+    $('#gHelp').onclick = () => guide(true);
+    function guide(force) {
+      if (!App.state.guide) App.state.guide = {};
+      if (!force && App.state.guide[key]) return;
+      App.state.guide[key] = 1; App.save();
+      App.modal(`<h2 style="margin:.2em 0">❓ 怎麼玩：${esc(m.name)}</h2><ol class="g-steps">${GUIDE[gKind(m)].map(s => `<li>${s}</li>`).join('')}</ol>${m.note ? `<p class="g-note">💡 ${esc(m.note)}</p>` : ''}`, [{ label: '開始！', cls: 'primary' }]);
+    }
     function hud() {
       $('#gH').innerHTML = '❤️'.repeat(S.hearts) + '🖤'.repeat(3 - S.hearts);
       $('#gS').textContent = '💯 ' + S.score;
@@ -552,6 +626,7 @@
       if (anchor) { G_.floatText(anchor, `+${pts}${S.combo >= 3 ? ' 🔥' : ''}`); G_.burst(anchor, 10); }
       if (S.combo >= 3 && S.combo % 3 === 0) { App.toast(`🔥 ${S.combo} 連擊！`, 'ok'); G_.sfx('combo'); }
     };
+    const soso = () => { S.tot++; S.combo = 0; hud(); };
     const miss = anchor => {
       S.combo = 0; S.tot++; S.hearts--; hud();
       const h = $('#gH'); h.classList.remove('g-hit'); void h.offsetWidth; h.classList.add('g-hit');
@@ -562,11 +637,14 @@
     };
     const npc = (host, line, blur) => {
       const b = document.createElement('div'); b.className = 'bubble npc';
-      b.innerHTML = `<div class="who">${esc(m.npc.emoji)} ${esc(m.npc.who)}</div><div class="j jp" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span>${esc(line.jp)}</span><button class="speak">🔊</button></div><div class="t-aid jp">${esc(line.kana)}</div>${line.zh && !blur ? `<div class="t-aid">🀄 ${esc(line.zh)}</div>` : ''}`;
+      b.innerHTML = `<div class="who">${esc(m.npc.emoji)} ${esc(m.npc.who)}</div><div class="j jp" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span>${esc(line.jp)}</span><button class="speak">🔊</button></div>${line.kana && line.kana !== line.jp ? `<div class="t-aid jp">${esc(line.kana)}</div>` : ''}${line.zh && !blur ? `<div class="t-aid">🀄 ${esc(line.zh)}</div>` : ''}`;
       b.querySelector('.speak').onclick = () => App.speak(line.kana || line.jp);
       if (blur) b.querySelectorAll('.j span,.t-aid').forEach(x => x.style.filter = 'blur(7px)');
       host.appendChild(b); App.speak(line.kana || line.jp); return b;
     };
+    const meSay = (jp) => { const me = document.createElement('div'); me.className = 'bubble me'; me.innerHTML = `<div class="who">🧳 我</div><div class="j jp">${esc(jp)}</div>`; pane.querySelector('#mChat').appendChild(me); };
+    const friendBox = inner => `<div class="g-ask${S.r === 0 ? ' g-first' : ''}"><div class="g-av">${friends[S.r][0]}</div><div class="g-say"><small>${esc(friends[S.r][1])}：</small>${inner}</div>${S.r === 0 ? '<span class="g-arrow">⬅ 先看這裡</span>' : ''}</div>`;
+    const nextBtn = fb => { fb.innerHTML += `<button class="btn primary" id="mNx">${S.r + 1 >= N ? '看結果 🏁' : '下一位旅伴 ➜'}</button>`; fb.querySelector('#mNx').onclick = next; };
     function timeout() {
       App.toast(`😤 ${friends[S.r][1]} 等太久，自己走掉了…`);
       if (miss($('#gQ .g-f.cur'))) return;
@@ -577,55 +655,100 @@
     function round() {
       if (S.r >= N) return finish(true);
       S.pat = PAT; S.busy = false; hud();
-      const f = friends[S.r];
-      const nItems = m.type === 'order' && S.r >= 2 ? 2 : 1;
-      const task = App.sample(m.items, nItems).map(it => ({ it, n: hasQty(m) ? 1 + (Math.random() * (m.type === 'request' ? 2 : 3) | 0) : 1 }));
+      if (m.type === 'qa') qaRound();
+      else if (m.type === 'kenbaiki') kenRound();
+      else if (m.type === 'okonomi') okoRound();
+      else if (QRT(m.type)) qrRound();
+      else pickRound();
+      startT();
+    }
+
+    /* ---- QR 平板點餐（order／ticket／request）：＋／− 數量、購物車、注文する ---- */
+    function qrRound() {
+      const nItems = m.type === 'order' ? Math.min(m.items.length, (S.r >= 2 ? 2 : 1) + (m.tabs && S.r >= 3 ? 1 : 0)) : 1;
+      const maxN = m.type === 'request' ? 2 : 3;
+      const task = App.sample(m.items, nItems).map(it => ({ it, n: 1 + (Math.random() * maxN | 0) }));
+      const single = m.type !== 'order';
       const qty = {};
-      const verb = m.verb || { order: '幫我點／買', ticket: '幫我買車票到', ask: '幫我問', request: '幫我要', pref: '幫我說要' }[m.type];
-      pane.innerHTML = `<div class="g-ask"><div class="g-av">${f[0]}</div><div class="g-say"><small>${esc(f[1])}：</small>「${esc(verb)} ${task.map(t => `<b>${esc(t.it.zh)}</b>${hasQty(m) ? ' ×' + t.n : ''}`).join('、')}！」</div></div>
-        <div class="chat" id="mChat"></div>
-        <div class="m-board${GOPT.zh ? '' : ' m-noz'}"><h3>${esc(m.board)}</h3><div class="m-items">${m.items.map((it, i) => `<button class="m-it" data-i="${i}">
-          <div class="e">${esc(it.emoji || '')}</div><div class="j jp">${esc(it.jp)}</div>${it.kana !== it.jp ? `<div class="k jp">${esc(it.kana)}</div>` : ''}<div class="z">${esc(it.zh)}</div>
-          ${it.price ? `<div class="p">${yen(it.price)}</div>` : ''}<span class="q" style="display:none"></span></button>`).join('')}</div></div>
-        <div class="m-tray" id="mTray"></div><div class="feedback" id="mFb"></div>
-        <button class="btn primary block" id="mOk">✅ 就是這個！</button>`;
-      if (S.r === 0 || m.type !== 'order') npc(pane.querySelector('#mChat'), m.greet);
-      const tray = pane.querySelector('#mTray');
-      const paint = () => {
-        pane.querySelectorAll('.m-it').forEach(b => { const n = qty[b.dataset.i] || 0, q = b.querySelector('.q'); q.style.display = n ? '' : 'none'; q.textContent = hasQty(m) ? n : '✓'; b.classList.toggle('sel', !!n); });
-        const sel = Object.keys(qty).filter(k => qty[k]);
-        tray.innerHTML = sel.length ? '🧺 ' + sel.map(k => `<span class="chip jp">${esc(m.items[k].jp)}${hasQty(m) ? ' ×' + qty[k] : ''}</span>`).join('') : `<span class="muted">👆 點看板上的日文${hasQty(m) ? '（再點加數量）' : ''}</span>`;
-      };
-      const single = !(m.type === 'order');
+      let tab = m.tabs ? m.tabs[0] : null, tries = 0;
+      pane.innerHTML = friendBox(`「${esc(m.verb || '幫我點')}」<ul class="m-list">${task.map(t => `<li><b class="jp">${esc(t.it.jp)}</b> ×${t.n}<span class="z">（${esc(t.it.zh)}）</span></li>`).join('')}</ul>`)
+        + `<div class="chat" id="mChat"></div><div class="m-menu" id="mMenu"></div><div class="m-cart" id="mCart"></div><div class="feedback" id="mFb"></div>`;
+      if (S.r === 0 && m.greet) npc(pane.querySelector('#mChat'), m.greet);
+      const menu = pane.querySelector('#mMenu'), cart = pane.querySelector('#mCart'), fb = pane.querySelector('#mFb');
+      const sel = () => Object.keys(qty).filter(k => qty[k]).map(k => ({ it: m.items[k], n: qty[k] }));
+      function drawMenu() {
+        const list = m.items.map((it, i) => ({ it, i })).filter(x => !tab || x.it.cat === tab);
+        menu.innerHTML = `<div class="m-head">${esc(m.board)}</div>
+          ${m.tabs ? `<div class="m-tabs">${m.tabs.map(t => `<button data-t="${esc(t)}" class="${t === tab ? 'on' : ''}">${esc(t)}${m.items.some((it, i) => it.cat === t && qty[i]) ? ' •' : ''}</button>`).join('')}</div>` : ''}
+          <div class="m-rows">${list.map(({ it, i }) => `<div class="m-row${qty[i] ? ' sel' : ''}">
+            <div class="m-nm">${m.type === 'request' && it.emoji ? `<span class="m-e">${esc(it.emoji)}</span>` : ''}<b class="jp">${esc(it.jp)}</b>${hasKanji(it.jp) ? `<small class="jp">${esc(it.kana)}</small>` : ''}<small class="z">${esc(it.zh)}</small></div>
+            ${it.price ? `<div class="m-pr">${yen(it.price)}</div>` : ''}
+            <div class="m-q"><button data-d="-1" data-i="${i}" aria-label="減少">−</button><span>${qty[i] || 0}</span><button data-d="1" data-i="${i}" aria-label="增加">＋</button></div></div>`).join('')}</div>`;
+        menu.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { tab = b.dataset.t; drawMenu(); });
+        menu.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
+          const i = +b.dataset.i, d = +b.dataset.d;
+          if (single && d > 0) Object.keys(qty).forEach(k => { if (+k !== i) qty[k] = 0; });
+          qty[i] = Math.max(0, Math.min(5, (qty[i] || 0) + d));
+          if (d > 0) App.speak(m.items[i].kana || m.items[i].jp);
+          drawMenu(); drawCart();
+        });
+      }
+      function drawCart() {
+        const s = sel(), sub = s.reduce((a, x) => a + (x.it.price || 0) * x.n, 0);
+        cart.innerHTML = s.length
+          ? `<div class="m-cl">${s.map(x => `<span class="chip jp">${esc(x.it.jp)} ×${x.n}</span>`).join('')}</div><div class="m-cb">${sub ? `<span>小計 <b>${yen(sub)}</b></span>` : '<span></span>'}<button class="btn primary" id="mOk">${m.type === 'order' ? '注文する' : m.type === 'ticket' ? '購入する' : '決定'}</button></div>`
+          : '<div class="muted center" style="font-size:.85em">🛒 用 ＋／− 選品項和數量</div>';
+        const ok = cart.querySelector('#mOk'); if (ok) ok.onclick = () => submit(ok);
+      }
+      function submit(btn) {
+        const s = sel();
+        const same = s.length === task.length && task.every(t => s.some(x => x.it === t.it));
+        if (same && task.every(t => s.some(x => x.it === t.it && x.n === t.n))) {
+          G_.sfx('ok');
+          if (!tries) gain(btn, 100); else soso();
+          menu.remove(); cart.remove(); fb.innerHTML = '';
+          return say(task);
+        }
+        if (same) { fb.innerHTML = `<span class="t-fb-ng">🔢 數量不對</span> 品項對了！再對一次點單上的數量`; G_.sfx('ng'); return; }
+        tries++;
+        task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
+        if (tries === 1 && miss(btn)) return;   // 每一步只在第一次錯時扣心
+        fb.innerHTML = `<span class="t-fb-ng">❌ ${esc(friends[S.r][1])}：「不是這個啦！」</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>${m.tabs ? `（${esc(t.it.cat)}）` : ''}`).join('、') : '再對一次點單上的日文品名'}`;
+      }
+      drawMenu(); drawCart();
+    }
+
+    /* ---- 看板單選（ask／pref） ---- */
+    function pickRound() {
+      const task = App.sample(m.items, 1).map(it => ({ it, n: 1 }));
+      const verb = m.verb || { ask: '幫我問', pref: '幫我說要' }[m.type] || '幫我';
+      let pick = null, tries = 0;
+      pane.innerHTML = friendBox(`「${esc(verb)} <b>${esc(task[0].it.zh)}</b>！」`)
+        + `<div class="chat" id="mChat"></div><div class="m-board"><h3>${esc(m.board)}</h3><div class="m-items">${m.items.map((it, i) => `<button class="m-it" data-i="${i}">
+          <div class="e">${esc(it.emoji || '')}</div><div class="j jp">${esc(it.jp)}</div>${it.kana !== it.jp ? `<div class="k jp">${esc(it.kana)}</div>` : ''}<div class="z">${esc(it.zh)}</div></button>`).join('')}</div></div>
+        <div class="feedback" id="mFb"></div><button class="btn primary block" id="mOk">✅ 就是這個！</button>`;
+      npc(pane.querySelector('#mChat'), m.greet);
       pane.querySelectorAll('.m-it').forEach(b => b.onclick = () => {
-        const i = b.dataset.i;
-        if (single) Object.keys(qty).forEach(k => { if (k !== i) qty[k] = 0; });
-        const max = hasQty(m) ? 3 : 1;
-        qty[i] = ((qty[i] || 0) + 1) % (max + 1);
-        App.speak(m.items[i].kana || m.items[i].jp); paint();
+        pick = +b.dataset.i; pane.querySelectorAll('.m-it').forEach(x => x.classList.toggle('sel', x === b));
+        App.speak(m.items[pick].kana || m.items[pick].jp);
       });
-      paint(); startT();
-      let tries = 0;
       pane.querySelector('#mOk').onclick = () => {
-        const sel = Object.keys(qty).filter(k => qty[k]).map(k => ({ it: m.items[k], n: qty[k] }));
-        if (!sel.length) return App.toast('先點看板上的項目喔！');
-        const ok = sel.length === task.length && task.every(t => sel.some(s => s.it === t.it && s.n === t.n));
-        const fb = pane.querySelector('#mFb'), btn = pane.querySelector('#mOk');
-        if (!ok) {
-          tries++;
-          task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
-          if (tries === 1 && miss(btn)) return;   // 每一步只在第一次錯時扣心
-          fb.innerHTML = `<span class="t-fb-ng">❌ ${esc(f[1])}：「不是這個啦！」</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>${hasQty(m) ? '×' + t.n : ''}`).join('、') : '再看清楚看板上的日文' + (hasQty(m) ? '和數量' : '') + '！'}`;
+        const btn = pane.querySelector('#mOk'), fb = pane.querySelector('#mFb');
+        if (pick == null) return App.toast('先點看板上的項目喔！');
+        if (m.items[pick] !== task[0].it) {
+          tries++; addWrong(App.wordItem(task[0].it, sc.name, 'word'));
+          if (tries === 1 && miss(btn)) return;
+          fb.innerHTML = `<span class="t-fb-ng">❌ 不是這個</span> ${tries >= 2 ? '提示：<span class="jp">' + esc(task[0].it.jp) + '</span>' : '再看清楚看板上的日文！'}`;
           return;
         }
-        G_.sfx('ok');
-        if (!tries) gain(btn, 100); else { S.tot++; S.combo = 0; hud(); }
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        pane.querySelectorAll('.m-board,#mOk').forEach(x => x.remove()); fb.innerHTML = '';
         say(task);
       };
     }
-    function say(task) {
-      const cs = sayChoices(m, task);
-      pane.querySelector('.m-board').remove(); pane.querySelector('#mTray').remove(); pane.querySelector('#mOk').remove();
+
+    /* ---- 共用：選出（或說出）正確的日文 ---- */
+    function sayStep(cs, trackIt, after) {
       const fb = pane.querySelector('#mFb'); fb.innerHTML = '';
       const box = document.createElement('div');
       box.innerHTML = `<div class="sec-t" style="margin-top:6px">用日文跟${esc(m.npc.who)}說：</div><div class="t-micbox"></div><div class="choices t-opts"></div>`;
@@ -634,22 +757,20 @@
       let missed = false, done = false;
       cs.forEach(c => {
         const b = document.createElement('button'); b.className = 'choice';
-        b.innerHTML = `<span class="jp">${esc(c.jp)}</span><span class="t-aid jp" style="display:block">${esc(c.kana)}</span>`;
+        b.innerHTML = `<span class="jp">${esc(c.jp)}</span>${c.kana && c.kana !== c.jp ? `<span class="t-aid jp" style="display:block">${esc(c.kana)}</span>` : ''}`;
         c._btn = b;
         b.onclick = () => {
           if (done || b.disabled) return;
           if (c.correct) {
             done = true; S.busy = true; b.classList.add('ok'); opBox.querySelectorAll('.choice').forEach(x => x.disabled = true);
             fb.innerHTML = `<span class="t-fb-ok">⭕ ${missed ? '說對了！' : '完美！'}</span>`;
-            if (!missed) gain(b, 150); else { S.tot++; hud(); }
-            const me = document.createElement('div'); me.className = 'bubble me';
-            me.innerHTML = `<div class="who">🧳 我</div><div class="j jp">${esc(c.jp)}</div>`;
-            pane.querySelector('#mChat').appendChild(me); App.speak(c.kana);
-            setTimeout(() => { if (el.isConnected) { S.busy = false; answer(task); } }, 1000);
+            if (!missed) gain(b, 150); else soso();
+            meSay(c.jp); App.speak(c.kana || c.jp);
+            setTimeout(() => { if (el.isConnected) { S.busy = false; box.remove(); after(); } }, 1000);
           } else {
             b.classList.add('ng'); b.disabled = true;
             fb.innerHTML = `<span class="t-fb-ng">❌</span> ${esc(c.fb || '')}`;
-            if (!missed) { missed = true; const r = cs.find(x => x.correct); addWrong(App.wordItem({ jp: r.jp, kana: r.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase')); if (miss(b)) return; }
+            if (!missed) { missed = true; addWrong(trackIt()); if (miss(b)) return; }
           }
         };
         opBox.appendChild(b);
@@ -669,28 +790,19 @@
         }, code => { mb.classList.remove('on'); S.busy = false; if (!T().hasSR) { micBox.remove(); App.toast(TA.micErr(code)); } else heard.textContent = TA.micErr(code); });
       };
     }
-    function answer(task) {
+    function say(task) {
+      const r0 = build(m, task);
+      sayStep(sayChoices(m, task), () => App.wordItem({ jp: r0.jp, kana: r0.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase'), () => answer(task));
+    }
+    // 聽力：聽懂店員的回答
+    function listenStep(line, opts, right, title) {
       const fb = pane.querySelector('#mFb');
-      pane.querySelectorAll('.sec-t,.t-micbox,.t-opts').forEach(x => x.remove()); fb.innerHTML = '';
-      let line, opts, right;
-      if (m.type === 'order' || m.type === 'ticket') {
-        const total = task.reduce((s, t) => s + (t.it.price || 0) * t.n, 0);
-        line = { jp: `全部で${total.toLocaleString('ja-JP')}円です。`, kana: `ぜんぶで${yomi(total)}です` };
-        const set = new Set([total]);
-        App.shuffle([100, -100, 1000, -10, 10, 200, -200, 500]).forEach(d => { if (set.size < 4 && total + d > 0) set.add(total + d); });
-        right = yen(total); opts = App.shuffle([...set].map(yen));
-      } else {
-        const rep = App.sample(m.replies || OKR, 1)[0];
-        line = rep; right = rep.zh;
-        const pool = (m.replies || []).filter(r => r !== rep).map(r => r.zh).concat(['我不知道。', '今天公休。', '請再說一次。']);
-        opts = App.shuffle([rep.zh].concat(App.sample([...new Set(pool)].filter(z => z !== rep.zh), 3)));
-      }
       const bub = npc(pane.querySelector('#mChat'), line, true);
       const box = document.createElement('div');
-      box.innerHTML = `<div class="sec-t" style="margin-top:6px">🎧 ${m.type === 'order' || m.type === 'ticket' ? '總共多少錢？' : esc(m.npc.who) + '說了什麼？'}</div>
+      box.innerHTML = `<div class="sec-t" style="margin-top:6px">🎧 ${esc(title)}</div>
         <div class="center"><button class="btn sm" id="mRe">🔊 再聽一次</button></div><div class="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" style="font-size:1em">${esc(o)}</button>`).join('')}</div>`;
       pane.insertBefore(box, fb);
-      box.querySelector('#mRe').onclick = () => App.speak(line.kana);
+      box.querySelector('#mRe').onclick = () => App.speak(line.kana || line.jp);
       box.querySelectorAll('.choice').forEach(b => b.onclick = () => {
         const ok = opts[+b.dataset.k] === right;
         box.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (opts[+x.dataset.k] === right) x.classList.add('ok'); });
@@ -700,10 +812,144 @@
         if (ok) { gain(b, 120); const tb = Math.round(Math.max(0, S.pat) * (GOPT.relax ? 0 : 4)); if (tb) { S.score += tb; hud(); App.toast(`⏱️ 速度獎勵 +${tb}`, 'xp'); } fb.innerHTML = `<span class="t-fb-ok">⭕ 聽懂了！${esc(friends[S.r][1])}：「謝啦！」</span>`; }
         else { b.classList.add('ng'); addWrong(App.wordItem({ jp: line.jp, kana: line.kana, zh: right, hint: '聽力：' + m.name }, sc.name, 'phrase')); over = miss(b); fb.innerHTML = `<span class="t-fb-ng">❌ 正確是 ${esc(right)}</span>`; }
         if (over) return;
-        fb.innerHTML += `<div class="jp muted">${esc(line.jp)}（${esc(line.kana)}）</div><button class="btn primary" id="mNx">${S.r + 1 >= N ? '看結果 🏁' : '下一位旅伴 ➜'}</button>`;
-        fb.querySelector('#mNx').onclick = next;
+        fb.innerHTML += `<div class="jp muted">${esc(line.jp)}${line.kana && line.kana !== line.jp ? `（${esc(line.kana)}）` : ''}</div>`;
+        nextBtn(fb);
       });
     }
+    const yenOpts = (total, ds) => { const set = new Set([total]); App.shuffle(ds).forEach(d => { if (set.size < 4 && total + d >= 0) set.add(total + d); }); return App.shuffle([...set].map(yen)); };
+    function answer(task) {
+      if (m.type === 'order' || m.type === 'ticket') {
+        const total = task.reduce((s, t) => s + (t.it.price || 0) * t.n, 0);
+        return listenStep({ jp: `全部で${total.toLocaleString('ja-JP')}円です。`, kana: `ぜんぶで${yomi(total)}です` }, yenOpts(total, [100, -100, 1000, -10, 10, 200, -200, 500]), yen(total), '總共多少錢？');
+      }
+      const rep = App.sample(m.replies || OKR, 1)[0];
+      const pool = (m.replies || []).filter(r => r !== rep).map(r => r.zh).concat(['我不知道。', '今天公休。', '請再說一次。']);
+      listenStep(rep, App.shuffle([rep.zh].concat(App.sample([...new Set(pool)].filter(z => z !== rep.zh), 3))), rep.zh, esc(m.npc.who) + '說了什麼？');
+    }
+
+    /* ---- 對答（qa）：店員先問，或依情境主動開口 ---- */
+    function qaRound() {
+      const q = App.sample(m.qs, 1)[0], w = App.sample(q.wants, 1)[0];
+      const line = q.npc ? App.sample(q.npc, 1)[0] : null;
+      pane.innerHTML = friendBox(`「${esc(w.zh)}」`) + (q.situ ? `<div class="m-situ">📍 ${esc(q.situ)}</div>` : '') + `<div class="chat" id="mChat"></div><div class="feedback" id="mFb"></div>`;
+      if (line) npc(pane.querySelector('#mChat'), line);
+      const cs = [Object.assign({}, w.ok, { correct: true })];
+      const add = c => { if (!cs.some(x => x.jp === c.jp)) cs.push(c); };
+      q.wants.filter(x => x !== w && x.ok.jp !== w.ok.jp).forEach(x => add(Object.assign({}, x.ok, { fb: `這是「${x.zh}」的說法` })));
+      App.shuffle(q.wrong || []).forEach(add);
+      sayStep(App.shuffle(cs.slice(0, 4)), () => App.wordItem({ jp: w.ok.jp, kana: w.ok.kana, zh: (line ? `店員問「${line.zh}」→ ` : '') + w.zh, hint: '情境：' + m.name }, sc.name, 'phrase'), () => {
+        const fb = pane.querySelector('#mFb');
+        npc(pane.querySelector('#mChat'), w.reply || OKR[0]);
+        stopT(); fb.innerHTML = ''; nextBtn(fb);
+      });
+    }
+
+    /* ---- 券売機：投錢 → 按按鈕買餐券 → おつり ---- */
+    function kenRound() {
+      const mains = m.items.filter(x => x.cat === 'main'), tops = m.items.filter(x => x.cat === 'top');
+      const task = [{ it: App.sample(mains, 1)[0], n: 1 }].concat(S.r >= 1 && Math.random() < 0.7 ? [{ it: App.sample(tops, 1)[0], n: 1 }] : []);
+      let bal = 0, tix = [], tries = 0;
+      pane.innerHTML = friendBox(`「幫我買」<ul class="m-list">${task.map(t => `<li><b class="jp">${esc(t.it.jp)}</b> ×1<span class="z">（${esc(t.it.zh)}）</span></li>`).join('')}</ul>`)
+        + `<div class="k-mac" id="kMac"><div class="k-top">券売機</div><div class="k-disp">投入金額 <b id="kBal">¥0</b></div>
+          <div class="k-btns">${m.items.map((it, i) => `<button class="k-b${it.cat === 'main' ? ' main' : ''}" data-i="${i}"><span class="jp">${esc(it.jp)}</span><small class="jp">${hasKanji(it.jp) ? esc(it.kana) : ''}</small><small class="z">${esc(it.zh)}</small><b>${yen(it.price)}</b></button>`).join('')}</div>
+          <div class="k-money"><button data-y="1000">💴 ¥1000</button><button data-y="500">¥500 硬幣</button><button data-y="100">¥100 硬幣</button></div>
+          <div class="k-tix" id="kTix"></div><button class="btn primary block" id="kRet">💰 おつり（找零・結束購買）</button></div>
+        <div class="chat" id="mChat"></div><div class="feedback" id="mFb"></div>`;
+      const mac = pane.querySelector('#kMac'), fb = pane.querySelector('#mFb');
+      const paint = () => {
+        mac.querySelector('#kBal').textContent = yen(bal);
+        mac.querySelectorAll('.k-b').forEach(b => b.classList.toggle('lit', bal >= m.items[+b.dataset.i].price));
+        mac.querySelector('#kTix').innerHTML = tix.length ? '🎫 ' + tix.map(i => `<span class="chip jp">${esc(m.items[i].jp)}</span>`).join('') : '<span class="muted" style="font-size:.85em">先投錢，按鈕會亮</span>';
+      };
+      mac.querySelectorAll('[data-y]').forEach(b => b.onclick = () => { bal += +b.dataset.y; G_.sfx('coin'); paint(); });
+      mac.querySelectorAll('.k-b').forEach(b => b.onclick = () => {
+        const it = m.items[+b.dataset.i];
+        if (bal < it.price) { App.toast('💴 錢不夠，先投錢！'); return; }
+        bal -= it.price; tix.push(+b.dataset.i); G_.sfx('tap'); paint();
+      });
+      mac.querySelector('#kRet').onclick = () => {
+        const btn = mac.querySelector('#kRet');
+        if (!tix.length) { if (bal) App.toast(`💰 退回 ${yen(bal)}`); bal = 0; paint(); return; }
+        const got = tix.map(i => m.items[i]);
+        const ok = got.length === task.length && task.every(t => got.includes(t.it));
+        if (!ok) {
+          tries++; task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
+          bal = 0; tix = []; paint();
+          if (tries === 1 && miss(btn)) return;
+          fb.innerHTML = `<span class="t-fb-ng">❌ 買錯了，餐券和錢都退回</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>`).join('＋') : '再對一次點單上的按鈕名稱'}`;
+          return;
+        }
+        const change = bal;
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        mac.remove(); fb.innerHTML = '';
+        const box = document.createElement('div');
+        box.innerHTML = `<div class="sec-t" style="margin-top:6px">💰 找回多少錢？</div><p class="center" style="margin:.2em">🎫 ${got.map(x => `<span class="chip jp">${esc(x.jp)}</span>`).join('')}</p><div class="choices">${yenOpts(change, [100, -100, 200, 500, -20, 50]).map(o => `<button class="choice" data-v="${o}">${o}</button>`).join('')}</div>`;
+        pane.insertBefore(box, fb);
+        box.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+          const right = yen(change), good = b.dataset.v === right;
+          box.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (x.dataset.v === right) x.classList.add('ok'); });
+          if (good) gain(b, 80); else { b.classList.add('ng'); if (miss(b)) return; }
+          stopT();
+          npc(pane.querySelector('#mChat'), { jp: '食券お預かりします。少々お待ちください。', kana: 'しょっけんおあずかりします。しょうしょうおまちください', zh: '收您的餐券，請稍等。' });
+          fb.innerHTML = good ? '<span class="t-fb-ok">⭕ 找零正確！把餐券交給店員</span>' : `<span class="t-fb-ng">❌ 應找回 ${right}</span>`;
+          nextBtn(fb);
+        });
+      };
+      paint();
+    }
+
+    /* ---- 家系拉麵客製：麺の硬さ・味の濃さ・油の量 ---- */
+    // 家系的說法：全部普通→「全部ふつう」；三項都指定→「かため、こいめ、おおめ」；只改部分→「麺かため、油おおめ」
+    const combo = (p, k) => {
+      const f = x => x.jp === 'ふつう';
+      if (p.every(f)) return k ? 'ぜんぶふつう' : '全部ふつう';
+      if (!p.some(f)) return p.map(x => k ? x.kana : x.jp).join('、');
+      return p.map((x, a) => f(x) ? '' : (k ? m.axes[a].kk + x.kana : m.axes[a].key + x.jp)).filter(Boolean).join('、');
+    };
+    const comboJP = p => combo(p, false);
+    function okoRound() {
+      const want = m.axes.map(ax => App.sample(ax.opts, 1)[0]);
+      const chosen = m.axes.map(() => null);
+      let tries = 0;
+      pane.innerHTML = friendBox(`「我要 <b class="jp">${want.map(x => x.jp).join('・')}</b>」<span class="z">（${want.map(x => x.zh).join('、')}）</span>`)
+        + `<div class="chat" id="mChat"></div><div class="o-board" id="oB">${m.axes.map((ax, a) => `<div class="o-row"><div class="o-name jp">${esc(ax.name)}</div><div class="o-opts">${ax.opts.map((o, j) => `<button data-a="${a}" data-j="${j}" class="jp">${esc(o.jp)}<small class="z">${esc(o.zh)}</small></button>`).join('')}</div></div>`).join('')}
+          <button class="btn primary block" id="oOk">✅ 決定</button></div><div class="feedback" id="mFb"></div>`;
+      npc(pane.querySelector('#mChat'), m.greet);
+      const board = pane.querySelector('#oB'), fb = pane.querySelector('#mFb');
+      board.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+        const a = +b.dataset.a, j = +b.dataset.j; chosen[a] = m.axes[a].opts[j];
+        board.querySelectorAll(`[data-a="${a}"]`).forEach(x => x.classList.toggle('on', x === b));
+        App.speak(chosen[a].kana || chosen[a].jp);
+      });
+      board.querySelector('#oOk').onclick = () => {
+        const btn = board.querySelector('#oOk');
+        if (chosen.some(x => !x)) return App.toast('三排都要選一個喔！');
+        const bad = m.axes.filter((ax, a) => chosen[a] !== want[a]);
+        if (bad.length) {
+          tries++; addWrong(App.wordItem({ jp: comboJP(want), kana: combo(want, true), zh: want.map(x => x.zh).join('、'), hint: '家系拉麵：' + m.axes.map(a => a.name).join('・') }, sc.name, 'phrase'));
+          if (tries === 1 && miss(btn)) return;
+          fb.innerHTML = `<span class="t-fb-ng">❌ ${bad.map(a => esc(a.name)).join('、')} 不對</span> 再看一次旅伴要的`;
+          return;
+        }
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        board.remove(); fb.innerHTML = '';
+        // 說出來：正確句＋各換掉一項的錯誤句
+        const sent = p => ({ jp: comboJP(p) + 'でお願いします', kana: combo(p, true) + 'でおねがいします' });
+        const cs = [Object.assign(sent(want), { correct: true })];
+        App.shuffle(m.axes.map((ax, a) => a)).forEach(a => {
+          const alt = want.slice(); alt[a] = App.sample(m.axes[a].opts.filter(o => o !== want[a]), 1)[0];
+          const s = sent(alt); if (!cs.some(x => x.jp === s.jp)) cs.push(Object.assign(s, { fb: `${m.axes[a].name}不對：要「${want[a].jp}」` }));
+        });
+        sayStep(App.shuffle(cs.slice(0, 4)), () => App.wordItem({ jp: cs[0].jp, kana: cs[0].kana, zh: want.map(x => x.zh).join('、'), hint: '家系拉麵：說出喜好' }, sc.name, 'phrase'), () => {
+          const conf = p => ({ jp: `はい、${m.axes.map((ax, a) => ax.key + p[a].jp).join('、')}ですね。`, kana: `はい、${m.axes.map((ax, a) => ax.kk + p[a].kana).join('、')}ですね` });
+          const zhOf = p => p.map(x => x.zh).join('、');
+          const others = [];
+          while (others.length < 3) { const p = m.axes.map(ax => App.sample(ax.opts, 1)[0]); const z = zhOf(p); if (z !== zhOf(want) && !others.includes(z)) others.push(z); }
+          listenStep(conf(want), App.shuffle([zhOf(want)].concat(others)), zhOf(want), '師傅確認的是哪一種？');
+        });
+      };
+    }
+
     function finish(alive) {
       stopT();
       const acc = S.tot ? S.ok / S.tot : 0;
@@ -723,7 +969,7 @@
         retry: () => App.go('menu', { id, m: mi }), back: { label: '🗺️ 關卡地圖', route: 'stage', params: { id } }, next: stars ? nx : null
       });
     }
-    round();
+    hud(); guide(false); round();
   }
   const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
   App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, render: renderMenu });

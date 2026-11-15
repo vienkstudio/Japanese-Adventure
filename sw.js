@@ -1,5 +1,5 @@
 // 離線快取：改版時請把 VERSION 加 1
-const VERSION = 'jpq-v6';
+const VERSION = 'jpq-v7';
 const FILES = ['./', './index.html', './css/app.css', './kana-data.js', './data/scenes-1.js', './data/scenes-2.js', './data/cards.js', './data/menus.js',
   './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',

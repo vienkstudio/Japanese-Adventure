@@ -512,3 +512,80 @@ SCENES.push(
   ]
 }
 );
+
+// 燒肉店（依旅遊回饋新增）
+SCENES.push({
+  id: 'yakiniku', name: '燒肉店', icon: '🥩', color: '#8b3a2a',
+  unlockLevel: 4,
+  desc: '用 QR 平板點肉、請店員換烤網、加點和結帳，一次搞定燒肉店。',
+  tips: [
+    '燒肉的份量單位是「一人前（いちにんまえ）」，點兩份就說「二人前」。',
+    '烤網烤黑、肉一直黏時，可以說「網交換お願いします」請店員換新的網子，通常免費。',
+    '很多燒肉店用桌上的 QR 碼或平板點餐；結帳時多半是拿帳單（伝票）到櫃台付錢。'
+  ],
+  vocab: [
+    { jp:'タン塩', kana:'たんしお', romaji:'tanshio', zh:'鹽味牛舌', hint:'諧音：探西歐', emoji:'👅' },
+    { jp:'カルビ', kana:'かるび', romaji:'karubi', zh:'牛五花', hint:'諧音：卡嚕逼', emoji:'🥩' },
+    { jp:'ハラミ', kana:'はらみ', romaji:'harami', zh:'橫膈膜肉', hint:'諧音：哈拉咪', emoji:'🥩' },
+    { jp:'ロース', kana:'ろーす', romaji:'roosu', zh:'里肌肉', hint:'諧音：摟～酥', emoji:'🥩' },
+    { jp:'ホルモン', kana:'ほるもん', romaji:'horumon', zh:'內臟（牛腸等）', hint:'諧音：齁嚕盟', emoji:'🍖' },
+    { jp:'網', kana:'あみ', romaji:'ami', zh:'烤網', hint:'諧音：阿咪', emoji:'🔥' },
+    { jp:'トング', kana:'とんぐ', romaji:'tongu', zh:'夾子', hint:'諧音：通古', emoji:'🥢' },
+    { jp:'タレ', kana:'たれ', romaji:'tare', zh:'醬汁', hint:'諧音：他雷', emoji:'🥫' },
+    { jp:'ライス', kana:'らいす', romaji:'raisu', zh:'白飯', hint:'諧音：賴酥', emoji:'🍚' },
+    { jp:'キムチ', kana:'きむち', romaji:'kimuchi', zh:'泡菜', hint:'諧音：key母七', emoji:'🥬' },
+    { jp:'一人前', kana:'いちにんまえ', romaji:'ichininmae', zh:'一人份', hint:'諧音：一七您媽欸', emoji:'1️⃣' },
+    { jp:'焼く', kana:'やく', romaji:'yaku', zh:'烤', hint:'諧音：呀哭', emoji:'🔥' },
+    { jp:'食べ放題', kana:'たべほうだい', romaji:'tabehoudai', zh:'吃到飽', hint:'諧音：他貝齁～搭伊', emoji:'♾️' }
+  ],
+  phrases: [
+    { jp:'網交換お願いします', kana:'あみこうかんおねがいします', romaji:'ami koukan onegaishimasu', zh:'麻煩幫我換烤網', hint:'諧音：阿咪 摳～康 歐內嘎伊西媽酥', use:'烤網烤黑、肉一直黏的時候' },
+    { jp:'カルビを二人前お願いします', kana:'かるびをににんまえおねがいします', romaji:'karubi o nininmae onegaishimasu', zh:'請給我兩人份牛五花', hint:'諧音：卡嚕逼喔 你您媽欸 歐內嘎伊西媽酥', use:'點肉時，份量用「〜人前」' },
+    { jp:'タンは塩でお願いします', kana:'たんはしおでおねがいします', romaji:'tan wa shio de onegaishimasu', zh:'牛舌要鹽味的', hint:'諧音：探哇 西歐爹 歐內嘎伊西媽酥', use:'店員問鹽味還是醬汁時' },
+    { jp:'すみません、トングをもう一つください', kana:'すみません、とんぐをもうひとつください', romaji:'sumimasen, tongu o mou hitotsu kudasai', zh:'不好意思，請再給我一支夾子', hint:'諧音：酥咪媽sen 通古喔 摸～ hi偷此 哭搭賽', use:'生肉和熟肉想分開夾的時候' },
+    { jp:'ラストオーダーは何時ですか', kana:'らすとおーだーはなんじですか', romaji:'rasuto oodaa wa nanji desu ka', zh:'最後點餐是幾點？', hint:'諧音：拉酥偷 歐～搭～哇 南基 爹酥卡', use:'吃到飽有時間限制時' },
+    { jp:'お会計お願いします', kana:'おかいけいおねがいします', romaji:'okaikei onegaishimasu', zh:'麻煩結帳', hint:'諧音：歐卡伊kei 歐內嘎伊西媽酥', use:'吃完要結帳時' }
+  ],
+  dialogues: [
+    { title:'入座點肉', steps:[
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'いらっしゃいませ。何名様ですか。', kana:'いらっしゃいませ。なんめいさまですか', romaji:'irasshaimase. nanmei sama desu ka', zh:'歡迎光臨，請問幾位？',
+        choices:[
+          { jp:'二人です', kana:'ふたりです', zh:'兩個人', correct:true, feedback:'人數用「〜人」：一人、二人、三人' },
+          { jp:'二つです', kana:'ふたつです', zh:'兩個（東西）', correct:false, feedback:'「二つ」是數東西，人數要說「二人」' },
+          { jp:'いただきます', kana:'いただきます', zh:'我開動了', correct:false, feedback:'這是開動前說的' }
+        ] },
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'ご注文はテーブルのQRコードからお願いします。', kana:'ごちゅうもんはてーぶるのきゅーあーるこーどからおねがいします', romaji:'gochuumon wa teeburu no QR koodo kara onegaishimasu', zh:'請用桌上的 QR 碼點餐。',
+        choices:[
+          { jp:'はい、わかりました', kana:'はい、わかりました', zh:'好，我知道了', correct:true, feedback:'表示了解' },
+          { jp:'QRコードをください', kana:'きゅーあーるこーどをください', zh:'請給我 QR 碼', correct:false, feedback:'QR 碼已經貼在桌上了' },
+          { jp:'ごちそうさまでした', kana:'ごちそうさまでした', zh:'謝謝招待', correct:false, feedback:'這是吃完要走時說的' }
+        ] },
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'タンは塩とタレ、どちらにしますか。', kana:'たんはしおとたれ、どちらにしますか', romaji:'tan wa shio to tare, dochira ni shimasu ka', zh:'牛舌要鹽味還是醬汁？',
+        choices:[
+          { jp:'塩でお願いします', kana:'しおでおねがいします', zh:'鹽味', correct:true, feedback:'「〜でお願いします」表示選擇' },
+          { jp:'タレでお願いします', kana:'たれでおねがいします', zh:'醬汁', correct:true, feedback:'「〜でお願いします」表示選擇' },
+          { jp:'塩はどこですか', kana:'しおはどこですか', zh:'鹽在哪裡？', correct:false, feedback:'這是問鹽在哪裡' }
+        ] }
+    ]},
+    { title:'換網和結帳', steps:[
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'はい、お呼びでしょうか。', kana:'はい、およびでしょうか', romaji:'hai, oyobi deshou ka', zh:'是，請問有什麼需要？',
+        choices:[
+          { jp:'網交換お願いします', kana:'あみこうかんおねがいします', zh:'麻煩換烤網', correct:true, feedback:'烤網黑了就請店員換' },
+          { jp:'網をあげます', kana:'あみをあげます', zh:'我給你網子', correct:false, feedback:'「あげます」是「我給你」' },
+          { jp:'いらっしゃいませ', kana:'いらっしゃいませ', zh:'歡迎光臨', correct:false, feedback:'這是店員說的' }
+        ] },
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'ラストオーダーですが、ご注文はよろしいですか。', kana:'らすとおーだーですが、ごちゅうもんはよろしいですか', romaji:'rasuto oodaa desu ga, gochuumon wa yoroshii desu ka', zh:'最後點餐了，還要點嗎？',
+        choices:[
+          { jp:'はい、大丈夫です', kana:'はい、だいじょうぶです', zh:'不用了，沒問題', correct:true, feedback:'「大丈夫です」在這裡是「不用了」' },
+          { jp:'いただきます', kana:'いただきます', zh:'我開動了', correct:false, feedback:'這是開動前說的' },
+          { jp:'ラストオーダーをあげます', kana:'らすとおーだーをあげます', zh:'（不通順）', correct:false, feedback:'「あげます」是「我給你」' }
+        ] },
+      { speaker:'店員', emoji:'🧑‍🍳', jp:'お会計、六千五百円です。', kana:'おかいけい、ろくせんごひゃくえんです', romaji:'okaikei, rokusen gohyaku en desu', zh:'總共 6500 日圓。',
+        choices:[
+          { jp:'カードでお願いします', kana:'かーどでおねがいします', zh:'我刷卡', correct:true, feedback:'付款方式用「〜でお願いします」' },
+          { jp:'現金でお願いします', kana:'げんきんでおねがいします', zh:'我付現金', correct:true, feedback:'付款方式用「〜でお願いします」' },
+          { jp:'六千五百円をください', kana:'ろくせんごひゃくえんをください', zh:'請給我 6500 日圓', correct:false, feedback:'這是跟對方要錢' }
+        ] }
+    ]}
+  ]
+});
