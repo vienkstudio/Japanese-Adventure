@@ -168,8 +168,9 @@
 
   /* ---------------- 路由：town ---------------- */
   App.register('town', {
-    title: '日本街道', icon: '🏙️', nav: true,
-    render(el) {
+    title: '日本街道', icon: '🏙️', nav: false,
+    render(el) { setTimeout(() => App.go('home'), 0); },
+    _old(el) {
       const all = scenes().slice().sort((a, b) => (a.unlockLevel || 1) - (b.unlockLevel || 1));
       const lv = App.level;
       const doneN = all.filter(s => isDone(s.id)).length;
@@ -247,18 +248,18 @@
         </div>
         ${tips.length ? `<div class="panel t-tips"><details${mission ? '' : ' open'}><summary>🎌 文化小知識（${tips.length}）</summary><ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details></div>` : ''}
         <div id="tBody"></div>`;
-      el.querySelector('#tBack').onclick = () => App.go(mission ? 'map' : params.free ? 'practice' : 'town');
+      el.querySelector('#tBack').onclick = () => (mission ? App.go('map') : App.go('stage', { id: sc.id }));
       const body = el.querySelector('#tBody');
       if (mission) return missionMode(body, sc, mission);
 
-      const TABS = [['vocab', '📚 單字'], ['phrase', '💬 常用句'], ['dialog', '🎭 對話演練'], ['quiz', '⚡ 小測驗']].concat((window.MENUS || {})[sc.id] ? [['menu', '🧾 互動菜單']] : []);
+      const TABS = [['vocab', '📚 單字'], ['phrase', '💬 常用句'], ['dialog', '🎭 對話演練'], ['quiz', '⚡ 小測驗']].concat((window.MENUS || {})[sc.id] ? [['menu', '🗺️ 情境關卡']] : []);
       body.innerHTML = `<div class="tabs t-tabs">${TABS.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div><div class="panel" id="tPane"></div>`;
       const pane = body.querySelector('#tPane');
       const show = k => {
         tabMem[sc.id] = k;
         body.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === k));
         if (window.speechSynthesis) speechSynthesis.cancel();
-        ({ vocab: () => wordsView(pane, sc, 'word'), phrase: () => wordsView(pane, sc, 'phrase'), dialog: () => dialogMenu(pane, sc), quiz: () => quizIntro(pane, sc), menu: () => { tabMem[sc.id] = 'vocab'; App.go('menu', { id: sc.id }); } })[k]();
+        ({ vocab: () => wordsView(pane, sc, 'word'), phrase: () => wordsView(pane, sc, 'phrase'), dialog: () => dialogMenu(pane, sc), quiz: () => quizIntro(pane, sc), menu: () => { tabMem[sc.id] = 'vocab'; App.go('stage', { id: sc.id }); } })[k]();
       };
       body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => show(b.dataset.t));
       show(params.tab || tabMem[sc.id] || 'vocab');
@@ -557,6 +558,7 @@
     const end = () => {
       const stars = starsOf(correct / qs.length);
       const r = correct ? App.addXP(Math.max(1, Math.round(correct / 2)), opts.reason || '小測驗') : { gained: 0 };
+      opts.onStars && opts.onStars(stars);
       opts.onEnd && opts.onEnd();
       App.showResult({
         title: stars ? '測驗完成！' : '再接再厲！',
@@ -605,7 +607,10 @@
           <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
           <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>
         <div class="panel" id="tPane"></div>`;
-      el.querySelector('#tBack').onclick = () => App.go('practice');
+      const home = params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
+      const saveSit = st => { if (params.sit && window.PracticeAPI) PracticeAPI.setSit(params.sit, st); };
+      el.querySelector('#tBack').textContent = params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
+      el.querySelector('#tBack').onclick = () => App.go(home.route, home.params);
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
       if (kind === 'dialog' || kind === 'speak') {
@@ -613,22 +618,23 @@
         const pick = params.dialog != null ? ds : App.sample(ds, Math.min(params.count || 3, ds.length));
         runDialogs(pane, pick, res => {
           const stars = starsOf(res.total ? res.first / res.total : 0);
+          saveSit(stars);
           list.forEach(sc => { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[sc.id] = true; });
           App.save();
           const r = App.addXP(10 * pick.length, '對話練習');
           pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>練習完成</h3><p>一次答對 ${res.first} / ${res.total}</p>
             <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`;
-          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go('practice');
-          App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: { label: '🎯 練習選單', route: 'practice' } });
+          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params);
+          App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: home });
         }, { mic: kind === 'speak' });
         return;
       }
       const P = poolOf(list, kind === 'word' ? ['word'] : kind === 'phrase' ? ['phrase'] : ['word', 'phrase']);
       if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
       quizRun(pane, P, {
-        count: params.count || 10, reason: '自由練習',
-        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go('practice'); },
-        retry: again, back: { label: '🎯 練習選單', route: 'practice' }
+        count: params.count || 10, reason: '自由練習', onStars: saveSit,
+        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params); },
+        retry: again, back: home
       });
     }
   });

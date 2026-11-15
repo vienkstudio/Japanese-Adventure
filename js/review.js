@@ -157,7 +157,7 @@
         <h2>不會清單還是空的</h2>
         <p>闖關時答錯的字會<b>自動</b>加進來；看到不熟的字，也可以按「＋ 加入不會清單」。</p>
         <p class="muted">連續答對 3 次就算「已掌握」🎓</p>
-        <div><button class="btn primary" data-go="map">🗺️ 去冒險地圖</button><button class="btn" data-go="town">🏙️ 逛日本街道</button></div>
+        <div><button class="btn primary" data-go="home">🗾 去冒險</button></div>
         <div class="rv-opt" style="justify-content:center;margin-top:14px"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
       </div>`;
       bindCommon(el);

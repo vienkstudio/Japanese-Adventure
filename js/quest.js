@@ -373,12 +373,13 @@
   }
   const G_ = () => window.Game || { sfx() { }, vibrate() { }, floatText() { }, burst() { }, confetti() { }, fly(a, b, t, cb) { cb && cb(); }, avatar: () => '🧳' };
 
-  function renderQuest(el, params) {
+  function renderQuest(el, params) { { const host = el; el = document.createElement('div'); host.appendChild(el); }
     keyHandler = null;
     const q = params.custom ? makeCustom(params.custom) : byId(params.id);
-    const backR = q && q.custom ? 'practice' : 'map';
+    const stageP = q && !q.custom ? { id: 'ch' + q.chapter } : null;
+    const backR = 'stage';
     if (!q || (q.custom && q.kana.length < 2)) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('map'); return; }
-    if (!q.custom && !isUnlocked(q.id)) {
+    if (!q.custom && !params.free && !isUnlocked(q.id)) {
       el.innerHTML = `<div class="panel center"><div style="font-size:3em">🔒</div><h2>${App.esc(q.title)}</h2><ul style="text-align:left;display:inline-block">${lockReason(q).map(s => `<li>${s}</li>`).join('')}</ul><br><button class="btn primary" id="qBack">回冒險地圖</button></div>`;
       el.querySelector('#qBack').onclick = () => App.go('map'); return;
     }
@@ -406,7 +407,7 @@
       <div class="panel" id="qCard" style="margin-top:6px"></div>
     </div>`;
     const $ = s => el.querySelector(s);
-    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => App.go(backR) }]);
+    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => stageP ? App.go('stage', stageP) : App.go('home') }]);
     const hearts = () => { $('#qHearts').textContent = '❤️'.repeat(G.hearts) + '🖤'.repeat(3 - G.hearts); };
     const hpBar = () => { $('#qHp').style.width = (G.hp / HP * 100) + '%'; $('#qHpn').textContent = `HP ${G.hp} / ${HP}`; };
     hearts(); hpBar();
@@ -509,22 +510,19 @@
         App.completeQuest(q.id, 0, q.xp);
         App.showResult({
           title: `💀 被 ${mName} 打敗了…再挑戰一次！`, stars: 0, correct: G.correct, total: G.done, gained: 0, wrong,
-          retry: () => App.go('quest', { id: q.id }), back: { label: '🗺️ 回地圖', route: 'map' }
+          retry: () => App.go('quest', { id: q.id, free: true }), back: { label: '🗺️ 關卡地圖', route: 'stage', params: stageP }
         });
         return;
       }
       const stars = G.hearts;   // 剩幾顆心＝幾顆星
       const r = App.completeQuest(q.id, stars, q.xp);
-      let next = { label: '🗺️ 回冒險地圖', route: 'map' };
-      if (nq && isUnlocked(nq.id) && (nq.type !== 'scene' || sceneData(nq.sceneId))) {
-        const ro = routeOf(nq);
-        next = { label: `下一關 ➜`, route: ro.route, params: ro.params };
-      }
+      let next = { label: '🗺️ 關卡地圖', route: 'stage', params: stageP };
+      if (nq && nq.type === 'kana' && nq.chapter === q.chapter) next = { label: '下一關 ➜', route: 'quest', params: { id: nq.id, free: true } };
       App.showResult({
         title: (q.boss ? `🏆 擊敗 BOSS ${mName}！` : `🎉 打倒 ${mName}！`) + (G.maxCombo >= 3 ? `（最高 ${G.maxCombo} 連擊）` : ''),
         stars, correct: G.correct, total: G.done, gained: r.gained, wrong,
-        retry: () => App.go('quest', { id: q.id }),
-        back: next.route === 'map' ? null : { label: '🗺️ 地圖', route: 'map' },
+        retry: () => App.go('quest', { id: q.id, free: true }),
+        back: next.route === 'stage' ? null : { label: '🗺️ 地圖', route: 'stage', params: stageP },
         next
       });
     }
@@ -600,6 +598,7 @@
     if (c && c.scrollIntoView && Q.indexOf(cur) > 1) setTimeout(() => c.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
   }
 
-  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: true, render: renderMap });
+  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: false, render() { setTimeout(() => App.go('home'), 0); } });
+  void renderMap;
   App.register('quest', { title: '關卡', icon: '⚔️', nav: false, render: renderQuest });
 })();

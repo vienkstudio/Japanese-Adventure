@@ -14,34 +14,82 @@
     if (document.getElementById('css-practice')) return;
     const st = document.createElement('style'); st.id = 'css-practice';
     st.textContent = `
-.p-hero{position:relative;overflow:hidden;border-radius:14px;border:2px solid var(--ink);padding:16px;color:#f5eedc;margin-bottom:10px;
-  background-color:var(--ai);background-image:radial-gradient(circle at calc(100% - 30px) 28px,var(--shu) 0 18px,transparent 19px),var(--sgd);background-size:auto,40px 20px;box-shadow:inset 0 0 0 3px var(--ai),inset 0 0 0 4.5px var(--kin),var(--shadow)}
-.p-hero h2{margin:0;color:#fff;font-size:1.35em}
-.p-hero .muted{color:rgba(245,238,220,.85);font-size:.88em}
-.p-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:2px solid var(--ink);border-radius:10px;overflow:hidden;margin:10px 0;box-shadow:0 3px 0 var(--ink)}
-.p-seg button{border:none;border-right:2px solid var(--ink);background:var(--card);padding:9px 2px;font-family:var(--serif);font-weight:900;font-size:.92em;cursor:pointer;color:var(--ink)}
-.p-seg button:last-child{border-right:none}
-.p-seg button.on{background:var(--shu);color:#fff}
-.p-dest{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.p-d{text-align:center;padding:10px 4px 8px;cursor:pointer}
-.p-d .icon{font-size:2em}
-.p-d b{display:block;font-size:.85em;font-family:var(--serif);line-height:1.3;margin-top:2px}
-.p-d small{color:var(--muted);font-size:.7em}
-.p-sit{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
-.p-sit .btn{justify-content:flex-start;text-align:left;margin:0;width:100%}
-.p-sit .btn small{margin-left:auto;font-weight:normal;opacity:.8}
-.p-step{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-family:var(--serif);font-weight:900;color:var(--ai)}
-.p-step i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--shu);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.85em;flex:none}
-.p-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.p-o{padding:10px;cursor:pointer;min-height:64px}
-.p-o b{font-family:var(--serif);color:var(--ai);display:block}
-.p-o small{color:var(--muted);font-size:.78em;line-height:1.3;display:block}
-.p-o .icon{font-size:1.5em;float:right;margin-left:4px}
-.p-o.on{background:var(--ai);border-color:var(--ink)}
-.p-o.on b,.p-o.on small{color:#f5eedc}
-.p-go{position:sticky;bottom:calc(var(--navH) + var(--safeB) + 8px);z-index:5;margin-top:14px}
-@media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
-@media(min-width:769px){.p-go{bottom:10px}.p-dest{grid-template-columns:repeat(6,1fr)}.p-opts{grid-template-columns:repeat(3,1fr)}}
+/* 首頁 */
+.h-me{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;color:#f5eedc;background-color:var(--ai);background-image:var(--sgd);background-size:40px 20px;box-shadow:inset 0 0 0 3px var(--ai),inset 0 0 0 4.5px var(--kin),var(--shadow)}
+.h-av{font-size:2.4em;width:62px;height:62px;flex:none;border-radius:50%;background:var(--paper);border:3px solid var(--shu);box-shadow:0 0 0 2px var(--paper);cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
+.h-inf{flex:1;min-width:0}
+.h-inf b{font-family:var(--serif);font-size:1.1em;color:#fff}
+.h-inf .bar{margin:5px 0;border-color:var(--kin);background:rgba(0,0,0,.35)}
+.h-inf small{font-size:.78em;opacity:.9}
+.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:2px solid #5e1c13;border-radius:14px;background:var(--shu);color:#fff;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 5px 0 #5e1c13;animation:hpulse 2s ease-in-out infinite}
+.h-next:active{transform:translateY(4px);box-shadow:0 1px 0 #5e1c13}
+.h-next .i{font-size:2.2em;width:54px;height:54px;flex:none;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;border:2px solid #5e1c13}
+.h-next .t{flex:1;min-width:0;line-height:1.3}
+.h-next small{opacity:.88;font-size:.78em;display:block}
+.h-next b{font-family:var(--serif);font-size:1.2em}
+.h-next .go{font-size:1.6em}
+@keyframes hpulse{0%,100%{transform:none}50%{transform:scale(1.015)}}
+.h-daily{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0}
+.h-daily>div{position:relative;overflow:hidden;background:var(--card);border:1.5px solid var(--ink);border-radius:8px;padding:4px 6px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center}
+.h-daily>div span{font-size:1.4em}
+.h-daily i{position:absolute;left:0;bottom:0;height:3px;background:var(--matcha)}
+.h-daily .ok{background:#e4ecd4}
+.h-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.h-lv button{border:2px solid var(--ink);border-radius:10px;background:var(--card);padding:6px 2px;cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:0 3px 0 var(--ink);line-height:1.25}
+.h-lv button b{display:block;font-family:var(--serif);font-size:1.05em}
+.h-lv button small{display:block;font-size:.7em;color:var(--muted)}
+.h-lv button i{font-style:normal;font-size:.68em}
+.h-lv button.on{background:var(--ai);color:#f5eedc}
+.h-lv button.on small{color:rgba(245,238,220,.8)}
+.h-worlds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px 10px;border:2px solid var(--ink);border-top:8px solid var(--tc);border-radius:12px;background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:var(--frame),3px 3px 0 var(--ink)}
+.h-w:active{transform:translate(2px,2px);box-shadow:var(--frame),1px 1px 0 var(--ink)}
+.h-w .ic{font-size:2.4em;line-height:1.1}
+.h-w b{font-family:var(--serif);font-size:1em}
+.h-w small{font-size:.72em;color:var(--muted)}
+.h-w .pg{width:80%;height:6px;background:var(--paper2);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.h-w .pg i{display:block;height:100%;background:var(--kin)}
+.h-w .md{position:absolute;top:2px;right:4px;font-size:1.3em}
+/* 場景關卡地圖 */
+.p-stage{position:relative;overflow:hidden;border:2px solid var(--ink);border-radius:14px;padding:14px;color:#f5eedc;margin-bottom:8px;
+  background-color:var(--tc);background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.45)),var(--sgd);background-size:auto,40px 20px;box-shadow:inset 0 0 0 3px rgba(0,0,0,0),inset 0 0 0 4.5px var(--kin),var(--shadow)}
+.p-sbig{position:absolute;right:8px;top:2px;font-size:4.4em;opacity:.9;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.35))}
+.p-stt small{font-family:var(--serif);opacity:.85}
+.p-stt h2{margin:0;color:#fff;font-size:1.6em;text-shadow:2px 2px 0 var(--ink)}
+.p-sdesc{font-size:.8em;opacity:.9;max-width:72%;line-height:1.4}
+.p-sbar{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-weight:900;font-family:var(--serif)}
+.p-sbar .bar{flex:1;border-color:var(--kin);background:rgba(0,0,0,.35)}
+.p-sbtn{display:flex;gap:4px;flex-wrap:wrap}
+.p-sbtn .btn{margin:0}
+.p-nsub{font-size:.66em;color:var(--muted);margin-top:1px}
+/* 情境遊戲 HUD */
+.g-hud{display:flex;align-items:center;gap:8px}
+.g-hud .btn{margin:0}
+.g-ttl{flex:1;min-width:0;line-height:1.25}
+.g-ttl b{display:block;font-family:var(--serif);color:var(--ai);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-ttl small{color:var(--muted);font-size:.75em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.g-st{display:flex;flex-direction:column;align-items:flex-end;font-weight:900;font-family:var(--serif);font-size:.9em;line-height:1.3}
+.g-hit{animation:qshake .4s}
+.g-queue{display:flex;gap:4px;justify-content:space-between;margin:8px 0 4px;padding:6px;background:var(--ai);background-image:var(--sgd);background-size:40px 20px;border:2px solid var(--ink);border-radius:10px}
+.g-f{flex:1;text-align:center;color:#f5eedc;opacity:.55;line-height:1.1}
+.g-f span{font-size:1.5em;display:block}
+.g-f small{font-size:.66em}
+.g-f.cur{opacity:1}
+.g-f.cur span{animation:float 1.2s ease-in-out infinite}
+.g-f.done{opacity:.9}
+.g-f.done small{color:#b9e08a;font-weight:900}
+.g-pat{display:flex;align-items:center;gap:6px;font-weight:900}
+.g-patb{flex:1;height:12px;border:2px solid var(--ink);border-radius:7px;background:var(--paper2);overflow:hidden}
+.g-patb div{height:100%;background:var(--matcha);transition:width .2s linear}
+.g-patb div.mid{background:var(--gold)}
+.g-patb div.low{background:var(--shu);animation:fade .5s infinite alternate}
+.g-patb div.relax{background:repeating-linear-gradient(135deg,#b9ae99 0 6px,#d6c6a2 6px 12px)}
+.g-combo{background:var(--shu);color:#fff;border-radius:6px;padding:0 6px;font-size:.85em;animation:pop .25s}
+.g-opt{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.g-ask{display:flex;gap:10px;align-items:center;background:var(--soft);border:2px dashed var(--shu);border-radius:12px;padding:8px 10px}
+.g-av{font-size:2.2em;line-height:1;animation:float 2s ease-in-out infinite}
+.g-say{flex:1;font-size:.95em}
+.g-say small{color:var(--muted);display:block}
 /* 菜單遊戲 */
 .m-task{background:var(--soft);border:2px dashed var(--shu);border-radius:10px;padding:8px 12px;font-weight:bold}
 .m-board{border:3px solid var(--ink);border-radius:10px;background:#2a1c14;padding:10px;box-shadow:inset 0 0 0 2px #6b4a2a,var(--shadow)}
@@ -72,6 +120,9 @@
 .c-rate .btn.on{background:var(--ai);color:#f5eedc}
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
 .c-stat{display:flex;gap:4px;flex-wrap:wrap;font-size:.8em}
+@media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
+@media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
+#playerChip .sv{font-size:1.05em}
 `;
     document.head.appendChild(st);
   })();
@@ -84,125 +135,142 @@
   const lvCls = lv => (lv || 'x').toLowerCase();
   const T = () => window.TownAPI || {};
 
-  // 目的地分組
-  const GROUPS = [
-    ['🍜 吃喝', ['konbini', 'ramen', 'cafe', 'izakaya']],
-    ['🛍️ 購物', ['drugstore', 'clothes']],
-    ['🚃 交通', ['directions', 'station', 'airport']],
-    ['🏨 住宿・觀光', ['hotel', 'shrine']],
-    ['🚑 緊急', ['emergency']]
-  ];
-  // 等級
+  // 等級 → 世界（地點）。入門/初級＝假名世界（冒險地圖的章節），中級/高級＝日本場景
   const LEVELS = [
-    { id: 'L1', name: '入門', sub: '五十音', icon: '🌱', desc: '平假名・片假名 46 音' },
-    { id: 'L2', name: '初級', sub: '濁音・拗音', icon: '🌿', desc: 'が・ぱ・きゃ… 讀遍所有假名' },
-    { id: 'L3', name: '中級', sub: '生活場景', icon: '🏮', desc: '便利商店、拉麵、車站、飯店…' },
-    { id: 'L4', name: '高級', sub: '旅遊進階', icon: '🏯', desc: '居酒屋、神社、機場、緊急求助' }
+    { id: 'L1', name: '入門', sub: '五十音', worlds: ['ch1', 'ch2'] },
+    { id: 'L2', name: '初級', sub: '濁音拗音', worlds: ['ch3'] },
+    { id: 'L3', name: '中級', sub: '生活場景', worlds: ['konbini', 'ramen', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] },
+    { id: 'L4', name: '高級', sub: '旅遊進階', worlds: ['izakaya', 'clothes', 'shrine', 'airport', 'emergency'] }
   ];
-  const UI = { tab: 'go', lv: 'L1', cat: 'h', rows: [], mode: 'mix', count: 10, deck: 'word', lvF: 'all', dF: 'all', ci: 0 };
-
-  function catsOf(lv) {
-    if (lv === 'L1') return [{ id: 'h', icon: 'あ', name: '平假名', desc: '46 個基本平假名' }, { id: 'k', icon: 'ア', name: '片假名', desc: '外來語、菜單常見' }, { id: 'hk', icon: '混', name: '平＋片 混合', desc: '兩種一起考' }];
-    if (lv === 'L2') return [{ id: 'daku', icon: 'が', name: '濁音', desc: 'が・ざ・だ・ば 行' }, { id: 'handaku', icon: 'ぱ', name: '半濁音', desc: 'ぱ 行' }, { id: 'yoon', icon: 'きゃ', name: '拗音', desc: 'きゃ・しゅ・ちょ…' }, { id: 'all2', icon: '総', name: '綜合', desc: '濁音＋半濁音＋拗音' }];
-    const ids = lv === 'L3' ? ['konbini', 'ramen', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] : ['izakaya', 'clothes', 'shrine', 'airport', 'emergency'];
-    const list = ids.map(findScene).filter(Boolean).map(s => ({ id: s.id, icon: s.icon, name: s.name, desc: s.desc }));
-    return list.concat([{ id: 'ALL', icon: '🗾', name: '本級全部混合', desc: list.map(x => x.name).join('、') }]);
-  }
-  const MODES_SCENE = [
-    { id: 'word', icon: '📚', name: '單字', desc: '日↔中、聽音選字' }, { id: 'phrase', icon: '💬', name: '句子', desc: '常用句測驗' },
-    { id: 'mix', icon: '⚡', name: '綜合', desc: '單字＋句子' }, { id: 'dialog', icon: '🎭', name: '對話', desc: '跟店員一來一往' },
-    { id: 'speak', icon: '🎤', name: '口說對話', desc: '用說的回答店員' }, { id: 'menu', icon: '🧾', name: '互動菜單', desc: '看菜單點餐、聽價錢' }
-  ];
-
-  /* ---------------- 路由：practice ---------------- */
-  function render(el, params) {
-    if (params && params.tab) { UI.tab = params.tab; delete params.tab; }
-    el.innerHTML = `<div class="p-hero"><h2>🎯 自由練習</h2><div class="muted">不用照地圖順序，想練什麼就練什麼！答錯的一樣會自動加入 📌不會清單。</div></div>
-      <div class="p-seg">${[['go', '🧭 現在去哪'], ['pick', '🎚️ 自選等級'], ['cards', '🎴 分級字卡']].map(([k, l]) => `<button data-tab="${k}" class="${UI.tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-      <div id="pBody"></div>`;
-    el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { UI.tab = b.dataset.tab; render(el); });
-    const body = el.querySelector('#pBody');
-    ({ go: goView, pick: pickView, cards: cardsView })[UI.tab](body);
+  const UI = { lv: '', deck: 'word', lvF: 'all', dF: 'all', ci: 0 };
+  const chapOf = id => /^ch\d$/.test(id) ? (window.QUEST_CHAPTERS || []).find(c => 'ch' + c.n === id) || null : null;
+  function worldInfo(id) {
+    const c = chapOf(id);
+    if (c) return { id, icon: c.icon, name: c.name, desc: c.desc, color: c.color };
+    const s = findScene(id);
+    return s ? { id, icon: s.icon, name: s.name, desc: s.desc, color: s.color } : null;
   }
 
-  /* ---- 🧭 現在要去哪？ ---- */
-  function goView(body) {
-    body.innerHTML = `<div class="sec-t">現在要去哪？</div><p class="muted" style="margin:0 0 4px;font-size:.88em">選一個地方，再選要練的情境（不受等級限制）</p>` +
-      GROUPS.map(([g, ids]) => `<div class="sec-t" style="font-size:.95em">${g}</div><div class="p-dest">${ids.map(findScene).filter(Boolean).map(s =>
-        `<div class="card click p-d" data-s="${s.id}"><div class="icon">${esc(s.icon)}</div><b>${esc(s.name)}</b><small>${arr(s.dialogues).length} 個情境</small></div>`).join('')}</div>`).join('');
-    body.querySelectorAll('[data-s]').forEach(c => c.onclick = () => situations(c.dataset.s));
-  }
-  function situations(id) {
-    const s = findScene(id); if (!s) return;
-    const m = (window.MENUS || {})[id];
-    const ds = arr(s.dialogues);
-    const close = App.modal(`<div style="font-size:2.6em;line-height:1">${esc(s.icon)}</div><h2 style="margin:.2em 0">${esc(s.name)}</h2><div class="muted" style="font-size:.88em">${esc(s.desc || '')}</div>
-      <div class="p-sit">
-        ${m ? `<button class="btn primary" data-a="menu">🧾 ${esc(m.board.replace(/^\S+\s/, ''))}<small>互動</small></button>` : ''}
-        ${ds.map((d, i) => `<button class="btn" data-a="dlg" data-i="${i}">🎭 ${esc(d.title || '對話 ' + (i + 1))}<small>${arr(d.steps).length} 句</small></button>`).join('')}
-        <button class="btn ai" data-a="speak">🎤 口說挑戰：全部情境<small>用說的</small></button>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <button class="btn" data-a="word">📚 單字測驗</button><button class="btn" data-a="phrase">💬 句子測驗</button></div>
-        <button class="btn ghost" data-a="scene">🏙️ 進入場景（單字卡・文化小知識）</button>
-      </div>`, [{ label: '關閉' }]);
-    document.querySelectorAll('.p-sit [data-a]').forEach(b => b.onclick = () => {
-      close();
-      const a = b.dataset.a;
-      if (a === 'menu') App.go('menu', { id });
-      else if (a === 'dlg') App.go('drill', { scenes: [id], kind: 'dialog', dialog: +b.dataset.i });
-      else if (a === 'speak') App.go('drill', { scenes: [id], kind: 'speak', count: ds.length });
-      else if (a === 'scene') App.go('scene', { id, free: true });
-      else App.go('drill', { scenes: [id], kind: a, count: 10 });
-    });
+  // 備份碼：複製一段文字保存，之後貼回即可還原（任何環境都能用）
+  function backup() {
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(App.state))));
+    App.modal(`<h2>💾 備份／還原進度</h2><p class="muted" style="font-size:.88em">複製備份碼存到記事本或 LINE；換裝置或進度不見時，貼回來按「還原」。</p>
+      <textarea id="bkOut" readonly style="width:100%;height:64px;font-size:.7em">${code}</textarea>
+      <button class="btn sm" id="bkCopy">📋 複製備份碼</button>
+      <textarea id="bkIn" placeholder="在這裡貼上備份碼" style="width:100%;height:64px;font-size:.7em;margin-top:10px"></textarea>`,
+      [{ label: '關閉' }, { label: '還原', cls: 'primary' }]);
+    const bg = document.querySelector('.modal-bg:last-of-type'), out = bg.querySelector('#bkOut'), inp = bg.querySelector('#bkIn');
+    bg.querySelector('#bkCopy').onclick = () => {
+      out.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { }
+      App.toast(ok ? '📋 已複製' : '請長按文字框手動複製');
+    };
+    const rb = [...bg.querySelectorAll('.modal-btns .btn')].pop();
+    rb.onclick = () => {
+      try { const o = JSON.parse(decodeURIComponent(escape(atob(inp.value.trim())))); if (typeof o.xp !== 'number') throw 0; bg.remove(); App.loadState(o); App.toast('✅ 進度已還原', 'ok'); }
+      catch (e) { App.toast('❌ 備份碼不正確'); }
+    };
   }
 
-  /* ---- 🎚️ 自選等級＋類別 ---- */
-  function pickView(body) {
-    const cats = catsOf(UI.lv);
-    if (!cats.some(c => c.id === UI.cat)) { UI.cat = cats[0].id; UI.rows = []; }
-    const isKana = UI.lv === 'L1' || UI.lv === 'L2';
-    const isScene = !isKana;
-    if (isScene && UI.cat === 'ALL' && UI.mode === 'menu') UI.mode = 'mix';
-    const rows = (window.QuestAPI && QuestAPI.kanaSets) ? QuestAPI.kanaSets().rows : [];
-    let html = `<div class="p-step"><i>1</i>選等級</div><div class="p-opts">${LEVELS.map(l => `<div class="card click p-o${UI.lv === l.id ? ' on' : ''}" data-lv="${l.id}"><span class="icon">${l.icon}</span><b>${l.name}・${l.sub}</b><small>${l.desc}</small></div>`).join('')}</div>
-      <div class="p-step"><i>2</i>選類別</div><div class="p-opts">${cats.map(c => `<div class="card click p-o${UI.cat === c.id ? ' on' : ''}" data-cat="${c.id}"><span class="icon">${esc(c.icon)}</span><b>${esc(c.name)}</b><small>${esc(c.desc || '')}</small></div>`).join('')}</div>`;
-    if (UI.lv === 'L1') html += `<div class="p-step"><i>＋</i>只練某幾行（可不選＝全部）</div><div class="chips">${rows.map((r, i) => `<button class="tabs-like btn sm${UI.rows.includes(i) ? ' primary' : ''}" data-row="${i}">${esc(r.name)}</button>`).join('')}</div>`;
-    if (isScene) html += `<div class="p-step"><i>3</i>選練習方式</div><div class="p-opts">${MODES_SCENE.filter(m => !(m.id === 'menu' && (UI.cat === 'ALL' || !(window.MENUS || {})[UI.cat]))).map(m => `<div class="card click p-o${UI.mode === m.id ? ' on' : ''}" data-mode="${m.id}"><span class="icon">${m.icon}</span><b>${m.name}</b><small>${m.desc}</small></div>`).join('')}</div>`;
-    const showCount = isKana || ['word', 'phrase', 'mix'].includes(UI.mode);
-    if (showCount) html += `<div class="p-step"><i>${isKana ? 3 : 4}</i>${isKana ? '怪物 HP（題數）' : '題數'}</div><div class="tabs">${[10, 20, 30].map(n => `<button data-n="${n}" class="${UI.count === n ? 'on' : ''}">${n} 題</button>`).join('')}</div>`;
-    html += `<div class="p-go"><button class="btn primary block" id="pStart" style="font-size:1.12em;min-height:52px">⚔️ 開始練習</button></div>`;
-    body.innerHTML = html;
-    const re = () => pickView(body);
-    body.querySelectorAll('[data-lv]').forEach(c => c.onclick = () => { UI.lv = c.dataset.lv; UI.cat = ''; UI.rows = []; re(); });
-    body.querySelectorAll('[data-cat]').forEach(c => c.onclick = () => { UI.cat = c.dataset.cat; re(); });
-    body.querySelectorAll('[data-row]').forEach(c => c.onclick = () => { const i = +c.dataset.row; UI.rows = UI.rows.includes(i) ? UI.rows.filter(x => x !== i) : UI.rows.concat(i); re(); });
-    body.querySelectorAll('[data-mode]').forEach(c => c.onclick = () => { UI.mode = c.dataset.mode; re(); });
-    body.querySelectorAll('[data-n]').forEach(c => c.onclick = () => { UI.count = +c.dataset.n; re(); });
-    body.querySelector('#pStart').onclick = start;
+  /* ---------------- 首頁：選等級 → 選地點 ---------------- */
+  function renderHome(el) {
+    const S = App.state, lv = App.level, lo = App.LEVELS[lv - 1], hi = App.LEVELS[lv] || lo + 1000;
+    if (!UI.lv) { const firstOpen = LEVELS.find(L => L.worlds.some(w => { const s = stageStars(w); return s.got < s.max; })); UI.lv = (firstOpen || LEVELS[0]).id; }
+    const L = LEVELS.find(x => x.id === UI.lv);
+    // 下一關：目前等級第一個還沒拿星的節點
+    let nextW = null, nextN = null;
+    for (const Lx of LEVELS) { for (const w of Lx.worlds) { const n = stageNodes(w).find(x => sitStars(x.key) === 0); if (n) { nextW = w; nextN = n; break; } } if (nextN) break; }
+    const d = window.Game ? Game.daily() : null;
+    const ss = App.saveStatus;
+    el.innerHTML = `
+      <div class="h-me">
+        <button class="h-av" id="avBtn" title="換角色">${window.Game ? Game.avatar() : '🧳'}</button>
+        <div class="h-inf"><b>Lv.${lv} ${esc(App.TITLES[lv - 1] || '')}</b>
+          <div class="bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div>
+          <small>${S.xp} XP・🔥 ${S.streak.days} 天・${ss === 'cloud' ? '☁️ 雲端存檔' : ss === 'local' ? '💾 本機存檔' : '⚠️ 無法存檔'}</small></div>
+      </div>
+      ${nextN ? `<button class="h-next" id="hNext"><span class="i">${esc(nextN.icon)}</span><span class="t"><small>繼續冒險・${esc(worldInfo(nextW).name)}</small><b>${esc(nextN.name)}</b></span><span class="go">▶</span></button>` : '<div class="panel center">🏆 全部制霸！</div>'}
+      ${d ? `<div class="h-daily">${Game.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0); return `<div class="${d.claimed[m.id] ? 'ok' : ''}"><span>${d.claimed[m.id] ? '✅' : m.icon}</span><small>${esc(m.label)}</small><i style="width:${v / m.goal * 100}%"></i></div>`; }).join('')}</div>` : ''}
+      <div class="sec-t">① 選等級</div>
+      <div class="h-lv">${LEVELS.map(x => { const st = x.worlds.reduce((a, w) => { const s = stageStars(w); return [a[0] + s.got, a[1] + s.max]; }, [0, 0]);
+        return `<button data-lv="${x.id}" class="${x.id === UI.lv ? 'on' : ''}"><b>${x.name}</b><small>${x.sub}</small><i>⭐${st[0]}/${st[1]}</i></button>`; }).join('')}</div>
+      <div class="sec-t">② 選地點</div>
+      <div class="h-worlds">${L.worlds.map(w => { const info = worldInfo(w); if (!info) return ''; const st = stageStars(w), pct = st.max ? st.got / st.max * 100 : 0;
+        return `<button class="h-w" data-w="${w}" style="--tc:${esc(/^#/.test(info.color || '') ? info.color : '#24365c')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
+          <span class="pg"><i style="width:${pct}%"></i></span><small>⭐ ${st.got}/${st.max}・${st.n} 關</small></button>`; }).join('')}</div>
+      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">📖 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
+    el.querySelector('#avBtn').onclick = () => window.Game && Game.pickAvatar(() => App.render());
+    const hn = el.querySelector('#hNext'); if (hn) hn.onclick = () => nextN.go();
+    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { UI.lv = b.dataset.lv; renderHome(el); });
+    el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => App.go('stage', { id: b.dataset.w }));
+    el.querySelector('#bk').onclick = e => { e.preventDefault(); backup(); };
+    if (ss === 'none' && !UI.warned) { UI.warned = true; App.toast('⚠️ 這個環境無法自動存檔，請用「💾 備份進度」保存'); }
+    el.querySelector('#reset').onclick = e => { e.preventDefault(); App.modal('<h2>確定重置？</h2><p>經驗值、星星、不會清單都會清空。</p>', [{ label: '取消' }, { label: '重置', cls: 'primary', onClick: App.resetAll }]); };
   }
-  function start() {
-    const lv = UI.lv, cat = UI.cat;
-    if (lv === 'L1' || lv === 'L2') {
-      if (!window.QuestAPI || !QuestAPI.playCustom) return App.toast('戰鬥模組尚未載入');
-      const K = QuestAPI.kanaSets();
-      let kana, script, title, icon, chapter;
-      if (lv === 'L1') {
-        kana = UI.rows.length ? UI.rows.flatMap(i => K.rows[i].kana) : K.basic;
-        script = cat === 'hk' ? 'both' : cat; chapter = cat === 'k' ? 2 : 1;
-        const nm = { h: '平假名', k: '片假名', hk: '平＋片' }[cat];
-        title = nm + (UI.rows.length ? '：' + UI.rows.map(i => K.rows[i].name).join('・') : '：全部'); icon = cat === 'k' ? 'ア' : 'あ';
-      } else {
-        kana = cat === 'all2' ? K.daku.concat(K.handaku, K.yoon) : K[cat];
-        script = 'both'; chapter = 3; title = { daku: '濁音', handaku: '半濁音', yoon: '拗音', all2: '濁音・拗音綜合' }[cat]; icon = { daku: '〃', handaku: '⭕', yoon: '🔗', all2: '🦂' }[cat];
-      }
-      if (!kana || kana.length < 2) return App.toast('這個範圍的假名太少，請多選幾行');
-      QuestAPI.playCustom({ title: '自由練習・' + title, icon, kana, script, count: UI.count, chapter, boss: UI.count >= 30 });
-      return;
+
+  /* ---- 情境星數（存檔：App.state.sit） ---- */
+  const sitStars = key => /^q:/.test(key) ? App.stars(key.slice(2)) : ((App.state.sit || {})[key] || 0);
+  function setSit(key, stars) {
+    if (!key) return;
+    if (!App.state.sit) App.state.sit = {};
+    if ((stars | 0) > (App.state.sit[key] || 0)) { App.state.sit[key] = stars | 0; App.save(); }
+  }
+  const menusOf = id => { const m = (window.MENUS || {})[id]; return Array.isArray(m) ? m : m ? [m] : []; };
+  const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求' };
+  // 場景的所有細分關卡
+  function stageNodes(id) {
+    const ch = chapOf(id);
+    if (ch) return (window.QUESTS || []).filter(q => q.chapter === ch.n && q.type === 'kana').map(q => ({ key: 'q:' + q.id, icon: q.icon, name: q.title.replace(/^BOSS：/, '').replace(/：.*/, ''), sub: q.boss ? '👑 BOSS' : '⚔️ 假名戰鬥', boss: q.boss, go: () => App.go('quest', { id: q.id, free: true }) }));
+    const s = findScene(id); if (!s) return [];
+    const ms = menusOf(id), ds = arr(s.dialogues), out = [];
+    for (let i = 0; i < Math.max(ms.length, ds.length); i++) {
+      if (ms[i]) out.push({ key: id + ':m' + i, icon: ms[i].icon || '🧾', name: ms[i].name, sub: '🧾 ' + (TYPE_LB[ms[i].type] || '互動'), go: () => App.go('menu', { id, m: i }) });
+      if (ds[i]) out.push({ key: id + ':d' + i, icon: '🎭', name: ds[i].title || '對話 ' + (i + 1), sub: '🎭 對話', go: () => App.go('drill', { scenes: [id], kind: 'dialog', dialog: i, sit: id + ':d' + i }) });
     }
-    const ids = cat === 'ALL' ? catsOf(lv).filter(c => c.id !== 'ALL').map(c => c.id) : [cat];
-    if (UI.mode === 'menu') return App.go('menu', { id: cat });
-    App.go('drill', { scenes: ids, kind: UI.mode, count: ['dialog', 'speak'].includes(UI.mode) ? 3 : UI.count, title: cat === 'ALL' ? (lv === 'L3' ? '中級・生活場景綜合' : '高級・旅遊進階綜合') : '' });
+    out.push({ key: id + ':word', icon: '📚', name: '單字特訓', sub: '📚 測驗', go: () => App.go('drill', { scenes: [id], kind: 'word', count: 10, sit: id + ':word' }) });
+    out.push({ key: id + ':speak', icon: '🎤', name: '口說挑戰', sub: '🎤 用說的', go: () => App.go('drill', { scenes: [id], kind: 'speak', count: ds.length, sit: id + ':speak' }) });
+    out.push({ key: id + ':boss', icon: '👑', name: '店長考驗', sub: '👑 BOSS', boss: true, go: () => App.go('drill', { scenes: [id], kind: 'mix', count: 15, sit: id + ':boss', title: s.name + '・店長考驗' }) });
+    return out;
   }
+  const stageStars = id => { const n = stageNodes(id); return { got: n.reduce((a, x) => a + sitStars(x.key), 0), max: n.length * 3, n: n.length }; };
+
+  function situations(id) { App.go('stage', { id }); }
+
+  /* ---- 路由：stage（場景關卡地圖） ---- */
+  function renderStage(el, params) {
+    const id = (params || {}).id, s = worldInfo(id);
+    if (!s) { App.go('home'); return; }
+    const nodes = stageNodes(id), st = stageStars(id);
+    const cur = nodes.find(n => sitStars(n.key) === 0) || null;
+    const X = [50, 76, 70, 42, 22, 30, 58, 78, 50];
+    const H = 126;
+    el.innerHTML = `<div class="p-stage" style="--tc:${esc(s.color || '#c73e2e')}">
+        <div class="p-sbig">${esc(s.icon)}</div>
+        <div class="p-stt"><small>現在去</small><h2>${esc(s.name)}</h2><div class="p-sdesc">${esc(s.desc || '')}</div></div>
+        <div class="p-sbar"><div class="bar"><div style="width:${st.max ? st.got / st.max * 100 : 0}%"></div></div><span>⭐ ${st.got}/${st.max}</span></div>
+        <div class="p-sbtn"><button class="btn sm" id="sBack">↩ 選地點</button>${chapOf(id) ? '' : '<button class="btn sm" id="sLearn">📖 單字・小知識</button>'}${cur ? '<button class="btn sm primary" id="sGo">▶ 下一關</button>' : '<span class="pill">🏅 全制霸</span>'}</div>
+      </div>
+      <div class="q-path" style="height:${nodes.length * H + 30}px">
+        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" stroke="#a8926a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" stroke-dasharray="2 14"/></svg>
+        ${nodes.map((n, i) => {
+          const k = sitStars(n.key), isCur = cur && cur.key === n.key;
+          return `<div class="q-nd ${k ? 'cl' : 'open'}${n.boss ? ' boss' : ''}${isCur ? ' cur' : ''}" data-i="${i}" style="left:${X[i % X.length]}%;top:${i * H + (n.boss ? 0 : 8)}px">
+            ${isCur ? `<div class="q-me">${window.Game ? Game.avatar() : '🧳'}</div>` : ''}
+            <div class="q-circ">${esc(n.icon)}</div><div class="q-s">${'★'.repeat(k)}${'☆'.repeat(3 - k)}</div>
+            <div class="q-lbl">${esc(n.name)}</div><div class="p-nsub">${esc(n.sub)}</div></div>`; }).join('')}
+      </div>`;
+    el.querySelector('#sBack').onclick = () => App.go('home');
+    const sl = el.querySelector('#sLearn'); if (sl) sl.onclick = () => App.go('scene', { id, free: true });
+    const g = el.querySelector('#sGo'); if (g) g.onclick = () => cur.go();
+    el.querySelectorAll('.q-nd[data-i]').forEach(d => d.onclick = () => {
+      const n = nodes[+d.dataset.i], k = sitStars(n.key);
+      App.modal(`<div style="font-size:3em;line-height:1">${esc(n.icon)}</div><h2 style="margin:.2em 0">${esc(n.name)}</h2>
+        <p><span class="chip">${esc(n.sub)}</span> <span class="chip">${esc(s.name)}</span></p>${/^q:/.test(n.key) ? '<p class="muted" style="font-size:.88em">答對＝攻擊，答錯被反擊扣 ❤️，剩幾顆心拿幾顆星</p>' : ''}<p style="font-size:1.6em;color:var(--kin);margin:.2em">${'★'.repeat(k)}${'☆'.repeat(3 - k)}</p>`,
+        [{ label: '取消' }, { label: '⚔️ 開始', cls: 'primary', onClick: n.go }]);
+    });
+    const c = el.querySelector('.q-nd.cur');
+    if (c && c.scrollIntoView && nodes.indexOf(cur) > 2) setTimeout(() => c.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
+  }
+  App.register('stage', { title: '場景關卡', icon: '🗺️', nav: false, render: renderStage });
 
   /* ---- 🎴 分級字卡 ---- */
   const DECKS = [['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
@@ -270,17 +338,20 @@
     });
   }
 
-  App.register('practice', { title: '練習', icon: '🎯', nav: true, render });
+  App.register('cards', { title: '字卡', icon: '🎴', nav: true, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
+  App.register('practice', { title: '練習', icon: '🎯', nav: false, render() { setTimeout(() => App.go('home'), 0); } });
 
   /* =========================================================
-     路由：menu — 互動菜單小遊戲（看菜單點 → 選/說日文 → 聽價錢或回答）
+     路由：menu — 互動情境遊戲（params {id, m}）
+     玩法：旅伴一個個拜託你用日文幫忙 → ①看日文菜單/看板選對 ②選或說出日文 ③聽懂對方回答
+     ❤️ 3 顆（答錯或旅伴等太久會扣）、⏳ 耐心條、🔥 連擊加分、💯 分數；5 位旅伴＝1 關
      ========================================================= */
   const CNT = {
     tsu: { jp: ['', '一つ', '二つ', '三つ'], k: ['', 'ひとつ', 'ふたつ', 'みっつ'] },
     mai: { jp: ['', '一枚', '二枚', '三枚'], k: ['', 'いちまい', 'にまい', 'さんまい'] },
-    hon: { jp: ['', '一本', '二本', '三本'], k: ['', 'いっぽん', 'にほん', 'さんぼん'] }
+    hon: { jp: ['', '一本', '二本', '三本'], k: ['', 'いっぽん', 'にほん', 'さんぼん'] },
+    zen: { jp: ['', '一膳', '二膳', '三膳'], k: ['', 'いちぜん', 'にぜん', 'さんぜん'] }
   };
-  // 日幣金額讀法（0–99999）
   function yomi(n) {
     const D = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
     let s = '';
@@ -294,126 +365,179 @@
   }
   const yen = n => '¥' + n.toLocaleString('en-US');
   const cOf = (m, it) => it.c || m.c || 'tsu';
+  const hasQty = m => m.type === 'order' || m.type === 'ticket' || m.type === 'request';
+  const ASK_TAILS = [
+    { jp: 'はどこですか', kana: 'はどこですか', fb: '「どこですか」是問在哪裡' },
+    { jp: 'は何ですか', kana: 'はなんですか', fb: '「何ですか」是問「這是什麼」' },
+    { jp: 'をください', kana: 'をください', fb: '「ください」是「請給我」，這裡是要詢問' },
+    { jp: 'はいくらですか', kana: 'はいくらですか', fb: '「いくらですか」是問價錢' }
+  ];
+  const PREF_WRONG = [
+    { jp: 'をください', kana: 'をください', fb: '說明做法／需求要用「〜でお願いします」' },
+    { jp: 'はどこですか', kana: 'はどこですか', fb: '這是問在哪裡' },
+    { jp: 'はいくらですか', kana: 'はいくらですか', fb: '這是問價錢' }
+  ];
 
-  function sentence(m, tray, alt) {
-    // alt: {qtyShift, swapItem, verb, kara}
-    alt = alt || {};
-    const t = tray.map(x => Object.assign({}, x));
-    if (alt.qty != null) t[0].n = alt.qty;
-    if (alt.item) t[0].it = alt.item;
-    const q = (x, f) => CNT[cOf(m, x.it)][f][x.n];
-    if (m.type === 'ticket') {
-      const x = t[0];
-      return { jp: `${x.it.jp}${alt.kara ? 'から' : 'まで'}、大人${q(x, 'jp')}ください`, kana: `${x.it.kana}${alt.kara ? 'から' : 'まで'}、おとな${q(x, 'k')}ください` };
-    }
-    if (m.type === 'ask') {
-      const x = t[0], tail = alt.tail || 'はどこですか';
-      return { jp: `すみません、${x.it.jp}${tail}`, kana: `すみません、${x.it.kana}${alt.tailK || 'はどこですか'}` };
-    }
-    const verb = alt.verb || (m.type === 'request' ? 'お願いします' : 'ください'), verbK = alt.verbK || (m.type === 'request' ? 'おねがいします' : 'ください');
-    const pre = m.type === 'request' ? 'もう' : '';
-    return {
-      jp: t.map(x => `${x.it.jp}を${pre}${q(x, 'jp')}`).join('と、') + verb,
-      kana: t.map(x => `${x.it.kana}を${pre}${q(x, 'k')}`).join('と、') + verbK
-    };
+  // 產生正確句與干擾句
+  function build(m, t, o) {
+    o = o || {};
+    const x = Object.assign({}, t[0], o.item ? { it: o.item } : {}, o.qty ? { n: o.qty } : {});
+    const tt = [x].concat(t.slice(1));
+    const q = (y, f) => CNT[cOf(m, y.it)][f][y.n];
+    if (m.type === 'ticket') return { jp: `${x.it.jp}${o.kara ? 'から' : 'まで'}、大人${q(x, 'jp')}ください`, kana: `${x.it.kana}${o.kara ? 'から' : 'まで'}、おとな${q(x, 'k')}ください` };
+    if (m.type === 'ask') { const tl = o.tail || m.tail || ASK_TAILS[0]; return { jp: `すみません、${x.it.jp}${tl.jp}`, kana: `すみません、${x.it.kana}${tl.kana}` }; }
+    if (m.type === 'pref') { const tl = o.tail || m.tpl || { jp: 'でお願いします', kana: 'でおねがいします' }; return { jp: `${x.it.jp}${tl.jp}`, kana: `${x.it.kana}${tl.kana}` }; }
+    const pre = m.pre || '', end = o.give ? 'あげます' : m.type === 'request' ? 'お願いします' : 'ください', endK = o.give ? 'あげます' : m.type === 'request' ? 'おねがいします' : 'ください';
+    return { jp: tt.map(y => `${y.it.jp}を${pre}${q(y, 'jp')}`).join('と、') + end, kana: tt.map(y => `${y.it.kana}を${pre}${q(y, 'k')}`).join('と、') + endK };
   }
-  function sayChoices(m, tray) {
-    const ok = Object.assign(sentence(m, tray), { correct: true, feedback: '完全正確！' });
-    const other = App.shuffle(m.items.filter(i => !tray.some(t => t.it === i)))[0];
-    const out = [ok];
+  function sayChoices(m, t) {
+    const out = [Object.assign(build(m, t), { correct: true })];
+    const other = App.shuffle(m.items.filter(i => !t.some(x => x.it === i)))[0];
+    const add = (o, fb) => { const s = build(m, t, o); if (!out.some(z => z.jp === s.jp)) out.push(Object.assign(s, { fb })); };
     if (m.type === 'ask') {
-      out.push(Object.assign(sentence(m, tray, { tail: 'は何ですか', tailK: 'はなんですか' }), { feedback: '「何ですか」是問「這是什麼」，不是問在哪裡' }));
-      out.push(Object.assign(sentence(m, tray, { tail: 'をください', tailK: 'をください' }), { feedback: '「ください」是「請給我」，問路要說「どこですか」' }));
-      out.push(Object.assign(sentence(m, tray, { tail: 'はいくらですか', tailK: 'はいくらですか' }), { feedback: '「いくらですか」是問價錢' }));
+      const mine = (m.tail || ASK_TAILS[0]).jp;
+      ASK_TAILS.filter(a => a.jp !== mine).forEach(a => add({ tail: a }, a.fb));
+      if (m.tail && other) add({ item: other }, `問錯地方了：${other.jp} 是「${other.zh}」`);
+    } else if (m.type === 'pref') {
+      (m.wrong || PREF_WRONG).forEach(w => add({ tail: w }, w.fb));
+      if (other) add({ item: other }, `說錯了：${other.jp} 是「${other.zh}」`);
     } else {
-      const n0 = tray[0].n, wq = n0 === 1 ? 2 : n0 - 1;
-      if (m.type !== 'ask') out.push(Object.assign(sentence(m, tray, { qty: wq }), { feedback: `數量不對，要的是 ${CNT[cOf(m, tray[0].it)].jp[n0]}` }));
-      if (m.type === 'ticket') out.push(Object.assign(sentence(m, tray, { kara: true }), { feedback: '「から」是「從…出發」，到某地要用「まで」' }));
-      else out.push(Object.assign(sentence(m, tray, { verb: 'あげます', verbK: 'あげます' }), { feedback: '「あげます」是「我給你」，買東西要說「ください」' }));
-      if (other) out.push(Object.assign(sentence(m, tray, { item: other }), { feedback: `點錯品項了：${other.jp} 是「${other.zh}」` }));
+      const n0 = t[0].n;
+      add({ qty: n0 === 1 ? 2 : n0 - 1 }, `數量不對，要的是 ${CNT[cOf(m, t[0].it)].jp[n0]}`);
+      if (m.type === 'ticket') add({ kara: true }, '「から」是「從…出發」，到某地要用「まで」');
+      else add({ give: true }, '「あげます」是「我給你」，要東西要說「ください／お願いします」');
+      if (other) add({ item: other }, `品項錯了：${other.jp} 是「${other.zh}」`);
     }
     return App.shuffle(out.slice(0, 4));
   }
 
+  const FRIENDS = [['🧑', '阿哲'], ['👩', '小美'], ['👴', '阿公'], ['👧', '妹妹'], ['🧔', '大雄'], ['👩‍🦰', '小琪'], ['👵', '阿嬤'], ['🧑‍🦱', '阿凱']];
+  const GOPT = { relax: false, zh: false };
+
   function renderMenu(el, params) {
-    const id = (params || {}).id, m = (window.MENUS || {})[id], sc = findScene(id);
-    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個菜單</h2><button class="btn primary" id="mB">回練習</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice'); return; }
-    const ROUNDS = 3;
-    const S = { r: 0, pts: 0, max: 0, wrong: [], zh: false };
-    el.innerHTML = `<div class="panel t-head" style="--tc:${esc(sc.color || '#c73e2e')};padding:10px 14px">
-        <div class="t-icon" style="font-size:2.4em">${esc(sc.icon)}</div>
-        <div class="t-info"><h2 style="font-size:1.15em">${esc(sc.name)}・互動</h2><div class="muted" style="font-size:.85em">${esc(m.board)}</div></div>
-        <button class="btn sm ghost" id="mBack">↩ 練習</button></div>
-      <div class="t-dbar"><b id="mRound"></b><label class="t-aidsw"><input type="checkbox" id="mZh"> 菜單顯示中文</label></div>
-      <div class="bar" style="margin:6px 0"><div id="mBar" style="width:0"></div></div>
-      <div class="panel" id="mPane"></div>`;
-    el.querySelector('#mBack').onclick = () => App.go('practice');
-    const pane = el.querySelector('#mPane');
-    el.querySelector('#mZh').onchange = e => { S.zh = e.target.checked; const b = pane.querySelector('.m-board'); if (b) b.classList.toggle('m-noz', !S.zh); };
-    const addWrong = it => { Tracker.add(it, true); if (!S.wrong.some(w => w.id === it.id)) S.wrong.push(it); };
-    const npc = (host, jp, kana, zh) => {
-      const b = document.createElement('div'); b.className = 'bubble npc';
-      b.innerHTML = `<div class="who">${esc(m.npc.emoji)} ${esc(m.npc.who)}</div><div class="j jp" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span>${esc(jp)}</span><button class="speak">🔊</button></div><div class="t-aid jp">${esc(kana)}</div>${zh ? `<div class="t-aid">🀄 ${esc(zh)}</div>` : ''}`;
-      b.querySelector('.speak').onclick = () => App.speak(kana || jp);
-      host.appendChild(b); App.speak(kana || jp); return b;
+    params = params || {};
+    { const host = el; el = document.createElement('div'); host.appendChild(el); }   // 換頁時舊計時器能偵測到自己已脫離畫面
+    const id = params.id, mi = +params.m || 0, ms = menusOf(id), m = ms[mi], sc = findScene(id);
+    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回練習</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice'); return; }
+    const key = id + ':m' + mi, G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
+    const N = 5, PAT = 45;   // 5 位旅伴、每位耐心 45 秒
+    const S = { r: 0, hearts: 3, score: 0, combo: 0, best: 0, ok: 0, tot: 0, wrong: [], pat: PAT, timer: null, busy: false };
+    const friends = App.sample(FRIENDS, N);
+    el.innerHTML = `<div class="g-hud">
+        <button class="btn sm" id="gX">✕</button>
+        <div class="g-ttl"><b>${esc(m.icon || '')} ${esc(m.name)}</b><small>${esc(sc.name)}・${esc(m.board.replace(/^\S+\s/, ''))}</small></div>
+        <div class="g-st"><span id="gH"></span><span id="gS">💯 0</span></div></div>
+      <div class="g-queue" id="gQ"></div>
+      <div class="g-pat"><span>⏳</span><div class="g-patb"><div id="gP"></div></div><span id="gC"></span></div>
+      <div class="g-opt"><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
+      <div class="panel" id="mPane" style="margin-top:6px"></div>`;
+    const $ = s => el.querySelector(s), pane = $('#mPane');
+    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go('stage', { id }) }]);
+    $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
+    $('#gZh').onchange = e => { GOPT.zh = e.target.checked; const b = pane.querySelector('.m-board'); if (b) b.classList.toggle('m-noz', !GOPT.zh); };
+    function hud() {
+      $('#gH').innerHTML = '❤️'.repeat(S.hearts) + '🖤'.repeat(3 - S.hearts);
+      $('#gS').textContent = '💯 ' + S.score;
+      $('#gC').innerHTML = S.combo >= 2 ? `<span class="g-combo">🔥${S.combo}</span>` : '';
+      const p = Math.max(0, S.pat / PAT * 100), pb = $('#gP');
+      pb.style.width = (GOPT.relax ? 100 : p) + '%'; pb.className = GOPT.relax ? 'relax' : p < 25 ? 'low' : p < 55 ? 'mid' : '';
+      $('#gQ').innerHTML = friends.map((f, i) => `<div class="g-f${i === S.r ? ' cur' : i < S.r ? ' done' : ''}"><span>${f[0]}</span><small>${i < S.r ? '✓' : f[1]}</small></div>`).join('');
+    }
+    const stopT = () => { clearInterval(S.timer); S.timer = null; };
+    const startT = () => {
+      stopT();
+      S.timer = setInterval(() => {
+        if (!el.isConnected) return stopT();
+        if (GOPT.relax || S.busy || document.querySelector('.modal-bg')) return;
+        S.pat -= 0.2; hud();
+        if (S.pat <= 0) { stopT(); timeout(); }
+      }, 200);
     };
+    const addWrong = it => { Tracker.add(it, true); if (!S.wrong.some(w => w.id === it.id)) S.wrong.push(it); };
+    const gain = (anchor, base) => {
+      S.combo++; S.best = Math.max(S.best, S.combo); S.ok++; S.tot++;
+      const pts = Math.round(base * (1 + Math.min(S.combo - 1, 5) * 0.2));
+      S.score += pts; hud();
+      if (anchor) { G_.floatText(anchor, `+${pts}${S.combo >= 3 ? ' 🔥' : ''}`); G_.burst(anchor, 10); }
+      if (S.combo >= 3 && S.combo % 3 === 0) { App.toast(`🔥 ${S.combo} 連擊！`, 'ok'); G_.sfx('combo'); }
+    };
+    const miss = anchor => {
+      S.combo = 0; S.tot++; S.hearts--; hud();
+      const h = $('#gH'); h.classList.remove('g-hit'); void h.offsetWidth; h.classList.add('g-hit');
+      if (anchor) G_.floatText(anchor, '💔', true);
+      G_.sfx('hurt');
+      if (S.hearts <= 0) { stopT(); setTimeout(() => finish(false), 600); return true; }
+      return false;
+    };
+    const npc = (host, line, blur) => {
+      const b = document.createElement('div'); b.className = 'bubble npc';
+      b.innerHTML = `<div class="who">${esc(m.npc.emoji)} ${esc(m.npc.who)}</div><div class="j jp" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span>${esc(line.jp)}</span><button class="speak">🔊</button></div><div class="t-aid jp">${esc(line.kana)}</div>${line.zh && !blur ? `<div class="t-aid">🀄 ${esc(line.zh)}</div>` : ''}`;
+      b.querySelector('.speak').onclick = () => App.speak(line.kana || line.jp);
+      if (blur) b.querySelectorAll('.j span,.t-aid').forEach(x => x.style.filter = 'blur(7px)');
+      host.appendChild(b); App.speak(line.kana || line.jp); return b;
+    };
+    function timeout() {
+      App.toast(`😤 ${friends[S.r][1]} 等太久，自己走掉了…`);
+      if (miss($('#gQ .g-f.cur'))) return;
+      setTimeout(next, 900);
+    }
+    function next() { S.r++; round(); }
 
     function round() {
-      if (S.r >= ROUNDS) return finish();
-      el.querySelector('#mRound').textContent = `第 ${S.r + 1} / ${ROUNDS} 回合`;
-      el.querySelector('#mBar').style.width = (S.r / ROUNDS * 100) + '%';
-      // 產生任務
-      const nItems = m.type === 'order' && S.r > 0 ? 2 : 1;
-      const task = App.sample(m.items, nItems).map(it => ({ it, n: m.type === 'ask' ? 1 : 1 + (Math.random() * (m.type === 'request' ? 2 : 3) | 0) }));
+      if (S.r >= N) return finish(true);
+      S.pat = PAT; S.busy = false; hud();
+      const f = friends[S.r];
+      const nItems = m.type === 'order' && S.r >= 2 ? 2 : 1;
+      const task = App.sample(m.items, nItems).map(it => ({ it, n: hasQty(m) ? 1 + (Math.random() * (m.type === 'request' ? 2 : 3) | 0) : 1 }));
       const qty = {};
-      const taskTxt = task.map(t => `<b>${esc(t.it.zh)}</b>${m.type === 'ask' ? '' : ' × ' + t.n}`).join('、');
-      const verbZh = { order: '點／買', ticket: '買車票到', ask: '問路去', request: '跟櫃台要' }[m.type];
-      pane.innerHTML = `<div class="m-task">🎯 任務：${verbZh} ${taskTxt}</div>
+      const verb = m.verb || { order: '幫我點／買', ticket: '幫我買車票到', ask: '幫我問', request: '幫我要', pref: '幫我說要' }[m.type];
+      pane.innerHTML = `<div class="g-ask"><div class="g-av">${f[0]}</div><div class="g-say"><small>${esc(f[1])}：</small>「${esc(verb)} ${task.map(t => `<b>${esc(t.it.zh)}</b>${hasQty(m) ? ' ×' + t.n : ''}`).join('、')}！」</div></div>
         <div class="chat" id="mChat"></div>
-        <div class="m-board${S.zh ? '' : ' m-noz'}"><h3>${esc(m.board)}</h3><div class="m-items">${m.items.map((it, i) => `<button class="m-it" data-i="${i}">
+        <div class="m-board${GOPT.zh ? '' : ' m-noz'}"><h3>${esc(m.board)}</h3><div class="m-items">${m.items.map((it, i) => `<button class="m-it" data-i="${i}">
           <div class="e">${esc(it.emoji || '')}</div><div class="j jp">${esc(it.jp)}</div>${it.kana !== it.jp ? `<div class="k jp">${esc(it.kana)}</div>` : ''}<div class="z">${esc(it.zh)}</div>
           ${it.price ? `<div class="p">${yen(it.price)}</div>` : ''}<span class="q" style="display:none"></span></button>`).join('')}</div></div>
-        <div class="m-tray" id="mTray"></div>
-        <div class="feedback" id="mFb"></div>
-        <button class="btn primary block" id="mOk">✅ 選好了</button>`;
-      npc(pane.querySelector('#mChat'), m.greet.jp, m.greet.kana, m.greet.zh);
+        <div class="m-tray" id="mTray"></div><div class="feedback" id="mFb"></div>
+        <button class="btn primary block" id="mOk">✅ 就是這個！</button>`;
+      if (S.r === 0 || m.type !== 'order') npc(pane.querySelector('#mChat'), m.greet);
       const tray = pane.querySelector('#mTray');
       const paint = () => {
-        pane.querySelectorAll('.m-it').forEach(b => { const n = qty[b.dataset.i] || 0, q = b.querySelector('.q'); q.style.display = n ? '' : 'none'; q.textContent = n; b.classList.toggle('sel', !!n); });
+        pane.querySelectorAll('.m-it').forEach(b => { const n = qty[b.dataset.i] || 0, q = b.querySelector('.q'); q.style.display = n ? '' : 'none'; q.textContent = hasQty(m) ? n : '✓'; b.classList.toggle('sel', !!n); });
         const sel = Object.keys(qty).filter(k => qty[k]);
-        tray.innerHTML = sel.length ? '🧺 ' + sel.map(k => `<span class="chip jp">${esc(m.items[k].jp)}${m.type === 'ask' ? '' : ' ×' + qty[k]}</span>`).join('') : '<span class="muted">👆 點菜單上的日文來選（再點可加數量）</span>';
+        tray.innerHTML = sel.length ? '🧺 ' + sel.map(k => `<span class="chip jp">${esc(m.items[k].jp)}${hasQty(m) ? ' ×' + qty[k] : ''}</span>`).join('') : `<span class="muted">👆 點看板上的日文${hasQty(m) ? '（再點加數量）' : ''}</span>`;
       };
+      const single = !(m.type === 'order');
       pane.querySelectorAll('.m-it').forEach(b => b.onclick = () => {
         const i = b.dataset.i;
-        if (m.type === 'ask' || m.type === 'ticket') { Object.keys(qty).forEach(k => { if (k !== i) qty[k] = 0; }); }
-        const max = m.type === 'ask' ? 1 : 3;
+        if (single) Object.keys(qty).forEach(k => { if (k !== i) qty[k] = 0; });
+        const max = hasQty(m) ? 3 : 1;
         qty[i] = ((qty[i] || 0) + 1) % (max + 1);
         App.speak(m.items[i].kana || m.items[i].jp); paint();
       });
-      paint();
+      paint(); startT();
       let tries = 0;
       pane.querySelector('#mOk').onclick = () => {
         const sel = Object.keys(qty).filter(k => qty[k]).map(k => ({ it: m.items[k], n: qty[k] }));
+        if (!sel.length) return App.toast('先點看板上的項目喔！');
         const ok = sel.length === task.length && task.every(t => sel.some(s => s.it === t.it && s.n === t.n));
-        const fb = pane.querySelector('#mFb');
+        const fb = pane.querySelector('#mFb'), btn = pane.querySelector('#mOk');
         if (!ok) {
           tries++;
-          task.forEach(t => { if (!sel.some(s => s.it === t.it && s.n === t.n)) addWrong(App.wordItem(t.it, sc.name, 'word')); });
-          pane.querySelectorAll('.m-it').forEach(b => { if (task.some(t => t.it === m.items[b.dataset.i])) { b.classList.add('choice', 'ng'); setTimeout(() => b.classList.remove('choice', 'ng'), 50); } });
-          fb.innerHTML = `<span class="t-fb-ng">❌ 不太對</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>（${esc(t.it.zh)}）${m.type === 'ask' ? '' : '×' + t.n}`).join('、') : '再看看菜單上的日文，數量也要對喔！'}`;
+          task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
+          if (miss(btn)) return;
+          fb.innerHTML = `<span class="t-fb-ng">❌ ${esc(f[1])}：「不是這個啦！」</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>${hasQty(m) ? '×' + t.n : ''}`).join('、') : '再看清楚看板上的日文' + (hasQty(m) ? '和數量' : '') + '！'}`;
           return;
         }
-        S.max++; if (!tries) S.pts++;
+        G_.sfx('ok');
+        if (!tries) gain(btn, 100); else { S.tot++; S.combo = 0; hud(); }
         say(task);
       };
     }
-    // 第二步：選／說出要講的日文
     function say(task) {
       const cs = sayChoices(m, task);
       pane.querySelector('.m-board').remove(); pane.querySelector('#mTray').remove(); pane.querySelector('#mOk').remove();
       const fb = pane.querySelector('#mFb'); fb.innerHTML = '';
       const box = document.createElement('div');
-      box.innerHTML = `<div class="sec-t" style="margin-top:6px">要怎麼跟${esc(m.npc.who)}說？</div><div class="t-micbox"></div><div class="choices t-opts"></div>`;
+      box.innerHTML = `<div class="sec-t" style="margin-top:6px">用日文跟${esc(m.npc.who)}說：</div><div class="t-micbox"></div><div class="choices t-opts"></div>`;
       pane.insertBefore(box, fb);
       const opBox = box.querySelector('.t-opts');
       let missed = false, done = false;
@@ -424,86 +548,90 @@
         b.onclick = () => {
           if (done || b.disabled) return;
           if (c.correct) {
-            done = true; b.classList.add('ok'); opBox.querySelectorAll('.choice').forEach(x => x.disabled = true);
-            fb.innerHTML = `<span class="t-fb-ok">⭕ ${missed ? '答對了！' : '一次就對！'}</span>`;
+            done = true; S.busy = true; b.classList.add('ok'); opBox.querySelectorAll('.choice').forEach(x => x.disabled = true);
+            fb.innerHTML = `<span class="t-fb-ok">⭕ ${missed ? '說對了！' : '完美！'}</span>`;
+            if (!missed) gain(b, 150); else { S.tot++; hud(); }
             const me = document.createElement('div'); me.className = 'bubble me';
             me.innerHTML = `<div class="who">🧳 我</div><div class="j jp">${esc(c.jp)}</div>`;
             pane.querySelector('#mChat').appendChild(me); App.speak(c.kana);
-            S.max++; if (!missed) S.pts++;
-            setTimeout(() => answer(task), 900);
+            setTimeout(() => { if (el.isConnected) { S.busy = false; answer(task); } }, 1000);
           } else {
             b.classList.add('ng'); b.disabled = true;
-            fb.innerHTML = `<span class="t-fb-ng">❌</span> ${esc(c.feedback)}`;
-            if (!missed) { missed = true; const r = cs.find(x => x.correct); addWrong(App.wordItem({ jp: r.jp, kana: r.kana, zh: '在' + sc.name + '：' + task.map(t => t.it.zh + (m.type === 'ask' ? '' : '×' + t.n)).join('、'), hint: '互動菜單' }, sc.name, 'phrase')); }
+            fb.innerHTML = `<span class="t-fb-ng">❌</span> ${esc(c.fb || '')}`;
+            if (!missed) { missed = true; const r = cs.find(x => x.correct); addWrong(App.wordItem({ jp: r.jp, kana: r.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase')); if (miss(b)) return; }
           }
         };
         opBox.appendChild(b);
       });
-      // 口說
       const TA = T(), micBox = box.querySelector('.t-micbox');
-      micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn"${TA.hasSR ? '' : ' disabled'}>🎤</button><div style="text-align:left;font-size:.85em">可以直接用日文說出來<br><span class="muted">或點選下方句子</span></div></div><div class="t-heard muted">${TA.hasSR ? '' : esc(TA.micErr ? TA.micErr('unsupported') : '')}</div>`;
+      micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn"${TA.hasSR ? '' : ' disabled'}>🎤</button><div style="text-align:left;font-size:.85em">直接用日文說出來<br><span class="muted">或點選下方句子</span></div></div><div class="t-heard muted">${TA.hasSR ? '' : esc(TA.micErr ? TA.micErr('unsupported') : '')}</div>`;
       const mb = micBox.querySelector('.t-micbtn'), heard = micBox.querySelector('.t-heard');
       mb.onclick = () => {
         if (done || !TA.listenJP || mb.classList.contains('on')) return;
-        mb.classList.add('on'); heard.textContent = '🎙️ 聆聽中…';
+        mb.classList.add('on'); heard.textContent = '🎙️ 聆聽中…'; S.busy = true;
         TA.listenJP(alts => {
-          mb.classList.remove('on');
+          mb.classList.remove('on'); S.busy = false;
           const { best, score } = TA.bestMatch(alts, cs.filter(c => !c._btn.disabled));
           heard.innerHTML = `聽到：「<span class="jp">${esc(alts[0] || '')}</span>」${best ? `（${Math.round(score * 100)}%）` : ''}`;
-          if (best && score >= 0.5) best._btn.click(); else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上，再說一次或直接點選</b>';
-        }, code => { mb.classList.remove('on'); heard.textContent = TA.micErr(code); });
+          if (best && score >= 0.5) { if (best.correct) S.score += 50; best._btn.click(); } else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上，再說一次或直接點選</b>';
+        }, code => { mb.classList.remove('on'); S.busy = false; heard.textContent = TA.micErr(code); });
       };
     }
-    // 第三步：聽對方回答（價錢 or 回應）
     function answer(task) {
       const fb = pane.querySelector('#mFb');
       pane.querySelectorAll('.sec-t,.t-micbox,.t-opts').forEach(x => x.remove()); fb.innerHTML = '';
-      const chat = pane.querySelector('#mChat');
       let line, opts, right;
       if (m.type === 'order' || m.type === 'ticket') {
         const total = task.reduce((s, t) => s + (t.it.price || 0) * t.n, 0);
         line = { jp: `全部で${total.toLocaleString('ja-JP')}円です。`, kana: `ぜんぶで${yomi(total)}です` };
         const set = new Set([total]);
-        [100, -100, 1000, 10, -10, 200, 500].forEach(d => { if (set.size < 4 && total + d > 0) set.add(total + d); });
+        App.shuffle([100, -100, 1000, -10, 10, 200, -200, 500]).forEach(d => { if (set.size < 4 && total + d > 0) set.add(total + d); });
         right = yen(total); opts = App.shuffle([...set].map(yen));
       } else {
-        const rep = App.sample(m.replies, 1)[0];
-        line = rep;
-        right = rep.zh; opts = App.shuffle([rep.zh].concat(App.sample(m.replies.filter(r => r !== rep).map(r => r.zh), 3)));
+        const rep = App.sample(m.replies || OKR, 1)[0];
+        line = rep; right = rep.zh;
+        const pool = (m.replies || []).filter(r => r !== rep).map(r => r.zh).concat(['我不知道。', '今天公休。', '請再說一次。']);
+        opts = App.shuffle([rep.zh].concat(App.sample([...new Set(pool)].filter(z => z !== rep.zh), 3)));
       }
-      const bub = npc(chat, line.jp, line.kana, '');
-      bub.classList.add('t-listen-b');
-      bub.querySelectorAll('.j span,.t-aid').forEach(x => x.style.filter = 'blur(7px)');
+      const bub = npc(pane.querySelector('#mChat'), line, true);
       const box = document.createElement('div');
       box.innerHTML = `<div class="sec-t" style="margin-top:6px">🎧 ${m.type === 'order' || m.type === 'ticket' ? '總共多少錢？' : esc(m.npc.who) + '說了什麼？'}</div>
-        <div class="center"><button class="btn sm" id="mRe">🔊 再聽一次</button></div><div class="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" style="font-size:1.05em">${esc(o)}</button>`).join('')}</div>`;
+        <div class="center"><button class="btn sm" id="mRe">🔊 再聽一次</button></div><div class="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" style="font-size:1em">${esc(o)}</button>`).join('')}</div>`;
       pane.insertBefore(box, fb);
       box.querySelector('#mRe').onclick = () => App.speak(line.kana);
       box.querySelectorAll('.choice').forEach(b => b.onclick = () => {
         const ok = opts[+b.dataset.k] === right;
         box.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (opts[+x.dataset.k] === right) x.classList.add('ok'); });
         bub.querySelectorAll('.j span,.t-aid').forEach(x => x.style.filter = '');
-        S.max++;
-        if (ok) { S.pts++; fb.innerHTML = '<span class="t-fb-ok">⭕ 聽懂了！</span>'; }
-        else { b.classList.add('ng'); fb.innerHTML = `<span class="t-fb-ng">❌ 答案是 ${esc(right)}</span>`; addWrong(App.wordItem({ jp: line.jp, kana: line.kana, zh: m.type === 'order' || m.type === 'ticket' ? '總共 ' + right : right, hint: '聽力：' + sc.name }, sc.name, 'phrase')); }
-        fb.innerHTML += `<div class="jp muted">${esc(line.jp)}（${esc(line.kana)}）</div><button class="btn primary" id="mNx">${S.r + 1 >= ROUNDS ? '看結果 🏁' : '下一位客人 ➜'}</button>`;
-        fb.querySelector('#mNx').onclick = () => { S.r++; round(); };
+        stopT();
+        let over = false;
+        if (ok) { gain(b, 120); const tb = Math.round(Math.max(0, S.pat) * (GOPT.relax ? 0 : 4)); if (tb) { S.score += tb; hud(); App.toast(`⏱️ 速度獎勵 +${tb}`, 'xp'); } fb.innerHTML = `<span class="t-fb-ok">⭕ 聽懂了！${esc(friends[S.r][1])}：「謝啦！」</span>`; }
+        else { b.classList.add('ng'); addWrong(App.wordItem({ jp: line.jp, kana: line.kana, zh: right, hint: '聽力：' + m.name }, sc.name, 'phrase')); over = miss(b); fb.innerHTML = `<span class="t-fb-ng">❌ 正確是 ${esc(right)}</span>`; }
+        if (over) return;
+        fb.innerHTML += `<div class="jp muted">${esc(line.jp)}（${esc(line.kana)}）</div><button class="btn primary" id="mNx">${S.r + 1 >= N ? '看結果 🏁' : '下一位旅伴 ➜'}</button>`;
+        fb.querySelector('#mNx').onclick = next;
       });
     }
-    function finish() {
-      el.querySelector('#mBar').style.width = '100%';
-      const stars = starsOf(S.max ? S.pts / S.max : 0);
-      const r = S.pts ? App.addXP(S.pts * 2, '互動菜單') : { gained: 0 };
-      if (!App.state.sceneDone) App.state.sceneDone = {};
-      App.state.sceneDone[id] = true; App.save();
-      pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>營業結束！</h3><p>一次答對 ${S.pts} / ${S.max}</p>
-        <button class="btn" id="mAg">🔄 再來一輪</button><button class="btn primary" id="mPr">🎯 練習選單</button></div>`;
-      pane.querySelector('#mAg').onclick = () => App.go('menu', { id });
-      pane.querySelector('#mPr').onclick = () => App.go('practice');
-      App.showResult({ title: stars ? `${sc.name} 互動完成！` : '再練一輪吧！', stars, correct: S.pts, total: S.max, gained: r.gained, wrong: S.wrong, retry: () => App.go('menu', { id }), back: { label: '🎯 練習選單', route: 'practice' } });
+    function finish(alive) {
+      stopT();
+      const acc = S.tot ? S.ok / S.tot : 0;
+      const stars = alive ? Math.max(1, Math.min(S.hearts, acc >= 0.9 ? 3 : acc >= 0.7 ? 2 : 1)) : 0;
+      setSit(key, stars);
+      const r = S.score ? App.addXP(Math.max(5, Math.round(S.score / 60)), '情境挑戰') : { gained: 0 };
+      if (stars) { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[id] = true; App.save(); }
+      const nx = mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: { id, m: mi + 1 } } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
+      pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💀'}</div><h3>${stars ? '任務完成！' : '旅伴們生氣了…'}</h3><p>💯 ${S.score} 分・最高 🔥${S.best} 連擊</p>
+        <button class="btn" id="mAg">🔄 再玩一次</button><button class="btn primary" id="mSt">🗺️ 關卡地圖</button></div>`;
+      pane.querySelector('#mAg').onclick = () => App.go('menu', { id, m: mi });
+      pane.querySelector('#mSt').onclick = () => App.go('stage', { id });
+      App.showResult({
+        title: (stars ? `${m.name} 完成！` : '挑戰失敗，再試一次！') + `（💯 ${S.score}）`, stars, correct: S.ok, total: S.tot, gained: r.gained, wrong: S.wrong,
+        retry: () => App.go('menu', { id, m: mi }), back: { label: '🗺️ 關卡地圖', route: 'stage', params: { id } }, next: stars ? nx : null
+      });
     }
     round();
   }
-  App.register('menu', { title: '互動菜單', icon: '🧾', nav: false, render: renderMenu });
-  window.PracticeAPI = { situations, yomi };
+  const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
+  App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, render: renderMenu });
+  window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS };
 })();

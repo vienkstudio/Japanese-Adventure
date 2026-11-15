@@ -19,7 +19,41 @@
   function levelOf(xp) { let l = 1; for (let i = 1; i < LEVELS.length; i++) if (xp >= LEVELS[i]) l = i + 1; return l; }
 
   const listeners = [];
-  function save() { LS.set(KEY, JSON.stringify(S)); listeners.forEach(f => { try { f(S); } catch (e) { console.error(e); } }); }
+  /* ---- 存檔：本機 localStorage ＋ 雲端（Claude 網站 db：data/users/<id>/save） ---- */
+  const lsOK = (() => { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return true; } catch (e) { return false; } })();
+  const CL = { ref: null, status: lsOK ? 'local' : 'none', busy: false, dirty: false, timer: null };
+  function cloudPush() {
+    if (!CL.ref) return;
+    if (CL.busy) { CL.dirty = true; return; }
+    CL.busy = true; CL.dirty = false;
+    CL.ref.set({ s: JSON.stringify(S), t: S._t || Date.now() })
+      .then(() => { CL.status = 'cloud'; })
+      .catch(e => { if (e && e.code === 'invalid_argument') { CL.ref = null; } CL.status = lsOK ? 'local' : 'none'; })
+      .finally(() => { CL.busy = false; renderNav(); if (CL.dirty) cloudPush(); });
+  }
+  function save() {
+    S._t = Date.now();
+    LS.set(KEY, JSON.stringify(S));
+    if (CL.ref) { clearTimeout(CL.timer); CL.timer = setTimeout(cloudPush, 1500); }
+    listeners.forEach(f => { try { f(S); } catch (e) { console.error(e); } });
+  }
+  async function cloudInit() {
+    try {
+      if (!(window.claude && typeof claude.use === 'function')) return;
+      const db = await claude.use('db'), u = await claude.use('user');
+      if (!db || !u) return;
+      const id = await u.id(); if (!id) return;
+      const ref = db.doc('data/users/' + id + '/save');
+      const snap = await Promise.race([ref.get(), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 10000))]);
+      CL.ref = ref;
+      const d = snap.exists ? snap.data() : null;
+      if (d && d.s && (d.t || 0) > (S._t || 0)) {
+        try { S = Object.assign({}, DEF, JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
+      } else if (S.xp || S.tracked.length || Object.keys(S.cleared).length) cloudPush();
+      else CL.status = 'cloud';
+      renderNav();
+    } catch (e) { }
+  }
 
   // 連續學習天數
   (function streak() {
@@ -191,12 +225,13 @@
     const pc = document.getElementById('playerChip');
     if (pc) {
       const lo = LEVELS[lv - 1], hi = LEVELS[lv] || LEVELS[lv - 1] + 1000;
-      pc.innerHTML = `<span class="lvb">Lv.${lv}</span><div class="xpw"><div class="mini-bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div><small>${S.xp} XP・🔥${S.streak.days}</small></div>` +
+      const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
+      pc.innerHTML = `<span class="sv" title="${ss[1]}">${ss[0]}</span><span class="lvb">Lv.${lv}</span><div class="xpw"><div class="mini-bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div><small>${S.xp} XP・🔥${S.streak.days}</small></div>` +
         (window.Game ? `<button class="icon-btn" id="sfxBtn" title="音效">${Game.sfxOn() ? '🔊' : '🔇'}</button>` : '');
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
     }
   }
-  function start() { started = true; parseHash(); lastParams[CUR.name] = CUR.params; window.addEventListener('hashchange', onHash); onChange(renderNav); render(); }
+  function start() { started = true; parseHash(); lastParams[CUR.name] = CUR.params; window.addEventListener('hashchange', onHash); onChange(renderNav); render(); cloudInit(); }
   function onChange(fn) { listeners.push(fn); }
 
   /* ---------------- Tracker：不會清單 ----------------
@@ -247,7 +282,9 @@
     addXP, completeQuest, showResult, modal, toast,
     speak: speakJP, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
-    resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); go('home'); },
+    resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); if (CL.ref) cloudPush(); go('home'); },
+    get saveStatus() { return CL.status; },
+    loadState(o) { S = Object.assign({}, JSON.parse(JSON.stringify(DEF)), o); save(); if (CL.ref) cloudPush(); render(); },
     store: LS
   };
   window.Tracker = Tracker;
