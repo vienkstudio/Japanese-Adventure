@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6d4aff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日語冒險">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>日語冒險｜闖關學日文</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header id="top"><div class="in">
+  <a class="logo" href="#/home">🎌 <span>日語冒險</span></a>
+  <nav id="nav"></nav>
+  <div id="playerChip"></div>
+</div></header>
+<main id="main"></main>
+
+<!-- 資料 -->
+<script src="kana-data.js"></script>
+<script>window.SCENES = window.SCENES || [];</script>
+<script src="data/scenes-1.js"></script>
+<script src="data/scenes-2.js"></script>
+<!-- 核心 -->
+<script src="js/core.js"></script>
+<script src="js/game.js"></script>
+<!-- 首頁 -->
+<script>
+App.register('home', {
+  title: '首頁', icon: '🏠', nav: true,
+  render(el) {
+    const S = App.state, lv = App.level;
+    const lo = App.LEVELS[lv - 1], hi = App.LEVELS[lv] || lo + 1000;
+    const cleared = Object.keys(S.cleared).length;
+    const totalQ = (window.QUESTS || []).length;
+    const next = (window.QuestAPI && QuestAPI.nextQuest) ? QuestAPI.nextQuest() : null;
+    const d = Game.daily();
+    const tips = [
+      ['すみません', '不好意思（萬用句：叫店員、道歉、借過都能用）'],
+      ['これください', '我要這個（手指商品就能買東西）'],
+      ['いくらですか', '多少錢？'],
+      ['トイレはどこですか', '廁所在哪裡？'],
+      ['大丈夫です', '不用了／沒問題'],
+      ['お会計お願いします', '麻煩結帳'],
+      ['ありがとうございます', '謝謝您']
+    ];
+    const tip = tips[new Date().getDate() % tips.length];
+    el.innerHTML = `
+      <div class="hero">
+        <div class="avatar" id="avBtn" title="換角色">${Game.avatar()}</div>
+        <div class="info">
+          <div style="font-size:.85em;opacity:.9">點頭像換角色</div>
+          <h2 style="margin:0">Lv.${lv} ${App.esc(App.TITLES[lv - 1] || '')}</h2>
+          <div class="bar" style="margin:8px 0"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div>
+          <div class="muted" style="font-size:.88em">${S.xp} XP ・ 升級還差 ${Math.max(0, hi - S.xp)} ・ 🔥 連續 ${S.streak.days} 天</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:320px">
+          <div class="stat"><b>${cleared}</b>關卡${totalQ ? '/' + totalQ : ''}</div>
+          <div class="stat"><b>${Tracker.count()}</b>待複習</div>
+          <div class="stat"><b>${Tracker.list(true).filter(t => t.mastered).length}</b>已掌握</div>
+        </div>
+      </div>
+      ${next ? `<div class="panel" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#fff,#fff6e0)">
+        <div style="font-size:2.6em">${next.icon || '⚔️'}</div>
+        <div style="flex:1;min-width:0"><div class="muted" style="font-size:.85em">下一個關卡</div><b style="font-size:1.1em">${App.esc(next.title)}</b></div>
+        <button class="btn primary" id="goNext">▶ 出發</button></div>` : ''}
+      <div class="panel">
+        <h3 style="margin:0 0 8px">🎯 每日任務 <small class="muted">（每天 0 點重置）</small></h3>
+        ${Game.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0), done = d.claimed[m.id]; return `
+          <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
+            <div style="font-size:1.6em">${done ? '✅' : m.icon}</div>
+            <div style="flex:1"><div style="display:flex;justify-content:space-between"><b>${m.label}</b><small>${v}/${m.goal}</small></div>
+              <div class="bar" style="height:10px"><div style="width:${v / m.goal * 100}%"></div></div></div>
+            <span class="chip ${done ? 'green' : ''}">+${m.xp}</span>
+          </div>`; }).join('')}
+      </div>
+      <div class="grid">
+        <div class="card click" data-go="map"><div class="icon">🗺️</div><h3 style="margin:.3em 0">冒險地圖</h3><div class="muted" style="font-size:.9em">打怪闖關學五十音</div></div>
+        <div class="card click" data-go="town"><div class="icon">🏙️</div><h3 style="margin:.3em 0">日本街道</h3><div class="muted" style="font-size:.9em">進店舖實戰對話</div></div>
+        <div class="card click" data-go="review"><div class="icon">📌</div><h3 style="margin:.3em 0">不會清單</h3><div class="muted" style="font-size:.9em">弱點集中複習</div></div>
+        <div class="card click" data-href="日文講義.html"><div class="icon">📖</div><h3 style="margin:.3em 0">入門講義</h3><div class="muted" style="font-size:.9em">圖解＋諧音</div></div>
+        <div class="card click" data-href="50音訓練表.html"><div class="icon">🎯</div><h3 style="margin:.3em 0">50音訓練表</h3><div class="muted" style="font-size:.9em">總表・閃卡・書寫</div></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">💬 今日一句</h3>
+        <div class="jp" style="font-size:1.6em;cursor:pointer" id="tipJP">${tip[0]} 🔊</div>
+        <div>${tip[1]}</div>
+        <button class="track-btn" id="tipAdd" style="margin-top:6px">＋ 加入不會清單</button>
+      </div>
+      <p class="center muted noprint" style="font-size:.85em">進度存在本機瀏覽器 ・ <a href="#" id="reset">重置所有進度</a></p>`;
+    el.querySelectorAll('[data-go]').forEach(c => c.onclick = () => App.go(c.dataset.go));
+    el.querySelectorAll('[data-href]').forEach(c => c.onclick = () => location.href = c.dataset.href);
+    el.querySelector('#avBtn').onclick = () => Game.pickAvatar(() => App.render());
+    const gn = el.querySelector('#goNext'); if (gn) gn.onclick = () => QuestAPI.play(next.id);
+    el.querySelector('#tipJP').onclick = () => App.speak(tip[0]);
+    el.querySelector('#tipAdd').onclick = () => Tracker.add({ id: 'phrase:' + tip[0], jp: tip[0], zh: tip[1], source: '今日一句' });
+    el.querySelector('#reset').onclick = e => { e.preventDefault(); App.modal('<h2>確定重置？</h2><p>經驗值、關卡、不會清單都會清空。</p>', [{ label: '取消' }, { label: '重置', cls: 'primary', onClick: App.resetAll }]); };
+  }
+});
+</script>
+<!-- 功能模組 -->
+<script src="js/quest.js"></script>
+<script src="js/town.js"></script>
+<script src="js/review.js"></script>
+<script>
+App.start();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

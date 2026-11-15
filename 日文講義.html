@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零基礎日文講義｜圖解＋諧音背五十音</title>
+<style>
+:root{--red:#d6453d;--ink:#2b2b2b;--soft:#fff7ef;--blue:#2f6fb5;--green:#2e8b57;--line:#e8d9c8}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;color:var(--ink);background:#faf6f0;line-height:1.75}
+.wrap{max-width:1000px;margin:auto;padding:24px}
+header.cover{background:linear-gradient(135deg,#d6453d,#f08a5d);color:#fff;border-radius:18px;padding:40px 32px;text-align:center;position:relative;overflow:hidden}
+header.cover h1{font-size:2.4em;margin:0}
+header.cover p{margin:.4em 0 0;font-size:1.15em}
+.sun{position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.18)}
+nav.toc{background:#fff;border-radius:14px;padding:16px 24px;margin:20px 0;border:2px dashed var(--line)}
+nav.toc a{color:var(--blue);text-decoration:none;margin-right:14px;white-space:nowrap}
+section{background:#fff;border-radius:16px;padding:24px 28px;margin:22px 0;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+h2{color:var(--red);border-left:8px solid var(--red);padding-left:12px;margin-top:0}
+h3{color:var(--blue);margin-bottom:.3em}
+.tip{background:var(--soft);border-left:5px solid #f0a35d;padding:10px 16px;border-radius:8px;margin:12px 0}
+.key{background:#eef6ff;border-left:5px solid var(--blue);padding:10px 16px;border-radius:8px;margin:12px 0}
+.jp{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif}
+.flex{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:center}
+.script-box{flex:1;min-width:200px;border-radius:14px;padding:16px;text-align:center;border:3px solid}
+.script-box .big{font-size:2.6em;font-family:"Yu Gothic","Meiryo",sans-serif}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid var(--line);padding:6px 8px;text-align:center}
+th{background:var(--soft)}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.card{border:2px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;cursor:pointer;transition:.15s;background:#fffdf9;position:relative}
+.card:hover{transform:translateY(-3px);box-shadow:0 4px 10px rgba(0,0,0,.08);border-color:#f0a35d}
+.card .k{font-size:2.4em;line-height:1.1;font-family:"Yu Gothic","Meiryo",sans-serif}
+.card .kk{font-size:1em;color:#888;font-family:"Yu Gothic","Meiryo",sans-serif}
+.card .r{font-weight:bold;color:var(--blue)}
+.card .h{display:inline-block;background:var(--red);color:#fff;border-radius:20px;padding:0 10px;font-size:.9em;margin:2px 0}
+.card .e{position:absolute;top:4px;right:6px;font-size:1.2em}
+.card .m{font-size:.78em;color:#555;line-height:1.4;margin-top:4px;text-align:left}
+.card .src{font-size:.72em;color:#aaa}
+.card.empty{visibility:hidden}
+.rowlabel{grid-column:1/-1;font-weight:bold;color:var(--red);margin-top:10px;border-bottom:1px dashed var(--line)}
+.phr{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.phr div{border:2px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer}
+.phr .j{font-size:1.4em;font-family:"Yu Gothic","Meiryo",sans-serif}
+.phr .h{color:var(--red);font-weight:bold}
+.spk{font-size:.8em;color:#999}
+.plan td{text-align:left}
+footer{text-align:center;color:#999;padding:20px}
+.btn{display:inline-block;background:var(--red);color:#fff;padding:10px 22px;border-radius:30px;text-decoration:none;font-weight:bold}
+@media(max-width:700px){.cards{grid-template-columns:repeat(3,1fr)}.card .m{display:none}}
+@media print{body{background:#fff}section{box-shadow:none;break-inside:avoid-page;border:1px solid #ddd}nav.toc,.noprint{display:none}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="cover">
+  <div class="sun"></div>
+  <h1>🎌 零基礎日文講義</h1>
+  <p>圖解 ＋ 中文諧音，7 天背完五十音</p>
+  <p style="font-size:.95em;opacity:.9">💡 點任何一個假名或句子，就會唸給你聽（需開喇叭）</p>
+</header>
+
+<nav class="toc">
+  📖 目錄：
+  <a href="#s1">1. 日文長什麼樣</a>
+  <a href="#s2">2. 五個母音</a>
+  <a href="#s3">3. 平假名圖解</a>
+  <a href="#s4">4. 片假名圖解</a>
+  <a href="#s5">5. 濁音・半濁音</a>
+  <a href="#s6">6. 拗音・促音・長音</a>
+  <a href="#s7">7. 易混淆字</a>
+  <a href="#s8">8. 生活用語</a>
+  <a href="#s9">9. 數字</a>
+  <a href="#s10">10. 7 天計畫</a>
+  <a href="50音訓練表.html">🎯 50音訓練表</a>
+</nav>
+
+<!-- 1 -->
+<section id="s1">
+<h2>1. 日文長什麼樣？三種文字</h2>
+<p>日文句子裡會混著<b>三種文字</b>，就像一個家裡住了三兄弟：</p>
+<div class="flex">
+  <div class="script-box" style="border-color:#f08a5d;background:#fff4ec">
+    <div class="big">ひらがな</div><b>平假名</b>（大哥・圓圓的）<br>🧸 寫日本原生的字、文法助詞<br>例：<span class="jp">ありがとう</span>
+  </div>
+  <div class="script-box" style="border-color:#2f6fb5;background:#eef6ff">
+    <div class="big">カタカナ</div><b>片假名</b>（二哥・方方的）<br>🍔 寫外來語、外國名字<br>例：<span class="jp">コーヒー</span>（coffee）
+  </div>
+  <div class="script-box" style="border-color:#2e8b57;background:#eefaf2">
+    <div class="big">漢字</div><b>漢字</b>（三弟・我們認識！）<br>📚 跟中文很像，台灣人超有優勢<br>例：<span class="jp">学生</span>（學生）
+  </div>
+</div>
+<svg viewBox="0 0 700 120" width="100%" style="margin-top:16px">
+  <rect x="10" y="20" width="680" height="80" rx="14" fill="#fffaf3" stroke="#e8d9c8" stroke-width="2"/>
+  <text x="40" y="72" font-size="34" font-family="Yu Gothic,Meiryo,sans-serif">
+    <tspan fill="#2e8b57">私</tspan><tspan fill="#f08a5d">は</tspan><tspan fill="#2f6fb5">コーヒー</tspan><tspan fill="#f08a5d">が</tspan><tspan fill="#2e8b57">好</tspan><tspan fill="#f08a5d">きです。</tspan>
+  </text>
+  <text x="440" y="56" font-size="16" fill="#555">＝ 我喜歡咖啡。</text>
+  <text x="440" y="82" font-size="14" fill="#2e8b57">■漢字 <tspan fill="#f08a5d">■平假名</tspan> <tspan fill="#2f6fb5">■片假名</tspan></text>
+</svg>
+<div class="key">🔑 <b>學習順序：</b>平假名 → 片假名 → 生活單字。假名就是日文的「注音符號」，一個假名＝一個音。</div>
+<div class="tip">📌 「五十音」其實只有 <b>46 個</b>基本音（有些位置空掉了），每個音都有平假名和片假名兩種寫法。</div>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+<h2>2. 先學五個母音：あいうえお</h2>
+<p>日文只有 <b>5 個母音</b>，所有的音都是「子音＋這 5 個母音」組成。學會這 5 個，等於打通任督二脈！</p>
+<svg viewBox="0 0 760 200" width="100%">
+  <g font-family="Microsoft JhengHei,sans-serif" text-anchor="middle">
+    <!-- a -->
+    <g transform="translate(76,0)"><circle cx="0" cy="80" r="55" fill="#ffe3c2"/><circle cx="-18" cy="62" r="5"/><circle cx="18" cy="62" r="5"/><ellipse cx="0" cy="98" rx="20" ry="18" fill="#c0392b"/>
+      <text y="170" font-size="26" font-family="Yu Gothic,Meiryo">あ a</text><text y="194" font-size="14" fill="#666">嘴巴張大「啊」</text></g>
+    <g transform="translate(228,0)"><circle cx="0" cy="80" r="55" fill="#ffe3c2"/><circle cx="-18" cy="62" r="5"/><circle cx="18" cy="62" r="5"/><rect x="-24" y="92" width="48" height="8" rx="4" fill="#c0392b"/>
+      <text y="170" font-size="26" font-family="Yu Gothic,Meiryo">い i</text><text y="194" font-size="14" fill="#666">嘴角往兩邊拉「衣」</text></g>
+    <g transform="translate(380,0)"><circle cx="0" cy="80" r="55" fill="#ffe3c2"/><circle cx="-18" cy="62" r="5"/><circle cx="18" cy="62" r="5"/><ellipse cx="0" cy="98" rx="8" ry="7" fill="#c0392b"/>
+      <text y="170" font-size="26" font-family="Yu Gothic,Meiryo">う u</text><text y="194" font-size="14" fill="#666">嘴唇微嘟、不要太圓「屋」</text></g>
+    <g transform="translate(532,0)"><circle cx="0" cy="80" r="55" fill="#ffe3c2"/><circle cx="-18" cy="62" r="5"/><circle cx="18" cy="62" r="5"/><ellipse cx="0" cy="97" rx="20" ry="9" fill="#c0392b"/>
+      <text y="170" font-size="26" font-family="Yu Gothic,Meiryo">え e</text><text y="194" font-size="14" fill="#666">半開、嘴角稍拉「欸」</text></g>
+    <g transform="translate(684,0)"><circle cx="0" cy="80" r="55" fill="#ffe3c2"/><circle cx="-18" cy="62" r="5"/><circle cx="18" cy="62" r="5"/><ellipse cx="0" cy="98" rx="13" ry="14" fill="#c0392b"/>
+      <text y="170" font-size="26" font-family="Yu Gothic,Meiryo">お o</text><text y="194" font-size="14" fill="#666">嘴巴圓圓「喔」</text></g>
+  </g>
+</svg>
+<h3>🧩 拼音魔法：子音 × 母音</h3>
+<table>
+<tr><th></th><th>a 啊</th><th>i 衣</th><th>u 屋</th><th>e 欸</th><th>o 喔</th></tr>
+<tr><th>（無）</th><td class="jp">あ a</td><td class="jp">い i</td><td class="jp">う u</td><td class="jp">え e</td><td class="jp">お o</td></tr>
+<tr><th>k</th><td class="jp">か ka</td><td class="jp">き ki</td><td class="jp">く ku</td><td class="jp">け ke</td><td class="jp">こ ko</td></tr>
+<tr><th>s</th><td class="jp">さ sa</td><td class="jp">し <b style="color:red">shi</b></td><td class="jp">す su</td><td class="jp">せ se</td><td class="jp">そ so</td></tr>
+</table>
+<div class="tip">⚠️ 特例只有幾個要注意：<span class="jp">し</span>＝shi、<span class="jp">ち</span>＝chi、<span class="jp">つ</span>＝tsu、<span class="jp">ふ</span>＝fu、<span class="jp">ん</span>＝n。其他都照規則拼！</div>
+<div class="key">🎵 <b>口訣：</b>「<span class="jp">あいうえお</span>」＝「啊～衣～屋～欸～喔」，把它當成一首歌，每天唸 10 遍。</div>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+<h2>3. 平假名圖解＋諧音（46 個）</h2>
+<p>每張卡片：<b>大字＝平假名</b>、<span style="color:var(--blue)"><b>藍字＝拼音</b></span>、<span style="background:var(--red);color:#fff;border-radius:10px;padding:0 6px">紅標＝中文諧音</span>、下方＝圖像聯想、灰字＝來自哪個漢字。<br>👆 點卡片聽發音。</p>
+<div class="tip">💡 <b>背法：</b>看字 → 想圖 → 唸諧音 → 聽發音。平假名都是從漢字的「草書」變來的，看字源更好記！</div>
+<div class="cards" id="hiraCards"></div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+<h2>4. 片假名圖解（46 個）</h2>
+<p>片假名<b>發音和平假名完全一樣</b>，只是寫法不同。它們大多是取漢字的「一部分」（偏旁），線條比較直、比較硬。</p>
+<div class="flex" style="margin-bottom:12px">
+  <svg viewBox="0 0 520 110" width="520" style="max-width:100%">
+    <g font-family="Yu Gothic,Meiryo,sans-serif" font-size="50" text-anchor="middle">
+      <text x="60" y="70">加</text><text x="140" y="70" font-size="28" fill="#999">→</text>
+      <text x="220" y="70" fill="#f08a5d">か</text><text x="300" y="70" font-size="28" fill="#999">／</text>
+      <text x="380" y="70" fill="#2f6fb5">カ</text>
+    </g>
+    <g font-family="Microsoft JhengHei" font-size="14" text-anchor="middle" fill="#666">
+      <text x="60" y="100">漢字</text><text x="220" y="100">草書→平假名</text><text x="380" y="100">取「力」→片假名</text>
+    </g>
+  </svg>
+</div>
+<div class="cards" id="kataCards"></div>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+<h2>5. 濁音・半濁音：加兩點、加小圈</h2>
+<svg viewBox="0 0 700 130" width="100%">
+  <g font-family="Yu Gothic,Meiryo,sans-serif" text-anchor="middle">
+    <text x="80" y="80" font-size="60">か</text><text x="160" y="75" font-size="30" fill="#999">＋</text>
+    <text x="230" y="80" font-size="60" fill="#d6453d">゛</text><text x="300" y="75" font-size="30" fill="#999">＝</text>
+    <text x="380" y="80" font-size="60">が</text>
+    <text x="510" y="80" font-size="60">は</text><text x="570" y="75" font-size="30" fill="#999">＋゜＝</text><text x="660" y="80" font-size="60">ぱ</text>
+  </g>
+  <g font-family="Microsoft JhengHei" font-size="15" fill="#555" text-anchor="middle">
+    <text x="80" y="118">ka 卡</text><text x="230" y="118">兩點＝聲音變「濁」</text><text x="380" y="118">ga 嘎</text>
+    <text x="510" y="118">ha 哈</text><text x="660" y="118">pa 趴</text>
+  </g>
+</svg>
+<div class="key">🔑 <b>規則：</b>k→g、s→z、t→d、h→b（加兩點 ゛）；h→p（加小圈 ゜）。只有這 5 行會變！</div>
+<table id="dakuTable"></table>
+<div class="tip">💡 <span class="jp">ぢ・づ</span> 發音同 <span class="jp">じ・ず</span>，很少用，先認得就好。</div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+<h2>6. 拗音・促音・長音</h2>
+<h3>① 拗音：「い段字＋小ゃゅょ」黏在一起</h3>
+<svg viewBox="0 0 600 110" width="100%">
+  <g font-family="Yu Gothic,Meiryo,sans-serif" text-anchor="middle">
+    <text x="70" y="70" font-size="56">き</text><text x="140" y="66" font-size="28" fill="#999">＋</text>
+    <text x="210" y="74" font-size="36" fill="#d6453d">ゃ</text><text x="280" y="66" font-size="28" fill="#999">＝</text>
+    <text x="370" y="70" font-size="56">きゃ</text>
+  </g>
+  <g font-family="Microsoft JhengHei" font-size="15" fill="#555" text-anchor="middle">
+    <text x="70" y="102">ki</text><text x="210" y="102">小寫的 ya</text><text x="370" y="102">kya「卡呀」快速唸成一拍</text>
+  </g>
+</svg>
+<table id="yoonTable"></table>
+<h3>② 促音：小「っ」＝停一拍（憋氣）</h3>
+<div class="flex">
+  <div class="script-box" style="border-color:#e8d9c8"><div class="big" style="font-size:2em">きって</div>kitte 郵票<br>🛑「ki～(憋)～te」</div>
+  <div class="script-box" style="border-color:#e8d9c8"><div class="big" style="font-size:2em">きて</div>kite 來<br>沒有停頓</div>
+</div>
+<div class="tip">💡 小「っ」本身不發音，像音樂的「休止符」，佔一拍時間。羅馬拼音寫成重複下一個子音（tt、kk、pp）。</div>
+<h3>③ 長音：拉長一拍</h3>
+<table>
+<tr><th>平假名</th><td class="jp">おばさん（阿姨）</td><td class="jp">おば<b style="color:red">あ</b>さん（奶奶）</td></tr>
+<tr><th>片假名</th><td colspan="2" class="jp">用「ー」表示：コ<b style="color:red">ー</b>ヒ<b style="color:red">ー</b>（coffee）、ケ<b style="color:red">ー</b>キ（cake）</td></tr>
+</table>
+<div class="key">🔑 長短音會改變意思！<span class="jp">おばさん</span>是阿姨、<span class="jp">おばあさん</span>是奶奶，叫錯會被瞪 😅</div>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+<h2>7. 易混淆字大集合 ⚠️</h2>
+<table>
+<tr><th>長得像</th><th>分辨訣竅</th></tr>
+<tr><td class="jp" style="font-size:1.6em">シ ／ ツ</td><td style="text-align:left"><b>シ shi</b>：三點「由下往上」挑，像笑臉 😊<br><b>ツ tsu</b>：三點「由上往下」，像海嘯 🌊落下</td></tr>
+<tr><td class="jp" style="font-size:1.6em">ソ ／ ン</td><td style="text-align:left"><b>ソ so</b>：兩筆都「由上往下」，像針線往下縫<br><b>ン n</b>：最後一筆「由下往上」挑，像打勾 ✔</td></tr>
+<tr><td class="jp" style="font-size:1.6em">ぬ ／ め</td><td style="text-align:left"><b>ぬ nu</b>：尾巴有「圈」→ 麵條捲起來 🍜<br><b>め me</b>：沒有圈 → 眼睛 👁️</td></tr>
+<tr><td class="jp" style="font-size:1.6em">ね ／ れ ／ わ</td><td style="text-align:left"><b>ね ne</b>：尾巴打圈（貓尾巴）🐱<br><b>れ re</b>：尾巴往上翹（跪著的腳）<br><b>わ wa</b>：尾巴往內收（哇！嘴巴）</td></tr>
+<tr><td class="jp" style="font-size:1.6em">る ／ ろ</td><td style="text-align:left"><b>る ru</b>：有圈 🌀　<b>ろ ro</b>：沒圈，平平的路 🛣️</td></tr>
+<tr><td class="jp" style="font-size:1.6em">さ ／ ち</td><td style="text-align:left">方向相反！<b>さ</b>開口朝左下、<b>ち</b>開口朝右（像 5 反過來）</td></tr>
+<tr><td class="jp" style="font-size:1.6em">は ／ ほ</td><td style="text-align:left"><b>ほ</b>右邊多一橫，像聖誕樹「Ho Ho Ho」🎄</td></tr>
+<tr><td class="jp" style="font-size:1.6em">ク ／ タ ／ ケ</td><td style="text-align:left"><b>ク</b>：簡單鳥嘴　<b>タ</b>：多一點（夕）　<b>ケ</b>：右邊出頭像 K</td></tr>
+<tr><td class="jp" style="font-size:1.6em">ウ ／ ワ ／ フ</td><td style="text-align:left"><b>ウ</b>有頭頂一點（屋頂煙囪）、<b>ワ</b>有左邊一豎、<b>フ</b>只有一筆</td></tr>
+</table>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+<h2>8. 馬上能用的生活用語（諧音版）</h2>
+<p>👆 點一下聽標準發音，諧音只是幫助記憶，<b>實際請以發音為準</b>。</p>
+<div class="phr" id="phrases"></div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+<h2>9. 數字 1～10</h2>
+<div class="phr" id="numbers"></div>
+<div class="tip">🎵 口訣：「衣七・你・桑・腰・勾・摟哭・那那・哈七・Q・啾」，像繞口令一樣連續唸！</div>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+<h2>10. 7 天背完五十音計畫 📅</h2>
+<table class="plan">
+<tr><th>天數</th><th>內容</th><th>任務</th></tr>
+<tr><th>Day 1</th><td class="jp">あ・か・さ 行（15字）</td><td>看圖唸諧音 → 訓練表「書寫練習」每字寫 5 遍</td></tr>
+<tr><th>Day 2</th><td class="jp">た・な・は 行（15字）</td><td>複習 Day1 → 新字 → 訓練表測驗 1 次</td></tr>
+<tr><th>Day 3</th><td class="jp">ま・や・ら・わ・ん（16字）</td><td>平假名全部完成！測驗正確率 &gt; 80%</td></tr>
+<tr><th>Day 4</th><td>濁音・半濁音・拗音</td><td>只要記「加兩點、加圈圈」規則</td></tr>
+<tr><th>Day 5</th><td>片假名 ア～ノ</td><td>對照平假名學，特別注意易混淆字</td></tr>
+<tr><th>Day 6</th><td>片假名 ハ～ン</td><td>片假名測驗正確率 &gt; 80%</td></tr>
+<tr><th>Day 7</th><td>總複習＋生活用語</td><td>平片混合測驗 → 唸出第 8 節所有句子</td></tr>
+</table>
+<div class="key">🔑 <b>記憶秘訣：</b>每天 20 分鐘 &gt; 一次 3 小時。睡前看一遍、起床再看一遍，記憶最牢！</div>
+<p style="text-align:center;margin-top:20px" class="noprint"><a class="btn" href="50音訓練表.html">🎯 開始 50 音訓練 →</a></p>
+</section>
+
+<footer>零基礎日文講義 ・ 諧音僅供記憶輔助，正確發音以語音為準 ・ 可直接 Ctrl+P 列印</footer>
+</div>
+
+<script src="kana-data.js"></script>
+<script>
+function buildCards(el, kata){
+  const box = document.getElementById(el);
+  GRID.forEach((row,i)=>{
+    const lab = document.createElement('div'); lab.className='rowlabel';
+    lab.textContent = kata ? ROW_NAMES[i].replace(/[あかさたなはまやらわん]/,c=>BY_HIRA[c]?BY_HIRA[c][1]:c) : ROW_NAMES[i];
+    box.appendChild(lab);
+    row.forEach(h=>{
+      const d=document.createElement('div');
+      if(!h){d.className='card empty';box.appendChild(d);return;}
+      const k=BY_HIRA[h]; d.className='card';
+      d.innerHTML = `<span class="e">${k[4]}</span>
+        <div class="k">${kata?k[1]:k[0]}</div>
+        <div class="kk">${kata?'平：'+k[0]:'片：'+k[1]}</div>
+        <div class="r">${k[2]}</div><span class="h">${k[3]}</span>
+        <div class="m">${kata?k[6]:k[5]}</div>
+        <div class="src">字源：${kata?k[8]:k[7]}</div>`;
+      d.onclick=()=>speak(k[0]);
+      box.appendChild(d);
+    });
+  });
+}
+buildCards('hiraCards',false);
+buildCards('kataCards',true);
+
+function buildTable(id,data,cols){
+  const t=document.getElementById(id); let html='';
+  for(let i=0;i<data.length;i+=cols){
+    html+='<tr>'+data.slice(i,i+cols).map(d=>`<td class="jp" style="cursor:pointer" onclick="speak('${d[0]}')"><span style="font-size:1.4em">${d[0]}</span> ${d[1]}<br><b style="color:#2f6fb5">${d[2]}</b> <span style="color:#d6453d">${d[3]}</span></td>`).join('')+'</tr>';
+  }
+  t.innerHTML=html;
+}
+buildTable('dakuTable',DAKU,5);
+buildTable('yoonTable',YOON,3);
+
+const PHRASES=[
+  ["こんにちは","konnichiwa","摳你雞哇","👋","你好（白天）"],
+  ["おはよう","ohayō","歐哈腰","🌅","早安"],
+  ["こんばんは","konbanwa","摳棒哇","🌙","晚安（見面時）"],
+  ["おやすみ","oyasumi","歐呀斯咪","😴","晚安（睡前）"],
+  ["ありがとう","arigatō","阿哩嘎多","🙏","謝謝"],
+  ["すみません","sumimasen","斯咪媽線","🙇","不好意思／對不起"],
+  ["はじめまして","hajimemashite","哈基妹媽西貼","🤝","初次見面"],
+  ["よろしく","yoroshiku","喲囉西哭","😊","請多指教"],
+  ["さようなら","sayōnara","撒喲娜拉","👋","再見"],
+  ["いただきます","itadakimasu","衣塔搭ki媽斯","🍱","我開動了"],
+  ["おいしい","oishii","歐衣西～","😋","好吃"],
+  ["かわいい","kawaii","卡哇伊","🥰","可愛"],
+  ["だいじょうぶ","daijōbu","呆久不","👌","沒問題"],
+  ["はい／いいえ","hai / iie","嗨／衣～欸","⭕❌","是／不是"],
+  ["いくらですか","ikura desu ka","衣哭拉爹斯卡","💴","多少錢？"],
+  ["トイレはどこですか","toire wa doko desu ka","偷衣勒哇兜摳爹斯卡","🚻","廁所在哪裡？"]
+];
+document.getElementById('phrases').innerHTML=PHRASES.map(p=>`<div onclick="speak('${p[0].split('／')[0]}')"><span style="float:right;font-size:1.6em">${p[3]}</span><div class="j">${p[0]}</div><div>${p[1]}</div><div class="h">諧音：${p[2]}</div><div>👉 ${p[4]} <span class="spk">🔊</span></div></div>`).join('');
+
+const NUMS=[["いち","ichi","衣七","1"],["に","ni","你","2"],["さん","san","桑","3"],["よん","yon","腰","4"],["ご","go","勾","5"],["ろく","roku","摟哭","6"],["なな","nana","那那","7"],["はち","hachi","哈七","8"],["きゅう","kyū","Q","9"],["じゅう","jū","啾","10"]];
+document.getElementById('numbers').innerHTML=NUMS.map(n=>`<div onclick="speak('${n[0]}')"><span style="float:right;font-size:1.8em;color:#d6453d;font-weight:bold">${n[3]}</span><div class="j">${n[0]}</div><div>${n[1]}</div><div class="h">諧音：${n[2]}</div></div>`).join('');
+</script>
+</body>
+</html>

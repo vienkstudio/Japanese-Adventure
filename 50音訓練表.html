@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>50音訓練表｜總表・閃卡・測驗・書寫練習</title>
+<style>
+:root{--red:#d6453d;--blue:#2f6fb5;--line:#e8d9c8;--soft:#fff7ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",sans-serif;background:#faf6f0;color:#2b2b2b}
+.wrap{max-width:1000px;margin:auto;padding:20px}
+h1{text-align:center;color:var(--red);margin:.2em 0}
+.sub{text-align:center;color:#777;margin-bottom:14px}
+.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.tabs button,.opt button,.ctrl button{border:2px solid var(--red);background:#fff;color:var(--red);padding:8px 16px;border-radius:30px;font-size:1em;cursor:pointer;font-family:inherit}
+.tabs button.on,.opt button.on{background:var(--red);color:#fff}
+.panel{display:none;background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.panel.on{display:block}
+.opt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;justify-content:center}
+.opt label{margin-right:4px;cursor:pointer;user-select:none}
+.jp{font-family:"Yu Gothic","Meiryo","Noto Sans JP",sans-serif}
+/* 總表 */
+table.grid{border-collapse:collapse;width:100%}
+table.grid td,table.grid th{border:1px solid var(--line);text-align:center;padding:4px;width:18%}
+table.grid th{background:var(--soft);width:10%}
+.cell{cursor:pointer;min-height:84px;display:flex;flex-direction:column;justify-content:center;border-radius:8px;transition:.15s}
+.cell:hover{background:#fff1e3}
+.cell .k{font-size:2.2em;line-height:1.1}
+.cell .k small{font-size:.6em;color:var(--blue);margin-left:4px}
+.cell .r{color:var(--blue);font-weight:bold}
+.cell .h{color:var(--red);font-size:.9em}
+.cell.cover .r,.cell.cover .h{visibility:hidden}
+.cell.cover.show .r,.cell.cover.show .h{visibility:visible}
+.cell.done{background:#e8f7ec}
+/* 閃卡 */
+.flash{width:320px;height:340px;margin:16px auto;perspective:1000px;cursor:pointer}
+.flash .inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flash.flip .inner{transform:rotateY(180deg)}
+.flash .f,.flash .b{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid var(--red);background:#fffdf9;padding:16px;text-align:center}
+.flash .f .k{font-size:7em;line-height:1}
+.flash .b{transform:rotateY(180deg);background:#fff4ec}
+.flash .b .e{font-size:3em}
+.flash .b .r{font-size:2.4em;color:var(--blue);font-weight:bold}
+.flash .b .h{font-size:1.6em;color:var(--red);font-weight:bold}
+.ctrl{text-align:center}
+.ctrl button{margin:4px}
+/* 測驗 */
+.qbox{text-align:center}
+.qk{font-size:7em;margin:10px 0}
+.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:420px;margin:auto}
+.choices button{font-size:1.6em;padding:14px;border-radius:14px;border:2px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+.choices button:hover{border-color:var(--blue)}
+.choices button.ok{background:#2e8b57;color:#fff;border-color:#2e8b57}
+.choices button.ng{background:var(--red);color:#fff;border-color:var(--red)}
+.score{font-size:1.2em;margin:10px}
+.fb{min-height:2em;font-size:1.1em}
+.bar{height:10px;background:#eee;border-radius:5px;overflow:hidden;max-width:420px;margin:8px auto}
+.bar div{height:100%;background:linear-gradient(90deg,#f08a5d,#d6453d);width:0;transition:.3s}
+.wrongs span{display:inline-block;margin:4px;padding:4px 10px;background:#ffecea;border-radius:10px;font-size:1.3em}
+/* 書寫 */
+.wsheet{display:flex;flex-direction:column;gap:6px}
+.wrow{display:flex;gap:0;align-items:stretch}
+.wlab{width:90px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:.85em;border:1px solid #ccc;border-right:none;background:var(--soft)}
+.wlab b{font-size:1.1em;color:var(--blue)}
+.wlab span{color:var(--red)}
+.box{width:62px;height:62px;border:1px solid #ccc;border-left:none;position:relative;display:flex;align-items:center;justify-content:center;font-size:44px;
+  background:linear-gradient(#fff,#fff),
+  repeating-linear-gradient(0deg,transparent,transparent 30px,#eee 30px,#eee 31px);}
+.box::before,.box::after{content:"";position:absolute;border-color:#f0d5d5;border-style:dashed}
+.box::before{left:50%;top:0;bottom:0;border-width:0 0 0 1px}
+.box::after{top:50%;left:0;right:0;border-width:1px 0 0 0}
+.box span{position:relative;z-index:1}
+.box.m span{color:#222}
+.box.t span{color:#d8d8d8}
+.noprint{}
+@media(max-width:640px){.box{width:44px;height:44px;font-size:30px}.wlab{width:64px}.flash{width:260px;height:300px}}
+@media print{
+  body{background:#fff}.tabs,.opt,.noprint,h1,.sub{display:none!important}
+  .panel{box-shadow:none;padding:0}.panel:not(#p4){display:none!important}#p4{display:block!important}
+  .wrow{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🎯 50音訓練表</h1>
+<div class="sub">總表背誦 → 閃卡記憶 → 測驗檢查 → 書寫練習（可列印）　｜　<a href="日文講義.html">📖 回講義</a></div>
+
+<div class="tabs">
+  <button class="on" data-p="p1">📋 五十音總表</button>
+  <button data-p="p2">🃏 閃卡</button>
+  <button data-p="p3">✏️ 測驗</button>
+  <button data-p="p4">🖨️ 書寫練習</button>
+</div>
+
+<!-- 共用：假名種類 -->
+<div class="opt" id="typeOpt">
+  <span>文字：</span>
+  <button class="on" data-t="h">平假名</button>
+  <button data-t="k">片假名</button>
+  <button data-t="m">平片混合</button>
+</div>
+
+<!-- 總表 -->
+<div class="panel on" id="p1">
+  <div class="opt">
+    <label><input type="checkbox" id="coverChk"> 🙈 遮住拼音（點字翻開自我測試）</label>
+    <label><input type="checkbox" id="bothChk"> 同時顯示平片</label>
+  </div>
+  <table class="grid jp" id="gridT"></table>
+  <p style="text-align:center;color:#888;font-size:.9em">點字可聽發音；遮住模式下，點一下翻開、再點標記為「已會」（綠色）。</p>
+</div>
+
+<!-- 閃卡 -->
+<div class="panel" id="p2">
+  <div class="opt" id="rowSel2"></div>
+  <div class="flash" id="flash">
+    <div class="inner">
+      <div class="f"><div class="k jp" id="fk"></div><div style="color:#aaa;margin-top:10px">點卡片翻面</div></div>
+      <div class="b"><div class="e" id="fe"></div><div class="r" id="fr"></div><div class="h" id="fh"></div><div id="fm" style="margin-top:8px;font-size:.95em"></div><div id="fs" style="color:#aaa;font-size:.85em;margin-top:6px"></div></div>
+    </div>
+  </div>
+  <div class="ctrl">
+    <button id="fPrev">⬅ 上一張</button>
+    <button id="fSpeak">🔊 發音</button>
+    <button id="fShuf">🔀 洗牌</button>
+    <button id="fNext">下一張 ➡</button>
+    <div id="fCount" style="color:#888;margin-top:6px"></div>
+  </div>
+</div>
+
+<!-- 測驗 -->
+<div class="panel" id="p3">
+  <div class="opt" id="rowSel3"></div>
+  <div class="opt">
+    <span>題型：</span>
+    <button class="on" data-q="k2r">看假名選拼音</button>
+    <button data-q="r2k">看拼音選假名</button>
+    <button data-q="h2k">平假名↔片假名</button>
+  </div>
+  <div class="qbox">
+    <div class="bar"><div id="qbar"></div></div>
+    <div class="score" id="qscore"></div>
+    <div class="qk jp" id="qk"></div>
+    <div class="choices jp" id="qc"></div>
+    <div class="fb" id="qfb"></div>
+    <div class="ctrl"><button id="qRestart">🔄 重新開始（20題）</button></div>
+    <div class="wrongs" id="qwrong"></div>
+  </div>
+</div>
+
+<!-- 書寫 -->
+<div class="panel" id="p4">
+  <div class="opt noprint" id="rowSel4"></div>
+  <div class="opt noprint">
+    <button onclick="window.print()">🖨️ 列印練習紙</button>
+    <span style="color:#888">每列：範字 → 3 格描紅 → 空白格自己寫</span>
+  </div>
+  <div class="wsheet jp" id="wsheet"></div>
+</div>
+</div>
+
+<script src="kana-data.js"></script>
+<script>
+let TYPE='h';
+const $=id=>document.getElementById(id);
+const glyph=(k,t)=> t==='k'?k[1] : t==='h'?k[0] : (Math.random()<.5?k[0]:k[1]);
+
+/* 分頁 */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $(b.dataset.p).classList.add('on');
+});
+document.querySelectorAll('#typeOpt button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#typeOpt button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); TYPE=b.dataset.t; refreshAll();
+});
+
+/* 行選擇器 */
+const rowState={};
+function rowSelector(id,cb){
+  rowState[id]=ROW_NAMES.map(()=>true);
+  const el=$(id);
+  el.innerHTML='<span>範圍：</span>'+ROW_NAMES.map((n,i)=>`<label><input type="checkbox" checked data-i="${i}">${n}</label>`).join('')+
+    ' <button data-all="1">全選</button><button data-all="0">全不選</button>';
+  el.querySelectorAll('input').forEach(c=>c.onchange=()=>{rowState[id][c.dataset.i]=c.checked;cb();});
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const v=b.dataset.all==='1'; el.querySelectorAll('input').forEach(c=>c.checked=v);
+    rowState[id]=rowState[id].map(()=>v); cb();
+  });
+}
+function pool(id){
+  const out=[]; GRID.forEach((r,i)=>{ if(rowState[id][i]) r.forEach(h=>h&&out.push(BY_HIRA[h])); }); return out;
+}
+
+/* 1 總表 */
+function drawGrid(){
+  const cover=$('coverChk').checked, both=$('bothChk').checked;
+  let html='<tr><th></th><th>a</th><th>i</th><th>u</th><th>e</th><th>o</th></tr>';
+  GRID.forEach((row,i)=>{
+    html+=`<tr><th>${ROW_NAMES[i]}</th>`+row.map(h=>{
+      if(!h) return '<td></td>';
+      const k=BY_HIRA[h];
+      const main = TYPE==='k'?k[1]:k[0];
+      const extra = (both||TYPE==='m') ? `<small>${TYPE==='k'?k[0]:k[1]}</small>` : '';
+      return `<td><div class="cell ${cover?'cover':''}" data-h="${h}"><div class="k">${main}${extra}</div><div class="r">${k[2]}</div><div class="h">${k[3]} ${k[4]}</div></div></td>`;
+    }).join('')+'</tr>';
+  });
+  $('gridT').innerHTML=html;
+  $('gridT').querySelectorAll('.cell').forEach(c=>c.onclick=()=>{
+    speak(c.dataset.h);
+    if(c.classList.contains('cover')){
+      if(c.classList.contains('show')) c.classList.toggle('done'); else c.classList.add('show');
+    }
+  });
+}
+$('coverChk').onchange=drawGrid; $('bothChk').onchange=drawGrid;
+
+/* 2 閃卡 */
+let fl=[],fi=0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function flashInit(sh){ fl=pool('rowSel2'); if(sh) shuffle(fl); fi=0; showFlash(); }
+function showFlash(){
+  $('flash').classList.remove('flip');
+  if(!fl.length){$('fk').textContent='—';$('fCount').textContent='請選擇範圍';return;}
+  const k=fl[fi]; const t=TYPE==='m'?(fi%2?'k':'h'):TYPE;
+  setTimeout(()=>{
+    $('fk').textContent=t==='k'?k[1]:k[0];
+    $('fe').textContent=k[4]; $('fr').textContent=k[2]; $('fh').textContent='諧音：'+k[3];
+    $('fm').textContent=t==='k'?k[6]:k[5];
+    $('fs').textContent=`平 ${k[0]}・片 ${k[1]}　字源：${t==='k'?k[8]:k[7]}`;
+  },150);
+  $('fCount').textContent=`${fi+1} / ${fl.length}`;
+}
+$('flash').onclick=()=>{ $('flash').classList.toggle('flip'); if($('flash').classList.contains('flip')&&fl[fi]) speak(fl[fi][0]); };
+$('fNext').onclick=()=>{ if(fl.length){fi=(fi+1)%fl.length;showFlash();} };
+$('fPrev').onclick=()=>{ if(fl.length){fi=(fi-1+fl.length)%fl.length;showFlash();} };
+$('fShuf').onclick=()=>flashInit(true);
+$('fSpeak').onclick=()=>fl[fi]&&speak(fl[fi][0]);
+document.addEventListener('keydown',e=>{
+  if(!$('p2').classList.contains('on')) return;
+  if(e.key==='ArrowRight') $('fNext').click();
+  if(e.key==='ArrowLeft') $('fPrev').click();
+  if(e.key===' '){e.preventDefault();$('flash').click();}
+});
+
+/* 3 測驗 */
+let QT='k2r', qList=[], qi=0, qok=0, wrong=[], locked=false;
+const TOTAL=20;
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-q]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); QT=b.dataset.q; quizInit();
+});
+function quizInit(){
+  const p=pool('rowSel3'); qi=0;qok=0;wrong=[];
+  $('qwrong').innerHTML='';
+  if(p.length<4){ $('qk').textContent='—'; $('qc').innerHTML=''; $('qfb').textContent='範圍至少要 4 個字'; return; }
+  qList=[]; while(qList.length<TOTAL) qList.push(...shuffle([...p])); qList=qList.slice(0,TOTAL);
+  nextQ();
+}
+function nextQ(){
+  locked=false; $('qfb').textContent='';
+  $('qbar').style.width=(qi/TOTAL*100)+'%';
+  $('qscore').textContent=`第 ${Math.min(qi+1,TOTAL)} / ${TOTAL} 題　答對 ${qok}`;
+  if(qi>=TOTAL){ return endQuiz(); }
+  const k=qList[qi], p=pool('rowSel3');
+  const others=shuffle(p.filter(x=>x!==k)).slice(0,3);
+  const opts=shuffle([k,...others]);
+  let q, show;
+  if(QT==='k2r'){ q=glyph(k,TYPE); show=o=>o[2]; }
+  else if(QT==='r2k'){ q=k[2]; const t=TYPE==='m'?(Math.random()<.5?'h':'k'):TYPE; show=o=>t==='k'?o[1]:o[0]; }
+  else { const toK=TYPE==='k'?false:TYPE==='h'?true:Math.random()<.5; q=toK?k[0]:k[1]; show=o=>toK?o[1]:o[0]; }
+  $('qk').textContent=q;
+  $('qk').style.fontSize = QT==='r2k'?'4em':'7em';
+  $('qc').innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button'); b.textContent=show(o);
+    b.onclick=()=>{
+      if(locked) return; locked=true; speak(k[0]);
+      const right=o===k;
+      if(right){ qok++; b.classList.add('ok'); $('qfb').innerHTML=`⭕ 正確！${k[0]}／${k[1]} = ${k[2]}（${k[3]}）`; }
+      else{
+        b.classList.add('ng'); wrong.push(k);
+        [...$('qc').children].forEach((x,i)=>{ if(opts[i]===k) x.classList.add('ok'); });
+        $('qfb').innerHTML=`❌ 答案是 ${k[0]}／${k[1]} = <b>${k[2]}</b>（諧音「${k[3]}」${k[4]}）<br><span style="color:#888">${k[5]}</span>`;
+      }
+      qi++; setTimeout(nextQ, right?800:2200);
+    };
+    $('qc').appendChild(b);
+  });
+}
+function endQuiz(){
+  const pct=Math.round(qok/TOTAL*100);
+  $('qbar').style.width='100%';
+  $('qk').style.fontSize='3em';
+  $('qk').textContent = pct>=90?'🏆 太強了！':pct>=70?'👍 不錯喔！':'💪 再加油！';
+  $('qc').innerHTML='';
+  $('qscore').textContent=`成績：${qok} / ${TOTAL}（${pct}%）`;
+  $('qfb').textContent = wrong.length?'答錯的字，多看幾遍：':'全對！換下一個範圍挑戰吧！';
+  const uniq=[...new Set(wrong)];
+  $('qwrong').innerHTML=uniq.map(k=>`<span>${k[0]} ${k[1]} <small>${k[2]}・${k[3]}</small></span>`).join('');
+}
+$('qRestart').onclick=quizInit;
+
+/* 4 書寫練習 */
+function drawSheet(){
+  const p=pool('rowSel4'); const t=TYPE;
+  const emptyN = window.innerWidth<640?3:8;
+  $('wsheet').innerHTML=p.map(k=>{
+    const chars = t==='m'?[k[0],k[1]]:[t==='k'?k[1]:k[0]];
+    return chars.map(c=>`<div class="wrow"><div class="wlab"><b>${k[2]}</b><span>${k[3]}</span></div>
+      <div class="box m"><span>${c}</span></div>
+      ${'<div class="box t"><span>'+c+'</span></div>'.repeat(3)}
+      ${'<div class="box"></div>'.repeat(emptyN)}</div>`).join('');
+  }).join('');
+}
+
+function refreshAll(){ drawGrid(); flashInit(false); quizInit(); drawSheet(); }
+rowSelector('rowSel2',()=>flashInit(false));
+rowSelector('rowSel3',quizInit);
+rowSelector('rowSel4',drawSheet);
+refreshAll();
+</script>
+</body>
+</html>
