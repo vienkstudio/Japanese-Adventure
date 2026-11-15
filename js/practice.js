@@ -908,10 +908,11 @@
     };
     const comboJP = p => combo(p, false);
     function okoRound() {
-      const want = m.axes.map(ax => App.sample(ax.opts, 1)[0]);
+      // 以最常見的「かため・こいめ・おおめ」為主，其餘隨機組合
+      const want = Math.random() < 0.6 ? m.axes.map(ax => ax.opts[0]) : m.axes.map(ax => App.sample(ax.opts, 1)[0]);
       const chosen = m.axes.map(() => null);
       let tries = 0;
-      pane.innerHTML = friendBox(`「我要 <b class="jp">${want.map(x => x.jp).join('・')}</b>」<span class="z">（${want.map(x => x.zh).join('、')}）</span>`)
+      pane.innerHTML = friendBox(`「我要 <b class="jp">${want.map((x, a) => m.axes[a].key + x.jp).join('・')}</b>」<span class="z">（${want.map(x => x.zh).join('、')}）</span>`)
         + `<div class="chat" id="mChat"></div><div class="o-board" id="oB">${m.axes.map((ax, a) => `<div class="o-row"><div class="o-name jp">${esc(ax.name)}</div><div class="o-opts">${ax.opts.map((o, j) => `<button data-a="${a}" data-j="${j}" class="jp">${esc(o.jp)}<small class="z">${esc(o.zh)}</small></button>`).join('')}</div></div>`).join('')}
           <button class="btn primary block" id="oOk">✅ 決定</button></div><div class="feedback" id="mFb"></div>`;
       npc(pane.querySelector('#mChat'), m.greet);
