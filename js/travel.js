@@ -99,13 +99,12 @@
           ${layout.map(tileHTML).join('')}
           <div class="trip-player" aria-hidden="true"><span>${esc(avatar && avatar !== '🧳' ? avatar : '🚶')}</span></div>
         </div>
-        <div class="trip-go"><p class="trip-location" role="status"></p><button class="trip-primary" id="trip-enter" type="button">進入</button></div>
+        <p class="trip-location trip-go" role="status"></p>
         <p class="trip-count">完成 ${count}／${stops.length} 站</p>
       </section>`;
     const shell = el.querySelector('.trip-shell');
     const map = shell.querySelector('.trip-map');
     const marker = shell.querySelector('.trip-player');
-    const enter = shell.querySelector('#trip-enter');
     const status = shell.querySelector('.trip-location');
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     let moving = false;
@@ -115,9 +114,7 @@
     }
     function paintControls() {
       const stop = stopAt(run.tile);
-      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點店家就會走過去';
-      enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入';
-      enter.disabled = !stop;
+      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '👆 點店家，旅人就會走過去開始';
       map.querySelectorAll('[data-tile]').forEach(button => {
         if (+button.dataset.tile === run.tile) button.setAttribute('aria-current', 'location');
         else button.removeAttribute('aria-current');
@@ -131,7 +128,6 @@
     async function walk(path) {
       if (moving || !path.length) return;
       moving = true;
-      enter.disabled = true;
       status.textContent = '移動中';
       for (const tile of path) {
         if (!shell.isConnected) return;
@@ -168,10 +164,9 @@
       button.onclick = () => {
         const target = +button.dataset.tile;
         if (target === run.tile) enterStop();
-        else walk(routeBetween(run.tile, target));
+        else walk(routeBetween(run.tile, target)).then(() => { if (run.tile === target) enterStop(); });
       };
     });
-    enter.onclick = enterStop;
     paintPlayer();
     paintControls();
     if (matchMedia('(pointer: fine)').matches) map.focus({ preventScroll: true });

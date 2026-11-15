@@ -97,6 +97,7 @@
     bg.className = 'modal-bg';
     bg.innerHTML = `<div class="modal">${html}<div class="modal-btns"></div></div>`;
     const close = () => bg.remove();
+    bg.onclick = e => { if (e.target === bg) close(); };
     const bb = bg.querySelector('.modal-btns');
     (buttons || [{ label: '關閉' }]).forEach(b => {
       const el = document.createElement('button');
@@ -191,12 +192,19 @@
     return { name: name || 'home', params };
   }
   function parseHash() { return CUR || (CUR = readHash()); }
-  function go(name, params) {
+  const HIST = [];
+  function go(name, params, isBack) {
+    if (!isBack && CUR && CUR.name !== 'trip-stop' && !(CUR.name === name && JSON.stringify(CUR.params) === JSON.stringify(params || {}))) { HIST.push(CUR); if (HIST.length > 30) HIST.shift(); }
+    if (name === 'home' && !isBack) HIST.length = 0;
     CUR = { name, params: params || {} };
     lastParams[name] = CUR.params;
     const h = '#' + name;
     try { if (location.hash !== h) { skipHash = h; location.hash = h; } } catch (e) { }
     render();
+  }
+  function back() {
+    const p = HIST.pop();
+    if (p) go(p.name, p.params, true); else go('home', null, true);
   }
   function onHash() {
     let h = ''; try { h = location.hash; } catch (e) { }
@@ -237,11 +245,13 @@
     if (pc) {
       const lo = LEVELS[lv - 1], hi = LEVELS[lv] || LEVELS[lv - 1] + 1000;
       const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
-      pc.innerHTML = `<button class="icon-btn" id="homeBtn" title="回首頁">🏠</button><span class="sv icon-btn" title="${ss[1]}">💾</span>` +
+      pc.innerHTML = `<span class="sv icon-btn" title="${ss[1]}">💾</span>` +
         (window.Game ? `<button class="icon-btn" id="sfxBtn" title="音效">${Game.sfxOn() ? '🔊' : '🔇'}</button>` : '');
       const sv = pc.querySelector('.sv'); if (sv) { sv.title += '（點我備份）'; sv.onclick = () => window.PracticeAPI && PracticeAPI.backup(); }
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
-      document.getElementById('homeBtn').onclick = () => go('home');
+      let bk = document.getElementById('backBtn');
+      if (!bk) { bk = document.createElement('button'); bk.id = 'backBtn'; bk.className = 'icon-btn'; bk.title = '回上一頁'; bk.textContent = '←'; const top = document.querySelector('#top .in'); top.insertBefore(bk, top.firstChild); bk.onclick = back; }
+      bk.style.visibility = cur === 'home' ? 'hidden' : 'visible';
     }
   }
   function start() { started = true; parseHash(); lastParams[CUR.name] = CUR.params; window.addEventListener('hashchange', onHash); onChange(renderNav); render(); cloudInit(); }
@@ -295,6 +305,7 @@
     addXP, completeQuest, showResult, modal, toast,
     speak: speakJP, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
+    back,
     resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); if (CL.ref) cloudPush(); go('home'); },
     get saveStatus() { return CL.status; },
     noteClear,
