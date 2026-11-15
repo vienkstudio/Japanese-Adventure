@@ -14,7 +14,7 @@ window.TravelData = {
   // 問題順序：場景、日語提示、提示譯文、答案（正解放第一）、講解、可選平假名讀音。
   stops: [
     {
-      id: 'airport', tile: 1, icon: '✈️', name: '機場', jp: '空港', npc: '地勤',
+      id: 'airport', day: 'Day 1', area: '成田', story: '晚上降落成田機場，準備搭 Skyliner 進市區。', tile: 1, icon: '✈️', name: '機場', jp: '空港', npc: '地勤',
       events: {
         N5: [
           ['你剛抵達，想問哪裡可以領行李。', 'お手伝いしましょうか。', '要幫忙嗎？',
@@ -49,7 +49,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'station', tile: 3, icon: '🚉', name: '車站', jp: '駅', npc: '站務員',
+      id: 'station', day: 'Day 1', area: '上野', story: '搭 Skyliner 到上野，之後每天從上野搭銀座線、山手線出發。', tile: 3, icon: '🚉', name: '車站', jp: '駅', npc: '站務員',
       events: {
         N5: [
           ['你要搭車去新宿。向站務員問月台。', 'どちらまでですか。', '要到哪裡？',
@@ -84,7 +84,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'izakaya', tile: 14, icon: '🏮', name: '居酒屋', jp: '居酒屋', npc: '店員',
+      id: 'izakaya', day: 'Day 6', area: '橫濱・野毛', story: '晚上去野毛的居酒屋和串燒店，這裡只收現金。', tile: 14, icon: '🏮', name: '居酒屋', jp: '居酒屋', npc: '店員',
       events: {
         N5: [
           ['你們兩人走進店裡。', '何名様ですか。', '請問幾位？',
@@ -119,7 +119,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'hotel', tile: 20, icon: '🏨', name: '旅館', jp: 'ホテル', npc: '櫃台',
+      id: 'hotel', day: 'Day 1', area: '上野', story: '在上野的飯店入住、放行李，晚上去吃壽司。', tile: 20, icon: '🏨', name: '旅館', jp: 'ホテル', npc: '櫃台',
       events: {
         N5: [
           ['你用林這個姓氏訂了房。', 'お名前をお願いします。', '請問您的名字。',
@@ -154,7 +154,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'konbini', tile: 23, icon: '🏪', name: '便利商店', jp: 'コンビニ', npc: '店員',
+      id: 'konbini', day: '每天', area: '上野', story: '回飯店前順路去便利商店買宵夜和飲料。', tile: 23, icon: '🏪', name: '便利商店', jp: 'コンビニ', npc: '店員',
       events: {
         N5: [
           ['你拿便當和水去結帳。你想把便當加熱。', 'お弁当、温めますか。', '便當要加熱嗎？',
@@ -189,7 +189,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'ramen', tile: 29, icon: '🍜', name: '拉麵店', jp: 'ラーメン屋', npc: '店員',
+      id: 'ramen', day: 'Day 6', area: '橫濱', story: '到橫濱吃家系拉麵的總本山，跟師傅說「かため、こいめ、おおめ」。', tile: 29, icon: '🍜', name: '拉麵店', jp: 'ラーメン屋', npc: '店員',
       events: {
         N5: [
           ['你在券売機買好餐券，交給店員。店員問麵的硬度。', '麺の硬さはどうしますか。', '麵的硬度要怎麼做？',
@@ -224,7 +224,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'shrine', tile: 30, icon: '⛩️', name: '神社', jp: '神社', npc: '巫女',
+      id: 'shrine', day: 'Day 2・3', area: '原宿・淺草', story: '明治神宮的大鳥居、淺草寺和雷門。', tile: 30, icon: '⛩️', name: '神社', jp: '神社', npc: '巫女',
       events: {
         N5: [
           ['你想買健康的御守。', 'どちらになさいますか。', '要哪一個呢？',
@@ -259,7 +259,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'drugstore', tile: 36, icon: '💊', name: '藥妝店', jp: 'ドラッグストア', npc: '店員',
+      id: 'drugstore', day: 'Day 4', area: '銀座', story: '銀座逛街，順便到藥妝店補貨、辦免稅。', tile: 36, icon: '💊', name: '藥妝店', jp: 'ドラッグストア', npc: '店員',
       events: {
         N5: [
           ['你在找防曬乳。', 'いらっしゃいませ。', '歡迎光臨。',
@@ -294,7 +294,7 @@ window.TravelData = {
       }
     },
     {
-      id: 'yakiniku', tile: 38, icon: '🥩', name: '燒肉店', jp: '焼肉屋', npc: '店員',
+      id: 'yakiniku', day: 'Day 5', area: '新宿', story: '晚餐在新宿排隊吃炭火ホルモン燒肉。', tile: 38, icon: '🥩', name: '燒肉店', jp: '焼肉屋', npc: '店員',
       events: {
         N5: [
           ['你想再點兩人份牛五花。', 'ご注文はお決まりですか。', '決定要點什麼了嗎？',

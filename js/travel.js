@@ -25,10 +25,23 @@
   const questOf = (level, stop) => level.kana ? level.quests[stops.indexOf(stop)] : null;
   const questInfo = id => (window.QUESTS || []).find(q => q.id === id) || null;
   const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  // 分級狀況題本身的星數
+  const evStars = (level, run, stop) => (run.stars && run.stars[stop.id]) || ((run.scores[stop.id] || 0) >= stop.events[level.id].length ? 3 : 0);
+  // 站內流程：依到店時間線排列的原版互動小遊戲，最後是這個程度的狀況題
+  function hubSteps(level, run, stop) {
+    const P = window.PracticeAPI;
+    const games = P && P.stageNodes ? P.stageNodes(stop.id).filter(n => /:m\d+$/.test(n.key)).map(n => {
+      const i = +n.key.split(':m')[1], key = `${n.key}@${level.id}`;
+      return { key, icon: n.icon, name: n.name, sub: n.sub, stars: P.sitStars(key), go: () => App.go('menu', { id: stop.id, m: i, lv: level.id, trip: 1 }) };
+    }) : [];
+    return games.concat([{ key: 'ev', icon: '🗣️', name: `${level.id} 狀況題`, sub: `💬 ${level.label}`, stars: evStars(level, run, stop), go: () => App.go('trip-event') }]);
+  }
   function stopStars(level, run, stop) {
     if (level.kana) return App.stars(questOf(level, stop));
-    return (run.stars && run.stars[stop.id]) || ((run.scores[stop.id] || 0) >= stop.events[level.id].length ? 3 : 0);
+    const st = hubSteps(level, run, stop).map(s => s.stars);
+    return st.every(x => x > 0) ? Math.min(...st) : 0;
   }
+  const stopProgress = (level, run, stop) => { const st = hubSteps(level, run, stop); return [st.filter(s => s.stars > 0).length, st.length]; };
 
   function neighbor(tile, direction) {
     const [dx, dy] = directions[direction];
@@ -112,7 +125,7 @@
       const arms = Object.keys(directions).filter(d => canWalk(neighbor(tile, d)))
         .map(d => `<span class="trip-arm trip-arm-${d}"></span>`).join('');
       const building = stop ? `<button type="button" class="trip-stop trip-stop-${stop.id}" data-tile="${tile}" title="${esc(stop.jp)}">
-        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${level.kana && questInfo(questOf(level, stop)) ? `<em class="trip-q">${esc(questInfo(questOf(level, stop)).title.replace(/^BOSS：/, '👑').replace(/：.*/, ''))}</em>` : ''}${cleared(stop) ? `<small aria-label="已通過">${stopStars(level, run, stop)}★</small>` : ''}</button>` : '';
+        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${level.kana && questInfo(questOf(level, stop)) ? `<em class="trip-q">${esc(questInfo(questOf(level, stop)).title.replace(/^BOSS：/, '👑').replace(/：.*/, ''))}</em>` : ''}${cleared(stop) ? `<small aria-label="已通過">${stopStars(level, run, stop)}★</small>` : !level.kana && stopProgress(level, run, stop)[0] ? `<small class="trip-prog">${stopProgress(level, run, stop).join('/')}</small>` : ''}</button>` : '';
       return `<div class="trip-tile trip-path"><div class="trip-lane" aria-hidden="true">${arms}</div>${building}</div>`;
     };
     el.innerHTML = `
@@ -137,6 +150,7 @@
             <button class="trip-primary" id="trip-enter" type="button">進入地點</button>
           </div>
         </div>
+        <p class="trip-route">🗓️ 照朋友的 9 天行程走：${['airport', 'station', 'hotel', 'konbini', 'shrine', 'drugstore', 'yakiniku', 'ramen', 'izakaya'].map(id => stops.find(s => s.id === id)).filter(Boolean).map(s => `<span class="${cleared(s) ? 'ok' : ''}">${s.icon}</span>`).join('→')}</p>
         <div class="trip-links">
           <span>旅程進度 ${count}／${stops.length} 站</span>
           ${level.kana ? '<a class="trip-link" href="50音訓練表.html">🎯 50音表</a><a class="trip-link" href="日文講義.html">📖 入門講義</a>' : ''}
@@ -157,7 +171,7 @@
     function paintControls() {
       const stop = stopAt(run.tile);
       const q = stop && level.kana ? questInfo(questOf(level, stop)) : null;
-      status.textContent = stop ? `抵達 ${stop.name}${q ? `・${q.title.replace(/^BOSS：/, 'BOSS ')}` : ''}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
+      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${q ? `・${q.title.replace(/^BOSS：/, 'BOSS ')}` : ''}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
       enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入地點';
       enter.disabled = !stop;
       map.querySelectorAll('[data-tile]').forEach(button => {
@@ -169,7 +183,7 @@
       const stop = stopAt(run.tile);
       if (moving || !stop) return;
       if (level.kana) App.go('quest', { id: questOf(level, stop), free: true, trip: level.id });
-      else App.go('trip-event');
+      else App.go('trip-stop');
     }
     async function walk(path) {
       if (moving || !path.length) return;
@@ -249,7 +263,7 @@
 
     function begin(rendered) {
       el.innerHTML = `<section class="trip-shell trip-event">${makeHeader()}${rendered}</section>`;
-      el.querySelector('#trip-back').onclick = () => App.go('home');
+      el.querySelector('#trip-back').onclick = () => App.go('trip-stop');
     }
 
     function finish() {
@@ -273,7 +287,7 @@
         stars, correct, total: n, gained: Math.max(0, gained), wrong: wrongItems,
         retry: () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); },
         back: { label: '🗺️ 回地圖', route: 'home' },
-        next: passed && hasGame ? { label: '🎮 玩這站小遊戲', route: 'stage', params: { id: stop.id } } : null
+        next: { label: '📍 回站內流程', route: 'trip-stop' }
       });
       begin(`<div class="trip-result">
         <p class="trip-eyebrow">${correct}／${events.length} 題答對</p>
@@ -282,8 +296,8 @@
         ${hasGame ? '<button type="button" class="trip-secondary" id="trip-scene">🎮 在這站練點餐・對話小遊戲</button>' : ''}
         <button type="button" class="trip-secondary" id="trip-retry">重玩本站</button>
       </div>`);
-      el.querySelector('#trip-return').onclick = () => App.go('home');
-      el.querySelector('#trip-scene')?.addEventListener('click', () => App.go('stage', { id: stop.id }));
+      el.querySelector('#trip-return').onclick = () => App.go('trip-stop');
+      el.querySelector('#trip-scene')?.addEventListener('click', () => App.go('trip-stop'));
       el.querySelector('#trip-retry').onclick = () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); };
     }
 
@@ -347,5 +361,31 @@
   }
 
   App.register('trip-event', { title: '旅遊情境', icon: '💬', nav: false, render: renderEncounter });
+
+  /* ---------- 站內流程（Hub） ---------- */
+  function renderStopHub(el) {
+    const level = selectedLevel();
+    const run = level && tripRun(level), stop = run && stopAt(run.tile);
+    if (!stop || level.kana) { App.go('home'); return; }
+    const steps = hubSteps(level, run, stop);
+    const cur = steps.find(s => !s.stars);
+    const [done, total] = stopProgress(level, run, stop);
+    el.innerHTML = `<section class="trip-shell trip-hub">
+      <div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p>
+        <h1>${stop.icon} ${esc(stop.name)}</h1></div>
+        <button class="trip-secondary" type="button" id="hub-back">返回地圖</button></div>
+      ${stop.story ? `<p class="trip-story">📅 ${esc(stop.day)}・${esc(stop.area)}｜${esc(stop.story)}</p>` : ''}
+      <p class="trip-hub-sub">照實際到店的順序一關一關玩。全部過關，這站就完成！　<b>${done}／${total}</b></p>
+      <ol class="trip-steps">${steps.map((s, i) => `<li class="trip-stepc${s.stars ? ' ok' : ''}${cur === s ? ' cur' : ''}" data-i="${i}">
+        <span class="trip-sn">${s.stars ? '✓' : i + 1}</span><span class="trip-si">${esc(s.icon)}</span>
+        <span class="trip-st"><b>${esc(s.name)}</b><small>${esc(s.sub)}</small></span>
+        <span class="trip-ss">${starStr(s.stars)}</span></li>`).join('')}</ol>
+      ${cur ? `<button class="trip-primary" type="button" id="hub-go">▶ ${esc(cur.name)}</button>` : `<p class="trip-hub-done">🎉 這站全部過關！${starStr(stopStars(level, run, stop))}</p>`}
+    </section>`;
+    el.querySelector('#hub-back').onclick = () => App.go('home');
+    el.querySelectorAll('[data-i]').forEach(li => li.onclick = () => steps[+li.dataset.i].go());
+    const g = el.querySelector('#hub-go'); if (g) g.onclick = () => cur.go();
+  }
+  App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, render: renderStopHub });
   window.Travel = { renderHome };
 })();
