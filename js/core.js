@@ -120,7 +120,17 @@
     save();
     toast(`✨ +${n} XP ${reason ? '・' + esc(reason) : ''}`, 'xp');
     if (after > before) setTimeout(() => modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p><p class="muted">新的關卡或場景可能已解鎖！</p>`, [{ label: '太棒了！', cls: 'primary' }]) && document.body.lastElementChild.classList.add('keep'), 400);
+    if (after > before) remindBackup(`升到 Lv.${after} 了`);
     return { gained: n, levelUp: after > before };
+  }
+  // 備份提醒：非雲端存檔時，每升一級、每完成 5 關提醒一次
+  function remindBackup(why) {
+    if (CL.status === 'cloud') return;
+    setTimeout(() => toast(`💾 ${esc(why)}！記得點頂部 💾 備份進度${CL.status === 'none' ? '（這裡無法自動存檔）' : '（進度只存在這台裝置）'}`), 2600);
+  }
+  function noteClear() {
+    S.clearN = (S.clearN || 0) + 1; save();
+    if (S.clearN % 5 === 0) remindBackup(`已完成 ${S.clearN} 關`);
   }
 
   /**
@@ -139,6 +149,7 @@
     }
     save();
     const r = xp ? addXP(xp, '關卡完成') : { gained: 0, levelUp: false };
+    if (!prev && stars > 0) noteClear();
     return { stars, prevStars: prev, gained: r.gained, levelUp: r.levelUp, firstClear: !prev && stars > 0 };
   }
 
@@ -285,6 +296,7 @@
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
     resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); if (CL.ref) cloudPush(); go('home'); },
     get saveStatus() { return CL.status; },
+    noteClear,
     loadState(o) { S = Object.assign({}, JSON.parse(JSON.stringify(DEF)), o); save(); if (CL.ref) cloudPush(); render(); },
     store: LS
   };

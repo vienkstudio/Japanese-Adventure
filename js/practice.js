@@ -91,7 +91,6 @@
 .g-say{flex:1;font-size:.95em}
 .g-say small{color:var(--muted);display:block}
 /* 菜單遊戲 */
-.m-task{background:var(--soft);border:2px dashed var(--shu);border-radius:10px;padding:8px 12px;font-weight:bold}
 .m-board{border:3px solid var(--ink);border-radius:10px;background:#2a1c14;padding:10px;box-shadow:inset 0 0 0 2px #6b4a2a,var(--shadow)}
 .m-board h3{margin:0 0 8px;color:#f0cf73;text-align:center;font-size:1em}
 .m-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -119,9 +118,20 @@
 .c-rate .btn{margin:0;flex-direction:column;line-height:1.2;font-size:.9em}
 .c-rate .btn.on{background:var(--ai);color:#f5eedc}
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
-.c-stat{display:flex;gap:4px;flex-wrap:wrap;font-size:.8em}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
+.h-save{margin:6px 2px 0;font-size:.78em;color:var(--muted);text-align:center}
+.h-save a{color:var(--shu);font-weight:900}
+.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:6px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);font-family:var(--serif);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.h-gsb b{color:var(--shu)}
+.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;padding:10px;background:var(--paper);border:2px solid var(--ink);border-radius:8px}
+.gs-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.gs-seal{width:74px;height:74px;border-radius:50%;border:2px dashed #b9ae99;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.55;filter:grayscale(1)}
+.gs-cell.ok .gs-seal{opacity:1;filter:none;border:3px double var(--shu);background:radial-gradient(circle,rgba(199,62,46,.12),rgba(199,62,46,.04));color:var(--shu);transform:rotate(-8deg);box-shadow:inset 0 0 0 3px rgba(199,62,46,.25)}
+.gs-ic{font-size:1.6em;line-height:1}
+.gs-nm{font-family:var(--serif);font-weight:900;font-size:.62em;line-height:1.1;text-align:center;max-width:64px}
+.gs-cell small{font-size:.66em;color:var(--muted);font-family:var(--serif)}
+.gs-cell.ok small{color:var(--shu);font-weight:900}
 #playerChip .sv{font-size:1.05em;cursor:pointer;border:1.5px solid rgba(245,238,220,.5);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
 `;
     document.head.appendChild(st);
@@ -230,6 +240,18 @@
     [...bg.querySelectorAll('.modal-btns .btn')].pop().onclick = () => restore($('#bkIn').value);
   }
 
+  /* ---------------- 御朱印帳：地點全部節點三星即可得 ---------------- */
+  const allWorlds = () => LEVELS.flatMap(L => L.worlds).filter(w => worldInfo(w));
+  const hasGoshuin = w => { const s = stageStars(w); return s.max > 0 && s.got >= s.max; };
+  const goshuinGot = () => allWorlds().filter(hasGoshuin).length;
+  function goshuin() {
+    const ws = allWorlds();
+    App.modal(`<h2 style="margin:.2em 0">⛩️ 御朱印帳</h2><p class="muted" style="font-size:.82em;margin:.2em 0">把一個地點的所有關卡都拿到 ⭐⭐⭐，就能蓋上朱印</p>
+      <div class="gs-grid">${ws.map(w => { const i = worldInfo(w), ok = hasGoshuin(w), st = stageStars(w);
+        return `<div class="gs-cell${ok ? ' ok' : ''}"><div class="gs-seal">${ok ? `<span class="gs-ic">${esc(i.icon)}</span><span class="gs-nm">${esc(i.name)}</span>` : `<span class="gs-ic">${esc(i.icon)}</span>`}</div><small>${ok ? '奉拝' : `⭐${st.got}/${st.max}`}</small></div>`; }).join('')}</div>
+      <p style="margin:.4em 0;font-family:var(--serif)">已得 <b style="color:var(--shu)">${goshuinGot()}</b> / ${ws.length}</p>`, [{ label: '閉じる 關閉', cls: 'primary' }]);
+  }
+
   /* ---------------- 首頁：選等級 → 選地點 ---------------- */
   function renderHome(el) {
     const S = App.state, lv = App.level, lo = App.LEVELS[lv - 1], hi = App.LEVELS[lv] || lo + 1000;
@@ -237,7 +259,8 @@
     const L = LEVELS.find(x => x.id === UI.lv);
     // 下一關：目前等級第一個還沒拿星的節點
     let nextW = null, nextN = null;
-    for (const Lx of LEVELS) { for (const w of Lx.worlds) { const n = stageNodes(w).find(x => sitStars(x.key) === 0); if (n) { nextW = w; nextN = n; break; } } if (nextN) break; }
+    const lvOrder = [L].concat(LEVELS.filter(x => x !== L));
+    for (const Lx of lvOrder) { for (const w of Lx.worlds) { const n = stageNodes(w).find(x => sitStars(x.key) === 0); if (n) { nextW = w; nextN = n; break; } } if (nextN) break; }
     const d = window.Game ? Game.daily() : null;
     const ss = App.saveStatus;
     el.innerHTML = `
@@ -247,8 +270,10 @@
           <div class="bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div>
           <small>${S.xp} XP・🔥 ${S.streak.days} 天・${ss === 'cloud' ? '☁️ 雲端存檔' : ss === 'local' ? '💾 本機存檔' : '⚠️ 無法存檔'}</small></div>
       </div>
+      ${ss !== 'cloud' ? `<div class="h-save">${ss === 'none' ? '⚠️ 無法自動存檔' : '📱 進度只存在這台裝置'}，<a href="#" id="hBk">點 💾 備份</a></div>` : ''}
       ${nextN ? `<button class="h-next" id="hNext"><span class="i">${esc(nextN.icon)}</span><span class="t"><small>繼續冒險・${esc(worldInfo(nextW).name)}</small><b>${esc(nextN.name)}</b></span><span class="go">▶</span></button>` : '<div class="panel center">🏆 全部制霸！</div>'}
       ${d ? `<div class="h-daily">${Game.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0); return `<div class="${d.claimed[m.id] ? 'ok' : ''}"><span>${d.claimed[m.id] ? '✅' : m.icon}</span><small>${esc(m.label)}</small><i style="width:${v / m.goal * 100}%"></i></div>`; }).join('')}</div>` : ''}
+      <button class="h-gsb" id="hGos">⛩️ 御朱印帳 <b>${goshuinGot()}/${allWorlds().length}</b></button>
       <div class="sec-t">① 選等級</div>
       <div class="h-lv">${LEVELS.map(x => { const st = x.worlds.reduce((a, w) => { const s = stageStars(w); return [a[0] + s.got, a[1] + s.max]; }, [0, 0]);
         return `<button data-lv="${x.id}" class="${x.id === UI.lv ? 'on' : ''}"><b>${x.name}</b><small>${x.sub}</small><i>⭐${st[0]}/${st[1]}</i></button>`; }).join('')}</div>
@@ -262,6 +287,8 @@
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { UI.lv = b.dataset.lv; renderHome(el); });
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => App.go('stage', { id: b.dataset.w }));
     el.querySelector('#bk').onclick = e => { e.preventDefault(); backup(); };
+    const hb = el.querySelector('#hBk'); if (hb) hb.onclick = e => { e.preventDefault(); backup(); };
+    el.querySelector('#hGos').onclick = goshuin;
     if (ss === 'none' && !UI.warned) { UI.warned = true; App.toast('⚠️ 這個環境無法自動存檔，請用「💾 備份進度」保存'); }
     el.querySelector('#reset').onclick = e => { e.preventDefault(); App.modal('<h2>確定重置？</h2><p>經驗值、星星、不會清單都會清空。</p>', [{ label: '取消' }, { label: '重置', cls: 'primary', onClick: App.resetAll }]); };
   }
@@ -271,7 +298,8 @@
   function setSit(key, stars) {
     if (!key) return;
     if (!App.state.sit) App.state.sit = {};
-    if ((stars | 0) > (App.state.sit[key] || 0)) { App.state.sit[key] = stars | 0; App.save(); }
+    const prev = App.state.sit[key] || 0;
+    if ((stars | 0) > prev) { App.state.sit[key] = stars | 0; App.save(); if (!prev && App.noteClear) App.noteClear(); }
   }
   const menusOf = id => { const m = (window.MENUS || {})[id]; return Array.isArray(m) ? m : m ? [m] : []; };
   const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求' };
@@ -286,7 +314,8 @@
       if (ds[i]) out.push({ key: id + ':d' + i, icon: '🎭', name: ds[i].title || '對話 ' + (i + 1), sub: '🎭 對話', go: () => App.go('drill', { scenes: [id], kind: 'dialog', dialog: i, sit: id + ':d' + i }) });
     }
     out.push({ key: id + ':word', icon: '📚', name: '單字特訓', sub: '📚 測驗', go: () => App.go('drill', { scenes: [id], kind: 'word', count: 10, sit: id + ':word' }) });
-    out.push({ key: id + ':speak', icon: '🎤', name: '口說挑戰', sub: '🎤 用說的', go: () => App.go('drill', { scenes: [id], kind: 'speak', count: ds.length, sit: id + ':speak' }) });
+    if (T().hasSR) out.push({ key: id + ':speak', icon: '🎤', name: '口說挑戰', sub: '🎤 用說的', go: () => App.go('drill', { scenes: [id], kind: 'speak', count: ds.length, sit: id + ':speak' }) });
+    else out.push({ key: id + ':speak', icon: '🔁', name: '跟讀練習', sub: '🔁 先聽再選', go: () => App.go('drill', { scenes: [id], kind: 'shadow', count: ds.length, sit: id + ':speak' }) });
     out.push({ key: id + ':boss', icon: '👑', name: '店長考驗', sub: '👑 BOSS', boss: true, go: () => App.go('drill', { scenes: [id], kind: 'mix', count: 15, sit: id + ':boss', title: s.name + '・店長考驗' }) });
     return out;
   }
@@ -409,7 +438,8 @@
     tsu: { jp: ['', '一つ', '二つ', '三つ'], k: ['', 'ひとつ', 'ふたつ', 'みっつ'] },
     mai: { jp: ['', '一枚', '二枚', '三枚'], k: ['', 'いちまい', 'にまい', 'さんまい'] },
     hon: { jp: ['', '一本', '二本', '三本'], k: ['', 'いっぽん', 'にほん', 'さんぼん'] },
-    zen: { jp: ['', '一膳', '二膳', '三膳'], k: ['', 'いちぜん', 'にぜん', 'さんぜん'] }
+    zen: { jp: ['', '一膳', '二膳', '三膳'], k: ['', 'いちぜん', 'にぜん', 'さんぜん'] },
+    soku: { jp: ['', '一足', '二足', '三足'], k: ['', 'いっそく', 'にそく', 'さんぞく'] }
   };
   function yomi(n) {
     const D = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
@@ -447,15 +477,17 @@
     if (m.type === 'ask') { const tl = o.tail || m.tail || ASK_TAILS[0]; return { jp: `すみません、${x.it.jp}${tl.jp}`, kana: `すみません、${x.it.kana}${tl.kana}` }; }
     if (m.type === 'pref') { const tl = o.tail || m.tpl || { jp: 'でお願いします', kana: 'でおねがいします' }; return { jp: `${x.it.jp}${tl.jp}`, kana: `${x.it.kana}${tl.kana}` }; }
     const pre = m.pre || '', end = o.give ? 'あげます' : m.type === 'request' ? 'お願いします' : 'ください', endK = o.give ? 'あげます' : m.type === 'request' ? 'おねがいします' : 'ください';
-    return { jp: tt.map(y => `${y.it.jp}を${pre}${q(y, 'jp')}`).join('と、') + end, kana: tt.map(y => `${y.it.kana}を${pre}${q(y, 'k')}`).join('と、') + endK };
+    const pr = y => (y.it.np ? '' : pre);   // np：不加「もう」（例：充電器是借，不是「再一個」）
+    return { jp: tt.map(y => `${y.it.jp}を${pr(y)}${q(y, 'jp')}`).join('と、') + end, kana: tt.map(y => `${y.it.kana}を${pr(y)}${q(y, 'k')}`).join('と、') + endK };
   }
   function sayChoices(m, t) {
     const out = [Object.assign(build(m, t), { correct: true })];
     const other = App.shuffle(m.items.filter(i => !t.some(x => x.it === i)))[0];
     const add = (o, fb) => { const s = build(m, t, o); if (!out.some(z => z.jp === s.jp)) out.push(Object.assign(s, { fb })); };
     if (m.type === 'ask') {
-      const mine = (m.tail || ASK_TAILS[0]).jp;
-      ASK_TAILS.filter(a => a.jp !== mine).forEach(a => add({ tail: a }, a.fb));
+      // 有自訂句尾（問月台、問時間）時，「〜はどこですか」也說得通，不能當錯誤選項
+      const pool = m.tail ? App.sample(ASK_TAILS.filter(a => a.jp !== 'はどこですか'), 2) : ASK_TAILS.filter(a => a.jp !== ASK_TAILS[0].jp);
+      pool.forEach(a => add({ tail: a }, a.fb));
       if (m.tail && other) add({ item: other }, `問錯地方了：${other.jp} 是「${other.zh}」`);
     } else if (m.type === 'pref') {
       (m.wrong || PREF_WRONG).forEach(w => add({ tail: w }, w.fb));
@@ -582,7 +614,7 @@
         if (!ok) {
           tries++;
           task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
-          if (miss(btn)) return;
+          if (tries === 1 && miss(btn)) return;   // 每一步只在第一次錯時扣心
           fb.innerHTML = `<span class="t-fb-ng">❌ ${esc(f[1])}：「不是這個啦！」</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>${hasQty(m) ? '×' + t.n : ''}`).join('、') : '再看清楚看板上的日文' + (hasQty(m) ? '和數量' : '') + '！'}`;
           return;
         }
@@ -623,7 +655,8 @@
         opBox.appendChild(b);
       });
       const TA = T(), micBox = box.querySelector('.t-micbox');
-      micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn"${TA.hasSR ? '' : ' disabled'}>🎤</button><div style="text-align:left;font-size:.85em">直接用日文說出來<br><span class="muted">或點選下方句子</span></div></div><div class="t-heard muted">${TA.hasSR ? '' : esc(TA.micErr ? TA.micErr('unsupported') : '')}</div>`;
+      if (!TA.hasSR) { micBox.remove(); return; }
+      micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn">🎤</button><div style="text-align:left;font-size:.85em">直接用日文說出來<br><span class="muted">或點選下方句子</span></div></div><div class="t-heard muted"></div>`;
       const mb = micBox.querySelector('.t-micbtn'), heard = micBox.querySelector('.t-heard');
       mb.onclick = () => {
         if (done || !TA.listenJP || mb.classList.contains('on')) return;
@@ -633,7 +666,7 @@
           const { best, score } = TA.bestMatch(alts, cs.filter(c => !c._btn.disabled));
           heard.innerHTML = `聽到：「<span class="jp">${esc(alts[0] || '')}</span>」${best ? `（${Math.round(score * 100)}%）` : ''}`;
           if (best && score >= 0.5) { if (best.correct) S.score += 50; best._btn.click(); } else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上，再說一次或直接點選</b>';
-        }, code => { mb.classList.remove('on'); S.busy = false; heard.textContent = TA.micErr(code); });
+        }, code => { mb.classList.remove('on'); S.busy = false; if (!T().hasSR) { micBox.remove(); App.toast(TA.micErr(code)); } else heard.textContent = TA.micErr(code); });
       };
     }
     function answer(task) {
@@ -675,8 +708,10 @@
       stopT();
       const acc = S.tot ? S.ok / S.tot : 0;
       const stars = alive ? Math.max(1, Math.min(S.hearts, acc >= 0.9 ? 3 : acc >= 0.7 ? 2 : 1)) : 0;
+      const prevSt = sitStars(key);
       setSit(key, stars);
-      const r = S.score ? App.addXP(Math.max(5, Math.round(S.score / 60)), '情境挑戰') : { gained: 0 };
+      const xp = stars ? [0, 10, 15, 20][stars] + (stars === 3 && prevSt < 3 ? 10 : 0) : 0;   // 依星數固定 XP；首次三星 +10
+      const r = xp ? App.addXP(xp, stars === 3 && prevSt < 3 ? '情境挑戰・首次三星' : '情境挑戰') : { gained: 0 };
       if (stars) { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[id] = true; App.save(); }
       const nx = mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: { id, m: mi + 1 } } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
       pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💀'}</div><h3>${stars ? '任務完成！' : '旅伴們生氣了…'}</h3><p>💯 ${S.score} 分・最高 🔥${S.best} 連擊</p>

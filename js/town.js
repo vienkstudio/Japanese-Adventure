@@ -94,7 +94,6 @@
   const unlocked = s => (s.unlockLevel || 1) <= App.level;
   const isDone = id => !!(App.state.sceneDone && App.state.sceneDone[id]);
   const arr = a => (Array.isArray(a) ? a : []);
-  let townFilter = 'all';
   let aidOn = true;                 // 初學者模式：顯示讀音/中文
   const tabMem = {};                // 每個場景記住目前分頁
   let listenOn = false;             // 聽力挑戰：對方的話先模糊
@@ -117,8 +116,12 @@
   }
   const simil = (a, b) => { a = normJP(a); b = normJP(b); if (!a || !b) return 0; return 1 - lev(a, b) / Math.max(a.length, b.length); };
   // 聽一句日文：cb(alternatives[])、err(code)
-  function listenJP(cb, err) {
-    if (!SR) { err('unsupported'); return null; }
+  let srBlocked = false;              // 環境不允許語音辨識（權限被拒、沙盒）→ 之後一律改點選
+  const srOK = () => !!SR && !srBlocked;
+  const BLOCK = ['not-allowed', 'service-not-allowed', 'blocked'];
+  function listenJP(cb, err0) {
+    const err = c => { if (BLOCK.includes(c)) srBlocked = true; err0(c); };
+    if (!srOK()) { err(SR ? 'blocked' : 'unsupported'); return null; }
     let r;
     try {
       r = new SR(); r.lang = 'ja-JP'; r.interimResults = false; r.maxAlternatives = 5;
@@ -169,58 +172,7 @@
   /* ---------------- 路由：town ---------------- */
   App.register('town', {
     title: '日本街道', icon: '🏙️', nav: false,
-    render(el) { setTimeout(() => App.go('home'), 0); },
-    _old(el) {
-      const all = scenes().slice().sort((a, b) => (a.unlockLevel || 1) - (b.unlockLevel || 1));
-      const lv = App.level;
-      const doneN = all.filter(s => isDone(s.id)).length;
-      const openN = all.filter(unlocked).length;
-      const list = all.filter(s => townFilter === 'unlocked' ? unlocked(s) : townFilter === 'todo' ? !isDone(s.id) : true);
-      let lastLv = null, html = '';
-      list.forEach(s => {
-        const L = s.unlockLevel || 1;
-        if (L !== lastLv) {
-          if (lastLv !== null) html += '</div>';
-          html += `<div class="t-block"><span class="t-sign">📍 Lv.${L} 街區</span><span class="t-line"></span>${L > lv ? '<span class="muted">🔒</span>' : ''}</div><div class="grid">`;
-          lastLv = L;
-        }
-        const ok = unlocked(s), done = isDone(s.id);
-        html += `<div class="card click t-card${ok ? '' : ' locked'}" data-id="${esc(s.id)}" style="--tc:${esc(s.color || '#ccc')}">
-          ${done && ok ? '<span class="t-done" title="已完成">✅</span>' : ''}
-          <div class="icon">${esc(s.icon || '🏠')}</div>
-          <h3>${esc(s.name)}</h3>
-          <div class="muted">${esc(s.desc || '')}</div>
-          <div class="t-meta">
-            ${ok ? `<span class="pill" style="background:${esc(s.color || 'var(--red)')}">Lv.${L}</span>` : `<span class="t-lockmsg">🔒 Lv.${L} 解鎖</span>`}
-            <span class="chip">📚 ${arr(s.vocab).length}</span><span class="chip">💬 ${arr(s.phrases).length}</span><span class="chip">🎭 ${arr(s.dialogues).length}</span>
-            ${done ? '<span class="chip green">✓ 已練習</span>' : ''}
-          </div></div>`;
-      });
-      if (lastLv !== null) html += '</div>';
-      if (!all.length) html = '<div class="panel center muted">🚧 街道施工中：場景資料尚未載入。</div>';
-      else if (!list.length) html = `<div class="panel center muted">${townFilter === 'todo' ? '🎉 全部場景都練習過了！' : '目前沒有符合條件的場景。'}</div>`;
-
-      el.innerHTML = `
-        <div class="t-street">
-          <h2>🏙️ 日本街道</h2>
-          <div class="muted">走進每間店，學單字、練對話！完成對話可獲得經驗值。</div>
-          <div class="t-skyline">🏪🍜☕💊🏮👕🚉🏨⛩️✈️🏥🗼</div>
-          <div class="t-road"></div>
-        </div>
-        <div class="t-filter tabs">
-          <button data-f="all" class="${townFilter === 'all' ? 'on' : ''}">全部 ${all.length}</button>
-          <button data-f="unlocked" class="${townFilter === 'unlocked' ? 'on' : ''}">已解鎖 ${openN}</button>
-          <button data-f="todo" class="${townFilter === 'todo' ? 'on' : ''}">未完成 ${all.length - doneN}</button>
-          <span class="muted" style="margin-left:auto">目前 Lv.${lv}・已練習 ${doneN}/${all.length}</span>
-        </div>
-        ${html}`;
-      el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { townFilter = b.dataset.f; App.render(); });
-      el.querySelectorAll('.t-card[data-id]').forEach(c => c.onclick = () => {
-        const s = findScene(c.dataset.id); if (!s) return;
-        if (!unlocked(s)) App.toast(`🔒 「${esc(s.name)}」需要 Lv.${s.unlockLevel || 1} 才能進入（目前 Lv.${App.level}），去冒險地圖累積經驗值，或到「🎯 練習」不受等級限制直接練！`);
-        else App.go('scene', { id: s.id });
-      });
-    }
+    render() { setTimeout(() => App.go('home'), 0); }
   });
 
   /* ---------------- 路由：scene ---------------- */
@@ -336,7 +288,7 @@
     host.innerHTML = `<div class="t-sw">
         <label class="t-aidsw"><input type="checkbox" class="t-aidcb"${aidOn ? ' checked' : ''}> 中文/讀音</label>
         <label class="t-aidsw"><input type="checkbox" class="t-lscb"${listenOn ? ' checked' : ''}> 🎧 聽力挑戰</label>
-        <label class="t-aidsw"><input type="checkbox" class="t-miccb"${micOn ? ' checked' : ''}> 🎤 用說的回答</label></div>
+        ${srOK() && !opts.shadow ? `<label class="t-aidsw t-micsw"><input type="checkbox" class="t-miccb"${micOn ? ' checked' : ''}> 🎤 用說的回答</label>` : ''}</div>
       <div class="chat t-chat${aidOn ? '' : ' t-noaid'}${listenOn ? ' t-listen' : ''}"></div>
       <div class="t-ask${aidOn ? '' : ' t-noaid'}"><div class="t-micbox"></div><div class="choices t-opts"></div><div class="feedback"></div><div class="center t-nx"></div></div>`;
     const chat = host.querySelector('.t-chat'), ask = host.querySelector('.t-ask');
@@ -347,7 +299,9 @@
     };
     host.querySelector('.t-lscb').onchange = e => { listenOn = e.target.checked; chat.classList.toggle('t-listen', listenOn); };
     let curMic = null;
-    host.querySelector('.t-miccb').onchange = e => { micOn = e.target.checked; if (curMic) curMic(); };
+    const mcb = host.querySelector('.t-miccb');
+    if (mcb) mcb.onchange = e => { micOn = e.target.checked; if (curMic) curMic(); };
+    const hideMic = () => { const sw = host.querySelector('.t-micsw'); if (sw) sw.remove(); micBox.innerHTML = ''; curMic = null; };
     const scroll = () => { chat.scrollTop = chat.scrollHeight; };
     const bubble = (cls, who, jp, kana, romaji, zh) => {
       const b = document.createElement('div');
@@ -412,9 +366,18 @@
       });
       // 口說：說出其中一個選項，辨識後自動選取
       const drawMic = () => {
-        if (!micOn) { micBox.innerHTML = ''; opBox.style.display = ''; return; }
-        micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn" title="按下後用日文說出回答"${SR ? '' : ' disabled'}>🎤</button>
-          <div style="text-align:left;font-size:.88em">按 🎤 用日文回答<br><span class="muted">說出下方任一句；也可直接點選</span></div></div><div class="t-heard muted">${SR ? '' : esc(micErr('unsupported'))}</div>`;
+        if (opts.shadow) {
+          const r = cs.find(isOK); if (!r) return;
+          const play = () => App.speak(r.kana || r.jp);
+          micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn" title="再聽一次正確說法">🔁</button>
+            <div style="text-align:left;font-size:.88em">🔁 跟讀：先聽正確說法、跟著唸一次<br><span class="muted">再點選剛剛聽到的那一句</span></div></div>`;
+          micBox.querySelector('.t-micbtn').onclick = play;
+          setTimeout(() => { if (host.isConnected && !finished) play(); }, 900 + String(s.kana || s.jp).length * 140);
+          return;
+        }
+        if (!micOn || !srOK()) { micBox.innerHTML = ''; opBox.style.display = ''; return; }
+        micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn" title="按下後用日文說出回答">🎤</button>
+          <div style="text-align:left;font-size:.88em">按 🎤 用日文回答<br><span class="muted">說出下方任一句；也可直接點選</span></div></div><div class="t-heard muted"></div>`;
         const mb = micBox.querySelector('.t-micbtn'), heard = micBox.querySelector('.t-heard');
         mb.onclick = () => {
           if (finished || mb.classList.contains('on')) return;
@@ -426,7 +389,7 @@
             heard.innerHTML = `聽到：「<span class="jp">${esc(alts[0] || '')}</span>」${best ? `（相似度 ${Math.round(score * 100)}%）` : ''}`;
             if (best && score >= 0.5) best._btn.click();
             else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上選項，再說一次或直接點選</b>';
-          }, code => { mb.classList.remove('on'); heard.textContent = micErr(code); });
+          }, code => { mb.classList.remove('on'); if (!srOK()) { hideMic(); App.toast(micErr(code)); } else heard.textContent = micErr(code); });
         };
       };
       curMic = drawMic; drawMic();
@@ -599,8 +562,10 @@
       params = params || {};
       const list = arr(params.scenes).map(findScene).filter(Boolean);
       if (!list.length) return errorView(el, '沒有選到場景', '請回「練習」重新選擇。');
-      const kind = params.kind || 'mix';
-      const KN = { word: '📚 單字測驗', phrase: '💬 句子測驗', mix: '⚡ 綜合測驗', dialog: '🎭 對話演練', speak: '🎤 口說對話' };
+      let kind0 = params.kind || 'mix';
+      if (kind0 === 'speak' && !srOK()) kind0 = 'shadow';
+      const KN = { word: '📚 單字測驗', phrase: '💬 句子測驗', mix: '⚡ 綜合測驗', dialog: '🎭 對話演練', speak: '🎤 口說對話', shadow: '🔁 跟讀練習' };
+      const kind = kind0;
       const one = list.length === 1 ? list[0] : null;
       el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || '#c73e2e' : '#c73e2e')}">
           <div class="t-icon">${esc(one ? one.icon : '🗾')}</div>
@@ -613,7 +578,7 @@
       el.querySelector('#tBack').onclick = () => App.go(home.route, home.params);
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
-      if (kind === 'dialog' || kind === 'speak') {
+      if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {
         const ds = list.flatMap(sc => arr(sc.dialogues).map((d, i) => ({ sc, d, i }))).filter(x => params.dialog == null || x.i === +params.dialog);
         const pick = params.dialog != null ? ds : App.sample(ds, Math.min(params.count || 3, ds.length));
         runDialogs(pane, pick, res => {
@@ -626,7 +591,7 @@
             <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`;
           pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params);
           App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: home });
-        }, { mic: kind === 'speak' });
+        }, { mic: kind === 'speak', shadow: kind === 'shadow' });
         return;
       }
       const P = poolOf(list, kind === 'word' ? ['word'] : kind === 'phrase' ? ['phrase'] : ['word', 'phrase']);
@@ -639,5 +604,5 @@
     }
   });
 
-  window.TownAPI = { scenes, findScene, isUnlocked: unlocked, runDialogue, quizRun, poolOf, listenJP, bestMatch, micErr, hasSR: !!SR, lvOf };
+  window.TownAPI = { scenes, findScene, isUnlocked: unlocked, runDialogue, quizRun, poolOf, listenJP, bestMatch, micErr, get hasSR() { return srOK(); }, lvOf };
 })();
