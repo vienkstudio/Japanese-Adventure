@@ -14,7 +14,7 @@
 .rv-stat{flex:1;min-width:110px;text-align:center;background:var(--soft);border-radius:12px;padding:8px}
 .rv-stat b{display:block;font-size:1.8em;color:var(--red);line-height:1.2}
 .rv-chip{cursor:pointer;font-family:inherit}
-.rv-chip.rv-on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.rv-chip.rv-on{background:var(--ink);color:#fff;border-color:var(--line)}
 .rv-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:20px;font-family:inherit;font-size:1em;background:#fff}
 .rv-tools input[type=search]{flex:1;min-width:180px}

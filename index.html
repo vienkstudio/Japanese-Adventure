@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#24365c">
+<meta name="theme-color" content="#fafaf7">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>日語冒險｜闖關學日文</title>
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/travel.css">
 </head>
 <body>
 <header id="top"><div class="in">
@@ -29,18 +30,20 @@
 <script src="data/scenes-2.js"></script>
 <script src="data/cards.js"></script>
 <script src="data/menus.js"></script>
+<script src="data/travel.js"></script>
 <!-- 核心 -->
 <script src="js/core.js"></script>
 <script src="js/game.js"></script>
 <!-- 首頁 -->
 <script>
-App.register('home', { title: '冒險', icon: '🗾', nav: true, render(el) { PracticeAPI.renderHome(el); } });
+App.register('home', { title: '冒險', icon: '🗾', nav: true, render(el, params) { Travel.renderHome(el, params); } });
 </script>
 <!-- 功能模組 -->
 <script src="js/quest.js"></script>
 <script src="js/practice.js"></script>
 <script src="js/town.js"></script>
 <script src="js/review.js"></script>
+<script src="js/travel.js"></script>
 <script>
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }

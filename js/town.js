@@ -13,28 +13,13 @@
     const st = document.createElement('style');
     st.id = 'css-town';
     st.textContent = `
-.t-street{position:relative;overflow:hidden;border-radius:14px;padding:16px 16px 10px;margin-bottom:12px;border:2px solid var(--ink);box-shadow:inset 0 0 0 3px var(--card),inset 0 0 0 4px var(--line),var(--shadow);
-  background:radial-gradient(circle at calc(100% - 30px) 28px,var(--shu) 0 18px,transparent 19px),linear-gradient(180deg,#efd9a8 0%,#f7ecd2 62%,var(--ai) 62%)}
-.t-street h2{margin:0;color:var(--ai)}
-.t-skyline{font-size:1.9em;letter-spacing:6px;white-space:nowrap;overflow:hidden;margin-top:6px}
-.t-road{height:12px;margin:6px -16px 0;background-image:var(--sgd);background-size:40px 20px;opacity:.9}
-.t-filter{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0}
-.t-block{margin:18px 0 6px;display:flex;align-items:center;gap:8px}
-.t-block .t-sign{background:var(--ai);color:#f5eedc;border:2px solid var(--ink);border-radius:4px;padding:1px 12px;font-weight:bold;font-family:var(--serif);box-shadow:2px 2px 0 var(--ink)}
-.t-block .t-line{flex:1;border-top:2px dotted var(--line)}
-.t-card{border-top:8px solid var(--tc,#ccc)!important;overflow:hidden}
-.t-card .icon{font-size:2.8em}
-.t-card h3{margin:6px 0 2px}
-.t-card .t-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:.85em}
-.t-card .t-done{position:absolute;top:8px;right:10px;font-size:1.3em}
-.t-card.locked .t-lockmsg{color:var(--shu);font-weight:bold}
-.t-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-left:10px solid var(--tc,#ccc)!important}
-.t-head .t-icon{font-size:3.2em;line-height:1}
+.t-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.t-head .t-icon{font-size:2.4em;line-height:1;width:64px;height:64px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none}
 .t-head .t-info{flex:1;min-width:180px}
 .t-head h2{margin:0}
-.t-mission{background:var(--ai);background-image:var(--sgd);background-size:40px 20px;color:#f5eedc;border:2px solid var(--ink);border-radius:10px;padding:10px 14px;font-weight:bold;font-family:var(--serif);display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.t-mission{background:var(--ai);color:#fff;border:none;border-radius:18px;padding:10px 14px;font-weight:bold;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .t-mission .bar{flex:1;min-width:120px}
-.t-tips summary{cursor:pointer;font-weight:bold;font-family:var(--serif)}
+.t-tips summary{cursor:pointer;font-weight:bold}
 .t-tips ul{margin:8px 0 0;padding-left:1.3em}
 .t-words{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .t-word{cursor:pointer}
@@ -44,15 +29,15 @@
 .t-word .t-kana{color:var(--ai2)}
 .t-word .t-rom{color:var(--muted);font-size:.86em}
 .t-word .t-zh{font-size:1.05em;margin:2px 0}
-.t-word .t-hint{font-size:.83em;color:#7a4a1a;background:var(--soft);border-radius:4px;padding:1px 7px;display:inline-block}
+.t-word .t-hint{font-size:.83em;color:var(--pri-d);background:var(--pri-t);border-radius:999px;padding:1px 7px;display:inline-block}
 .t-word .t-use{font-size:.85em;margin-top:4px}
 .t-word .track-btn{margin-top:8px}
 .t-phr .t-jp{font-size:1.3em}
 .t-dlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .t-dbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
 .t-sw{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-.t-aidsw{cursor:pointer;user-select:none;font-size:.85em;border:1.5px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--card);display:inline-flex;align-items:center;gap:4px}
-.t-chat{background:var(--paper2);background-image:var(--sg);background-size:40px 20px;border:2px solid var(--ink);border-radius:12px;padding:12px;min-height:80px;max-height:56vh;overflow:auto}
+.t-aidsw{cursor:pointer;user-select:none;font-size:.85em;border:none;border-radius:999px;padding:4px 12px;background:#fff;box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:4px}
+.t-chat{background:#fff;border:none;border-radius:18px;padding:12px;min-height:80px;max-height:56vh;overflow:auto}
 .t-chat .bubble .j{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .t-aid{font-size:.86em;color:var(--muted)}
 .t-noaid .t-aid{display:none}
@@ -63,12 +48,12 @@
 .t-opts .choice .t-aid{display:block}
 .t-opts .choice.ok .t-aid,.t-opts .choice.ng .t-aid{color:#fff}
 .t-mic{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0}
-.t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:2.5px solid var(--ink);background:var(--shu);color:#fff;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
+.t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:1px solid var(--line);background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(255,107,91,.35)}
 .t-micbtn.on{animation:tmic 1s infinite}
-.t-micbtn:disabled{background:#b9ae99;cursor:not-allowed}
+.t-micbtn:disabled{background:#ddd;cursor:not-allowed}
 .t-heard{font-size:.9em;min-height:1.3em;text-align:center}
-@keyframes tmic{0%{box-shadow:0 4px 0 var(--ink),0 0 0 0 rgba(199,62,46,.6)}100%{box-shadow:0 4px 0 var(--ink),0 0 0 16px rgba(199,62,46,0)}}
-.t-fb-ok{color:var(--matcha);font-weight:bold}
+@keyframes tmic{0%{box-shadow:0 0 0 0 rgba(255,107,91,.6)}100%{box-shadow:0 0 0 16px rgba(255,107,91,0)}}
+.t-fb-ok{color:var(--acc-d);font-weight:bold}
 .t-fb-ng{color:var(--shu);font-weight:bold}
 .t-sum{text-align:center}
 .t-sum .t-big{font-size:2.2em}
@@ -81,8 +66,7 @@
   .t-word .t-jp{font-size:1.25em}
   .t-head .t-icon{font-size:2.5em}
   .bubble{max-width:92%}
-  .t-skyline{font-size:1.45em}
-}
+  }
 @media(max-width:400px){.t-words{grid-template-columns:1fr}}
 `;
     document.head.appendChild(st);
@@ -172,7 +156,7 @@
   /* ---------------- 路由：town ---------------- */
   App.register('town', {
     title: '日本街道', icon: '🏙️', nav: false,
-    render() { setTimeout(() => App.go('home'), 0); }
+    render() { setTimeout(() => App.go('practice-map'), 0); }
   });
 
   /* ---------------- 路由：scene ---------------- */
@@ -188,7 +172,7 @@
           <p>需要 <b>Lv.${sc.unlockLevel || 1}</b>，你目前是 Lv.${App.level}。</p><p class="muted">到冒險地圖完成任務累積經驗值就能解鎖！</p>
           <button class="btn" id="tBack">🏙️ 返回日本街道</button><button class="btn primary" id="tMap">🗺️ 冒險地圖</button></div>`;
         el.querySelector('#tBack').onclick = () => App.go('town');
-        el.querySelector('#tMap').onclick = () => App.go('map');
+        el.querySelector('#tMap').onclick = () => App.go('practice-map');
         return;
       }
       const tips = arr(sc.tips);
@@ -200,7 +184,7 @@
         </div>
         ${tips.length ? `<div class="panel t-tips"><details${mission ? '' : ' open'}><summary>🎌 文化小知識（${tips.length}）</summary><ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details></div>` : ''}
         <div id="tBody"></div>`;
-      el.querySelector('#tBack').onclick = () => (mission ? App.go('map') : App.go('stage', { id: sc.id }));
+      el.querySelector('#tBack').onclick = () => (mission ? App.go('practice-map') : App.go('stage', { id: sc.id }));
       const body = el.querySelector('#tBody');
       if (mission) return missionMode(body, sc, mission);
 
@@ -436,11 +420,11 @@
         <button class="btn" id="tRe">🔄 重新挑戰</button><button class="btn primary" id="tMap">🗺️ 回冒險地圖</button></div>`;
       const retry = () => App.go('scene', { id: sc.id, mission });
       pane.querySelector('#tRe').onclick = retry;
-      pane.querySelector('#tMap').onclick = () => App.go('map');
+      pane.querySelector('#tMap').onclick = () => App.go('practice-map');
       App.showResult({
         title: stars ? `任務完成！${sc.name}` : '任務失敗，再試一次！',
         stars, correct: first, total, gained: r && r.gained, wrong,
-        retry, next: { label: '回冒險地圖', route: 'map' }
+        retry, next: { label: '回冒險地圖', route: 'practice-map' }
       });
     }
     play(0);

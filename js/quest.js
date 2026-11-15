@@ -18,9 +18,9 @@
 @keyframes qshake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .q-combo{color:var(--red);font-weight:bold;animation:pop .25s}
 .q-ask{text-align:center;color:var(--muted);font-size:1.05em}
-.q-snd{display:block;margin:14px auto;font-size:3em;width:110px;height:110px;border-radius:50%;border:3px solid var(--ink);background:var(--soft);box-shadow:0 4px 0 var(--ink),inset 0 0 0 4px var(--soft),inset 0 0 0 6px var(--shu);cursor:pointer}
+.q-snd{display:block;margin:14px auto;font-size:3em;width:110px;height:110px;border-radius:50%;border:1px solid var(--line);background:var(--soft);box-shadow:var(--shadow);cursor:pointer}
 .q-snd:hover{filter:brightness(.97)}
-.q-roma{font-size:3em;text-align:center;font-weight:bold;font-family:var(--serif);letter-spacing:2px;margin:10px 0}
+.q-roma{font-size:3em;text-align:center;font-weight:bold;letter-spacing:2px;margin:10px 0}
 .q-fb{border-radius:14px;padding:12px;margin-top:6px;text-align:left}
 .q-fb.ok{background:#e4ecd4;border:2px solid var(--matcha)}
 .q-fb.ng{background:#f8e0d8;border:2px solid var(--shu)}
@@ -168,11 +168,11 @@
   }
   function play(id) {
     const q = byId(id);
-    if (!q) { App.toast('找不到這個關卡'); App.go('map'); return; }
+    if (!q) { App.toast('找不到這個關卡'); App.go('practice-map'); return; }
     if (!isUnlocked(id)) { showLocked(q); return; }
     if (q.type === 'scene') {
       if (!sceneData(q.sceneId)) {
-        App.modal(`<div style="font-size:3em">${q.icon}</div><h2>${App.esc(q.title)}</h2><p>這個場景的內容還在準備中 🚧<br>請稍後再來，或先去其他關卡練習！</p>`, [{ label: '回地圖', cls: 'primary', onClick: () => App.go('map') }]);
+        App.modal(`<div style="font-size:3em">${q.icon}</div><h2>${App.esc(q.title)}</h2><p>這個場景的內容還在準備中 🚧<br>請稍後再來，或先去其他關卡練習！</p>`, [{ label: '回地圖', cls: 'primary', onClick: () => App.go('practice-map') }]);
         return;
       }
       App.go('scene', { id: q.sceneId, mission: q.id });
@@ -230,59 +230,53 @@
     if (document.getElementById('css-quest-battle')) return;
     const st = document.createElement('style'); st.id = 'css-quest-battle';
     st.textContent = `
-.q-arena{position:relative;border-radius:14px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:#fff;border:2px solid var(--ink);box-shadow:inset 0 0 0 3px rgba(245,238,220,.5),var(--shadow);
-  background:radial-gradient(circle at 80% 22%,var(--sun,#d9483b) 0 22px,transparent 23px),linear-gradient(180deg,var(--sky1,#efd9a8) 0%,var(--sky2,#f6e9cc) 56%,var(--grd,#5d7f3b) 56%,var(--grd2,#3f5c25) 100%)}
-.q-arena::before{content:"";position:absolute;left:28%;width:44%;top:12%;height:44.5%;background:linear-gradient(180deg,#fdfaf2 0 24%,var(--mtn,#3a5683) 24%);clip-path:polygon(50% 0,58% 6%,64% 4%,100% 100%,0 100%,36% 4%,42% 6%);opacity:.7}
-.q-arena::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;background-image:var(--sgd);background-size:40px 20px;opacity:.4;mix-blend-mode:soft-light;pointer-events:none}
+.q-arena{position:relative;border-radius:20px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:var(--text);background:linear-gradient(180deg,var(--sky,#e9f8f4) 0 62%,var(--grd,#d6f2ea) 62% 100%)}
 .q-fighters,.q-vs{position:relative;z-index:1}
-.q-vs{position:absolute}
-.q-arena.boss{--sky1:#1b1420;--sky2:#5a1e1e;--grd:#2a1c1c;--grd2:#140c0c;--sun:#e8c25a;--mtn:#140c0c}
-.q-arena.ch2{--sky1:#c9d6e3;--sky2:#eef0e6;--grd:#24365c;--grd2:#162443;--mtn:#5c6d86}
-.q-arena.ch3{--sky1:#f0b27a;--sky2:#f8dcb2;--grd:#8a5326;--grd2:#5e3415;--mtn:#7a3d24}
-.q-arena.ch4{--sky1:#f2c9c6;--sky2:#fbebe2;--grd:#6b5a4a;--grd2:#463a2f;--mtn:#8b5a6b}
+.q-arena.boss{--sky:#fff0ee;--grd:#ffdcd7}
+.q-arena.ch2{--sky:#eef4ff;--grd:#dde8ff}
+.q-arena.ch3{--sky:#fff6e0;--grd:#ffeab8}
+.q-arena.ch4{--sky:#fff0ee;--grd:#ffe1dc}
 .q-fighters{display:flex;justify-content:space-between;align-items:flex-end;min-height:120px}
 .q-f{text-align:center;width:46%}
-.q-f .q-sp{font-size:4em;line-height:1;display:inline-block;filter:drop-shadow(0 4px 0 rgba(0,0,0,.2))}
+.q-f .q-sp{font-size:4em;line-height:1;display:inline-block}
 .q-f.q-heroF .q-sp{animation:float 2.4s ease-in-out infinite}
 .q-f.mon .q-sp{animation:qidle 1.6s ease-in-out infinite}
-.q-arena.boss .q-f.mon .q-sp{font-size:5.4em}
-.q-f .q-nm{font-weight:900;font-size:.85em;font-family:var(--serif);text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q-hp{height:12px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;margin:4px auto 0;max-width:150px;border:2px solid var(--ink);box-shadow:0 0 0 1.5px #f5eedc}
-.q-hp div{height:100%;background:repeating-linear-gradient(135deg,var(--shu) 0 6px,var(--shu2) 6px 12px);transition:width .35s}
-.q-hpn{font-size:.75em;font-weight:bold;text-shadow:0 1px 0 rgba(0,0,0,.4)}
-.q-hearts{font-size:1.25em;letter-spacing:1px}
+.q-arena.boss .q-f.mon .q-sp{font-size:5.2em}
+.q-f .q-nm{font-weight:800;font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-hp{height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden;margin:4px auto 0;max-width:150px}
+.q-hp div{height:100%;background:var(--pri);border-radius:4px;transition:width .35s}
+.q-hpn{font-size:.72em;font-weight:700;color:var(--muted)}
+.q-hearts{font-size:1.2em;letter-spacing:1px}
 .q-f.mon.hit .q-sp{animation:qhit .4s}
 .q-f.mon.atk .q-sp{animation:qatk .45s}
 .q-f.q-heroF.hurt .q-sp{animation:qhurt .45s}
 .q-f.mon.dead .q-sp{animation:qdead .8s forwards}
 @keyframes qidle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-4px) scaleY(1.04)}}
-@keyframes qhit{0%{transform:none;filter:none}30%{transform:translateX(12px) rotate(8deg);filter:brightness(3)}100%{transform:none}}
+@keyframes qhit{0%{transform:none;filter:none}30%{transform:translateX(12px) rotate(8deg);filter:brightness(2)}100%{transform:none}}
 @keyframes qatk{0%{transform:none}40%{transform:translateX(-60%) scale(1.2)}100%{transform:none}}
-@keyframes qhurt{0%,100%{transform:none}30%{transform:translateX(-10px) rotate(-10deg);filter:hue-rotate(-60deg) brightness(1.4)}60%{transform:translateX(6px)}}
+@keyframes qhurt{0%,100%{transform:none}30%{transform:translateX(-10px) rotate(-10deg)}60%{transform:translateX(6px)}}
 @keyframes qdead{0%{transform:none;opacity:1}100%{transform:translateY(20px) scale(.2) rotate(90deg);opacity:0}}
-.q-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-weight:900;font-size:1.4em;opacity:.8;text-shadow:0 2px 0 rgba(0,0,0,.3)}
-.q-combo{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);background:var(--shu);color:#fff;border:1.5px solid #f5eedc;font-weight:900;border-radius:6px;padding:0 10px;animation:pop .25s;font-family:var(--serif)}
-.q-intro{position:absolute;z-index:3;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.4em;font-weight:900;font-family:var(--serif);background:rgba(26,22,18,.62);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
-/* 地圖節點 */
+.q-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-weight:800;font-size:1.2em;color:#bbb}
+.q-combo{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);background:var(--pri);color:#fff;font-weight:800;border-radius:999px;padding:0 12px;animation:pop .25s}
+.q-intro{position:absolute;z-index:3;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3em;font-weight:800;color:#fff;background:rgba(255,107,91,.88);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
+/* 地圖節點：圓形＋簡單連線；完成＝主色、目前＝白底主色框、未開放＝淺灰 */
 .q-path{position:relative;padding:10px 0 20px}
-.q-row{display:flex;justify-content:center;position:relative;height:118px}
 .q-nd{position:absolute;top:0;width:110px;text-align:center;cursor:pointer;transform:translateX(-50%)}
-.q-circ{width:74px;height:74px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.1em;background:var(--card);border:2.5px solid var(--ink);
-  box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--card),inset 0 0 0 4.5px var(--line);transition:transform .1s;position:relative}
-.q-nd:active .q-circ{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
-.q-nd.cl .q-circ{background:var(--matcha);box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--matcha),inset 0 0 0 4.5px rgba(255,255,255,.5)}
-.q-nd.open .q-circ{background:var(--gold);box-shadow:0 5px 0 var(--ink),inset 0 0 0 3px var(--gold),inset 0 0 0 4.5px rgba(255,255,255,.55)}
-.q-nd.lock .q-circ{background:var(--paper2);box-shadow:0 5px 0 #8a7e6a;border-color:#8a7e6a;filter:grayscale(1);opacity:.75}
+.q-circ{width:68px;height:68px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9em;background:#ededea;border:none;box-shadow:none;transition:transform .1s;position:relative}
+.q-nd:active .q-circ{transform:scale(.92)}
+.q-nd.cl .q-circ{background:var(--pri);box-shadow:0 4px 12px rgba(255,107,91,.35)}
+.q-nd.open .q-circ{background:#fff;box-shadow:0 0 0 3px var(--pri),var(--shadow)}
+.q-nd.lock .q-circ{background:#ededea;filter:grayscale(1);opacity:.7}
 .q-nd.lock .q-circ::after{content:"🔒";position:absolute;right:-4px;bottom:-4px;font-size:.5em}
-.q-nd.boss .q-circ{width:90px;height:90px;font-size:2.7em;background:#2a1c1c;box-shadow:0 5px 0 var(--ink),0 0 0 4px var(--gold),inset 0 0 0 3px #2a1c1c,inset 0 0 0 4.5px var(--shu)}
-.q-nd.boss.cl .q-circ{background:var(--gold)}
+.q-nd.boss .q-circ{width:84px;height:84px;font-size:2.5em}
+.q-nd.boss.open .q-circ{box-shadow:0 0 0 3px var(--gold),var(--shadow)}
 .q-nd.cur .q-circ{animation:qbob 1s ease-in-out infinite}
-.q-nd.cur .q-circ::before{content:"";position:absolute;inset:-8px;border-radius:50%;border:4px solid var(--red);animation:qpulse2 1.4s infinite}
-.q-nd .q-lbl{font-size:.78em;font-weight:bold;margin-top:6px;line-height:1.25;background:var(--card);border:1.5px solid var(--ink);border-radius:4px;padding:1px 5px;display:inline-block;font-family:var(--serif)}
-.q-nd .q-s{color:var(--kin);font-size:.85em;letter-spacing:1px;line-height:1}
-.q-nd .q-me{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:1.8em;animation:float 1.6s ease-in-out infinite;z-index:2}
+.q-nd.cur .q-circ::before{content:"";position:absolute;inset:-8px;border-radius:50%;border:3px solid var(--pri);animation:qpulse2 1.4s infinite}
+.q-nd .q-lbl{font-size:.78em;font-weight:700;margin-top:6px;line-height:1.25;color:var(--text);display:inline-block}
+.q-nd .q-s{color:var(--gold);font-size:.82em;letter-spacing:1px;line-height:1;margin-top:4px}
+.q-nd .q-me{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:1.7em;animation:float 1.6s ease-in-out infinite;z-index:2}
 .q-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-@keyframes qbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes qbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes qpulse2{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.3);opacity:0}}
 @media(max-width:640px){.q-f .q-sp{font-size:3.2em}.q-arena.boss .q-f.mon .q-sp{font-size:4.2em}.q-fighters{min-height:100px}}
 `;
@@ -311,10 +305,10 @@
     const q = byId(params.id);
     const stageP = q ? { id: 'ch' + q.chapter } : null;
     const backR = 'stage';
-    if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('map'); return; }
+    if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('practice-map'); return; }
     if (!params.free && !isUnlocked(q.id)) {
       el.innerHTML = `<div class="panel center"><div style="font-size:3em">🔒</div><h2>${App.esc(q.title)}</h2><ul style="text-align:left;display:inline-block">${lockReason(q).map(s => `<li>${s}</li>`).join('')}</ul><br><button class="btn primary" id="qBack">回冒險地圖</button></div>`;
-      el.querySelector('#qBack').onclick = () => App.go('map'); return;
+      el.querySelector('#qBack').onclick = () => App.go('practice-map'); return;
     }
     if (q.type === 'scene') { el.innerHTML = `<div class="panel center muted">前往場景中…</div>`; setTimeout(() => play(q.id), 0); return; }
 
@@ -340,7 +334,7 @@
       <div class="panel" id="qCard" style="margin-top:6px"></div>
     </div>`;
     const $ = s => el.querySelector(s);
-    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => stageP ? App.go('stage', stageP) : App.go('home') }]);
+    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => stageP ? App.go('stage', stageP) : App.go('practice-map') }]);
     const hearts = () => { $('#qHearts').textContent = '❤️'.repeat(G.hearts) + '🖤'.repeat(3 - G.hearts); };
     const hpBar = () => { $('#qHp').style.width = (G.hp / HP * 100) + '%'; $('#qHpn').textContent = `HP ${G.hp} / ${HP}`; };
     hearts(); hpBar();
@@ -460,6 +454,6 @@
   }
   const pickOne = a => a[Math.random() * a.length | 0];
 
-  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: false, render() { setTimeout(() => App.go('home'), 0); } });
+  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: false, render(el, params) { Travel.renderHome(el, params); } });
   App.register('quest', { title: '關卡', icon: '⚔️', nav: false, render: renderQuest });
 })();

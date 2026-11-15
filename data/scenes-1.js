@@ -166,7 +166,7 @@ SCENES.push(
         choices:[
           { jp:'ごちそうさまでした', kana:'ごちそうさまでした', zh:'謝謝招待', correct:true, feedback:'離開時說這句，店員會很開心。' },
           { jp:'おいしかったです', kana:'おいしかったです', zh:'很好吃', correct:true, feedback:'直接稱讚味道，也是很棒的回應。' },
-          { jp:'いただきます', kana:'いただきます', zh:'我開動了', correct:false, feedback:'吃完要離開了，應該說「ごちそうさまでした」。' }
+          { jp:'いただきます', kana:'いただきます', zh:'我開動了', correct:false, feedback:'要走的時候說「ごちそうさまでした」就好～' }
         ] }
     ]}
   ]
@@ -330,7 +330,7 @@ SCENES.push(
       { speaker:'藥劑師', emoji:'🧑‍⚕️', jp:'お大事に。', kana:'おだいじに', romaji:'odaiji ni', zh:'請多保重。',
         choices:[
           { jp:'ありがとうございます', kana:'ありがとうございます', zh:'謝謝', correct:true, feedback:'對方關心你的身體，回答謝謝即可。' },
-          { jp:'お大事に', kana:'おだいじに', zh:'請保重', correct:false, feedback:'「お大事に」是對病人說的，生病的是你，應該回謝謝。' },
+          { jp:'お大事に', kana:'おだいじに', zh:'請保重', correct:false, feedback:'「お大事に」是對生病的人說的，這裡回句謝謝就好' },
           { jp:'いただきます', kana:'いただきます', zh:'我開動了', correct:false, feedback:'這是吃飯前說的，不是回應關心。' }
         ] }
     ]},
@@ -544,7 +544,7 @@ SCENES.push(
         choices:[
           { jp:'ありがとうございます。これにします', kana:'ありがとうございます。これにします', zh:'謝謝，我就買這件', correct:true, feedback:'被稱讚先道謝，再說「これにします」決定購買。' },
           { jp:'うーん、ちょっと考えます', kana:'うーん、ちょっとかんがえます', zh:'嗯…我再考慮一下', correct:true, feedback:'委婉表示先不買，日本店員不會強迫推銷。' },
-          { jp:'どういたしまして', kana:'どういたしまして', zh:'不客氣', correct:false, feedback:'被稱讚時應該說謝謝，「どういたしまして」是回應別人道謝的。' }
+          { jp:'どういたしまして', kana:'どういたしまして', zh:'不客氣', correct:false, feedback:'被稱讚時說聲謝謝就好；「どういたしまして」是回別人道謝用的' }
         ] },
       { speaker:'店員', emoji:'💁‍♀️', jp:'お会計は6,600円です。免税のお手続きをされますか？', kana:'おかいけいはろくせんろっぴゃくえんです。めんぜいのおてつづきをされますか', romaji:'okaikei wa rokusen roppyaku en desu. menzei no otetsuzuki o saremasu ka', zh:'總共 6,600 圓。要辦理免稅手續嗎？',
         choices:[

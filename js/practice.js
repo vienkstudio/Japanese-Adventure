@@ -15,175 +15,182 @@
     const st = document.createElement('style'); st.id = 'css-practice';
     st.textContent = `
 /* 首頁 */
-.h-me{display:flex;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;color:#f5eedc;background-color:var(--ai);background-image:var(--sgd);background-size:40px 20px;box-shadow:inset 0 0 0 3px var(--ai),inset 0 0 0 4.5px var(--kin),var(--shadow)}
-.h-av{font-size:2.4em;width:62px;height:62px;flex:none;border-radius:50%;background:var(--paper);border:3px solid var(--shu);box-shadow:0 0 0 2px var(--paper);cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
+.h-me{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;color:#fff;background:var(--pri)}
+.h-av{font-size:2.3em;width:60px;height:60px;flex:none;border-radius:50%;background:#fff;border:none;cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
 .h-inf{flex:1;min-width:0}
-.h-inf b{font-family:var(--serif);font-size:1.1em;color:#fff}
-.h-inf .bar{margin:5px 0;border-color:var(--kin);background:rgba(0,0,0,.35)}
-.h-inf small{font-size:.78em;opacity:.9}
-.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:2px solid #5e1c13;border-radius:14px;background:var(--shu);color:#fff;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 5px 0 #5e1c13;animation:hpulse 2s ease-in-out infinite}
-.h-next:active{transform:translateY(4px);box-shadow:0 1px 0 #5e1c13}
-.h-next .i{font-size:2.2em;width:54px;height:54px;flex:none;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;border:2px solid #5e1c13}
+.h-inf b{font-size:1.1em;color:#fff}
+.h-inf .bar{margin:6px 0;background:rgba(255,255,255,.35)}
+.h-inf .bar>div{background:#fff}
+.h-inf small{font-size:.78em;opacity:.92}
+.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:none;border-radius:20px;background:#fff;color:var(--text);cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .1s}
+.h-next:active{transform:scale(.97)}
+.h-next .i{font-size:2em;width:52px;height:52px;flex:none;border-radius:50%;background:var(--pri-t);display:flex;align-items:center;justify-content:center}
 .h-next .t{flex:1;min-width:0;line-height:1.3}
-.h-next small{opacity:.88;font-size:.78em;display:block}
-.h-next b{font-family:var(--serif);font-size:1.2em}
-.h-next .go{font-size:1.6em}
+.h-next small{color:var(--muted);font-size:.78em;display:block}
+.h-next b{font-size:1.15em}
+.h-next .go{width:40px;height:40px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1em;flex:none}
 @keyframes hpulse{0%,100%{transform:none}50%{transform:scale(1.015)}}
 .h-daily{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0}
-.h-daily>div{position:relative;overflow:hidden;background:var(--card);border:1.5px solid var(--ink);border-radius:8px;padding:4px 6px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center}
-.h-daily>div span{font-size:1.4em}
-.h-daily i{position:absolute;left:0;bottom:0;height:3px;background:var(--matcha)}
-.h-daily .ok{background:#e4ecd4}
+.h-daily>div{position:relative;overflow:hidden;background:#fff;border:none;border-radius:14px;padding:6px 8px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow)}
+.h-daily>div span{font-size:1.3em}
+.h-daily i{position:absolute;left:0;bottom:0;height:3px;background:var(--acc)}
+.h-daily .ok{background:var(--acc-t)}
 .h-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.h-lv button{border:2px solid var(--ink);border-radius:10px;background:var(--card);padding:6px 2px;cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:0 3px 0 var(--ink);line-height:1.25}
-.h-lv button b{display:block;font-family:var(--serif);font-size:1.05em}
-.h-lv button small{display:block;font-size:.7em;color:var(--muted)}
-.h-lv button i{font-style:normal;font-size:.68em}
-.h-lv button.on{background:var(--ai);color:#f5eedc}
-.h-lv button.on small{color:rgba(245,238,220,.8)}
+.h-lv button{border:none;border-radius:16px;background:#fff;padding:8px 2px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);line-height:1.25;transition:transform .1s}
+.h-lv button:active{transform:scale(.95)}
+.h-lv button b{display:block;font-size:1em}
+.h-lv button small{display:block;font-size:.68em;color:var(--muted)}
+.h-lv button i{font-style:normal;font-size:.66em;color:var(--muted)}
+.h-lv button.on{background:var(--pri);color:#fff}
+.h-lv button.on small,.h-lv button.on i{color:rgba(255,255,255,.88)}
 .h-worlds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px 10px;border:2px solid var(--ink);border-top:8px solid var(--tc);border-radius:12px;background:var(--card);cursor:pointer;font-family:inherit;color:var(--ink);box-shadow:var(--frame),3px 3px 0 var(--ink)}
-.h-w:active{transform:translate(2px,2px);box-shadow:var(--frame),1px 1px 0 var(--ink)}
-.h-w .ic{font-size:2.4em;line-height:1.1}
-.h-w b{font-family:var(--serif);font-size:1em}
+.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 8px 12px;border:none;border-radius:20px;background:#fff;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
+.h-w:active{transform:scale(.96)}
+.h-w .ic{font-size:2.2em;line-height:1.1;width:56px;height:56px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
+.h-w b{font-size:.98em}
 .h-w small{font-size:.72em;color:var(--muted)}
-.h-w .pg{width:80%;height:6px;background:var(--paper2);border:1px solid var(--line);border-radius:3px;overflow:hidden}
-.h-w .pg i{display:block;height:100%;background:var(--kin)}
-.h-w .md{position:absolute;top:2px;right:4px;font-size:1.3em}
+.h-w .pg{width:76%;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.h-w .pg i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.h-w .md{position:absolute;top:6px;right:8px;font-size:1.2em}
 /* 場景關卡地圖 */
-.p-stage{position:relative;overflow:hidden;border:2px solid var(--ink);border-radius:14px;padding:14px;color:#f5eedc;margin-bottom:8px;
-  background-color:var(--tc);background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.45)),var(--sgd);background-size:auto,40px 20px;box-shadow:inset 0 0 0 3px rgba(0,0,0,0),inset 0 0 0 4.5px var(--kin),var(--shadow)}
-.p-sbig{position:absolute;right:8px;top:2px;font-size:4.4em;opacity:.9;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.35))}
-.p-stt small{font-family:var(--serif);opacity:.85}
-.p-stt h2{margin:0;color:#fff;font-size:1.6em;text-shadow:2px 2px 0 var(--ink)}
-.p-sdesc{font-size:.8em;opacity:.9;max-width:72%;line-height:1.4}
-.p-sbar{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-weight:900;font-family:var(--serif)}
-.p-sbar .bar{flex:1;border-color:var(--kin);background:rgba(0,0,0,.35)}
-.p-sbtn{display:flex;gap:4px;flex-wrap:wrap}
+.p-stage{position:relative;overflow:hidden;border-radius:22px;padding:16px;color:var(--text);margin-bottom:8px;background:#fff;box-shadow:var(--shadow)}
+.p-sbig{position:absolute;right:14px;top:12px;font-size:3em;width:72px;height:72px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
+.p-stt small{color:var(--muted)}
+.p-stt h2{margin:0;color:var(--text);font-size:1.5em}
+.p-sdesc{font-size:.8em;color:var(--muted);max-width:70%;line-height:1.4}
+.p-sbar{display:flex;align-items:center;gap:8px;margin:12px 0 8px;font-weight:700;font-size:.9em}
+.p-sbar .bar{flex:1}
+.p-sbtn{display:flex;gap:6px;flex-wrap:wrap}
 .p-sbtn .btn{margin:0}
 .p-nsub{font-size:.66em;color:var(--muted);margin-top:1px}
+.q-nd.todo .q-circ{background:#ededea}
 /* 情境遊戲 HUD */
 .g-hud{display:flex;align-items:center;gap:8px}
-.g-hud .btn{margin:0}
+.g-hud .btn{margin:0;min-width:40px;padding:5px 10px}
 .g-ttl{flex:1;min-width:0;line-height:1.25}
-.g-ttl b{display:block;font-family:var(--serif);color:var(--ai);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-ttl b{display:block;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-ttl small{color:var(--muted);font-size:.75em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-.g-st{display:flex;flex-direction:column;align-items:flex-end;font-weight:900;font-family:var(--serif);font-size:.9em;line-height:1.3}
+.g-st{display:flex;flex-direction:column;align-items:flex-end;font-weight:800;font-size:.88em;line-height:1.3}
 .g-hit{animation:qshake .4s}
-.g-queue{display:flex;gap:4px;justify-content:space-between;margin:8px 0 4px;padding:6px;background:var(--ai);background-image:var(--sgd);background-size:40px 20px;border:2px solid var(--ink);border-radius:10px}
-.g-f{flex:1;text-align:center;color:#f5eedc;opacity:.55;line-height:1.1}
-.g-f span{font-size:1.5em;display:block}
+.g-queue{display:flex;gap:4px;justify-content:space-between;margin:10px 0 6px;padding:8px 6px;background:#fff;border-radius:18px;box-shadow:var(--shadow)}
+.g-f{flex:1;text-align:center;color:var(--muted);opacity:.45;line-height:1.1}
+.g-f span{font-size:1.45em;display:block}
 .g-f small{font-size:.66em}
-.g-f.cur{opacity:1}
+.g-f.cur{opacity:1;color:var(--text)}
 .g-f.cur span{animation:float 1.2s ease-in-out infinite}
 .g-f.done{opacity:.9}
-.g-f.done small{color:#b9e08a;font-weight:900}
-.g-pat{display:flex;align-items:center;gap:6px;font-weight:900}
-.g-patb{flex:1;height:12px;border:2px solid var(--ink);border-radius:7px;background:var(--paper2);overflow:hidden}
-.g-patb div{height:100%;background:var(--matcha);transition:width .2s linear}
+.g-f.done small{color:var(--acc-d);font-weight:800}
+.g-pat{display:flex;align-items:center;gap:6px;font-weight:800}
+.g-patb{flex:1;height:8px;border:none;border-radius:4px;background:var(--line);overflow:hidden}
+.g-patb div{height:100%;background:var(--acc);border-radius:4px;transition:width .2s linear}
 .g-patb div.mid{background:var(--gold)}
-.g-patb div.low{background:var(--shu);animation:fade .5s infinite alternate}
-.g-patb div.relax{background:repeating-linear-gradient(135deg,#b9ae99 0 6px,#d6c6a2 6px 12px)}
-.g-combo{background:var(--shu);color:#fff;border-radius:6px;padding:0 6px;font-size:.85em;animation:pop .25s}
-.g-opt{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.g-ask{display:flex;gap:10px;align-items:center;background:var(--soft);border:2px dashed var(--shu);border-radius:12px;padding:8px 10px}
-.g-av{font-size:2.2em;line-height:1;animation:float 2s ease-in-out infinite}
+.g-patb div.low{background:var(--pri);animation:fade .5s infinite alternate}
+.g-patb div.relax{background:#d8d8d4}
+.g-combo{background:var(--pri);color:#fff;border-radius:999px;padding:0 8px;font-size:.85em;animation:pop .25s}
+.g-opt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.g-ask{display:flex;gap:10px;align-items:center;background:var(--pri-t);border:none;border-radius:18px;padding:10px 12px}
+.g-av{font-size:2.1em;line-height:1;animation:float 2s ease-in-out infinite}
 .g-say{flex:1;font-size:.95em}
 .g-say small{color:var(--muted);display:block}
-/* 菜單遊戲 */
-.m-board{border:3px solid var(--ink);border-radius:10px;background:#2a1c14;padding:10px;box-shadow:inset 0 0 0 2px #6b4a2a,var(--shadow)}
-.m-board h3{margin:0 0 8px;color:#f0cf73;text-align:center;font-size:1em}
+.g-react{margin-top:6px;font-size:.9em;font-weight:700}
+/* 看板（ask／pref） */
+.m-board{border:none;border-radius:18px;background:var(--paper);padding:10px;margin-top:8px}
+.m-board h3{margin:2px 0 8px;color:var(--text);text-align:center;font-size:.95em}
 .m-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.m-it{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:8px 6px;cursor:pointer;text-align:center;font-family:inherit;color:var(--ink);box-shadow:0 3px 0 #000}
-.m-it:active{transform:translateY(2px);box-shadow:0 1px 0 #000}
-.m-it .e{font-size:1.5em;line-height:1}
-.m-it .j{font-weight:900;font-size:1.02em;line-height:1.3}
+.m-it{position:relative;background:#fff;border:none;border-radius:14px;padding:10px 6px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
+.m-it:active{transform:scale(.96)}
+.m-it .e{font-size:1.4em;line-height:1}
+.m-it .j{font-weight:800;font-size:1.02em;line-height:1.3}
 .m-it .k{font-size:.72em;color:var(--muted)}
-.m-it .z{font-size:.75em;color:var(--ai2)}
-.m-it.sel{background:#fff3c4}
+.m-it .z{font-size:.75em;color:var(--acc-d)}
+.m-it.sel{box-shadow:0 0 0 2px var(--pri)}
 .m-noz .z{display:none}
-/* QR 平板點餐（無圖、直式和風菜單） */
+/* QR 點餐（像點餐 App：白底列表，左品名、右價格與 − 數量 ＋） */
 .m-list{margin:4px 0 0;padding-left:1.1em;line-height:1.5}
-.m-list b{font-size:1.08em}
-.g-first{position:relative;animation:hpulse 1.6s ease-in-out 3}
-.g-arrow{position:absolute;right:8px;top:-12px;background:var(--shu);color:#fff;font-size:.72em;font-weight:900;border-radius:8px;padding:1px 8px;animation:float 1.2s ease-in-out infinite}
-.m-situ{margin:8px 0 0;padding:6px 10px;border-left:4px solid var(--kin);background:var(--paper);font-size:.9em}
-.m-menu{margin-top:8px;border:2px solid var(--ink);border-radius:8px;background:var(--paper);box-shadow:var(--shadow);overflow:hidden}
-.m-head{background:var(--ink);color:#f5eedc;text-align:center;font-family:var(--serif);font-weight:900;padding:6px;letter-spacing:2px}
-.m-tabs{display:flex;overflow-x:auto;border-bottom:2px solid var(--ink);scrollbar-width:none}
+.m-list b{font-size:1.06em}
+.g-first{position:relative}
+.g-arrow{position:absolute;right:10px;top:-10px;background:var(--pri);color:#fff;font-size:.72em;font-weight:800;border-radius:999px;padding:1px 10px;animation:float 1.2s ease-in-out infinite}
+.m-situ{margin:8px 0 0;padding:8px 12px;border-radius:14px;background:var(--paper);font-size:.9em}
+.m-menu{margin-top:10px;border:none;border-radius:18px;background:#fff;box-shadow:var(--shadow);overflow:hidden}
+.m-head{background:#fff;color:var(--text);text-align:left;font-weight:800;padding:12px 14px 6px;font-size:1em}
+.m-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 8px;border-bottom:1px solid var(--line);scrollbar-width:none}
 .m-tabs::-webkit-scrollbar{display:none}
-.m-tabs button{flex:1 0 auto;border:none;border-right:1px solid var(--line);background:var(--paper2);padding:8px 12px;font-family:var(--serif);font-weight:900;color:var(--ink);cursor:pointer;min-height:40px}
-.m-tabs button.on{background:var(--shu);color:#fff}
+.m-tabs button{flex:none;border:none;border-radius:999px;background:var(--paper);padding:6px 14px;font-weight:700;color:var(--muted);cursor:pointer;min-height:34px;font-family:inherit}
+.m-tabs button.on{background:var(--pri);color:#fff}
 .m-rows{max-height:52vh;overflow:auto}
-.m-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px dashed #b9ae99}
-.m-row.sel{background:#fff3c4}
+.m-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #f2f2f0}
+.m-row.sel{background:var(--pri-t)}
 .m-nm{flex:1;min-width:0;line-height:1.25}
-.m-nm b{display:block;font-size:1.05em}
+.m-nm b{display:block;font-size:1em;font-weight:700}
 .m-nm small{display:block;font-size:.72em;color:var(--muted)}
-.m-nm small.z{color:var(--ai2)}
+.m-nm small.z{color:var(--acc-d)}
 .m-e{float:left;font-size:1.3em;margin-right:6px}
-.m-pr{font-family:var(--serif);font-weight:900;color:var(--shu);white-space:nowrap}
-.m-q{display:flex;align-items:center;gap:2px;flex:none}
-.m-q button{width:38px;height:38px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-size:1.2em;font-weight:900;cursor:pointer;color:var(--ink);line-height:1;padding:0}
-.m-q button:active{transform:scale(.92)}
-.m-q span{min-width:24px;text-align:center;font-weight:900;font-size:1.1em}
-.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + 6px);z-index:5;margin-top:8px;padding:8px 10px;border:2px solid var(--ink);border-radius:10px;background:#fffdf6;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
-.m-cl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.m-pr{font-weight:700;color:var(--text);white-space:nowrap;font-size:.95em}
+.m-q{display:flex;align-items:center;gap:4px;flex:none}
+.m-q button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:#fff;font-size:1.15em;font-weight:700;cursor:pointer;color:var(--text);line-height:1;padding:0;transition:transform .1s}
+.m-q button[data-d="1"]{background:var(--pri);border-color:var(--pri);color:#fff}
+.m-q button:active{transform:scale(.88)}
+.m-q span{min-width:22px;text-align:center;font-weight:800;font-size:1.05em}
+.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + 8px);z-index:5;margin-top:10px;padding:10px 12px;border:none;border-radius:20px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.m-cl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .m-cb{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.m-cb b{color:var(--shu);font-family:var(--serif)}
+.m-cb b{color:var(--text);font-size:1.1em}
 .m-cb .btn{margin:0}
 /* 券売機 */
-.k-mac{margin-top:8px;border:3px solid var(--ink);border-radius:12px;background:#d9d4c7;padding:8px;box-shadow:var(--shadow)}
-.k-top{text-align:center;font-family:var(--serif);font-weight:900;letter-spacing:4px}
-.k-disp{background:#1d2a1d;color:#9ef59e;font-family:monospace;text-align:right;padding:6px 10px;border-radius:6px;margin:6px 0;font-size:1.1em}
+.k-mac{margin-top:10px;border:none;border-radius:20px;background:#fff;padding:12px;box-shadow:var(--shadow)}
+.k-top{text-align:center;font-weight:800;color:var(--muted);font-size:.85em}
+.k-disp{background:#222;color:#7cf5d8;font-family:ui-monospace,monospace;text-align:right;padding:8px 12px;border-radius:12px;margin:8px 0;font-size:1.1em}
 .k-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.k-b{border:2px solid var(--ink);border-radius:6px;background:#eee8da;padding:6px 2px;font-family:inherit;color:#8a8478;cursor:pointer;line-height:1.2;min-height:70px}
-.k-b small{display:block;font-size:.66em}
-.k-b b{display:block;font-family:var(--serif);font-size:.9em}
-.k-b.main{background:#f3e1c7}
-.k-b.lit{background:#fff7d6;color:var(--ink);box-shadow:0 0 0 2px var(--gold),0 0 12px rgba(255,200,61,.8)}
-.k-money{display:flex;gap:6px;margin:8px 0}
-.k-money button{flex:1;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:8px 0;font-weight:900;cursor:pointer;font-family:inherit}
+.k-b{border:none;border-radius:14px;background:#f2f2ef;padding:8px 2px;font-family:inherit;color:#aaa;cursor:pointer;line-height:1.2;min-height:70px;transition:transform .1s}
+.k-b:active{transform:scale(.95)}
+.k-b small{display:block;font-size:.64em}
+.k-b b{display:block;font-size:.88em}
+.k-b.lit{background:var(--pri-t);color:var(--text);box-shadow:0 0 0 2px var(--pri)}
+.k-money{display:flex;gap:6px;margin:10px 0}
+.k-money button{flex:1;border:1px solid var(--line2);border-radius:999px;background:#fff;padding:9px 0;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s}
+.k-money button:active{transform:scale(.95)}
 .k-tix{min-height:28px;margin-bottom:6px}
 /* 家系客製 */
-.o-board{margin-top:8px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);padding:8px}
-.o-row{margin-bottom:8px}
-.o-name{font-family:var(--serif);font-weight:900;margin-bottom:4px}
+.o-board{margin-top:10px;border:none;border-radius:20px;background:#fff;padding:12px;box-shadow:var(--shadow)}
+.o-row{margin-bottom:10px}
+.o-name{font-weight:800;margin-bottom:6px;font-size:.92em}
 .o-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.o-opts button{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:8px 2px;font-size:1.05em;font-weight:900;cursor:pointer;line-height:1.2;color:var(--ink)}
-.o-opts button small{display:block;font-size:.62em;font-weight:normal;color:var(--ai2)}
-.o-opts button.on{background:var(--ai);color:#f5eedc}
-.o-opts button.on small{color:#f5eedc}
-.g-steps{text-align:left;padding-left:1.3em;line-height:1.7}
-.g-note{text-align:left;font-size:.85em;background:var(--paper);border-left:4px solid var(--kin);padding:6px 10px}
+.o-opts button{border:none;border-radius:999px;background:#f2f2ef;padding:9px 2px;font-size:1em;font-weight:700;cursor:pointer;line-height:1.2;color:var(--text);transition:transform .1s}
+.o-opts button:active{transform:scale(.95)}
+.o-opts button small{display:block;font-size:.62em;font-weight:400;color:var(--muted)}
+.o-opts button.on{background:var(--pri);color:#fff}
+.o-opts button.on small{color:rgba(255,255,255,.88)}
+.g-steps{text-align:left;padding-left:1.3em;line-height:1.8}
+.g-note{text-align:left;font-size:.85em;background:var(--acc-t);border-radius:14px;padding:8px 12px}
 /* 字卡 */
 .c-card{perspective:1000px;max-width:440px;margin:8px auto;height:300px;cursor:pointer}
 .c-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
 .c-card.flip .c-in{transform:rotateY(180deg)}
-.c-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:2px solid var(--ink);border-radius:14px;background:var(--card);box-shadow:var(--frame),4px 5px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
-.c-back{transform:rotateY(180deg);background:var(--soft)}
-.c-face .c-jp{font-size:2.3em;font-weight:900;line-height:1.35;word-break:break-all}
-.c-face .c-top{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:.8em;color:var(--muted)}
-.c-ex{margin-top:8px;font-size:.9em;background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px}
-.c-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:440px;margin:8px auto}
-.c-rate .btn{margin:0;flex-direction:column;line-height:1.2;font-size:.9em}
-.c-rate .btn.on{background:var(--ai);color:#f5eedc}
+.c-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:none;border-radius:24px;background:#fff;box-shadow:var(--shadow2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+.c-back{transform:rotateY(180deg);background:#fff}
+.c-face .c-jp{font-size:2.3em;font-weight:800;line-height:1.35;word-break:break-all}
+.c-face .c-top{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;font-size:.8em;color:var(--muted)}
+.c-ex{margin-top:8px;font-size:.9em;background:var(--paper);border:none;border-radius:12px;padding:6px 10px}
+.c-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:440px;margin:10px auto}
+.c-rate .btn{margin:0;flex-direction:column;line-height:1.2;font-size:.88em;border-radius:18px}
+.c-rate .btn.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
-.h-save{margin:6px 2px 0;font-size:.78em;color:var(--muted);text-align:center}
-.h-save a{color:var(--shu);font-weight:900}
-.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:6px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);font-family:var(--serif);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}
-.h-gsb b{color:var(--shu)}
-.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;padding:10px;background:var(--paper);border:2px solid var(--ink);border-radius:8px}
-.gs-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
-.gs-seal{width:74px;height:74px;border-radius:50%;border:2px dashed #b9ae99;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.55;filter:grayscale(1)}
-.gs-cell.ok .gs-seal{opacity:1;filter:none;border:3px double var(--shu);background:radial-gradient(circle,rgba(199,62,46,.12),rgba(199,62,46,.04));color:var(--shu);transform:rotate(-8deg);box-shadow:inset 0 0 0 3px rgba(199,62,46,.25)}
+.h-save{margin:8px 2px 0;font-size:.78em;color:var(--muted);text-align:center}
+.h-save a{color:var(--pri);font-weight:700}
+.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:10px;border:none;border-radius:999px;background:#fff;color:var(--text);cursor:pointer;box-shadow:var(--shadow);font-family:inherit;font-weight:700;transition:transform .1s}
+.h-gsb:active{transform:scale(.97)}
+.h-gsb b{color:var(--pri)}
+.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;padding:4px}
+.gs-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.gs-seal{width:72px;height:72px;border-radius:50%;background:#f2f2ef;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.6;filter:grayscale(1)}
+.gs-cell.ok .gs-seal{opacity:1;filter:none;background:var(--pri);color:#fff;transform:rotate(-6deg);box-shadow:0 4px 12px rgba(255,107,91,.35)}
 .gs-ic{font-size:1.6em;line-height:1}
-.gs-nm{font-family:var(--serif);font-weight:900;font-size:.62em;line-height:1.1;text-align:center;max-width:64px}
-.gs-cell small{font-size:.66em;color:var(--muted);font-family:var(--serif)}
-.gs-cell.ok small{color:var(--shu);font-weight:900}
-#playerChip .sv{font-size:1.05em;cursor:pointer;border:1.5px solid rgba(245,238,220,.5);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
+.gs-nm{font-weight:800;font-size:.6em;line-height:1.1;text-align:center;max-width:62px}
+.gs-cell small{font-size:.66em;color:var(--muted)}
+.gs-cell.ok small{color:var(--pri);font-weight:800}
+#playerChip .sv{font-size:1em;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center}
 `;
     document.head.appendChild(st);
   })();
@@ -300,7 +307,7 @@
     App.modal(`<h2 style="margin:.2em 0">⛩️ 御朱印帳</h2><p class="muted" style="font-size:.82em;margin:.2em 0">把一個地點的所有關卡都拿到 ⭐⭐⭐，就能蓋上朱印</p>
       <div class="gs-grid">${ws.map(w => { const i = worldInfo(w), ok = hasGoshuin(w), st = stageStars(w);
         return `<div class="gs-cell${ok ? ' ok' : ''}"><div class="gs-seal">${ok ? `<span class="gs-ic">${esc(i.icon)}</span><span class="gs-nm">${esc(i.name)}</span>` : `<span class="gs-ic">${esc(i.icon)}</span>`}</div><small>${ok ? '奉拝' : `⭐${st.got}/${st.max}`}</small></div>`; }).join('')}</div>
-      <p style="margin:.4em 0;font-family:var(--serif)">已得 <b style="color:var(--shu)">${goshuinGot()}</b> / ${ws.length}</p>`, [{ label: '閉じる 關閉', cls: 'primary' }]);
+      <p style="margin:.4em 0">已得 <b style="color:var(--shu)">${goshuinGot()}</b> / ${ws.length}</p>`, [{ label: '閉じる 關閉', cls: 'primary' }]);
   }
 
   /* ---------------- 首頁：選等級 → 選地點 ---------------- */
@@ -325,7 +332,7 @@
       ${nextN ? `<button class="h-next" id="hNext"><span class="i">${esc(nextN.icon)}</span><span class="t"><small>繼續冒險・${esc(worldInfo(nextW).name)}</small><b>${esc(nextN.name)}</b></span><span class="go">▶</span></button>` : '<div class="panel center">🏆 全部制霸！</div>'}
       ${d ? `<div class="h-daily">${Game.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0); return `<div class="${d.claimed[m.id] ? 'ok' : ''}"><span>${d.claimed[m.id] ? '✅' : m.icon}</span><small>${esc(m.label)}</small><i style="width:${v / m.goal * 100}%"></i></div>`; }).join('')}</div>` : ''}
       <button class="h-gsb" id="hGos">⛩️ 御朱印帳 <b>${goshuinGot()}/${allWorlds().length}</b></button>
-      <div class="sec-t">① 選等級</div>
+      <div class="sec-t">① 選練習類型</div>
       <div class="h-lv">${LEVELS.map(x => { const st = x.worlds.reduce((a, w) => { const s = stageStars(w); return [a[0] + s.got, a[1] + s.max]; }, [0, 0]);
         return `<button data-lv="${x.id}" class="${x.id === UI.lv ? 'on' : ''}"><b>${x.name}</b><small>${x.sub}</small><i>⭐${st[0]}/${st[1]}</i></button>`; }).join('')}</div>
       <div class="sec-t">② 選地點</div>
@@ -345,6 +352,8 @@
   }
 
   /* ---- 情境星數（存檔：App.state.sit） ---- */
+  App.register('practice-map', { title: '原版練習', icon: '🎯', nav: false, render: renderHome });
+
   const sitStars = key => /^q:/.test(key) ? App.stars(key.slice(2)) : ((App.state.sit || {})[key] || 0);
   function setSit(key, stars) {
     if (!key) return;
@@ -355,15 +364,29 @@
   const menusOf = id => { const m = (window.MENUS || {})[id]; return Array.isArray(m) ? m : m ? [m] : []; };
   const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求', qa: '對答', kenbaiki: '券売機', okonomi: '說喜好' };
   // 場景的所有細分關卡
+  // 各場景依實際到店流程排序（m＝情境遊戲、d＝對話）
+  const TIMELINE = {
+    konbini: ['d1', 'm0', 'm1', 'm2', 'd0'], ramen: ['d0', 'm0', 'm1', 'd1', 'm2'], cafe: ['m0', 'm1', 'm2', 'd0', 'd1'],
+    drugstore: ['m2', 'd0', 'm0', 'd1', 'm1', 'd2'], izakaya: ['m0', 'd0', 'm1', 'd1', 'm2', 'm3', 'd2'], clothes: ['m0', 'm2', 'd0', 'm1', 'd1'],
+    directions: ['m0', 'd0', 'm1', 'd1', 'm2'], station: ['m0', 'm1', 'd0', 'm2', 'd1'], hotel: ['d0', 'm1', 'm0', 'm2', 'd1'],
+    shrine: ['m2', 'm0', 'm1', 'd0', 'd1'], airport: ['m0', 'd0', 'm1', 'm2', 'd1'], emergency: ['m2', 'd1', 'm1', 'm0', 'd0', 'd2'],
+    yakiniku: ['m0', 'd0', 'm1', 'm2', 'm3', 'd1', 'm4']
+  };
   function stageNodes(id) {
     const ch = chapOf(id);
     if (ch) return (window.QUESTS || []).filter(q => q.chapter === ch.n && q.type === 'kana').map(q => ({ key: 'q:' + q.id, icon: q.icon, name: q.title.replace(/^BOSS：/, '').replace(/：.*/, ''), sub: q.boss ? '👑 BOSS' : '⚔️ 假名戰鬥', boss: q.boss, go: () => App.go('quest', { id: q.id, free: true }) }));
     const s = findScene(id); if (!s) return [];
     const ms = menusOf(id), ds = arr(s.dialogues), out = [];
-    for (let i = 0; i < Math.max(ms.length, ds.length); i++) {
-      if (ms[i]) out.push({ key: id + ':m' + i, icon: ms[i].icon || '🧾', name: ms[i].name, sub: '🧾 ' + (TYPE_LB[ms[i].type] || '互動'), go: () => App.go('menu', { id, m: i }) });
-      if (ds[i]) out.push({ key: id + ':d' + i, icon: '🎭', name: ds[i].title || '對話 ' + (i + 1), sub: '🎭 對話', go: () => App.go('drill', { scenes: [id], kind: 'dialog', dialog: i, sit: id + ':d' + i }) });
-    }
+    const mNode = i => ({ key: id + ':m' + i, icon: ms[i].icon || '🧾', name: ms[i].name, sub: '🧾 ' + (TYPE_LB[ms[i].type] || '互動'), go: () => App.go('menu', { id, m: i }) });
+    const dNode = i => ({ key: id + ':d' + i, icon: '🎭', name: ds[i].title || '對話 ' + (i + 1), sub: '🎭 對話', go: () => App.go('drill', { scenes: [id], kind: 'dialog', dialog: i, sit: id + ':d' + i }) });
+    let seq = TIMELINE[id];
+    if (!seq) { seq = []; for (let i = 0; i < Math.max(ms.length, ds.length); i++) { if (ms[i]) seq.push('m' + i); if (ds[i]) seq.push('d' + i); } }
+    const seen = new Set();
+    seq.concat(ms.map((_, i) => 'm' + i), ds.map((_, i) => 'd' + i)).forEach(k => {
+      if (seen.has(k)) return; seen.add(k);
+      const i = +k.slice(1);
+      if (k[0] === 'm' && ms[i]) out.push(mNode(i)); else if (k[0] === 'd' && ds[i]) out.push(dNode(i));
+    });
     out.push({ key: id + ':word', icon: '📚', name: '單字特訓', sub: '📚 測驗', go: () => App.go('drill', { scenes: [id], kind: 'word', count: 10, sit: id + ':word' }) });
     if (T().hasSR) out.push({ key: id + ':speak', icon: '🎤', name: '口說挑戰', sub: '🎤 用說的', go: () => App.go('drill', { scenes: [id], kind: 'speak', count: ds.length, sit: id + ':speak' }) });
     else out.push({ key: id + ':speak', icon: '🔁', name: '跟讀練習', sub: '🔁 先聽再選', go: () => App.go('drill', { scenes: [id], kind: 'shadow', count: ds.length, sit: id + ':speak' }) });
@@ -377,7 +400,7 @@
   /* ---- 路由：stage（場景關卡地圖） ---- */
   function renderStage(el, params) {
     const id = (params || {}).id, s = worldInfo(id);
-    if (!s) { App.go('home'); return; }
+    if (!s) { App.go('practice-map'); return; }
     const nodes = stageNodes(id), st = stageStars(id);
     const cur = nodes.find(n => sitStars(n.key) === 0) || null;
     const X = [50, 76, 70, 42, 22, 30, 58, 78, 50];
@@ -389,15 +412,15 @@
         <div class="p-sbtn"><button class="btn sm" id="sBack">↩ 選地點</button>${chapOf(id) ? '' : '<button class="btn sm" id="sLearn">📖 單字・小知識</button>'}${cur ? '<button class="btn sm primary" id="sGo">▶ 下一關</button>' : '<span class="pill">🏅 全制霸</span>'}</div>
       </div>
       <div class="q-path" style="height:${nodes.length * H + 30}px">
-        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" stroke="#a8926a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" stroke-dasharray="2 14"/></svg>
+        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" stroke="#e2e2e2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
         ${nodes.map((n, i) => {
           const k = sitStars(n.key), isCur = cur && cur.key === n.key;
-          return `<div class="q-nd ${k ? 'cl' : 'open'}${n.boss ? ' boss' : ''}${isCur ? ' cur' : ''}" data-i="${i}" style="left:${X[i % X.length]}%;top:${i * H + (n.boss ? 0 : 8)}px">
+          return `<div class="q-nd ${k ? 'cl' : isCur ? 'open' : 'todo'}${n.boss ? ' boss' : ''}${isCur ? ' cur' : ''}" data-i="${i}" style="left:${X[i % X.length]}%;top:${i * H + (n.boss ? 0 : 8)}px">
             ${isCur ? `<div class="q-me">${window.Game ? Game.avatar() : '🧳'}</div>` : ''}
             <div class="q-circ">${esc(n.icon)}</div><div class="q-s">${'★'.repeat(k)}${'☆'.repeat(3 - k)}</div>
             <div class="q-lbl">${esc(n.name)}</div><div class="p-nsub">${esc(n.sub)}</div></div>`; }).join('')}
       </div>`;
-    el.querySelector('#sBack').onclick = () => App.go('home');
+    el.querySelector('#sBack').onclick = () => App.go('practice-map');
     const sl = el.querySelector('#sLearn'); if (sl) sl.onclick = () => App.go('scene', { id, free: true });
     const g = el.querySelector('#sGo'); if (g) g.onclick = () => cur.go();
     el.querySelectorAll('.q-nd[data-i]').forEach(d => d.onclick = () => {
@@ -478,7 +501,7 @@
   }
 
   App.register('cards', { title: '字卡', icon: '🎴', nav: true, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
-  App.register('practice', { title: '練習', icon: '🎯', nav: false, render() { setTimeout(() => App.go('home'), 0); } });
+  App.register('practice', { title: '練習', icon: '🎯', nav: false, render() { setTimeout(() => App.go('practice-map'), 0); } });
 
   /* =========================================================
      路由：menu — 互動情境遊戲（params {id, m}）
@@ -575,9 +598,13 @@
     params = params || {};
     { const host = el; el = document.createElement('div'); host.appendChild(el); }   // 換頁時舊計時器能偵測到自己已脫離畫面
     const id = params.id, mi = +params.m || 0, ms = menusOf(id), m = ms[mi], sc = findScene(id);
-    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => App.go('home'); return; }
+    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice-map'); return; }
     const key = id + ':m' + mi, G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
-    const N = 5, PAT = 45;   // 5 位旅伴、每位耐心 45 秒
+    const N = m.type === 'qa' && m.seq ? Math.min(8, m.qs.length) : 5, PAT = 45;   // 旅伴人數；依序對答的情境＝每個流程一位
+    // 真實小意外：每局必出一次（店員講太快要請他重說／品項賣完）
+    const INC = { r: Math.random() * Math.min(N, 4) | 0, type: m.type === 'order' && Math.random() < 0.5 ? 'soldout' : 'fast', done: false };
+    const CONF = [{ jp: 'え？', kana: 'え？', zh: '咦？' }, { jp: 'すみません、もう一度お願いできますか。', kana: 'すみません、もういちどおねがいできますか', zh: '不好意思，可以再說一次嗎？' }, { jp: '…はい？', kana: 'はい？', zh: '……什麼？' }];
+    const isInc = t => !INC.done && S.r === INC.r && INC.type === t;
     const S = { r: 0, hearts: 3, score: 0, combo: 0, best: 0, ok: 0, tot: 0, wrong: [], pat: PAT, timer: null, busy: false };
     const friends = App.sample(FRIENDS, N);
     el.innerHTML = `<div class="g-hud">
@@ -643,10 +670,12 @@
       host.appendChild(b); App.speak(line.kana || line.jp); return b;
     };
     const meSay = (jp) => { const me = document.createElement('div'); me.className = 'bubble me'; me.innerHTML = `<div class="who">🧳 我</div><div class="j jp">${esc(jp)}</div>`; pane.querySelector('#mChat').appendChild(me); };
+    const react = (txt, ok) => { const a = pane.querySelector('.g-ask'); if (!a) return; let r = a.querySelector('.g-react'); if (!r) { r = document.createElement('div'); r.className = 'g-react'; a.querySelector('.g-say').appendChild(r); } r.style.color = ok ? 'var(--acc-d)' : 'var(--pri)'; r.textContent = `💬 ${friends[S.r][1]}：「${txt}」`; };
+    const YAY = ['讚啦！', '謝啦！', '好耶～', '你好強！'];
     const friendBox = inner => `<div class="g-ask${S.r === 0 ? ' g-first' : ''}"><div class="g-av">${friends[S.r][0]}</div><div class="g-say"><small>${esc(friends[S.r][1])}：</small>${inner}</div>${S.r === 0 ? '<span class="g-arrow">⬅ 先看這裡</span>' : ''}</div>`;
     const nextBtn = fb => { fb.innerHTML += `<button class="btn primary" id="mNx">${S.r + 1 >= N ? '看結果 🏁' : '下一位旅伴 ➜'}</button>`; fb.querySelector('#mNx').onclick = next; };
     function timeout() {
-      App.toast(`😤 ${friends[S.r][1]} 等太久，自己走掉了…`);
+      App.toast(`😩 ${friends[S.r][1]}：「好餓喔…我先走了」`);
       if (miss($('#gQ .g-f.cur'))) return;
       setTimeout(next, 900);
     }
@@ -706,14 +735,16 @@
         if (same && task.every(t => s.some(x => x.it === t.it && x.n === t.n))) {
           G_.sfx('ok');
           if (!tries) gain(btn, 100); else soso();
+          react(App.sample(YAY, 1)[0], true);
           menu.remove(); cart.remove(); fb.innerHTML = '';
           return say(task);
         }
-        if (same) { fb.innerHTML = `<span class="t-fb-ng">🔢 數量不對</span> 品項對了！再對一次點單上的數量`; G_.sfx('ng'); return; }
+        if (same) { react('欸，數量不對啦～'); fb.innerHTML = ''; G_.sfx('ng'); return; }
         tries++;
         task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
         if (tries === 1 && miss(btn)) return;   // 每一步只在第一次錯時扣心
-        fb.innerHTML = `<span class="t-fb-ng">❌ ${esc(friends[S.r][1])}：「不是這個啦！」</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>${m.tabs ? `（${esc(t.it.cat)}）` : ''}`).join('、') : '再對一次點單上的日文品名'}`;
+        react(tries >= 2 ? `欸我要的是 ${task.map(t => t.it.jp + (m.tabs ? `（在「${t.it.cat}」）` : '')).join('、')} 啦` : '欸，不是這個啦…');
+        fb.innerHTML = '';
       }
       drawMenu(); drawCart();
     }
@@ -738,21 +769,26 @@
         if (m.items[pick] !== task[0].it) {
           tries++; addWrong(App.wordItem(task[0].it, sc.name, 'word'));
           if (tries === 1 && miss(btn)) return;
-          fb.innerHTML = `<span class="t-fb-ng">❌ 不是這個</span> ${tries >= 2 ? '提示：<span class="jp">' + esc(task[0].it.jp) + '</span>' : '再看清楚看板上的日文！'}`;
+          react(tries >= 2 ? `欸我要的是「${task[0].it.jp}」啦` : '欸，不是這個啦…'); fb.innerHTML = '';
           return;
         }
-        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso(); react(App.sample(YAY, 1)[0], true);
         pane.querySelectorAll('.m-board,#mOk').forEach(x => x.remove()); fb.innerHTML = '';
         say(task);
       };
     }
 
     /* ---- 共用：選出（或說出）正確的日文 ---- */
-    function sayStep(cs, trackIt, after) {
+    function sayStep(cs, trackIt, after, repeatLine) {
       const fb = pane.querySelector('#mFb'); fb.innerHTML = '';
       const box = document.createElement('div');
-      box.innerHTML = `<div class="sec-t" style="margin-top:6px">用日文跟${esc(m.npc.who)}說：</div><div class="t-micbox"></div><div class="choices t-opts"></div>`;
+      box.innerHTML = `<div class="sec-t" style="margin-top:6px">用日文跟${esc(m.npc.who)}說：</div>${repeatLine ? '<button class="btn sm primary g-rep">🙏 もう一度お願いします（請再說一次）</button>' : ''}<div class="t-micbox"></div><div class="choices t-opts"></div>`;
       pane.insertBefore(box, fb);
+      const rep = box.querySelector('.g-rep');
+      if (rep) rep.onclick = () => {
+        rep.remove(); meSay('もう一度お願いします'); App.speak('もういちどおねがいします'); S.score += 30; hud();
+        setTimeout(() => { if (!el.isConnected) return; const b = npc(pane.querySelector('#mChat'), repeatLine); b.querySelector('.speak').onclick = () => App.speak(repeatLine.kana || repeatLine.jp, 0.7); App.speak(repeatLine.kana || repeatLine.jp, 0.7); App.toast('👍 聽不清楚就這樣說，店員會放慢再講一次'); }, 900);
+      };
       const opBox = box.querySelector('.t-opts');
       let missed = false, done = false;
       cs.forEach(c => {
@@ -763,13 +799,15 @@
           if (done || b.disabled) return;
           if (c.correct) {
             done = true; S.busy = true; b.classList.add('ok'); opBox.querySelectorAll('.choice').forEach(x => x.disabled = true);
-            fb.innerHTML = `<span class="t-fb-ok">⭕ ${missed ? '說對了！' : '完美！'}</span>`;
+            fb.innerHTML = '';
+            react(missed ? '這樣就通了！' : App.sample(YAY, 1)[0], true);
             if (!missed) gain(b, 150); else soso();
             meSay(c.jp); App.speak(c.kana || c.jp);
             setTimeout(() => { if (el.isConnected) { S.busy = false; box.remove(); after(); } }, 1000);
           } else {
             b.classList.add('ng'); b.disabled = true;
-            fb.innerHTML = `<span class="t-fb-ng">❌</span> ${esc(c.fb || '')}`;
+            npc(pane.querySelector('#mChat'), App.sample(CONF, 1)[0]);   // 店員的真實反應：疑惑、請你再說一次
+            fb.innerHTML = `<span class="t-fb-ng">🤔</span> ${esc(c.fb || '換個說法試試')}`;
             if (!missed) { missed = true; addWrong(trackIt()); if (miss(b)) return; }
           }
         };
@@ -792,25 +830,51 @@
     }
     function say(task) {
       const r0 = build(m, task);
-      sayStep(sayChoices(m, task), () => App.wordItem({ jp: r0.jp, kana: r0.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase'), () => answer(task));
+      sayStep(sayChoices(m, task), () => App.wordItem({ jp: r0.jp, kana: r0.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase'), () => isInc('soldout') ? soldOut(task) : answer(task));
+    }
+    // 小意外：品項賣完
+    function soldOut(task) {
+      INC.done = true;
+      const x = App.sample(task, 1)[0], rest = task.filter(t => t !== x);
+      npc(pane.querySelector('#mChat'), { jp: `申し訳ございません、${spJ(x.it)}は本日売り切れです。`, kana: `もうしわけございません、${spK(x.it)}はほんじつうりきれです`, zh: `非常抱歉，${x.it.zh}今天賣完了。` });
+      react(`蛤～${x.it.jp}賣完了？那算了`);
+      const ok = rest.length ? { jp: 'そうですか。じゃあ、それ以外でお願いします', kana: 'そうですか。じゃあ、それいがいでおねがいします' } : { jp: 'そうですか。じゃあ、大丈夫です', kana: 'そうですか。じゃあ、だいじょうぶです' };
+      const cs = [Object.assign(ok, { correct: true }),
+        { jp: 'じゃあ、売り切れをください', kana: 'じゃあ、うりきれをください', fb: '「売り切れ」是「賣完了」，沒辦法點喔' },
+        { jp: 'いただきます', kana: 'いただきます', fb: '開動前才說這句' },
+        { jp: 'いらっしゃいませ', kana: 'いらっしゃいませ', fb: '這是店員迎客說的' }];
+      sayStep(App.shuffle(cs), () => App.wordItem({ jp: ok.jp, kana: ok.kana, zh: '店員說賣完了 → ' + (rest.length ? '那其他的就好' : '那就不用了'), hint: '小意外：賣完了' }, sc.name, 'phrase'), () => {
+        if (rest.length) return answer(rest);
+        npc(pane.querySelector('#mChat'), { jp: '申し訳ございません。またお願いします。', kana: 'もうしわけございません。またおねがいします', zh: '真的很抱歉，請再光臨。' });
+        stopT(); const fb = pane.querySelector('#mFb'); fb.innerHTML = ''; nextBtn(fb);
+      });
     }
     // 聽力：聽懂店員的回答
     function listenStep(line, opts, right, title) {
       const fb = pane.querySelector('#mFb');
+      const fast = isInc('fast'); if (fast) INC.done = true;
       const bub = npc(pane.querySelector('#mChat'), line, true);
+      if (fast) { App.speak(line.kana || line.jp, 1.45); App.toast('💨 店員講好快！'); }
       const box = document.createElement('div');
       box.innerHTML = `<div class="sec-t" style="margin-top:6px">🎧 ${esc(title)}</div>
-        <div class="center"><button class="btn sm" id="mRe">🔊 再聽一次</button></div><div class="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" style="font-size:1em">${esc(o)}</button>`).join('')}</div>`;
+        <div class="center">${fast ? '<button class="btn sm primary" id="mRep">🙏 もう一度お願いします</button>' : '<button class="btn sm" id="mRe">🔊 再聽一次</button>'}</div><div class="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" style="font-size:1em">${esc(o)}</button>`).join('')}</div>`;
       pane.insertBefore(box, fb);
-      box.querySelector('#mRe').onclick = () => App.speak(line.kana || line.jp);
+      const re = box.querySelector('#mRe'); if (re) re.onclick = () => App.speak(line.kana || line.jp);
+      const rp = box.querySelector('#mRep');
+      if (rp) rp.onclick = () => {
+        meSay('もう一度お願いします'); S.score += 30; hud();
+        rp.outerHTML = '<button class="btn sm" id="mRe2">🔊 再聽一次</button>';
+        box.querySelector('#mRe2').onclick = () => App.speak(line.kana || line.jp, 0.7);
+        setTimeout(() => { if (el.isConnected) { npc(pane.querySelector('#mChat'), { jp: 'はい、' + line.jp, kana: 'はい、' + (line.kana || line.jp) }, true); App.speak('はい、' + (line.kana || line.jp), 0.7); } }, 700);
+      };
       box.querySelectorAll('.choice').forEach(b => b.onclick = () => {
         const ok = opts[+b.dataset.k] === right;
         box.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (opts[+x.dataset.k] === right) x.classList.add('ok'); });
         bub.querySelectorAll('.j span,.t-aid').forEach(x => x.style.filter = '');
         stopT();
         let over = false;
-        if (ok) { gain(b, 120); const tb = Math.round(Math.max(0, S.pat) * (GOPT.relax ? 0 : 4)); if (tb) { S.score += tb; hud(); App.toast(`⏱️ 速度獎勵 +${tb}`, 'xp'); } fb.innerHTML = `<span class="t-fb-ok">⭕ 聽懂了！${esc(friends[S.r][1])}：「謝啦！」</span>`; }
-        else { b.classList.add('ng'); addWrong(App.wordItem({ jp: line.jp, kana: line.kana, zh: right, hint: '聽力：' + m.name }, sc.name, 'phrase')); over = miss(b); fb.innerHTML = `<span class="t-fb-ng">❌ 正確是 ${esc(right)}</span>`; }
+        if (ok) { gain(b, 120); const tb = Math.round(Math.max(0, S.pat) * (GOPT.relax ? 0 : 4)); if (tb) { S.score += tb; hud(); App.toast(`⏱️ 速度獎勵 +${tb}`, 'xp'); } fb.innerHTML = ''; react('謝啦！', true); }
+        else { b.classList.add('ng'); addWrong(App.wordItem({ jp: line.jp, kana: line.kana, zh: right, hint: '聽力：' + m.name }, sc.name, 'phrase')); over = miss(b); react('嗯…好像不是這樣？'); fb.innerHTML = `<span class="t-fb-ng">店員說的是：${esc(right)}</span>`; }
         if (over) return;
         fb.innerHTML += `<div class="jp muted">${esc(line.jp)}${line.kana && line.kana !== line.jp ? `（${esc(line.kana)}）` : ''}</div>`;
         nextBtn(fb);
@@ -829,19 +893,23 @@
 
     /* ---- 對答（qa）：店員先問，或依情境主動開口 ---- */
     function qaRound() {
-      const q = App.sample(m.qs, 1)[0], w = App.sample(q.wants, 1)[0];
+      const q = m.seq ? m.qs[S.r % m.qs.length] : App.sample(m.qs, 1)[0], w = App.sample(q.wants, 1)[0];
       const line = q.npc ? App.sample(q.npc, 1)[0] : null;
+      const fast = !!line && isInc('fast'); if (fast) INC.done = true;
       pane.innerHTML = friendBox(`「${esc(w.zh)}」`) + (q.situ ? `<div class="m-situ">📍 ${esc(q.situ)}</div>` : '') + `<div class="chat" id="mChat"></div><div class="feedback" id="mFb"></div>`;
-      if (line) npc(pane.querySelector('#mChat'), line);
+      if (line) { npc(pane.querySelector('#mChat'), line, fast); if (fast) { App.speak(line.kana || line.jp, 1.45); App.toast('💨 店員講好快！聽不清楚可以請他再說一次'); } }
       const cs = [Object.assign({}, w.ok, { correct: true })];
       const add = c => { if (!cs.some(x => x.jp === c.jp)) cs.push(c); };
       q.wants.filter(x => x !== w && x.ok.jp !== w.ok.jp).forEach(x => add(Object.assign({}, x.ok, { fb: `這是「${x.zh}」的說法` })));
       App.shuffle(q.wrong || []).forEach(add);
+      // 選項不足 4 個時，補上常見但用錯場合的句子
+      App.shuffle([{ jp: 'いらっしゃいませ', kana: 'いらっしゃいませ', fb: '這是店員迎客時說的' }, { jp: 'いただきます', kana: 'いただきます', fb: '開動前才說這句' },
+        { jp: 'ごちそうさまでした', kana: 'ごちそうさまでした', fb: '吃完要走時才說' }, { jp: 'おやすみなさい', kana: 'おやすみなさい', fb: '這是「晚安」' }]).forEach(c => { if (cs.length < 4) add(c); });
       sayStep(App.shuffle(cs.slice(0, 4)), () => App.wordItem({ jp: w.ok.jp, kana: w.ok.kana, zh: (line ? `店員問「${line.zh}」→ ` : '') + w.zh, hint: '情境：' + m.name }, sc.name, 'phrase'), () => {
         const fb = pane.querySelector('#mFb');
         npc(pane.querySelector('#mChat'), w.reply || OKR[0]);
         stopT(); fb.innerHTML = ''; nextBtn(fb);
-      });
+      }, fast ? line : null);
     }
 
     /* ---- 券売機：投錢 → 按按鈕買餐券 → おつり ---- */
@@ -876,11 +944,12 @@
           tries++; task.forEach(t => addWrong(App.wordItem(t.it, sc.name, 'word')));
           bal = 0; tix = []; paint();
           if (tries === 1 && miss(btn)) return;
-          fb.innerHTML = `<span class="t-fb-ng">❌ 買錯了，餐券和錢都退回</span> ${tries >= 2 ? '提示：' + task.map(t => `<span class="jp">${esc(t.it.jp)}</span>`).join('＋') : '再對一次點單上的按鈕名稱'}`;
+          react(tries >= 2 ? `欸我要的是 ${task.map(t => t.it.jp).join('＋')} 啦` : '欸，買錯了啦…');
+          fb.innerHTML = '<span class="muted">🎫 按退回鈕，餐券和錢都退回來了</span>';
           return;
         }
         const change = bal;
-        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso(); react(App.sample(YAY, 1)[0], true);
         mac.remove(); fb.innerHTML = '';
         const box = document.createElement('div');
         box.innerHTML = `<div class="sec-t" style="margin-top:6px">💰 找回多少錢？</div><p class="center" style="margin:.2em">🎫 ${got.map(x => `<span class="chip jp">${esc(x.jp)}</span>`).join('')}</p><div class="choices">${yenOpts(change, [100, -100, 200, 500, -20, 50]).map(o => `<button class="choice" data-v="${o}">${o}</button>`).join('')}</div>`;
@@ -929,10 +998,10 @@
         if (bad.length) {
           tries++; addWrong(App.wordItem({ jp: comboJP(want), kana: combo(want, true), zh: want.map(x => x.zh).join('、'), hint: '家系拉麵：' + m.axes.map(a => a.name).join('・') }, sc.name, 'phrase'));
           if (tries === 1 && miss(btn)) return;
-          fb.innerHTML = `<span class="t-fb-ng">❌ ${bad.map(a => esc(a.name)).join('、')} 不對</span> 再看一次旅伴要的`;
+          react(`欸，${bad.map(a => a.name).join('、')}不是這個啦`); fb.innerHTML = '';
           return;
         }
-        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso();
+        G_.sfx('ok'); if (!tries) gain(btn, 100); else soso(); react(App.sample(YAY, 1)[0], true);
         board.remove(); fb.innerHTML = '';
         // 說出來：正確句＋各換掉一項的錯誤句
         const sent = p => ({ jp: comboJP(p) + 'でお願いします', kana: combo(p, true) + 'でおねがいします' });

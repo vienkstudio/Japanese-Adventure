@@ -1,7 +1,7 @@
 // 離線快取：改版時請把 VERSION 加 1
-const VERSION = 'jpq-v7';
-const FILES = ['./', './index.html', './css/app.css', './kana-data.js', './data/scenes-1.js', './data/scenes-2.js', './data/cards.js', './data/menus.js',
-  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js',
+const VERSION = 'jpq-v9';
+const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './kana-data.js', './data/scenes-1.js', './data/scenes-2.js', './data/cards.js', './data/menus.js', './data/travel.js',
+  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',
   './日文講義.html', './50音訓練表.html'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => encodeURI(f)))).then(() => self.skipWaiting())); });

@@ -70,11 +70,11 @@
   const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const sample = (a, n) => shuffle(a).slice(0, n);
 
-  function speakJP(text) {
+  function speakJP(text, rate) {
     if (!window.speechSynthesis || !text) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ja-JP'; u.rate = 0.85;
+    u.lang = 'ja-JP'; u.rate = rate || 0.85;
     const v = speechSynthesis.getVoices().find(v => /ja/i.test(v.lang));
     if (v) u.voice = v;
     speechSynthesis.speak(u);
