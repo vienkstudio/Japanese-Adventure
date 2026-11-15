@@ -181,7 +181,7 @@
   const order = [];
   function register(name, def) { routes[name] = def; if (!order.includes(name)) order.push(name); if (started) { renderNav(); } }
   // 路由：記憶體為主，網址只放單純的 #名稱（相容 Claude 網站等沙盒環境）
-  let CUR = null, skipHash = null;
+  let CUR = null;
   const lastParams = {};
   function readHash() {
     let h = '';
@@ -198,22 +198,12 @@
     if (name === 'home' && !isBack) HIST.length = 0;
     CUR = { name, params: params || {} };
     lastParams[name] = CUR.params;
-    const h = '#' + name;
-    try { if (location.hash !== h) { skipHash = h; location.hash = h; } } catch (e) { }
+    // 不改網址的 #：在 Claude App 裡改 # 可能讓整頁重新載入，卡在舊頁面。路由只存在記憶體裡。
     render();
   }
   function back() {
     const p = HIST.pop();
     if (p) go(p.name, p.params, true); else go('home', null, true);
-  }
-  function onHash() {
-    let h = ''; try { h = location.hash; } catch (e) { }
-    if (skipHash && h === skipHash) { skipHash = null; return; }
-    skipHash = null;
-    const r = readHash();
-    if (CUR && r.name === CUR.name) return;
-    if (!Object.keys(r.params).length && lastParams[r.name]) r.params = lastParams[r.name];
-    CUR = r; render();
   }
   let started = false;
   function render() {
@@ -254,7 +244,7 @@
       bk.style.visibility = cur === 'home' ? 'hidden' : 'visible';
     }
   }
-  function start() { started = true; parseHash(); lastParams[CUR.name] = CUR.params; window.addEventListener('hashchange', onHash); onChange(renderNav); render(); cloudInit(); }
+  function start() { started = true; CUR = { name: 'home', params: {} }; lastParams[CUR.name] = CUR.params; onChange(renderNav); render(); cloudInit(); }
   function onChange(fn) { listeners.push(fn); }
 
   /* ---------------- Tracker：不會清單 ----------------

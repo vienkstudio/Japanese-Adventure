@@ -620,7 +620,7 @@
         <div class="g-st"><span id="gH"></span><span id="gS">💯 0</span></div></div>
       <div class="g-queue" id="gQ"></div>
       <div class="g-pat"><span>⏳</span><div class="g-patb"><div id="gP"></div></div><span id="gC"></span></div>
-      <div class="g-opt"${LV ? ' hidden' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
+      <div class="g-opt"${LV ? ' style="display:none"' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
       <div class="panel${GOPT.zh ? '' : ' m-noz'}${DIFF.aid ? '' : ' t-noaid'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
     $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(TRIP ? 'home' : back.route, TRIP ? null : back.params) }]);
