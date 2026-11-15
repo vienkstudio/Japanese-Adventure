@@ -122,7 +122,7 @@
 .c-stat{display:flex;gap:4px;flex-wrap:wrap;font-size:.8em}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
-#playerChip .sv{font-size:1.05em}
+#playerChip .sv{font-size:1.05em;cursor:pointer;border:1.5px solid rgba(245,238,220,.5);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
 `;
     document.head.appendChild(st);
   })();
@@ -152,23 +152,82 @@
   }
 
   // 備份碼：複製一段文字保存，之後貼回即可還原（任何環境都能用）
+  // 備份：分享到手機（存到 iCloud 雲碟／Google 雲端硬碟／LINE…）、存成檔案（自選位置）、複製備份碼；還原：選檔案或貼備份碼
+  function parseBackup(txt) {
+    txt = String(txt || '').trim();
+    let o = null;
+    try { o = JSON.parse(txt); } catch (e) { try { o = JSON.parse(decodeURIComponent(escape(atob(txt)))); } catch (e2) { } }
+    if (o && o.state) o = o.state;
+    if (!o || typeof o.xp !== 'number') throw new Error('bad');
+    return o;
+  }
   function backup() {
-    const code = btoa(unescape(encodeURIComponent(JSON.stringify(App.state))));
-    App.modal(`<h2>💾 備份／還原進度</h2><p class="muted" style="font-size:.88em">複製備份碼存到記事本或 LINE；換裝置或進度不見時，貼回來按「還原」。</p>
-      <textarea id="bkOut" readonly style="width:100%;height:64px;font-size:.7em">${code}</textarea>
-      <button class="btn sm" id="bkCopy">📋 複製備份碼</button>
-      <textarea id="bkIn" placeholder="在這裡貼上備份碼" style="width:100%;height:64px;font-size:.7em;margin-top:10px"></textarea>`,
+    const st = App.state, code = btoa(unescape(encodeURIComponent(JSON.stringify(st))));
+    const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const fname = '日語冒險備份-' + stamp + '.json';
+    const json = JSON.stringify({ app: '日語冒險', v: 1, t: Date.now(), state: st });
+    App.modal(`<h2>💾 備份／還原進度</h2>
+      <p class="muted" style="font-size:.85em;margin:.3em 0">目前：Lv.${App.level}・${st.xp} XP・不會清單 ${Tracker.count()} 個</p>
+      <div class="sec-t" style="margin:10px 0 6px">備份</div>
+      <div class="bk-g">
+        <button class="btn primary" id="bkShare">📤 分享備份<small>選 iCloud 雲碟、Google 雲端、LINE…</small></button>
+        <button class="btn" id="bkSave">📁 存成檔案<small>自己選要放的位置</small></button>
+        <button class="btn" id="bkCopy">📋 複製備份碼<small>貼到備忘錄／Keep</small></button>
+      </div>
+      <textarea id="bkOut" readonly style="width:100%;height:46px;font-size:.65em;margin-top:6px">${code}</textarea>
+      <div class="sec-t" style="margin:10px 0 6px">還原</div>
+      <div class="bk-g">
+        <label class="btn" style="margin:0">📂 從檔案還原<small>選先前存的 .json</small><input type="file" id="bkFile" accept=".json,.txt,application/json,text/plain" style="display:none"></label>
+      </div>
+      <textarea id="bkIn" placeholder="或在這裡貼上備份碼，再按「還原」" style="width:100%;height:46px;font-size:.65em;margin-top:6px"></textarea>
+      <style>.bk-g{display:grid;gap:6px}.bk-g .btn{margin:0;flex-direction:column;line-height:1.25;min-height:50px}.bk-g .btn small{font-weight:normal;font-size:.75em;opacity:.85}</style>`,
       [{ label: '關閉' }, { label: '還原', cls: 'primary' }]);
-    const bg = document.querySelector('.modal-bg:last-of-type'), out = bg.querySelector('#bkOut'), inp = bg.querySelector('#bkIn');
-    bg.querySelector('#bkCopy').onclick = () => {
-      out.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { }
-      App.toast(ok ? '📋 已複製' : '請長按文字框手動複製');
+    const bg = [...document.querySelectorAll('.modal-bg')].pop(), $ = q => bg.querySelector(q);
+    const copy = () => {
+      const out = $('#bkOut'); out.focus(); out.select(); let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { }
+      if (!ok && navigator.clipboard) navigator.clipboard.writeText(code).then(() => App.toast('📋 已複製備份碼', 'ok')).catch(() => App.toast('請長按上方文字框，手動全選複製'));
+      else App.toast(ok ? '📋 已複製備份碼，貼到備忘錄或 Keep 保存' : '請長按上方文字框，手動全選複製');
     };
-    const rb = [...bg.querySelectorAll('.modal-btns .btn')].pop();
-    rb.onclick = () => {
-      try { const o = JSON.parse(decodeURIComponent(escape(atob(inp.value.trim())))); if (typeof o.xp !== 'number') throw 0; bg.remove(); App.loadState(o); App.toast('✅ 進度已還原', 'ok'); }
-      catch (e) { App.toast('❌ 備份碼不正確'); }
+    const download = () => {
+      try {
+        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const aEl = document.createElement('a'); aEl.href = url; aEl.download = fname; document.body.appendChild(aEl); aEl.click(); aEl.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        App.toast('📁 已送出下載（若沒反應，請改用「複製備份碼」）');
+      } catch (e) { copy(); }
     };
+    $('#bkShare').onclick = async () => {
+      try {
+        const file = typeof File === 'function' ? new File([json], fname, { type: 'application/json' }) : null;
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: '日語冒險備份' }); App.toast('✅ 已分享備份', 'ok'); return; }
+        if (navigator.share) { await navigator.share({ title: '日語冒險備份碼', text: code }); App.toast('✅ 已分享備份碼', 'ok'); return; }
+        App.toast('這裡不支援分享，已改用複製'); copy();
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;     // 使用者自己取消
+        App.toast('分享被瀏覽器擋住，已改用複製'); copy();
+      }
+    };
+    $('#bkSave').onclick = async () => {
+      if (window.showSaveFilePicker) {
+        try {
+          const h = await showSaveFilePicker({ suggestedName: fname, types: [{ description: '日語冒險備份', accept: { 'application/json': ['.json'] } }] });
+          const w = await h.createWritable(); await w.write(json); await w.close();
+          App.toast('✅ 已存到你選的位置', 'ok'); return;
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      download();
+    };
+    $('#bkCopy').onclick = copy;
+    const restore = txt => {
+      try { const o = parseBackup(txt); bg.remove(); App.loadState(o); App.toast(`✅ 已還原：Lv.${App.level}・${o.xp} XP`, 'ok'); }
+      catch (e) { App.toast('❌ 備份內容不正確'); }
+    };
+    $('#bkFile').onchange = e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = () => restore(r.result); r.onerror = () => App.toast('❌ 讀不到這個檔案'); r.readAsText(f);
+    };
+    [...bg.querySelectorAll('.modal-btns .btn')].pop().onclick = () => restore($('#bkIn').value);
   }
 
   /* ---------------- 首頁：選等級 → 選地點 ---------------- */
@@ -197,7 +256,7 @@
       <div class="h-worlds">${L.worlds.map(w => { const info = worldInfo(w); if (!info) return ''; const st = stageStars(w), pct = st.max ? st.got / st.max * 100 : 0;
         return `<button class="h-w" data-w="${w}" style="--tc:${esc(/^#/.test(info.color || '') ? info.color : '#24365c')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
           <span class="pg"><i style="width:${pct}%"></i></span><small>⭐ ${st.got}/${st.max}・${st.n} 關</small></button>`; }).join('')}</div>
-      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">📖 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
+      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">📖 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／分享／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
     el.querySelector('#avBtn').onclick = () => window.Game && Game.pickAvatar(() => App.render());
     const hn = el.querySelector('#hNext'); if (hn) hn.onclick = () => nextN.go();
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { UI.lv = b.dataset.lv; renderHome(el); });
@@ -633,5 +692,5 @@
   }
   const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
   App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, render: renderMenu });
-  window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS };
+  window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS, backup };
 })();

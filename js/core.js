@@ -228,6 +228,7 @@
       const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
       pc.innerHTML = `<span class="sv" title="${ss[1]}">${ss[0]}</span><span class="lvb">Lv.${lv}</span><div class="xpw"><div class="mini-bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div><small>${S.xp} XP・🔥${S.streak.days}</small></div>` +
         (window.Game ? `<button class="icon-btn" id="sfxBtn" title="音效">${Game.sfxOn() ? '🔊' : '🔇'}</button>` : '');
+      const sv = pc.querySelector('.sv'); if (sv) { sv.title += '（點我備份）'; sv.onclick = () => window.PracticeAPI && PracticeAPI.backup(); }
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
     }
   }
