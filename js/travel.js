@@ -20,6 +20,15 @@
   const canWalk = tile => layout[tile] === 'road' || layout[tile] === 'stop';
   const selectedLevel = () => levels.find(level => level.id === App.state.trip?.level);
   const startTile = 2;
+  const tagOf = level => level.tag || level.id;
+  // 入門級：每一站對應一場假名打怪（quest.js 的關卡）
+  const questOf = (level, stop) => level.kana ? level.quests[stops.indexOf(stop)] : null;
+  const questInfo = id => (window.QUESTS || []).find(q => q.id === id) || null;
+  const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  function stopStars(level, run, stop) {
+    if (level.kana) return App.stars(questOf(level, stop));
+    return (run.stars && run.stars[stop.id]) || ((run.scores[stop.id] || 0) >= stop.events[level.id].length ? 3 : 0);
+  }
 
   function neighbor(tile, direction) {
     const [dx, dy] = directions[direction];
@@ -44,7 +53,7 @@
   function tripRun(level) {
     const run = App.state.trip?.runs?.[level.id];
     const tile = run?.tile;
-    return { tile: Number.isInteger(tile) && canWalk(tile) ? tile : startTile, scores: { ...run?.scores } };
+    return { tile: Number.isInteger(tile) && canWalk(tile) ? tile : startTile, scores: { ...run?.scores }, stars: { ...run?.stars } };
   }
 
   function saveRun(level, run, save = true) {
@@ -71,14 +80,14 @@
           <h2>選擇日文程度</h2>
           <p>參考 JLPT 難度，可隨時切換。各程度分開保存進度。</p>
         </div>
-        <div class="trip-levels">${levels.map(level => `
+        <div class="trip-levels">${levels.map((level, i) => (i === 0 ? '<p class="trip-group">🔰 從零開始（還不會五十音選這裡）</p>' : level.id === 'N5' ? '<p class="trip-group">🗾 會假名之後</p>' : '') + `
           <button class="trip-level" type="button" data-level="${level.id}">
-            <span class="trip-level-id">${level.id}</span>
+            <span class="trip-level-id">${esc(tagOf(level))}</span>
             <span><strong>${esc(level.label)}</strong><small>${esc(level.detail)}</small></span>
             <span class="trip-level-arrow" aria-hidden="true">→</span>
           </button>`).join('')}</div>
         <div class="trip-links">
-          <button class="trip-link" type="button" id="trip-practice">零基礎・五十音與原版練習</button>
+          <button class="trip-link" type="button" id="trip-practice">🎮 所有場景小遊戲</button>
           ${current ? '<button class="trip-link" type="button" id="trip-cancel-level">返回地圖</button>' : ''}
         </div>
       </section>`;
@@ -91,7 +100,7 @@
 
   function renderMap(el, level) {
     const run = tripRun(level);
-    const cleared = stop => (run.scores[stop.id] || 0) === stop.events[level.id].length;
+    const cleared = stop => stopStars(level, run, stop) > 0;
     const count = stops.filter(cleared).length;
     const avatar = window.Game?.avatar();
     const scenery = { trees: '🌳', park: '🌸', water: '' };
@@ -103,13 +112,13 @@
       const arms = Object.keys(directions).filter(d => canWalk(neighbor(tile, d)))
         .map(d => `<span class="trip-arm trip-arm-${d}"></span>`).join('');
       const building = stop ? `<button type="button" class="trip-stop trip-stop-${stop.id}" data-tile="${tile}" title="${esc(stop.jp)}">
-        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${cleared(stop) ? '<small aria-label="已通過">✓</small>' : ''}</button>` : '';
+        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${level.kana && questInfo(questOf(level, stop)) ? `<em class="trip-q">${esc(questInfo(questOf(level, stop)).title.replace(/^BOSS：/, '👑').replace(/：.*/, ''))}</em>` : ''}${cleared(stop) ? `<small aria-label="已通過">${stopStars(level, run, stop)}★</small>` : ''}</button>` : '';
       return `<div class="trip-tile trip-path"><div class="trip-lane" aria-hidden="true">${arms}</div>${building}</div>`;
     };
     el.innerHTML = `
       <section class="trip-shell" aria-labelledby="trip-map-title">
         <div class="trip-map-header">
-          <div><p class="trip-eyebrow">${level.id}・${esc(level.label)}</p><h1 id="trip-map-title">東京旅程</h1></div>
+          <div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p><h1 id="trip-map-title">東京旅程</h1></div>
           <button class="trip-secondary" type="button" id="trip-change">切換程度</button>
         </div>
         <div class="trip-map" style="--rows:${layout.length / width}" tabindex="0" aria-label="東京地圖。使用方向鍵移動，抵達地點後按 Enter 進入。" aria-keyshortcuts="ArrowUp ArrowLeft ArrowDown ArrowRight Enter">
@@ -130,7 +139,8 @@
         </div>
         <div class="trip-links">
           <span>旅程進度 ${count}／${stops.length} 站</span>
-          <button class="trip-link" type="button" id="trip-practice">原版練習</button>
+          ${level.kana ? '<a class="trip-link" href="50音訓練表.html">🎯 50音表</a><a class="trip-link" href="日文講義.html">📖 入門講義</a>' : ''}
+          <button class="trip-link" type="button" id="trip-practice">🎮 場景小遊戲</button>
         </div>
       </section>`;
     const shell = el.querySelector('.trip-shell');
@@ -146,7 +156,8 @@
     }
     function paintControls() {
       const stop = stopAt(run.tile);
-      status.textContent = stop ? `抵達 ${stop.name}` : '點地點自動走，或用方向鍵移動';
+      const q = stop && level.kana ? questInfo(questOf(level, stop)) : null;
+      status.textContent = stop ? `抵達 ${stop.name}${q ? `・${q.title.replace(/^BOSS：/, 'BOSS ')}` : ''}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
       enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入地點';
       enter.disabled = !stop;
       map.querySelectorAll('[data-tile]').forEach(button => {
@@ -155,7 +166,10 @@
       });
     }
     function enterStop() {
-      if (!moving && stopAt(run.tile)) App.go('trip-event');
+      const stop = stopAt(run.tile);
+      if (moving || !stop) return;
+      if (level.kana) App.go('quest', { id: questOf(level, stop), free: true, trip: level.id });
+      else App.go('trip-event');
     }
     async function walk(path) {
       if (moving || !path.length) return;
@@ -221,12 +235,15 @@
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
     if (!stop) { App.go('home'); return; }
+    if (level.kana) { App.go('quest', { id: questOf(level, stop), free: true, trip: level.id }); return; }
     const events = stop.events[level.id];
-    let at = 0, correct = 0;
+    const G = window.Game || { sfx() { }, floatText() { }, burst() { }, shake() { } };
+    let at = 0, correct = 0, hearts = 3, combo = 0, best = 0, wrongItems = [];
 
     function makeHeader() {
-      return `<div class="trip-map-header"><div><p class="trip-eyebrow">${level.id}・${esc(level.label)}</p>
+      return `<div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p>
         <h1>${stop.icon} ${esc(stop.name)}</h1></div>
+        <div class="trip-hud"><span class="trip-hearts">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)}</span>${combo >= 2 ? `<span class="trip-combo">🔥${combo}</span>` : ''}</div>
         <button class="trip-secondary" type="button" id="trip-back">返回地圖</button></div>`;
     }
 
@@ -236,27 +253,38 @@
     }
 
     function finish() {
-      const prev = run.scores[stop.id] || 0;
-      const passed = correct === events.length;
-      if (correct > prev) {
-        run.scores[stop.id] = correct;
-        saveRun(level, run, !passed);
-        if (passed) {
-          App.noteClear();
-          App.addXP(20, `${stop.name}・${level.id}`);
-        }
+      const n = events.length;
+      const stars = correct === n ? 3 : correct * 2 >= n ? 2 : 0;
+      const passed = stars > 0;
+      const prevStars = stopStars(level, run, stop);
+      if (correct > (run.scores[stop.id] || 0)) run.scores[stop.id] = correct;
+      if (!run.stars) run.stars = {};
+      let gained = 0;
+      if (stars > prevStars) {
+        run.stars[stop.id] = stars;
+        if (!prevStars) App.noteClear();
+        gained = [0, 10, 15, 20][stars] + (stars === 3 ? 10 : 0) - (prevStars ? [0, 10, 15, 20][prevStars] : 0);
       }
+      saveRun(level, run);
+      if (gained > 0) App.addXP(gained, `${stop.name}・${level.id}`);
+      const hasGame = window.TownAPI && TownAPI.findScene(stop.id);
+      App.showResult({
+        title: passed ? `${stop.icon} ${stop.name} 通過！` + (best >= 2 ? `（最高 ${best} 連擊）` : '') : '再試一次挑戰本站',
+        stars, correct, total: n, gained: Math.max(0, gained), wrong: wrongItems,
+        retry: () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); },
+        back: { label: '🗺️ 回地圖', route: 'home' },
+        next: passed && hasGame ? { label: '🎮 玩這站小遊戲', route: 'stage', params: { id: stop.id } } : null
+      });
       begin(`<div class="trip-result">
         <p class="trip-eyebrow">${correct}／${events.length} 題答對</p>
-        <h2 tabindex="-1" id="trip-summary">${passed ? '本站通過！' : '再試一次挑戰本站'}</h2>
+        <h2 tabindex="-1" id="trip-summary">${passed ? '本站通過！' : '再試一次挑戰本站'} ${starStr(stars)}</h2>
         <button type="button" class="trip-primary" id="trip-return">返回地圖</button>
-        ${window.TownAPI && TownAPI.findScene(stop.id) ? '<button type="button" class="trip-secondary" id="trip-scene">🎮 在這站練點餐・對話小遊戲</button>' : ''}
+        ${hasGame ? '<button type="button" class="trip-secondary" id="trip-scene">🎮 在這站練點餐・對話小遊戲</button>' : ''}
         <button type="button" class="trip-secondary" id="trip-retry">重玩本站</button>
       </div>`);
-      el.querySelector('#trip-summary').focus();
       el.querySelector('#trip-return').onclick = () => App.go('home');
       el.querySelector('#trip-scene')?.addEventListener('click', () => App.go('stage', { id: stop.id }));
-      el.querySelector('#trip-retry').onclick = () => { at = 0; correct = 0; showQuestion(true); };
+      el.querySelector('#trip-retry').onclick = () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); };
     }
 
     function showQuestion(focus) {
@@ -295,11 +323,18 @@
           b.disabled = true;
           if (choices[+b.dataset.answer] === answers[0]) b.classList.add('trip-right');
         });
-        if (right) correct++;
-        else {
+        if (right) {
+          correct++; combo++; best = Math.max(best, combo);
+          G.sfx(combo >= 3 ? 'combo' : 'ok'); G.floatText(button, combo >= 2 ? `+1 🔥${combo}` : '+1'); G.burst(button, 12);
+        } else {
+          hearts = Math.max(0, hearts - 1); combo = 0;
           button.classList.add('trip-wrong');
-          Tracker.add(App.wordItem({ jp: answers[0], zh: scene, hint: explanation }, stop.name, 'phrase'), true);
+          G.sfx('hurt'); G.shake(); G.floatText(button, '💔', true);
+          const it = App.wordItem({ jp: answers[0], zh: scene, hint: explanation }, stop.name, 'phrase');
+          Tracker.add(it, true); wrongItems.push(it);
         }
+        const hud = el.querySelector('.trip-hud');
+        if (hud) hud.innerHTML = `<span class="trip-hearts">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)}</span>${combo >= 2 ? `<span class="trip-combo">🔥${combo}</span>` : ''}`;
         feedback.classList.add(right ? 'trip-right-note' : 'trip-wrong-note');
         feedback.innerHTML = `<strong>${right ? '回應正確' : '這樣回應更合適'}</strong><p>${esc(explanation)}</p>`;
         next.hidden = false;
