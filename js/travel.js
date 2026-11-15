@@ -21,9 +21,6 @@
   const selectedLevel = () => levels.find(level => level.id === App.state.trip?.level);
   const startTile = 2;
   const tagOf = level => level.tag || level.id;
-  // 入門級：每一站對應一場假名打怪（quest.js 的關卡）
-  const questOf = (level, stop) => level.kana ? level.quests[stops.indexOf(stop)] : null;
-  const questInfo = id => (window.QUESTS || []).find(q => q.id === id) || null;
   const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   // 分級狀況題本身的星數
   const evStars = (level, run, stop) => (run.stars && run.stars[stop.id]) || ((run.scores[stop.id] || 0) >= stop.events[level.id].length ? 3 : 0);
@@ -37,7 +34,6 @@
     return games.concat([{ key: 'ev', icon: '🗣️', name: `${level.id} 狀況題`, sub: `💬 ${level.label}`, stars: evStars(level, run, stop), go: () => App.go('trip-event') }]);
   }
   function stopStars(level, run, stop) {
-    if (level.kana) return App.stars(questOf(level, stop));
     const st = hubSteps(level, run, stop).map(s => s.stars);
     return st.every(x => x > 0) ? Math.min(...st) : 0;
   }
@@ -125,7 +121,7 @@
       const arms = Object.keys(directions).filter(d => canWalk(neighbor(tile, d)))
         .map(d => `<span class="trip-arm trip-arm-${d}"></span>`).join('');
       const building = stop ? `<button type="button" class="trip-stop trip-stop-${stop.id}" data-tile="${tile}" title="${esc(stop.jp)}">
-        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${level.kana && questInfo(questOf(level, stop)) ? `<em class="trip-q">${esc(questInfo(questOf(level, stop)).title.replace(/^BOSS：/, '👑').replace(/：.*/, ''))}</em>` : ''}${cleared(stop) ? `<small aria-label="已通過">${stopStars(level, run, stop)}★</small>` : !level.kana && stopProgress(level, run, stop)[0] ? `<small class="trip-prog">${stopProgress(level, run, stop).join('/')}</small>` : ''}</button>` : '';
+        <span aria-hidden="true">${stop.icon}</span><strong>${esc(stop.name)}</strong>${cleared(stop) ? `<small aria-label="已通過">${stopStars(level, run, stop)}★</small>` : stopProgress(level, run, stop)[0] ? `<small class="trip-prog">${stopProgress(level, run, stop).join('/')}</small>` : ''}</button>` : '';
       return `<div class="trip-tile trip-path"><div class="trip-lane" aria-hidden="true">${arms}</div>${building}</div>`;
     };
     el.innerHTML = `
@@ -153,7 +149,6 @@
         <p class="trip-route">🗓️ 照朋友的 9 天行程走：${['airport', 'station', 'hotel', 'konbini', 'shrine', 'drugstore', 'yakiniku', 'ramen', 'izakaya'].map(id => stops.find(s => s.id === id)).filter(Boolean).map(s => `<span class="${cleared(s) ? 'ok' : ''}">${s.icon}</span>`).join('→')}</p>
         <div class="trip-links">
           <span>旅程進度 ${count}／${stops.length} 站</span>
-          ${level.kana ? '<a class="trip-link" href="50音訓練表.html">🎯 50音表</a><a class="trip-link" href="日文講義.html">📖 入門講義</a>' : ''}
           <button class="trip-link" type="button" id="trip-practice">🎮 場景小遊戲</button>
         </div>
       </section>`;
@@ -170,8 +165,7 @@
     }
     function paintControls() {
       const stop = stopAt(run.tile);
-      const q = stop && level.kana ? questInfo(questOf(level, stop)) : null;
-      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${q ? `・${q.title.replace(/^BOSS：/, 'BOSS ')}` : ''}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
+      status.textContent = stop ? `${stop.day ? `${stop.day}・${stop.area}　` : ''}抵達 ${stop.name}${cleared(stop) ? `　${starStr(stopStars(level, run, stop))}` : ''}` : '點地點自動走，或用方向鍵移動';
       enter.textContent = stop && cleared(stop) ? '再玩一次' : '進入地點';
       enter.disabled = !stop;
       map.querySelectorAll('[data-tile]').forEach(button => {
@@ -182,8 +176,7 @@
     function enterStop() {
       const stop = stopAt(run.tile);
       if (moving || !stop) return;
-      if (level.kana) App.go('quest', { id: questOf(level, stop), free: true, trip: level.id });
-      else App.go('trip-stop');
+      App.go('trip-stop');
     }
     async function walk(path) {
       if (moving || !path.length) return;
@@ -239,9 +232,63 @@
     if (matchMedia('(pointer: fine)').matches) map.focus({ preventScroll: true });
   }
 
+  /* ---------- 入門・五十音：閃卡／隨機選／講義／50音表 ---------- */
+  const KSET = [['h', '平假名'], ['k', '片假名'], ['d', '濁音・半濁音'], ['y', '拗音']];
+  const KUI = { set: 'h', mode: 'flash', ok: 0, n: 0, streak: 0 };
+  function kanaPool(set) {
+    if (set === 'h' || set === 'k') return KANA.map(r => ({ g: set === 'h' ? r[0] : r[1], h: r[0], r: r[2], hint: r[3], memo: set === 'h' ? r[5] : r[6], raw: r }));
+    return (set === 'd' ? DAKU : YOON).flatMap(r => [{ g: r[0], h: r[0], r: r[2], hint: r[3] }, { g: r[1], h: r[0], r: r[2], hint: r[3] }]);
+  }
+  const kanaTrack = it => it.raw ? App.kanaItem(it.raw) : { id: 'kana:' + it.h, jp: it.g, kana: it.h, romaji: it.r, zh: '讀音 ' + it.r + '（諧音：' + it.hint + '）', source: '五十音' };
+  function renderKana(el, level) {
+    el.innerHTML = `<section class="trip-shell trip-kana">
+      <div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p><h1>五十音</h1></div>
+        <button class="trip-secondary" type="button" id="trip-change">切換程度</button></div>
+      <div class="kn-links"><a class="kn-tile" href="日文講義.html">📖<b>講義</b><small>圖解＋諧音</small></a><a class="kn-tile" href="50音訓練表.html">🎯<b>50音表</b><small>總表・書寫</small></a></div>
+      <div class="tabs kn-sets">${KSET.map(([k, n]) => `<button data-set="${k}" class="${KUI.set === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="tabs kn-modes"><button data-mode="flash" class="${KUI.mode === 'flash' ? 'on' : ''}">🃏 閃卡</button><button data-mode="pick" class="${KUI.mode === 'pick' ? 'on' : ''}">✅ 隨機選</button></div>
+      <div id="kn-body"></div>
+    </section>`;
+    el.querySelector('#trip-change').onclick = () => App.go('home', { choose: true });
+    el.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { KUI.set = b.dataset.set; renderKana(el, level); });
+    el.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { KUI.mode = b.dataset.mode; renderKana(el, level); });
+    const body = el.querySelector('#kn-body'), pool = kanaPool(KUI.set);
+    const pickOne = () => pool[Math.random() * pool.length | 0];
+    if (KUI.mode === 'flash') {
+      const card = () => {
+        const it = pickOne();
+        body.innerHTML = `<button class="kn-card" type="button"><span class="kn-g jp">${esc(it.g)}</span><span class="kn-back"><b>${esc(it.r)}</b><small>諧音「${esc(it.hint)}」</small>${it.memo ? `<small>${esc(it.memo)}</small>` : ''}</span><em>點一下翻面</em></button>
+          <div class="kn-row"><button class="btn" type="button" id="kn-no">😵 不會</button><button class="btn primary" type="button" id="kn-yes">😊 會了</button></div>`;
+        const c = body.querySelector('.kn-card');
+        c.onclick = () => { c.classList.add('flip'); App.speak(it.h); };
+        body.querySelector('#kn-no').onclick = () => { Tracker.add(kanaTrack(it), true); App.toast(`📌 ${it.g} 已加入不會清單`); card(); };
+        body.querySelector('#kn-yes').onclick = card;
+      };
+      card();
+    } else {
+      const ask = () => {
+        const it = pickOne(), opts = App.shuffle([it.r].concat(App.sample([...new Set(pool.map(x => x.r))].filter(r => r !== it.r), 3)));
+        body.innerHTML = `<p class="kn-score">答對 ${KUI.ok} / ${KUI.n}${KUI.streak >= 3 ? `　🔥${KUI.streak} 連對` : ''}</p>
+          <div class="kn-q jp">${esc(it.g)}</div><div class="choices">${opts.map(o => `<button class="choice" type="button">${esc(o)}</button>`).join('')}</div>`;
+        let done = false;
+        body.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+          if (done) return; done = true;
+          const ok = b.textContent === it.r;
+          KUI.n++; if (ok) { KUI.ok++; KUI.streak++; } else { KUI.streak = 0; Tracker.add(kanaTrack(it), true); }
+          body.querySelectorAll('.choice').forEach(x => { x.disabled = true; if (x.textContent === it.r) x.classList.add('ok'); });
+          if (!ok) b.classList.add('ng');
+          App.speak(it.h);
+          setTimeout(() => { if (body.isConnected) ask(); }, ok ? 700 : 1500);
+        });
+      };
+      ask();
+    }
+  }
+
   function renderHome(el, params = {}) {
     const level = selectedLevel();
-    if (level && !params.choose) renderMap(el, level);
+    if (level && level.kana && !params.choose) renderKana(el, level);
+    else if (level && !params.choose) renderMap(el, level);
     else renderLevels(el, level);
   }
 
@@ -249,7 +296,6 @@
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
     if (!stop) { App.go('home'); return; }
-    if (level.kana) { App.go('quest', { id: questOf(level, stop), free: true, trip: level.id }); return; }
     const events = stop.events[level.id];
     const G = window.Game || { sfx() { }, floatText() { }, burst() { }, shake() { } };
     let at = 0, correct = 0, hearts = 3, combo = 0, best = 0, wrongItems = [];
@@ -366,7 +412,7 @@
   function renderStopHub(el) {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop || level.kana) { App.go('home'); return; }
+    if (!stop) { App.go('home'); return; }
     const steps = hubSteps(level, run, stop);
     const cur = steps.find(s => !s.stars);
     const [done, total] = stopProgress(level, run, stop);

@@ -304,7 +304,6 @@
     keyHandler = null;
     const q = byId(params.id);
     const stageP = q ? { id: 'ch' + q.chapter } : null;
-    const trip = !!params.trip;   // 從東京旅程（入門級）進來
     const backR = 'stage';
     if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('practice-map'); return; }
     if (!params.free && !isUnlocked(q.id)) {
@@ -335,7 +334,7 @@
       <div class="panel" id="qCard" style="margin-top:6px"></div>
     </div>`;
     const $ = s => el.querySelector(s);
-    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => trip ? App.go('home') : stageP ? App.go('stage', stageP) : App.go('practice-map') }]);
+    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => stageP ? App.go('stage', stageP) : App.go('practice-map') }]);
     const hearts = () => { $('#qHearts').textContent = '❤️'.repeat(G.hearts) + '🖤'.repeat(3 - G.hearts); };
     const hpBar = () => { $('#qHp').style.width = (G.hp / HP * 100) + '%'; $('#qHpn').textContent = `HP ${G.hp} / ${HP}`; };
     hearts(); hpBar();
@@ -428,19 +427,19 @@
         App.completeQuest(q.id, 0, q.xp);
         App.showResult({
           title: `💀 被 ${mName} 打敗了…再挑戰一次！`, stars: 0, correct: G.correct, total: G.done, gained: 0, wrong,
-          retry: () => App.go('quest', { id: q.id, free: true, trip: params.trip || '' }), back: trip ? { label: '🗺️ 回東京地圖', route: 'home' } : { label: '🗺️ 關卡地圖', route: 'stage', params: stageP }
+          retry: () => App.go('quest', { id: q.id, free: true }), back: { label: '🗺️ 關卡地圖', route: 'stage', params: stageP }
         });
         return;
       }
       const stars = G.hearts;   // 剩幾顆心＝幾顆星
       const r = App.completeQuest(q.id, stars, q.xp);
-      let next = trip ? { label: '🗺️ 回東京地圖，走向下一站', route: 'home' } : { label: '🗺️ 關卡地圖', route: 'stage', params: stageP };
-      if (!trip && nq && nq.type === 'kana' && nq.chapter === q.chapter) next = { label: '下一關 ➜', route: 'quest', params: { id: nq.id, free: true } };
+      let next = { label: '🗺️ 關卡地圖', route: 'stage', params: stageP };
+      if (nq && nq.type === 'kana' && nq.chapter === q.chapter) next = { label: '下一關 ➜', route: 'quest', params: { id: nq.id, free: true } };
       App.showResult({
         title: (q.boss ? `🏆 擊敗 BOSS ${mName}！` : `🎉 打倒 ${mName}！`) + (G.maxCombo >= 3 ? `（最高 ${G.maxCombo} 連擊）` : ''),
         stars, correct: G.correct, total: G.done, gained: r.gained, wrong,
-        retry: () => App.go('quest', { id: q.id, free: true, trip: params.trip || '' }),
-        back: trip || next.route === 'stage' ? null : { label: '🗺️ 地圖', route: 'stage', params: stageP },
+        retry: () => App.go('quest', { id: q.id, free: true }),
+        back: next.route === 'stage' ? null : { label: '🗺️ 地圖', route: 'stage', params: stageP },
         next
       });
     }

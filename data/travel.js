@@ -1,10 +1,7 @@
 /* 東京旅程的九站。每站依難度（N5～N1）提供兩段連續情境。 */
 window.TravelData = {
   levels: [
-    { id: 'K1', tag: '入門1', kana: true, label: '五十音・平假名', detail: '走到每一站打假名怪物：あ行到わ行＋BOSS',
-      quests: ['h-a', 'h-ka', 'h-sa', 'h-ta', 'h-na', 'h-ha', 'h-ma', 'h-yrwn', 'h-boss'] },
-    { id: 'K2', tag: '入門2', kana: true, label: '片假名・濁音・拗音', detail: '看懂菜單和招牌上的片假名，最後挑戰畢業大考',
-      quests: ['k-aka', 'k-sata', 'k-naha', 'k-maya', 'k-rawan', 'd-daku', 'd-handaku', 'd-yoon', 'final-boss'] },
+    { id: 'K0', tag: '入門', kana: true, label: '五十音', detail: '閃卡、隨機選、講義、50音表' },
     { id: 'N5', label: '基礎會話', detail: '招呼、買票、點餐，可看讀音與翻譯' },
     { id: 'N4', label: '自助旅行', detail: '座位、數量、入住與臨時需求' },
     { id: 'N3', label: '應對變化', detail: '用日文確認變更、限制與替代方案' },
