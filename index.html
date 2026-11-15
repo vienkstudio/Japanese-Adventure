@@ -36,7 +36,7 @@
 <script src="js/game.js"></script>
 <!-- 首頁 -->
 <script>
-App.register('home', { title: '練習', icon: '🏠', nav: true, render(el, params) { Travel.renderHome(el, params); } });
+App.register('home', { title: '首頁', icon: '🏠', nav: true, render(el) { Travel.renderTitle(el); } });
 </script>
 <!-- 功能模組 -->
 <script src="js/quest.js"></script>

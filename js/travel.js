@@ -73,7 +73,7 @@
   function chooseLevel(level) {
     App.state.trip = { ...App.state.trip, level: level.id, runs: App.state.trip?.runs || {} };
     App.save();
-    App.go('home');
+    App.go('play');
   }
 
   function renderMap(el, level) {
@@ -211,18 +211,84 @@
     ask();
   }
 
-  function renderHome(el) {
+  /* ---------- 遊玩畫面：目前難度的內容（入門＝出題；N5～N1＝地圖） ---------- */
+  function renderPlay(el) {
     const level = selectedLevel() || levels[0];
-    el.innerHTML = `<div class="tabs trip-lvbar">${levels.map(l => `<button data-level="${l.id}" class="${l === level ? 'on' : ''}">${esc(tagOf(l))}</button>`).join('')}</div><div id="trip-body"></div>`;
-    el.querySelectorAll('[data-level]').forEach(b => b.onclick = () => chooseLevel(levels.find(l => l.id === b.dataset.level)));
+    el.innerHTML = `<button class="trip-lvnow" type="button">${esc(tagOf(level))}・${esc(level.label)} <span>切換難度 ▾</span></button><div id="trip-body"></div>`;
+    el.querySelector('.trip-lvnow').onclick = () => pickLevel();
     const body = el.querySelector('#trip-body');
     if (level.kana) renderKana(body); else renderMap(body, level);
+  }
+
+  /* ---------- 首頁主選單：繼續／新開始／設定 ---------- */
+  const LOGO = () => (document.querySelector('#top .logo .lg') || {}).innerHTML || '';
+  const hasSave = () => !!(App.state.trip && App.state.trip.level && selectedLevel());
+  function progressText() {
+    const level = selectedLevel(); if (!level) return '';
+    if (level.kana) return `${tagOf(level)}・${level.label}`;
+    const run = tripRun(level);
+    return `${tagOf(level)}・${level.label}　完成 ${stops.filter(st => stopStars(level, run, st) > 0).length}／${stops.length} 站`;
+  }
+  function renderTitle(el) {
+    el.innerHTML = `<section class="tt">
+      <div class="tt-logo">${LOGO()}</div>
+      <h1 class="tt-name">日語冒險</h1>
+      <p class="tt-sub">邊旅行邊學日文</p>
+      <div class="tt-menu">
+        ${hasSave() ? `<button class="tt-btn primary" id="tt-cont" type="button">▶ 繼續<small>${esc(progressText())}</small></button>` : ''}
+        <button class="tt-btn${hasSave() ? '' : ' primary'}" id="tt-new" type="button">✨ 新開始</button>
+        <button class="tt-btn" id="tt-set" type="button">⚙️ 設定</button>
+      </div>
+    </section>`;
+    const c = el.querySelector('#tt-cont'); if (c) c.onclick = () => App.go('play');
+    el.querySelector('#tt-new').onclick = newGame;
+    el.querySelector('#tt-set').onclick = openSettings;
+  }
+  const levelBtns = cur => `<div class="tt-levels">${levels.map(l => `<button type="button" data-lv="${l.id}" class="${cur && cur.id === l.id ? 'on' : ''}"><b>${esc(tagOf(l))}</b><small>${esc(l.label)}</small></button>`).join('')}</div>`;
+  function newGame() {
+    App.modal(`<h2>✨ 新開始</h2><p class="muted">選一個難度開始${hasSave() ? '（目前的存檔進度會清除）' : ''}</p>${levelBtns(null)}`, [{ label: '取消' }]);
+    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => {
+      if (hasSave() && !confirmNew()) return;
+      App.resetAll();
+      App.state.trip = { level: b.dataset.lv, runs: {} }; App.save();
+      document.querySelectorAll('.modal-bg').forEach(m => m.remove());
+      App.go('play');
+    });
+  }
+  let confirmed = false;
+  function confirmNew() {   // 第二次點才真的清除（避免誤觸）
+    if (confirmed) return true;
+    confirmed = true; App.toast('⚠️ 再點一次確定清除存檔、重新開始'); setTimeout(() => { confirmed = false; }, 3000);
+    return false;
+  }
+  function pickLevel() {
+    App.modal(`<h2>切換難度</h2><p class="muted">各難度的進度分開保存</p>${levelBtns(selectedLevel())}`, [{ label: '關閉' }]);
+    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => { document.querySelectorAll('.modal-bg').forEach(m => m.remove()); chooseLevel(levels.find(l => l.id === b.dataset.lv)); });
+  }
+  function openSettings() {
+    const G = window.Game;
+    App.modal(`<h2>⚙️ 設定</h2>
+      <p class="tt-lbl">難度</p>${levelBtns(selectedLevel())}
+      <div class="tt-rows">
+        ${G ? `<button class="tt-row" id="st-sfx" type="button">${G.sfxOn() ? '🔊 音效：開' : '🔇 音效：關'}</button>` : ''}
+        <button class="tt-row" id="st-bk" type="button">💾 備份／還原存檔</button>
+        <button class="tt-row" id="st-clear" type="button">🗑️ 清除全部進度</button>
+      </div>`, [{ label: '完成', cls: 'primary' }]);
+    const q = s => document.querySelector('.modal ' + s);
+    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => {
+      document.querySelectorAll('.modal [data-lv]').forEach(x => x.classList.toggle('on', x === b));
+      App.state.trip = Object.assign({ runs: {} }, App.state.trip, { level: b.dataset.lv }); App.save();
+      App.toast(`難度改為 ${tagOf(levels.find(l => l.id === b.dataset.lv))}`);
+    });
+    const sf = q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); sf.textContent = G.sfxOn() ? '🔊 音效：開' : '🔇 音效：關'; };
+    q('#st-bk').onclick = () => { document.querySelectorAll('.modal-bg').forEach(m => m.remove()); window.PracticeAPI && PracticeAPI.backup(); };
+    q('#st-clear').onclick = () => { if (!confirmNew()) return; document.querySelectorAll('.modal-bg').forEach(m => m.remove()); App.resetAll(); };
   }
 
   function renderEncounter(el) {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop) { App.go('home'); return; }
+    if (!stop) { App.go('play'); return; }
     const events = stop.events[level.id];
     const G = window.Game || { sfx() { }, floatText() { }, burst() { }, shake() { } };
     let at = 0, correct = 0, hearts = 3, combo = 0, best = 0, wrongItems = [];
@@ -236,7 +302,7 @@
 
     function begin(rendered) {
       el.innerHTML = `<section class="trip-shell trip-event">${makeHeader()}${rendered}</section>`;
-      el.querySelector('#trip-back').onclick = () => App.go('home');
+      el.querySelector('#trip-back').onclick = () => App.go('play');
     }
 
     function finish() {
@@ -259,7 +325,7 @@
         title: passed ? `${stop.icon} ${stop.name} 通過！` + (best >= 2 ? `（最高 ${best} 連擊）` : '') : '再試一次挑戰本站',
         stars, correct, total: n, gained: Math.max(0, gained), wrong: wrongItems,
         retry: () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); },
-        back: { label: '🗺️ 回地圖', route: 'home' },
+        back: { label: '🗺️ 回地圖', route: 'play' },
         next: { label: '下一關 ➜', route: 'trip-stop' }
       });
       begin(`<div class="trip-result">
@@ -344,14 +410,15 @@
   function renderStopHub() {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop || level.kana) { App.go('home'); return; }
+    if (!stop || level.kana) { App.go('play'); return; }
     const steps = hubSteps(level, run, stop);
     if (HUB.stop !== stop.id) enterHub(stop.id, steps);
     HUB.i++;
-    if (HUB.i >= steps.length) { HUB.stop = null; App.toast(stopStars(level, run, stop) ? `🎉 ${stop.name} 完成！` : `${stop.name} 還有關卡沒過，再進去挑戰`); App.go('home'); return; }
+    if (HUB.i >= steps.length) { HUB.stop = null; App.toast(stopStars(level, run, stop) ? `🎉 ${stop.name} 完成！` : `${stop.name} 還有關卡沒過，再進去挑戰`); App.go('play'); return; }
     App.toast(`${stop.icon} ${stop.name}　${HUB.i + 1}／${steps.length}：${steps[HUB.i].name}`);
     steps[HUB.i].go();
   }
   App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, render: renderStopHub });
-  window.Travel = { renderHome };
+  App.register('play', { title: '遊玩', icon: '🗾', nav: false, render: renderPlay });
+  window.Travel = { renderTitle, renderPlay, openSettings };
 })();

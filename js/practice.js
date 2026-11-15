@@ -623,7 +623,7 @@
       <div class="g-opt"${LV ? ' style="display:none"' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
       <div class="panel${GOPT.zh ? '' : ' m-noz'}${DIFF.aid ? '' : ' t-noaid'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
-    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(TRIP ? 'home' : back.route, TRIP ? null : back.params) }]);
+    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(TRIP ? 'play' : back.route, TRIP ? null : back.params) }]);
     $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
     $('#gZh').onchange = e => { GOPT.zh = e.target.checked; pane.classList.toggle('m-noz', !GOPT.zh); };
     $('#gHelp').onclick = () => guide(true);
@@ -1046,7 +1046,7 @@
       pane.querySelector('#mSt').onclick = () => App.go(back.route, back.params);
       App.showResult({
         title: (stars ? `${m.name} 完成！` : '挑戰失敗，再試一次！') + `（💯 ${S.score}）`, stars, correct: S.ok, total: S.tot, gained: r.gained, wrong: S.wrong,
-        retry: () => App.go('menu', params), back: TRIP ? { label: '🏠 回地圖', route: 'home' } : back, next: stars ? nx : null
+        retry: () => App.go('menu', params), back: TRIP ? { label: '🗺️ 回地圖', route: 'play' } : back, next: stars ? nx : null
       });
     }
     hud(); guide(false); round();
