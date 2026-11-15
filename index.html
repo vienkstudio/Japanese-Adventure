@@ -16,7 +16,7 @@
 </head>
 <body>
 <header id="top"><div class="in">
-  <a class="logo" href="#/home">🎌 <span>日語冒險</span></a>
+  <a class="logo" href="#home">🎌 <span>日語冒險</span></a>
   <nav id="nav"></nav>
   <div id="playerChip"></div>
 </div></header>
@@ -110,7 +110,7 @@ App.register('home', {
 <script src="js/review.js"></script>
 <script>
 App.start();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>
 </body>
 </html>

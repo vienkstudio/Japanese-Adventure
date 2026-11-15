@@ -300,7 +300,8 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       App.toast(`📤 已匯出 ${Tracker.list(true).length} 項`, 'ok');
-    } catch (e) { App.toast('匯出失敗：' + esc(e.message)); }
+    } catch (e) { }
+    try { navigator.clipboard && navigator.clipboard.writeText(txt).then(() => App.toast('📋 清單也已複製，可貼到記事本保存'), () => { }); } catch (e) { }
   }
   function doImport(el) {
     const inp = document.createElement('input');

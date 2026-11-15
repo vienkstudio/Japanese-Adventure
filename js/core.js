@@ -6,8 +6,9 @@
 (function () {
   const KEY = 'jpQuest.v1';
   const DEF = { xp: 0, cleared: {}, tracked: [], log: [], streak: { last: null, days: 0 }, sceneDone: {} };
+  const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }, del(k) { try { localStorage.removeItem(k); } catch (e) { } } };
   let S;
-  try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+  try { S = Object.assign({}, DEF, JSON.parse(LS.get(KEY) || '{}')); }
   catch (e) { S = JSON.parse(JSON.stringify(DEF)); }
 
   // 等級門檻：第 n 級需要 LEVELS[n-1] XP
@@ -18,7 +19,7 @@
   function levelOf(xp) { let l = 1; for (let i = 1; i < LEVELS.length; i++) if (xp >= LEVELS[i]) l = i + 1; return l; }
 
   const listeners = [];
-  function save() { localStorage.setItem(KEY, JSON.stringify(S)); listeners.forEach(f => { try { f(S); } catch (e) { console.error(e); } }); }
+  function save() { LS.set(KEY, JSON.stringify(S)); listeners.forEach(f => { try { f(S); } catch (e) { console.error(e); } }); }
 
   // 連續學習天數
   (function streak() {
@@ -27,7 +28,7 @@
     const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
     S.streak.days = S.streak.last === y ? S.streak.days + 1 : 1;
     S.streak.last = today;
-    localStorage.setItem(KEY, JSON.stringify(S));
+    LS.set(KEY, JSON.stringify(S));
   })();
 
   /* ---------------- 工具 ---------------- */
@@ -133,17 +134,33 @@
   const routes = {};
   const order = [];
   function register(name, def) { routes[name] = def; if (!order.includes(name)) order.push(name); if (started) { renderNav(); } }
-  function parseHash() {
-    const h = location.hash.replace(/^#\/?/, '');
+  // 路由：記憶體為主，網址只放單純的 #名稱（相容 Claude 網站等沙盒環境）
+  let CUR = null, skipHash = null;
+  const lastParams = {};
+  function readHash() {
+    let h = '';
+    try { h = location.hash.replace(/^#\/?/, ''); } catch (e) { }
     const [name, q] = h.split('?');
     const params = {};
     (q || '').split('&').filter(Boolean).forEach(p => { const [k, v] = p.split('='); params[decodeURIComponent(k)] = decodeURIComponent(v || ''); });
     return { name: name || 'home', params };
   }
+  function parseHash() { return CUR || (CUR = readHash()); }
   function go(name, params) {
-    const q = params ? Object.entries(params).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&') : '';
-    const h = '#/' + name + (q ? '?' + q : '');
-    if (location.hash === h) render(); else location.hash = h;
+    CUR = { name, params: params || {} };
+    lastParams[name] = CUR.params;
+    const h = '#' + name;
+    try { if (location.hash !== h) { skipHash = h; location.hash = h; } } catch (e) { }
+    render();
+  }
+  function onHash() {
+    let h = ''; try { h = location.hash; } catch (e) { }
+    if (skipHash && h === skipHash) { skipHash = null; return; }
+    skipHash = null;
+    const r = readHash();
+    if (CUR && r.name === CUR.name) return;
+    if (!Object.keys(r.params).length && lastParams[r.name]) r.params = lastParams[r.name];
+    CUR = r; render();
   }
   let started = false;
   function render() {
@@ -166,8 +183,10 @@
     nav.innerHTML = order.filter(n => routes[n].nav).map(n => {
       const r = routes[n];
       const badge = n === 'review' && Tracker.count() ? `<span class="badge">${Tracker.count()}</span>` : '';
-      return `<a href="#/${n}" class="${cur === n ? 'on' : ''}"><span class="ni">${r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
+      return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"><span class="ni">${r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
     }).join('');
+    nav.querySelectorAll('a[data-route]').forEach(a => a.onclick = e => { e.preventDefault(); go(a.dataset.route); });
+    const logo = document.querySelector('#top .logo'); if (logo) logo.onclick = e => { e.preventDefault(); go('home'); };
     const lv = levelOf(S.xp);
     const pc = document.getElementById('playerChip');
     if (pc) {
@@ -177,7 +196,7 @@
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
     }
   }
-  function start() { started = true; window.addEventListener('hashchange', render); onChange(renderNav); render(); }
+  function start() { started = true; parseHash(); lastParams[CUR.name] = CUR.params; window.addEventListener('hashchange', onHash); onChange(renderNav); render(); }
   function onChange(fn) { listeners.push(fn); }
 
   /* ---------------- Tracker：不會清單 ----------------
@@ -228,7 +247,8 @@
     addXP, completeQuest, showResult, modal, toast,
     speak: speakJP, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
-    resetAll() { localStorage.removeItem(KEY); location.reload(); }
+    resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); go('home'); },
+    store: LS
   };
   window.Tracker = Tracker;
 })();

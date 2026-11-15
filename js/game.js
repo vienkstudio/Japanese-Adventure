@@ -5,7 +5,7 @@
    ========================================================= */
 (function () {
   const SFX_KEY = 'jpQuest.sfx';
-  let sfxOn = localStorage.getItem(SFX_KEY) !== '0';
+  let sfxOn = App.store.get(SFX_KEY) !== '0';
   let ctx = null;
   function ac() {
     if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
@@ -174,7 +174,7 @@
   window.Game = {
     sfx, vibrate, floatText, burst, confetti, shake, fly,
     sfxOn: () => sfxOn,
-    toggleSfx() { sfxOn = !sfxOn; localStorage.setItem(SFX_KEY, sfxOn ? '1' : '0'); if (sfxOn) sfx('coin'); },
+    toggleSfx() { sfxOn = !sfxOn; App.store.set(SFX_KEY, sfxOn ? '1' : '0'); if (sfxOn) sfx('coin'); },
     DAILY, daily, avatar, pickAvatar, AVATARS
   };
 })();
