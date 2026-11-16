@@ -1,0 +1,1070 @@
+0	作法	禮儀；規矩	n		狀	comm,abs
+1	様々	各式各樣	na		狀	abs
+2	冷ます	使變涼；冷卻	v	1	事	food
+3	覚ます	弄醒；使清醒	v	1	事	body
+4	冷める	變涼；冷卻	v	2	事	food,emo
+5	覚める	醒來；清醒	v	2	事	body
+6	左右	左右；影響	n	s	狀	abs,num
+7	皿	盤子	n		物	food
+8	更に	更加；進一步	adv		狀	abs
+9	去る	離開；離去	v	1	事	trans,abs
+10	猿	猴子	n		物	nat
+11	騒ぎ	騷動；吵鬧	n		事	soc,comm
+12	参加	參加	n	s	事	comm,sch
+13	参考	參考	n	s	事	sch,work
+14	賛成	贊成	n	s	事	comm,soc
+15	酸性	酸性	n		狀	sch,nat
+16	酸素	氧氣	n		物	sch,body
+17	氏	先生；姓氏	n		人	comm
+18	詩	詩	n		物	hobby,sch
+19	幸せ	幸福	na		狀	emo
+20	ジーンズ	牛仔褲	n		物	shop
+21	ジェット機	噴射機	n		物	trans,travel
+22	四角	四角形；正方形	n		物	num,sch
+23	直に	直接；馬上	adv		狀	abs
+24	しかも	而且；再者	conj		虛	abs
+25	四季	四季	n		時	nat,time
+26	直	馬上；立刻	adv		時	time
+27	時期	時期；季節	n		時	time
+28	支給	發放；支付	n	s	事	work,shop
+29	至急	火速；緊急	n		狀	work,med
+30	しきりに	頻頻；再三	adv		狀	abs
+31	刺激	刺激	n	s	事	abs,emo
+32	資源	資源	n		物	soc,nat
+33	事件	事件	n		事	soc
+34	時刻	時刻	n		時	time
+35	自殺	自殺	n	s	事	soc,med
+36	事実	事實	n		狀	abs
+37	支出	支出	n	s	事	shop,work
+38	事情	情況；緣由	n		狀	abs,soc
+39	詩人	詩人	n		人	hobby
+40	自身	自己；本身	n		人	abs
+41	沈む	下沉；消沉	v	1	事	nat,emo
+42	自然	自然；自然而然	n		狀	nat,abs
+43	思想	思想	n		狀	abs,soc
+44	舌	舌頭	n		物	body,food
+45	次第	依據；順序；立即	n		狀	abs
+46	従う	遵從；服從	v	1	事	soc,work
+47	したがって	因此；所以	conj		虛	abs
+48	親しい	親近的；親密的	i		狀	comm,emo
+49	質	品質；素質	n		狀	abs,shop
+50	失業	失業	n	s	事	work,soc
+51	湿気	濕氣	n		狀	nat
+52	実験	實驗	n	s	事	sch
+53	実現	實現	n	s	事	abs
+54	実行	實行；執行	n	s	事	work,abs
+55	実際	實際；其實	n		狀	abs
+56	実施	實施	n	s	事	work,soc
+57	湿度	濕度	n		狀	nat
+58	じっと	一動不動；靜靜地	adv		狀	abs,emo
+59	実に	確實；實在	adv		狀	abs
+60	実は	其實	adv		狀	comm
+61	失望	失望	n	s	事	emo
+62	実力	實力	n		狀	work,sch
+63	支店	分店；分公司	n		地	work,shop
+64	指導	指導	n	s	事	sch,work
+65	自動	自動	n		狀	abs
+66	児童	兒童	n		人	sch,fam
+67	品	物品；商品	n		物	shop
+68	支配	支配；統治	n	s	事	soc,work
+69	芝居	戲劇；演戲	n		事	hobby
+70	しばしば	屢次；常常	adv		時	time
+71	芝生	草坪	n		物	nat,city
+72	支払	支付	n	s	事	shop
+73	支払う	支付；付款	v	1	事	shop
+74	死亡	死亡	n	s	事	med,soc
+75	資本	資本；資金	n		物	work,shop
+76	姉妹	姊妹	n		人	fam
+77	しまった (かん)	糟了	int		虛	emo,comm
+78	自慢	自誇；炫耀	n	s	事	emo,comm
+79	地味	樸素；不起眼	na		狀	shop,abs
+80	示す	表示；出示	v	1	事	comm,abs
+81	占める	佔；佔據	v	2	事	num,abs
+82	湿る	潮濕	v	1	事	nat
+83	下	下面；下	n		地	abs
+84	霜	霜	n		物	nat
+85	借金	借款；負債	n	s	事	shop,soc
+86	しゃべる	說話；聊天	v	1	事	comm
+87	週	週；星期	n		時	time
+88	州	州	n		地	soc,travel
+89	銃	槍	n		物	soc
+90	周囲	周圍	n		地	abs,nat
+91	収穫	收穫	n	s	事	nat,food
+92	宗教	宗教	n		狀	soc,abs
+93	重視	重視	n	s	事	abs
+94	就職	就業；找到工作	n	s	事	work
+95	ジュース	果汁；飲料	n		物	food
+96	修正	修正	n	s	事	work,sch
+97	重体	病危	n		狀	med
+98	渋滞	塞車；停滯	n	s	事	trans
+99	重大	重大	na		狀	abs,soc
+100	住宅	住宅	n		地	fam,city
+101	集団	集體；團體	n		人	soc,comm
+102	集中	集中；專注	n	s	事	sch,abs
+103	収入	收入	n		物	shop,work
+104	住民	居民	n		人	city,soc
+105	重要	重要	na		狀	abs,work
+106	修理	修理	n	s	事	fam,shop
+107	主義	主義	n		狀	soc,abs
+108	宿泊	住宿	n	s	事	travel
+109	手術	手術	n	s	事	med
+110	首相	首相	n		人	soc
+111	手段	手段；方法	n		狀	abs,work
+112	主張	主張；堅持	n	s	事	comm,soc
+113	出場	出場；參賽	n	s	事	hobby
+114	出身	出身；來自	n	s	狀	comm,sch
+115	出版	出版	n	s	事	work,hobby
+116	首都	首都	n		地	city,soc
+117	主婦	家庭主婦	n		人	fam
+118	主要	主要	na		狀	abs,soc
+119	需要	需求	n		狀	shop,work
+120	種類	種類	n		狀	abs,num
+121	順	順序；輪流	n		狀	num
+122	瞬間	瞬間	n		時	time
+123	順調	順利	na		狀	abs,work
+124	順番	次序；輪流	n		狀	num,city
+125	使用	使用	n	s	事	abs,work
+126	小	小	pre		狀	num
+127	章	章；勳章	n		物	sch
+128	賞	獎；獎賞	n		物	hobby,sch
+129	上	上卷；上等；關於	suf		狀	abs
+130	障害	障礙	n		狀	abs,med
+131	奨学金	獎學金	n		物	sch,shop
+132	乗客	乘客	n		人	trans
+133	上京	前往東京	n	s	事	trans,work
+134	状況	狀況	n		狀	abs,soc
+135	条件	條件	n		狀	work,abs
+136	正午	正午	n		時	time
+137	正直	正直；老實說	na		狀	emo,comm
+138	常識	常識	n		狀	abs,soc
+139	少女	少女	n		人	fam
+140	少々	稍微；一點點	adv		狀	num,shop
+141	症状	症狀	n		狀	med,body
+142	生じる	產生；發生	v	2	事	abs
+143	状態	狀態	n		狀	abs
+144	上達	進步；精進	n	s	事	sch,hobby
+145	冗談	玩笑	n		事	comm,emo
+146	上等	上等；高級	na		狀	shop,food
+147	衝突	衝突；碰撞	n	s	事	soc,trans
+148	商人	商人	n		人	shop,work
+149	承認	承認；批准	n	s	事	work,soc
+150	少年	少年	n		人	fam
+151	商売	生意；買賣	n	s	事	shop,work
+152	消費	消費	n	s	事	shop
+153	商品	商品	n		物	shop
+154	賞品	獎品	n		物	hobby,shop
+155	消防	消防	n		事	med,city
+156	情報	資訊；情報	n		物	abs,soc
+157	証明	證明	n	s	事	abs,work
+158	省略	省略	n	s	事	abs,comm
+159	女王	女王	n		人	soc
+160	職	職業；工作	n		物	work
+161	職業	職業	n		人	work
+162	食卓	餐桌	n		物	fam,food
+163	食品	食品	n		物	food,shop
+164	植物	植物	n		物	nat
+165	食物	食物	n		物	food
+166	食欲	食慾	n		狀	food,body
+167	食料	食物；食品	n		物	food,shop
+168	食糧	糧食	n		物	food,soc
+169	書斎	書房	n		地	fam
+170	女子	女子	n		人	fam,sch
+171	助手	助手；助理	n		人	work,sch
+172	徐々に	慢慢地；逐漸	adv		時	time
+173	署名	簽名；連署	n	s	事	work,soc
+174	書物	書籍	n		物	sch,hobby
+175	女優	女演員	n		人	hobby
+176	処理	處理	n	s	事	work
+177	書類	文件	n		物	work
+178	知らせ	通知；消息	n		物	comm
+179	尻	屁股	n		物	body
+180	知合い	熟人；認識的人	n		人	comm
+181	印	記號；標記；證據	n		物	abs
+182	城	城堡	n		地	travel,city
+183	進学	升學	n	s	事	sch
+184	神経	神經	n		物	body,emo
+185	真剣	認真；正經	na		狀	emo,abs
+186	信仰	信仰	n	s	事	soc,emo
+187	信号	紅綠燈；信號	n		物	trans,city
+188	人工	人工；人造	n		狀	abs
+189	深刻	嚴重；深刻	na		狀	abs,soc
+190	診察	診察；看診	n	s	事	med
+191	人種	人種	n		人	soc
+192	信じる	相信	v	2	事	emo,abs
+193	人生	人生	n		狀	abs,emo
+194	親戚	親戚	n		人	fam
+195	新鮮	新鮮	na		狀	food
+196	心臓	心臟	n		物	body,med
+197	身体	身體	n		物	body
+198	身長	身高	n		狀	body
+199	慎重	慎重；謹慎	na		狀	abs,work
+200	審判	審判；裁判	n	s	人	hobby,soc
+201	人物	人物	n		人	abs,soc
+202	進歩	進步	n	s	事	sch,abs
+203	親友	摯友	n		人	comm,emo
+204	信用	信用；信任	n	s	狀	shop,work
+205	信頼	信賴	n	s	狀	emo,comm
+206	心理	心理	n		狀	emo,abs
+207	人類	人類	n		人	soc,abs
+208	巣	巢；窩	n		物	nat
+209	酢	醋	n		物	food
+210	図	圖；圖表	n		物	sch,abs
+211	水準	水準；標準	n		狀	abs,sch
+212	推薦	推薦	n	s	事	work,sch
+213	スイッチ	開關	n		物	fam
+214	睡眠	睡眠	n	s	事	body,fam
+215	数	數；數量	n		狀	num
+216	数字	數字	n		物	num,sch
+217	スープ	湯	n		物	food
+218	末	末；盡頭；末尾	n		時	time
+219	姿	身影；姿態	n		狀	body,abs
+220	スキー	滑雪	n	s	事	hobby,travel
+221	救う	拯救；救助	v	1	事	med,soc
+222	すくなくとも	至少	adv		狀	num
+223	優れる	優秀；出色	v	2	狀	abs,work
+224	スケート	溜冰；滑冰	n	s	事	hobby
+225	スケジュール	行程；日程表	n		物	work,time
+226	少しも	一點也（不）	adv		狀	num
+227	過ごす	度過；過日子	v	1	事	time,fam
+228	筋	肌肉；筋；條理	n		物	body,abs
+229	進める	推進；使前進	v	2	事	work,abs
+230	勧める	勸；推薦	v	2	事	comm,shop
+231	スター	明星	n		人	hobby
+232	スタイル	身材；風格	n		狀	body,shop
+233	スタンド	檯燈；看台；加油站	n		物	fam,hobby
+234	頭痛	頭痛	n		狀	body,med
+235	ずっと	一直；遠遠（比較）	adv		時	time,abs
+236	すっぱい	酸的	i		狀	food
+237	すてき	很棒；絕佳	na		狀	emo,abs
+238	既に	已經	adv		時	time
+239	すなわち	即；也就是	conj		虛	abs
+240	スピーチ	演講；致詞	n		事	comm,work
+241	全て	全部；一切	n		狀	num,abs
+242	済ませる	辦完；解決	v	2	事	work,abs
+243	角	角落	n		地	city
+244	墨	墨	n		物	hobby,sch
+245	すみません (かん)	對不起；不好意思	int		虛	comm
+246	澄む	澄清；清澈	v	1	事	nat
+247	清む	澄清；清澈	v	1	事	nat
+248	刷る	印刷	v	1	事	work
+249	為る	做；進行	v	3	事	abs
+250	鋭い	銳利的；敏銳的	i		狀	abs,body
+251	すれ違う	擦身而過；錯過	v	1	事	trans,comm
+252	ずれる	偏離；錯位	v	2	事	abs
+253	正	正；正確	n		狀	abs,num
+254	生	出生；生命	n		狀	abs,body
+255	性	性別；性質	n		狀	body,abs
+256	姓	姓氏	n		人	comm
+257	所為	原因；緣故	n		狀	abs,emo
+258	税	稅	n		物	shop,soc
+259	性格	性格	n		狀	emo,comm
+260	正確	正確；準確	na		狀	abs,sch
+261	世紀	世紀	n		時	time
+262	請求	請求；索取	n	s	事	shop,work
+263	税金	稅金	n		物	shop,soc
+264	清潔	清潔；乾淨	na		狀	fam,body
+265	制限	限制	n	s	事	soc,work
+266	成功	成功	n	s	事	abs,work
+267	正式	正式	na		狀	work,comm
+268	性質	性質；性情	n		狀	abs,sch
+269	精神	精神；心靈	n		狀	emo,abs
+270	成人	成人	n		人	fam,soc
+271	精々	頂多；盡力	adv		狀	num
+272	成績	成績	n		物	sch,work
+273	製造	製造	n	s	事	work
+274	贅沢	奢侈；奢華	na	s	狀	shop,emo
+275	成長	成長	n	s	事	body,abs
+276	生長	生長	n	s	事	nat
+277	制度	制度	n		物	soc,work
+278	青年	青年	n		人	fam,soc
+279	生年月日	出生年月日	n		時	time,work
+280	製品	製品	n		物	work,shop
+281	政府	政府	n		物	soc
+282	生物	生物	n		物	nat,sch
+283	生命	生命	n		物	body,abs
+284	整理	整理	n	s	事	fam,work
+285	咳	咳嗽	n		狀	body,med
+286	石炭	煤炭	n		物	nat,soc
+287	責任	責任	n		狀	work,soc
+288	石油	石油	n		物	nat,soc
+289	世間	世間；社會	n		地	soc,abs
+290	説	學說；說法	n		狀	sch,abs
+291	積極的	積極的	na		狀	emo,work
+292	設計	設計	n	s	事	work
+293	絶対	絕對	n		狀	abs
+294	セット	一套；設定	n	s	事	abs,shop
+295	愛	愛	n		狀	emo
+296	相変わらず	一如往常	adv		時	time,comm
+297	愛情	愛情	n		狀	emo,fam
+298	合図	信號；暗號	n	s	事	comm
+299	アイスクリーム	冰淇淋	n		物	food
+300	愛する	愛；愛護	v	3	事	emo
+301	相手	對方；對象	n		人	comm
+302	あいにく	不巧；很遺憾	adv		狀	comm
+303	遭う	遭遇；碰到	v	1	事	abs,med
+304	アウト	出局；在外	n		狀	hobby
+305	明かり	燈光；亮光	n		物	fam
+306	空き	空缺；空位	n		狀	city,work
+307	明らか	明顯；清楚	na		狀	abs
+308	諦める	放棄；死心	v	2	事	emo
+309	飽きる	厭倦；膩	v	2	事	emo
+310	握手	握手	n	s	事	comm
+311	悪魔	惡魔	n		人	hobby,abs
+312	明ける	天亮；（期間）結束	v	2	事	time,nat
+313	揚げる	油炸；舉起	v	2	事	food
+314	挙げる	舉出；舉起	v	2	事	comm,abs
+315	預かる	保管；代為照顧	v	1	事	shop,fam
+316	預ける	寄放；存放	v	2	事	shop,city
+317	汗	汗	n		物	body
+318	与える	給予；賦予	v	2	事	abs,comm
+319	温かい	溫暖的；熱的	i		狀	nat,food
+320	暖まる	暖和起來	v	1	事	nat,body
+321	温まる	暖和；變熱	v	1	事	body,food
+322	暖める	使暖和；加溫	v	2	事	fam,nat
+323	温める	加熱；溫熱	v	2	事	food
+324	辺り	附近；周邊	n		地	city,nat
+325	当たり前	理所當然	na		狀	abs
+326	当たる	命中；猜中；碰到	v	1	事	abs,hobby
+327	あちこち	到處；各處	n		地	city
+328	扱う	對待；處理	v	1	事	work,abs
+329	集まり	聚會；集會	n		事	comm
+330	当てる	擊中；猜；貼上	v	2	事	abs,sch
+331	跡	痕跡；遺跡	n		物	abs,travel
+332	穴	洞；孔	n		物	abs
+333	油	油	n		物	food
+334	脂	脂肪	n		物	body,food
+335	誤り	錯誤	n		物	sch,abs
+336	粗	缺點；瑕疵	n		狀	abs
+337	嵐	暴風雨	n		物	nat
+338	争う	爭奪；爭吵	v	1	事	comm,soc
+339	新た	新；重新	na		狀	abs,time
+340	あらゆる	所有的；一切的	pre		狀	num,abs
+341	表す	表達；表示	v	1	事	comm,abs
+342	現す	顯現；露出	v	1	事	abs
+343	著す	著作；撰寫	v	1	事	work,hobby
+344	現れ	表現；徵兆	n		狀	abs
+345	現れる	出現；顯露	v	2	事	abs
+346	ありがとう	謝謝	int		虛	comm
+347	在る; 有る	有；在；存在	v	1	事	abs
+348	或	某；某個	pre		狀	abs
+349	あるいは	或者；也許	conj		虛	abs
+350	アルバム	相簿；專輯	n		物	hobby,fam
+351	泡	泡沫	n		物	food,nat
+352	合わせる	合併；配合；對照	v	2	事	abs,comm
+353	慌てる	慌張；驚慌	v	2	事	emo
+354	哀れ	可憐；悲哀	na		狀	emo
+355	案	方案；提案	n		物	work,abs
+356	案外	意外地；出乎意料	adv		狀	abs,emo
+357	暗記	背誦；記住	n	s	事	sch
+358	安定	穩定	n	s	事	abs,soc
+359	あんなに	那麼；那樣地	adv		狀	abs
+360	あんまり	不太；過分	adv		狀	abs
+361	胃	胃	n		物	body,med
+362	委員	委員	n		人	sch,work
+363	意外	意外	na		狀	abs,emo
+364	行き	前往；去程	n		事	trans
+365	行き	前往；去程	n		事	trans
+366	息	呼吸；氣息	n		物	body
+367	勢い	氣勢；勢頭	n		狀	abs,emo
+368	生き物	生物；動物	n		物	nat
+369	いけない	不行；不可以	exp		狀	comm,abs
+370	医師	醫師	n		人	med
+371	意思	意思；想法	n		狀	comm,abs
+372	意志	意志	n		狀	emo,abs
+373	維持	維持	n	s	事	abs,work
+374	意識	意識	n	s	狀	body,abs
+375	異常	異常	na		狀	med,abs
+376	意地悪	壞心眼；刁難	na		狀	emo,comm
+377	泉	泉水	n		物	nat
+378	いずれ	遲早；哪個	adv		時	time,abs
+379	以前	以前	n		時	time
+380	板	板子；木板	n		物	abs
+381	偉大	偉大	na		狀	abs,soc
+382	抱く	抱；懷抱	v	1	事	emo,body
+383	いたずら	惡作劇；淘氣	na	s	事	fam,emo
+384	いただきます	我開動了	int		虛	food,comm
+385	痛み	疼痛	n		狀	body,med
+386	至る	到達；達到	v	1	事	abs,trans
+387	市	市集	n		地	city,shop
+388	位置	位置	n	s	地	city,abs
+389	一時	一時；暫時	n		時	time
+390	一度に	一次；一口氣	adv		時	time,num
+391	市場	市場	n		地	shop,city
+392	いつか	改天；曾經	adv		時	time
+393	一家	一家人	n		人	fam
+394	一種	一種	n		狀	num,abs
+395	一瞬	一瞬間	n		時	time
+396	一生	一輩子	n		時	time,abs
+397	一層	更加；越發	adv		狀	abs
+398	一体	到底；究竟；整體	adv		狀	abs
+399	一致	一致	n	s	事	abs,comm
+400	いつでも	隨時；總是	adv		時	time
+401	いつのまにか	不知不覺	adv		時	time
+402	一般	一般；普通	n		狀	abs,soc
+403	一方	一方面；另一方面	n		狀	abs
+404	いつまでも	永遠；始終	adv		時	time
+405	移動	移動	n	s	事	trans
+406	従兄弟	堂（表）兄弟	n		人	fam
+407	従姉妹	堂（表）姊妹	n		人	fam
+408	稲	稻	n		物	nat,food
+409	居眠り	打瞌睡	n	s	事	body,work
+410	命	生命	n		物	body,abs
+411	違反	違反	n	s	事	soc,trans
+412	衣服	衣服	n		物	shop,fam
+413	居間	客廳	n		地	fam
+414	今に	不久；遲早	adv		時	time
+415	今にも	眼看就要	adv		時	time
+416	イメージ	形象；印象	n	s	狀	abs,hobby
+417	否	不；否	n		虛	abs
+418	以来	以來；自從	n		時	time
+419	依頼	委託；請求	n	s	事	work,comm
+420	いらいら	焦躁；煩躁	n	s	狀	emo
+421	いらっしゃい	歡迎光臨	int		虛	comm,shop
+422	医療	醫療	n		事	med
+423	岩	岩石	n		物	nat
+424	祝い	慶祝；賀禮	n		事	comm,fam
+425	祝う	慶祝；祝賀	v	1	事	comm,fam
+426	言わば	可以說；打個比方	adv		虛	abs,comm
+427	いわゆる	所謂	pre		虛	abs
+428	インク	墨水	n		物	sch,work
+429	印刷	印刷	n	s	事	work
+430	印象	印象	n		狀	emo,abs
+431	引退	引退；退休	n	s	事	work,hobby
+432	インタビュー	訪問；採訪	n	s	事	work,comm
+433	引用	引用	n	s	事	sch,work
+434	ウイスキー	威士忌	n		物	food
+435	上	上方；表面	pre		地	abs
+436	魚	魚	n		物	food,nat
+437	うがい	漱口	n	s	事	body,med
+438	受け取る	收下；領取	v	1	事	shop,comm
+439	動かす	移動；發動	v	1	事	abs,trans
+440	兎	兔子	n		物	nat
+441	牛	牛	n		物	nat,food
+442	失う	失去；喪失	v	1	事	emo,abs
+443	疑う	懷疑；不相信	v	1	事	emo,abs
+444	宇宙	宇宙；太空	n		地	nat,sch
+445	討つ	討伐；攻擊	v	1	事	soc
+446	撃つ	射擊；開槍	v	1	事	soc
+447	うっかり	不小心；一時疏忽	adv		狀	abs,emo
+448	映す	映照；放映	v	1	事	hobby,abs
+449	訴える	控訴；訴說；呼籲	v	2	事	soc,comm
+450	写る	被拍到；照出	v	1	事	hobby
+451	映る	映照；映現	v	1	事	hobby,abs
+452	うなる	呻吟；低吼	v	1	事	body,emo
+453	奪う	搶奪；奪取	v	1	事	soc,abs
+454	馬	馬	n		物	nat
+455	生まれ	出生；出身地	n		狀	fam,time
+456	有無	有無	n		狀	abs
+457	梅	梅；梅花	n		物	nat,food
+458	埋める	掩埋；填滿	v	2	事	abs,work
+459	裏切る	背叛；辜負	v	1	事	emo,comm
+460	羨ましい	羨慕的	i		狀	emo
+461	売れる	暢銷；賣得出去	v	2	事	shop
+462	噂	傳聞；謠言	n	s	事	comm,soc
+463	運	運氣	n		狀	emo,abs
+464	運転	駕駛；運轉	n	s	事	trans
+465	柄	柄；把手	n		物	abs
+466	永遠	永遠	n		時	time,abs
+467	永久	永久	n		時	time,abs
+468	影響	影響	n	s	狀	abs,soc
+469	営業	營業	n	s	事	work,shop
+470	衛星	衛星	n		物	nat,sch
+471	栄養	營養	n		物	food,body
+472	笑顔	笑臉	n		物	emo,comm
+473	描く	描繪；畫	v	1	事	hobby,abs
+474	餌	飼料；誘餌	n		物	nat
+475	エネルギー	能源；能量	n		物	nat,soc
+476	得る	得到；獲得	v	2	事	abs
+477	得る	能夠；可能	v	2	事	abs
+478	円	圓；日圓	n		物	shop,num
+479	延期	延期	n	s	事	time,work
+480	演技	演技	n	s	事	hobby
+481	援助	援助	n	s	事	soc,shop
+482	エンジン	引擎	n		物	trans
+483	演説	演說	n	s	事	soc,comm
+484	演奏	演奏	n	s	事	hobby
+485	老い	老；老年	n		狀	body,abs
+486	追い付く	趕上；追上	v	1	事	trans,abs
+487	王	王；國王	n		人	soc,hobby
+488	追う	追趕；追求	v	1	事	trans,abs
+489	応援	聲援；支援	n	s	事	hobby,comm
+490	王様	國王	n		人	soc,hobby
+491	王子	王子	n		人	hobby
+492	応じる	回應；答應；符合	v	2	事	comm,abs
+493	横断	橫越；穿越	n	s	事	trans,city
+494	終える	做完；結束	v	2	事	work,time
+495	大いに	很；非常	adv		狀	abs
+496	覆う	覆蓋；遮蓋	v	1	事	abs
+497	大家	房東	n		人	fam,city
+498	丘	山丘	n		地	nat
+499	沖	海面；外海	n		地	nat,travel
+500	奥	裡面；深處	n		地	city,abs
+501	贈る	贈送；授予	v	1	事	comm,shop
+502	起こる	發生；引起	v	1	事	abs,soc
+503	押える	按住；抑制	v	2	事	abs,body
+504	幼い	年幼的；幼稚的	i		狀	fam,emo
+505	収める	收納；收下；取得	v	2	事	abs,work
+506	納める	繳納；收納	v	2	事	shop,work
+507	治める	統治；平息	v	2	事	soc
+508	お辞儀	鞠躬	n	s	事	comm
+509	お洒落	愛打扮；時髦	na		狀	shop,body
+510	お喋り	聊天；多話	n	s	事	comm
+511	汚染	污染	n	s	事	nat,soc
+512	恐らく	恐怕；大概	adv		狀	abs
+513	恐れる	害怕；擔心	v	2	事	emo
+514	恐ろしい	可怕的	i		狀	emo
+515	教わる	受教；跟著學	v	1	事	sch
+516	お互い	彼此；互相	n		人	comm
+517	穏やか	平穩；溫和	na		狀	emo,nat
+518	男の人	男人；男士	n		人	fam
+519	大人しい	乖巧的；溫順的	i		狀	emo,fam
+520	劣る	比不上；劣於	v	1	狀	abs
+521	鬼	鬼；惡魔	n		人	hobby
+522	帯	腰帶；和服腰帶	n		物	shop,hobby
+523	お昼	中午；午餐	n		時	food,time
+524	オフィス	辦公室	n		地	work
+525	溺れる	溺水；沉迷	v	2	事	med,emo
+526	お前	你（粗）	pron		人	comm
+527	おめでとう	恭喜	int		虛	comm
+528	お目に掛かる	見面（謙讓）	exp		事	comm,work
+529	思い付く	想到；想起	v	1	事	abs
+530	思い出	回憶	n		物	emo
+531	主に	主要地	adv		狀	abs
+532	思わず	不由得；忍不住	adv		狀	emo
+533	泳ぎ	游泳	n		事	hobby,body
+534	およそ	大約；大概	adv		狀	num
+535	及ぼす	波及；造成	v	1	事	abs,soc
+536	下す	放下；下達	v	1	事	abs,work
+537	降ろす	放下；卸下	v	1	事	trans,shop
+538	卸す	批發；磨碎	v	1	事	shop,food
+539	音	聲音；音	n		物	nat,hobby
+540	恩	恩情；恩惠	n		狀	emo,comm
+541	温暖	溫暖	na		狀	nat
+542	温度	溫度	n		狀	nat,body
+543	可	可；及格	n		狀	sch
+544	蚊	蚊子	n		物	nat
+545	課	課；科室	n		地	work,sch
+546	カー	汽車	n		物	trans
+547	カード	卡片	n		物	shop
+548	貝	貝殼；貝類	n		物	nat,food
+549	害	害處；損害	n		狀	abs,soc
+550	会員	會員	n		人	shop,hobby
+551	絵画	繪畫	n		物	hobby
+552	海外	海外	n		地	travel,soc
+553	会計	結帳；會計	n	s	事	shop,work
+554	解決	解決	n	s	事	abs,work
+555	会合	會議；聚會	n	s	事	work,comm
+556	外交	外交	n		事	soc
+557	開始	開始	n	s	事	abs,time
+558	解釈	解釋；詮釋	n	s	事	sch,abs
+559	外出	外出	n	s	事	trans,fam
+560	改善	改善	n	s	事	abs,work
+561	快適	舒適	na		狀	fam,travel
+562	回復	恢復；康復	n	s	事	med,body
+563	飼う	飼養	v	1	事	fam,nat
+564	帰す	讓回去；送回	v	1	事	comm,trans
+565	代える	代替；更換	v	2	事	abs
+566	替える	更換；替換	v	2	事	shop,abs
+567	換える	交換；兌換	v	2	事	shop
+568	反る	翹曲；向後彎	v	1	事	body,abs
+569	香り	香氣	n		物	food,nat
+570	画家	畫家	n		人	hobby
+571	抱える	抱著；承擔	v	2	事	work,abs
+572	価格	價格	n		物	shop
+573	化学	化學	n		物	sch
+574	輝く	閃耀；發光	v	1	事	nat,emo
+575	係	負責人；承辦	n		人	work,sch
+576	罹る	罹患	v	1	事	med
+577	限る	限定；限於	v	1	事	abs
+578	掻く	搔；抓	v	1	事	body
+579	描く	描繪；畫	v	1	事	hobby
+580	嗅ぐ	聞；嗅	v	1	事	body,food
+581	家具	傢俱	n		物	fam,shop
+582	学	學問；學識	n		物	sch
+583	額	金額；畫框	n		物	shop,hobby
+584	覚悟	覺悟；心理準備	n	s	事	emo,abs
+585	確実	確實；可靠	na		狀	abs,work
+586	学者	學者	n		人	sch
+587	学習	學習	n	s	事	sch
+588	隠す	隱藏；隱瞞	v	1	事	abs,emo
+589	拡大	擴大；放大	n	s	事	abs,work
+590	確認	確認	n	s	事	work,comm
+591	学問	學問	n		物	sch
+592	隠れる	躲藏；隱藏	v	2	事	abs,fam
+593	影	影子；背面	n		物	nat,abs
+594	陰	陰影；背地	n		物	nat,abs
+595	欠ける	缺少；缺損	v	2	事	abs
+596	加減	調節；程度；狀況	n	s	狀	food,abs
+597	過去	過去	n		時	time
+598	籠	籃子；籠子	n		物	fam,shop
+599	囲む	圍繞；包圍	v	1	事	abs,fam
+600	火災	火災	n		事	med,soc
+601	重なる	重疊；堆疊	v	1	事	abs,time
+602	重ねる	重疊；累積	v	2	事	abs
+603	飾り	裝飾	n		物	fam,shop
+604	貸し	借出；出借	n		事	shop
+605	菓子	點心；糖果	n		物	food,shop
+606	家事	家事	n		事	fam
+607	賢い	聰明的；明智的	i		狀	emo,abs
+608	歌手	歌手	n		人	hobby
+609	数	數；數量	n		狀	num
+610	稼ぐ	賺錢；掙	v	1	事	work,shop
+611	数える	數；計算	v	2	事	num,sch
+612	型	型；款式	n		狀	abs,shop
+613	肩	肩膀	n		物	body
+614	堅い	堅硬的；堅定的	i		狀	abs,food
+615	硬い	硬的；僵硬的	i		狀	abs,food
+616	方々	各位；各處	n		人	comm,city
+617	片付く	收拾好；解決	v	1	事	fam,work
+618	刀	刀	n		物	hobby
+619	語る	說；講述	v	1	事	comm
+620	勝ち	勝利	n		事	hobby
+621	価値	價值	n		狀	abs,shop
+622	がっかり	失望；沮喪	adv	s	狀	emo
+623	活気	活力；生氣	n		狀	emo,city
+624	楽器	樂器	n		物	hobby
+625	学期	學期	n		時	sch,time
+626	活動	活動	n	s	事	abs,sch
+627	活躍	活躍	n	s	事	work,hobby
+628	活用	活用；活用變化	n	s	事	abs,sch
+629	仮定	假設；假定	n	s	事	abs,sch
+630	過程	過程	n		狀	abs
+631	課程	課程	n		物	sch
+632	悲しむ	悲傷；感到難過	v	1	事	emo
+633	必ずしも	未必；不一定	adv		狀	abs
+634	かなり	相當；頗	adv		狀	abs
+635	金	金屬；金錢	n		物	shop
+636	鐘	鐘	n		物	hobby,city
+637	可能	可能	na		狀	abs
+638	株	股票；樹墩	n		物	shop,soc
+639	被る	戴；蓋；蒙受	v	1	事	shop,abs
+640	我慢	忍耐；忍受	n	s	事	emo
+641	上	上卷；上等；官方	n		狀	abs,soc
+642	神	神	n		人	abs,soc
+643	雷	雷；打雷	n		物	nat
+644	髪の毛	頭髮	n		物	body
+645	科目	科目；課程	n		物	sch
+646	かもしれない	也許；說不定	exp		虛	abs
+647	かゆい	癢的	i		狀	body
+648	歌謡	歌謠	n		物	hobby
+649	空	空；空的	n		狀	abs
+650	殻	殼	n		物	food,nat
+651	柄	花紋；身材；人品	n		狀	shop,abs
+652	刈る	割；剪；收割	v	1	事	nat,body
+653	河	河；河川	n		地	nat
+654	皮	皮；表皮	n		物	food,body
+655	革	皮革	n		物	shop
+656	可愛そう	可憐；可憐的	na		狀	emo
+657	可愛らしい	可愛的；討人喜歡的	i		狀	emo,fam
+658	乾かす	弄乾；晾乾	v	1	事	fam,nat
+659	渇く	口渴；乾渴	v	1	事	body,food
+660	代る	代替；替代	v	1	事	abs,work
+661	缶	罐頭；罐子	n		物	food,shop
+662	勘	直覺；第六感	n		狀	abs,emo
+663	考え	想法；考慮	n		狀	abs
+664	感覚	感覺	n		狀	body,emo
+665	間隔	間隔；距離	n		狀	num,abs
+666	観客	觀眾	n		人	hobby
+667	環境	環境	n		狀	nat,soc
+668	歓迎	歡迎	n	s	事	comm,travel
+669	観光	觀光	n	s	事	travel
+670	観察	觀察	n	s	事	sch,abs
+671	感じ	感覺；印象	n		狀	emo,abs
+672	感謝	感謝	n	s	事	emo,comm
+673	患者	患者；病人	n		人	med
+674	勘定	結帳；計算	n	s	事	shop,food
+675	感情	感情	n		狀	emo
+676	感じる	感覺；感受到	v	2	事	emo,body
+677	感心	佩服；欽佩	n	s	事	emo,comm
+678	関心	關心；興趣	n		狀	emo,abs
+679	関する	關於；有關	v	3	事	abs
+680	完成	完成	n	s	事	work,abs
+681	完全	完全；完美	na		狀	abs
+682	乾燥	乾燥	n	s	狀	nat,body
+683	感想	感想	n		狀	emo,sch
+684	感動	感動	n	s	事	emo
+685	監督	監督；導演	n	s	人	hobby,work
+686	管理	管理	n	s	事	work
+687	完了	完成；結束	n	s	事	work
+688	関連	關聯；相關	n	s	狀	abs,work
+689	議員	議員	n		人	soc
+690	記憶	記憶	n	s	事	abs,sch
+691	気温	氣溫	n		狀	nat
+692	機械	機械	n		物	work
+693	器械	器械；器具	n		物	work,med
+694	議会	議會	n		地	soc
+695	期間	期間	n		時	time
+696	機関	機關；引擎	n		物	soc,work
+697	企業	企業	n		物	work,soc
+698	効く	有效；奏效	v	1	事	med,abs
+699	期限	期限	n		時	time,work
+700	機嫌	心情；情緒	n		狀	emo
+701	気候	氣候	n		狀	nat
+702	岸	岸邊	n		地	nat,travel
+703	生地	布料；麵糰	n		物	shop,food
+704	記事	報導；文章	n		物	soc,work
+705	技師	技師；工程師	n		人	work
+706	記者	記者	n		人	work,soc
+707	傷	傷；傷口	n		物	body,med
+708	期待	期待	n	s	事	emo
+709	気体	氣體	n		物	sch,nat
+710	帰宅	回家	n	s	事	fam,trans
+711	貴重	貴重；珍貴	na		狀	abs,shop
+712	議長	議長；主席	n		人	soc,work
+713	きちんと	整齊；確實地	adv		狀	abs,fam
+714	きつい	緊的；嚴苛的；吃力	i		狀	abs,emo
+715	気付く	注意到；察覺	v	1	事	abs
+716	気に入る	中意；喜歡	exp		事	emo,shop
+717	記入	填寫；記入	n	s	事	work,sch
+718	記念	紀念	n	s	事	hobby,travel
+719	機能	機能；功能	n	s	狀	work,abs
+720	気の毒	可憐；令人同情	na		狀	emo
+721	寄付	捐款；捐贈	n	s	事	soc,shop
+722	希望	希望	n	s	狀	emo
+723	基本	基本	n		狀	abs,sch
+724	決まり	規定；規矩	n		狀	soc,sch
+725	気味	感覺；有點…傾向	n		狀	emo
+726	奇妙	奇妙；古怪	na		狀	abs,emo
+727	義務	義務	n		狀	soc,work
+728	疑問	疑問	n		狀	abs,sch
+729	逆	相反；逆	n		狀	abs
+730	キャプテン	隊長；機長	n		人	hobby,work
+731	キャンプ	露營	n	s	事	hobby,travel
+732	旧	舊；前	pre		狀	time
+733	級	等級；年級	n		狀	sch,num
+734	球	球；球體	n		物	hobby,sch
+735	休暇	休假	n		時	work,travel
+736	休憩	休息	n	s	事	work,body
+737	急激	急遽；驟然	na		狀	abs,nat
+738	吸収	吸收	n	s	事	sch,body
+739	救助	救助；救援	n	s	事	med,soc
+740	急速	急速	na		狀	abs
+741	休息	休息	n	s	事	body,work
+742	急に	突然；忽然	adv		時	time
+743	給料	薪水	n		物	work,shop
+744	器用	靈巧；手巧	na		狀	abs,hobby
+745	教科書	教科書	n		物	sch
+746	競技	比賽；競技	n	s	事	hobby
+747	行儀	禮貌；舉止	n		狀	comm,fam
+748	供給	供給；供應	n	s	事	shop,soc
+749	教授	教授；教導	n	s	人	sch
+750	強調	強調	n	s	事	comm,abs
+751	共通	共通；共同	n	s	狀	abs
+752	共同	共同；合作	n	s	事	work,comm
+753	恐怖	恐怖	n		狀	emo
+754	協力	合作；協助	n	s	事	work,comm
+755	強力	強力；有力	na		狀	abs,work
+756	許可	許可；批准	n	s	事	work,soc
+757	局	局；電視台	n		地	work,soc
+758	巨大	巨大	na		狀	abs,num
+759	嫌う	討厭；厭惡	v	1	事	emo
+760	霧	霧	n		物	nat
+761	切れ	切片；布塊	n		物	food,shop
+762	切れる	鋒利；斷；用完	v	2	事	abs,shop
+763	記録	記錄；紀錄	n	s	事	work,hobby
+764	議論	議論；爭論	n	s	事	comm,work
+765	金	金；黃金；金錢	n		物	shop
+766	銀	銀	n		物	shop,hobby
+767	禁煙	禁菸	n	s	事	city,body
+768	金額	金額	n		物	shop
+769	金庫	保險箱；金庫	n		物	shop,work
+770	禁止	禁止	n	s	事	soc,city
+771	金銭	金錢	n		物	shop
+772	金属	金屬	n		物	sch,nat
+773	近代	近代	n		時	time,soc
+774	緊張	緊張	n	s	狀	emo
+775	筋肉	肌肉	n		物	body
+776	金融	金融	n		事	shop,soc
+777	句	句；詞句	n		物	sch,comm
+778	食う	吃（粗）	v	1	事	food
+779	偶然	偶然	n		狀	abs
+780	臭い	臭的	i		狀	body,food
+781	鎖	鎖鏈	n		物	abs
+782	腐る	腐壞；腐爛	v	1	事	food
+783	癖	習慣；癖好	n		狀	body,emo
+784	管	管子	n		物	abs,med
+785	具体	具體	n		狀	abs
+786	下り	下行；下坡	n		事	trans
+787	下る	下降；下去	v	1	事	trans,nat
+788	苦痛	痛苦	n		狀	body,emo
+789	ぐっすり	熟睡地	adv		狀	body
+790	区別	區別	n	s	事	abs,sch
+791	組	班級；組；一套	n		人	sch,num
+792	組合	工會；公會	n		人	work,soc
+793	組む	組合；交叉	v	1	事	work,abs
+794	汲む	汲取；舀	v	1	事	nat,fam
+795	酌む	斟酒	v	1	事	food,comm
+796	悔しい	不甘心的；懊悔的	i		狀	emo
+797	位	地位；大約	n		狀	abs,num
+798	暮らし	生活；日子	n		狀	fam
+799	クラシック	古典；古典音樂	n		物	hobby
+800	暮らす	生活；過日子	v	1	事	fam
+801	グラス	玻璃杯	n		物	food
+802	グランド	運動場；盛大	n		地	hobby,sch
+803	クリーム	奶油；乳霜	n		物	food,body
+804	繰り返す	重複；反覆	v	1	事	abs,sch
+805	クリスマス	聖誕節	n		時	hobby,time
+806	狂う	發瘋；失常	v	1	事	emo,abs
+807	グループ	團體；小組	n		人	comm,sch
+808	苦しい	痛苦的；艱難的	i		狀	body,emo
+809	苦しむ	受苦；煩惱	v	1	事	emo,body
+810	暮れ	歲末；日暮	n		時	time
+811	苦労	辛苦；辛勞	n	s	事	work,emo
+812	加える	加上；增加	v	2	事	abs,num
+813	咥える	叼著	v	2	事	body
+814	詳しい	詳細的；精通的	i		狀	abs,comm
+815	加わる	加入；增加	v	1	事	comm,num
+816	訓	訓讀	n		物	sch
+817	軍	軍隊	n		人	soc
+818	郡	郡	n		地	city,soc
+819	軍隊	軍隊	n		人	soc
+820	訓練	訓練	n	s	事	sch,work
+821	下	下；低	n		地	abs
+822	計	計畫；總計	n		狀	num
+823	敬意	敬意	n		狀	emo,comm
+824	経営	經營	n	s	事	work
+825	景気	景氣	n		狀	shop,soc
+826	傾向	傾向；趨勢	n		狀	abs,soc
+827	警告	警告	n	s	事	soc,med
+828	計算	計算	n	s	事	num,sch
+829	掲示	佈告；公告	n	s	事	city,sch
+830	刑事	刑事；刑警	n		人	soc
+831	芸術	藝術	n		物	hobby
+832	契約	契約；合約	n	s	事	work,shop
+833	経由	經由；途經	n	s	事	trans,travel
+834	ケース	箱；情況；案例	n		物	abs,shop
+835	ゲーム	遊戲；比賽	n		物	hobby
+836	劇	戲劇	n		物	hobby
+837	劇場	劇場；劇院	n		地	hobby,city
+838	化粧	化妝	n	s	事	body,shop
+839	けち	小氣；吝嗇	na		狀	emo,shop
+840	血液	血液	n		物	body,med
+841	結果	結果	n		狀	abs
+842	欠陥	缺陷；瑕疵	n		狀	work,shop
+843	結局	結果；終究	adv		狀	abs
+844	決心	決心	n	s	事	emo
+845	欠席	缺席	n	s	事	sch,work
+846	決定	決定	n	s	事	abs,work
+847	欠点	缺點	n		狀	abs,emo
+848	結論	結論	n		狀	abs,sch
+849	煙	煙	n		物	nat,fam
+850	蹴る	踢；拒絕	v	1	事	hobby
+851	券	票；券	n		物	shop,trans
+852	県	縣	n		地	city,soc
+853	見解	見解；看法	n		狀	abs,comm
+854	限界	極限；界限	n		狀	abs
+855	現金	現金	n		物	shop
+856	言語	語言	n		物	comm,sch
+857	健康	健康	na		狀	body,med
+858	検査	檢查；檢驗	n	s	事	med,work
+859	現在	現在；目前	n		時	time
+860	現実	現實	n		狀	abs,soc
+861	現象	現象	n		狀	nat,sch
+862	現状	現狀	n		狀	abs,soc
+863	建設	建設	n	s	事	city,work
+864	現代	現代	n		時	time,soc
+865	建築	建築	n	s	事	city
+866	見当	推測；大致方向	n		狀	abs
+867	検討	研究；討論；探討	n	s	事	work,abs
+868	現場	現場	n		地	work,city
+869	憲法	憲法	n		物	soc
+870	権利	權利	n		狀	soc
+871	後	之後；以後	n		時	time
+872	碁	圍棋	n		物	hobby
+873	恋	戀愛；愛情	n	s	事	emo
+874	濃い	濃的；深的	i		狀	food,abs
+875	恋人	戀人；情人	n		人	emo,fam
+876	幸運	幸運	na		狀	emo,abs
+877	講演	演講	n	s	事	sch,work
+878	効果	效果	n		狀	abs,med
+879	硬貨	硬幣	n		物	shop
+880	高価	高價；昂貴	na		狀	shop
+881	豪華	豪華	na		狀	shop,travel
+882	合格	及格；考上	n	s	事	sch
+883	交換	交換	n	s	事	shop,comm
+884	航空	航空	n		事	trans,travel
+885	光景	光景；景象	n		物	nat,emo
+886	合計	合計；總計	n	s	事	num,shop
+887	攻撃	攻擊	n	s	事	soc,hobby
+888	貢献	貢獻	n	s	事	work,soc
+889	広告	廣告	n		物	shop,work
+890	交際	交往；交際	n	s	事	comm,emo
+891	校舎	校舍	n		地	sch
+892	後者	後者	n		物	abs
+893	工場	工廠	n		地	work,city
+894	公正	公正	na		狀	soc,abs
+895	構成	構成；組成	n	s	事	abs,work
+896	高速	高速	n		狀	trans
+897	行動	行動；行為	n	s	事	abs,soc
+898	強盗	強盜	n		人	soc
+899	後輩	晚輩；學弟妹	n		人	sch,work
+900	幸福	幸福	na		狀	emo
+901	公平	公平	na		狀	soc,abs
+902	候補	候補；候選	n		人	soc,work
+903	考慮	考慮	n	s	事	abs,work
+904	越える	越過；超過	v	2	事	trans,abs
+905	超える	超過；超出	v	2	事	num,abs
+906	コーチ	教練	n	s	人	hobby,sch
+907	コード	代碼；電線；和弦	n		物	abs,hobby
+908	氷	冰	n		物	nat,food
+909	凍る	結冰；凍結	v	1	事	nat
+910	ゴール	終點；球門	n	s	地	hobby
+911	誤解	誤會	n	s	事	comm,emo
+912	語学	語言學習；外語	n		物	sch,comm
+913	呼吸	呼吸	n	s	事	body,med
+914	故郷	故鄉	n		地	fam,emo
+915	極	極；非常	adv		狀	abs
+916	国語	國語；國文	n		物	sch
+917	国籍	國籍	n		狀	soc,travel
+918	黒板	黑板	n		物	sch
+919	克服	克服	n	s	事	emo,abs
+920	国民	國民	n		人	soc
+921	穀物	穀物	n		物	food,nat
+922	腰	腰	n		物	body
+923	胡椒	胡椒	n		物	food
+924	個人	個人	n		人	abs,work
+925	越す	越過；搬家	v	1	事	fam,abs
+926	超す	超過；度過	v	1	事	abs,num
+927	国家	國家	n		地	soc
+928	国会	國會	n		地	soc
+929	国境	國界；邊境	n		地	soc,travel
+930	骨折	骨折	n	s	事	med,body
+931	小包	包裹	n		物	shop,city
+932	琴	古箏	n		物	hobby
+933	異なる	不同；相異	v	1	狀	abs
+934	諺	諺語	n		物	sch,comm
+935	断る	拒絕；事先告知	v	1	事	comm,work
+936	粉	粉；粉末	n		物	food
+937	好み	喜好；愛好	n		狀	emo,shop
+938	好む	喜歡；愛好	v	1	事	emo,shop
+939	こぼす	灑出；潑灑	v	1	事	food,fam
+940	こぼれる	溢出；灑出	v	2	事	food,fam
+941	塵	垃圾；塵埃	n		物	fam,city
+942	小麦	小麥	n		物	food,nat
+943	ごめんなさい	對不起	int		虛	comm
+944	小屋	小屋；棚子	n		地	nat,fam
+945	これら	這些	pron		物	abs
+946	殺す	殺；殺死	v	1	事	soc
+947	転ぶ	跌倒；摔倒	v	1	事	body,med
+948	今回	這次；此次	n		時	time
+949	今後	今後；從今以後	n		時	time
+950	混雑	擁擠；混亂	n	s	狀	city,trans
+951	こんなに	這麼；如此	adv		狀	abs
+952	困難	困難	na		狀	abs,emo
+953	今日	今日；現今	n		時	time
+954	こんにちは	你好；午安	int		虛	comm
+955	婚約	訂婚	n	s	事	fam,emo
+956	混乱	混亂	n	s	狀	abs,soc
+957	差	差；差異	n		狀	num,abs
+958	サービス	服務；招待	n	s	事	shop,work
+959	際	時候；之際	n		時	time,abs
+960	最高	最高；最棒	n		狀	abs,emo
+961	財産	財產	n		物	shop,fam
+962	最終	最後；最終	n		時	time
+963	最中	正在…之中	n		時	time
+964	最低	最低；最差	n		狀	abs
+965	才能	才能	n		狀	work,sch
+966	裁判	審判；官司	n	s	事	soc
+967	材料	材料；食材	n		物	food,work
+968	幸い	幸運；幸好	na		狀	emo,abs
+969	サイン	簽名；記號	n	s	事	comm,shop
+970	境	邊界；境地	n		地	abs,city
+971	逆らう	違抗；逆著	v	1	事	comm,emo
+972	盛り	盛（分量）；旺盛	n		物	food
+973	作業	作業；工作	n	s	事	work
+974	裂く	撕開；劈開	v	1	事	abs
+975	昨	昨；去（年）	pre		時	time
+976	作品	作品	n		物	hobby
+977	作物	農作物	n		物	nat,food
+978	桜	櫻花	n		物	nat,hobby
+979	酒	酒；清酒	n		物	food
+980	叫ぶ	喊叫；呼喊	v	1	事	comm,emo
+981	避ける	避開；躲避	v	2	事	abs,trans
+982	支える	支撐；支持	v	2	事	abs,emo
+983	刺さる	刺入；扎進	v	1	事	body,med
+984	刺す	刺；叮；扎	v	1	事	body,nat
+985	指す	指；指向	v	1	事	comm,abs
+986	挿す	插入；插	v	1	事	abs
+987	注す	倒入；斟	v	1	事	food
+988	射す	照射；射入	v	1	事	nat
+989	座席	座位	n		物	trans,hobby
+990	誘う	邀約；誘惑	v	1	事	comm
+991	札	紙鈔；牌子	n		物	shop
+992	作家	作家	n		人	hobby,work
+993	作曲	作曲	n	s	事	hobby
+994	ざっと	大致；粗略	adv		狀	num,abs
+995	さっぱり	清爽；完全不	adv		狀	emo,abs
+996	さて	那麼；好了	conj		虛	comm,abs
+997	砂漠	沙漠	n		地	nat,travel
+998	差別	歧視；區別	n	s	事	soc
+999	ママ	媽媽	n		人	fam
+1000	豆	豆子	n		物	food
+1001	守る	保護；遵守	v	1	事	abs,soc
+1002	迷う	迷惘；迷路	v	1	事	emo,trans
+1003	丸	圓；圓形	n		物	num,abs
+1004	円	圓；圓形	n		物	num,abs
+1005	まるで	簡直；宛如	adv		狀	abs
+1006	万一	萬一	adv		狀	abs
+1007	満足	滿足	n	s	狀	emo
+1008	身	身體；自身	n		物	body,abs
+1009	実	果實；種子；成果	n		物	nat,food
+1010	見送り	送行；送別	n	s	事	comm,trans
+1011	味方	夥伴；同一陣線	n	s	人	comm,soc
+1012	見事	精彩；漂亮	na		狀	abs,emo
+1013	ミス	失誤；小姐	n	s	事	work,abs
+1014	満ちる	充滿；盈滿	v	2	事	abs,nat
+1015	密	密；濃密	na		狀	abs
+1016	認める	承認；認可	v	2	事	comm,work
+1017	見舞い	探病；慰問	n		事	med,comm
+1018	土産	伴手禮；土產	n		物	travel,shop
+1019	都	都市；首都	n		地	city,soc
+1020	妙	奇怪；奇妙	na		狀	abs,emo
+1021	明後日	後天	n		時	time
+1022	未来	未來	n		時	time,abs
+1023	魅力	魅力	n		狀	emo,comm
+1024	診る	診察；看診	v	2	事	med
+1025	ミルク	牛奶	n		物	food
+1026	無	無；沒有	n		狀	abs
+1027	向かい	對面	n		地	city
+1028	迎え	迎接；接人	n		事	comm,trans
+1029	向く	面向；適合	v	1	事	abs,work
+1030	剥く	剝；削（皮）	v	1	事	food
+1031	向ける	朝向；轉向	v	2	事	abs,comm
+1032	無視	無視；忽視	n	s	事	comm,emo
+1033	蒸し暑い	悶熱的	i		狀	nat
+1034	虫歯	蛀牙	n		物	body,med
+1035	寧ろ	寧可；倒不如	adv		狀	abs
+1036	蒸す	蒸；悶熱	v	1	事	food,nat
+1037	結ぶ	繫；打結；締結	v	1	事	abs,work
+1038	無駄	白費；浪費	na		狀	abs,shop
+1039	夢中	沉迷；著迷	na		狀	emo,hobby
+1040	胸	胸；胸口	n		物	body,emo
+1041	無料	免費	n		狀	shop
+1042	芽	芽	n		物	nat
+1043	明確	明確	na		狀	abs
+1044	名刺	名片	n		物	work
+1045	名詞	名詞	n		物	sch
+1046	命じる	命令；任命	v	2	事	work,soc
+1047	名人	名家；高手	n		人	hobby
+1048	命令	命令	n	s	事	work,soc
+1049	迷惑	麻煩；打擾	n	s	狀	comm,emo
+1050	目上	上級；長輩	n		人	work,comm
+1051	飯	飯；餐	n		物	food
+1052	滅多に	很少；難得	adv		時	time
+1053	メモ	筆記；便條	n	s	物	work,sch
+1054	面	面；方面；版面	n		物	abs
+1055	綿	棉；棉花	n		物	shop
+1056	免許	執照；許可證	n		物	work,trans
+1057	面接	面試	n	s	事	work,sch
+1058	面倒	麻煩；照顧	na		狀	comm,emo
+1059	メンバー	成員	n		人	comm,work
+1060	申し込む	申請；報名	v	1	事	work,sch
+1061	申し訳	辯解；道歉	n		狀	comm
+1062	毛布	毛毯	n		物	fam
+1063	燃える	燃燒	v	2	事	nat
+1064	目的	目的	n		狀	abs,work
+1065	目標	目標	n		狀	abs,work
+1066	文字	文字	n		物	sch,comm
+1067	文字	文字	n		物	sch,comm
+1068	もしかすると	或許；說不定	adv		狀	abs
+1069	もしも	如果；萬一	conj		虛	abs

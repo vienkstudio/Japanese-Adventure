@@ -1,9 +1,11 @@
 // 離線快取：改版時請把 VERSION 加 1。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
-const VERSION = 'jpq-v19';
-const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './kana-data.js',
+const VERSION = 'jpq-v21';
+const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './css/mind.css', './kana-data.js',
   './data/scenes-1.js', './data/scenes-2.js', './data/scene-ext.js', './data/cards.js', './data/menus.js',
   './data/travel.js', './data/travel-ext.js', './data/travel-stops.js', './data/drills.js',
-  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js', './js/drill.js', './js/phrasebook.js',
+  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js', './js/drill.js', './js/phrasebook.js', './js/mind3d.js', './js/mind-game.js', './data/mind/scripts.js',
+  './vendor/3d-force-graph.min.js', './data/mind/taxonomy.js', './data/mind/conj.js', './data/mind/grammar.js',
+  './data/mind/lex-n5.js', './data/mind/lex-n4.js', './data/mind/lex-n3.js', './data/mind/lex-n2.js', './data/mind/lex-n1.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/logo.svg', './icons/icon-512.png',
   './日文講義.html', './50音訓練表.html'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => encodeURI(f)))).then(() => self.skipWaiting())); });

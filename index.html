@@ -14,6 +14,7 @@
 <title>日語冒險｜闖關學日文</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/travel.css">
+<link rel="stylesheet" href="css/mind.css">
 </head>
 <body>
 <header id="top"><div class="in">
@@ -51,6 +52,7 @@ App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, re
 // 延遲載入：特訓、手冊第一次打開才下載
 App.lazy([['boot', { title: '特訓', icon: '🎧', nav: true, navOrder: 3 }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'boot' }]], ['data/drills.js', 'js/drill.js']);
 App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: true, navOrder: 2 }]], ['js/phrasebook.js']);
+App.lazy([['mind', { title: '心智圖', icon: '🧠', nav: true, navOrder: 5 }]], ['vendor/3d-force-graph.min.js', 'data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js', 'js/mind3d.js', 'js/mind-game.js']);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>

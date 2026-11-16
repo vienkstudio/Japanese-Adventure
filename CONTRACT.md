@@ -79,6 +79,7 @@ Tracker.dueList() / dueCount()   // 今日該複習
 | `phrasebook`（nav 2） | phrasebook.js | 旅遊會話手冊：分類、搜尋、語音、全螢幕給店員看 |
 | `boot`（nav 3）、`boot-play` | drill.js | 實戰特訓：店員問句、看板、數字、🧩 組句子（把詞塊排成句子） |
 | `review`（nav 4） | review.js | 不會清單 |
+| `mind`（nav 5） | mind3d.js＋mind-game.js | 3D 心智圖：N5–N1 詞彙／文法／時態網／學習路線＋任務腳本 |
 | `play` | travel.js | 入門＝教 5 字→小考 10 題；N5–N1＝東京地圖（13 站，4 站依等級解鎖） |
 | `trip-stop`（transient） | travel.js | 站內流程：本站單字→情境小遊戲→對話／口說→狀況題 |
 | `trip-event` | travel.js | 狀況題（5 題、3 顆愛心，歸零結束） |
@@ -109,3 +110,15 @@ class 前綴：`trip-`（旅程地圖）、`tt-`（首頁）、`kn-`（入門）
 1. `node -e "new Function(require('fs').readFileSync(檔案,'utf8'))"` 檢查語法。
 2. node 載入資料檔確認筆數與欄位。
 3. 瀏覽器跑：首頁 → 入門一局 → 地圖一站 → 結果 → 不會清單 → 手冊。
+
+## 3D 心智圖（路由 `mind`，nav 5）
+延遲載入：`vendor/3d-force-graph.min.js` → `data/mind/{taxonomy,conj,grammar,scripts}.js` → `js/mind3d.js` → `js/mind-game.js`；詞彙 `data/mind/lex-n{5..1}.js` 用到該等級才載入。樣式 `css/mind.css`（前綴 `mm-`）。
+- 全域 `MIND`：`LEVELS`、`WH`（人事時地物＋狀、虛）、`SCENES`（18 個生活場景）、`SUB`（旅遊場景 → 生活場景）、`POS`、`GRP`、`GCAT`、`CONJ`／`conjugate(動詞, 類別)`／`adjForms`、`gram[]`、`GROUPS`、`lex.N5…`。
+- 詞彙列：`[jp, kana(同 jp 時空字串), zh, pos, grp, wh, 'sc1,sc2,…']`，第一個場景是主場景。加入不會清單用 `word:<jp>`。
+- 文法：`{id:'gram:<句型>', pat, lv, ord, zh, conn, ex:[日,中], cat, wh, sc[], conj[], pre[], rel[], note?}`；`pre` 只指向 `ord` 較小的文法。
+- 四種檢視：`map` 總覽（等級分層×人事時地物扇區×場景群）、`focus` 焦點、`tense` 時態網、`path` 學習路線（螺旋）。`App.go('mind', {focus:'節點id'})` 或 `{script:'任務id'}` 可直接進入。
+- 存檔：localStorage `jpq.mind.v1` ＝ `{learned:{文法id:1}, done:{任務id:星數}, best:最高連擊, toured}`（不在 `jpQuest.v1` 內）。
+- 任務腳本：`data/mind/scripts.js` 的 `MIND.SCRIPTS`（單一任務）與 `MIND.TEMPLATES`（`each` 展開），步驟 op 說明在該檔開頭；引擎在 `js/mind-game.js`（`MIND.game.start(id)`）。新增 op：在 `MIND.game.ops` 加一個 `async (step, run) => {}`。
+- 3D 檢視對腳本開放的 API：`MIND.view`（`setMode`、`focus`、`expand`、`flyTo`、`apply`、`HL` 高亮、`intercept` 攔截節點點擊、`learn`…）。
+- XP：任務完成依星數 10／15／20，規則同全站；答錯的單字自動進不會清單。
+- 資料重建與來源：`docs/資料來源.md`。
