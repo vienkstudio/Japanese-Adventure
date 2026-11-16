@@ -16,10 +16,10 @@
 .rv-chip{cursor:pointer;font-family:inherit}
 .rv-chip.rv-on{background:var(--ink);color:#fff;border-color:var(--line)}
 .rv-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
-.rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:20px;font-family:inherit;font-size:1em;background:#fff}
+.rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:20px;font-family:inherit;font-size:1em;background:var(--card)}
 .rv-tools input[type=search]{flex:1;min-width:180px}
 .rv-list{display:flex;flex-direction:column;gap:8px}
-.rv-item{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 12px;flex-wrap:wrap}
+.rv-item{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;flex-wrap:wrap}
 .rv-item.rv-done{opacity:.6;background:#f4fbf6}
 .rv-emo{font-size:1.9em;width:1.6em;text-align:center}
 .rv-main{flex:1;min-width:180px}
@@ -39,7 +39,7 @@
 .rv-card{perspective:1000px;max-width:460px;margin:10px auto;cursor:pointer;height:280px}
 .rv-card-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
 .rv-card.rv-flip .rv-card-in{transform:rotateY(180deg)}
-.rv-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;border:3px solid var(--line);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+.rv-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;border:3px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
 .rv-back{transform:rotateY(180deg);background:var(--soft)}
 .rv-face .rv-fjp{font-size:3em;line-height:1.2;word-break:break-all}
 .rv-q{text-align:center;margin:10px 0}
@@ -543,7 +543,7 @@
     if (rw) rw.onclick = () => startSession(el, s.mode, wrongs.map(w => Tracker.get(w.id)).filter(Boolean));
   }
 
-  App.register('review', { title: '不會清單', icon: '📌', nav: true, render });
+  App.register('review', { title: '不會清單', icon: '📌', nav: true, navOrder: 4, render });
 
   // 供測試／其他模組使用
   W.ReviewAPI = { normRomaji, romajiMatch, kanaToRomaji, romajiOf };

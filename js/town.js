@@ -36,8 +36,8 @@
 .t-dlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .t-dbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
 .t-sw{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-.t-aidsw{cursor:pointer;user-select:none;font-size:.85em;border:none;border-radius:999px;padding:4px 12px;background:#fff;box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:4px}
-.t-chat{background:#fff;border:none;border-radius:18px;padding:12px;min-height:80px;max-height:56vh;overflow:auto}
+.t-aidsw{cursor:pointer;user-select:none;font-size:.85em;border:none;border-radius:999px;padding:4px 12px;background:var(--card);box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:4px}
+.t-chat{background:var(--card);border:none;border-radius:18px;padding:12px;min-height:80px;max-height:56vh;overflow:auto}
 .t-chat .bubble .j{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .t-aid{font-size:.86em;color:var(--muted)}
 .t-noaid .t-aid{display:none}
@@ -125,27 +125,8 @@
     return { best, score };
   }
 
-  function trackHTML(id) {
-    const on = Tracker.has(id);
-    return `<button class="track-btn${on ? ' on' : ''}" data-tid="${esc(id)}">${on ? '✓ 已在清單' : '＋ 加入不會清單'}</button>`;
-  }
-  // 綁定 .track-btn：items 為 id→trackerItem
-  function bindTrack(root, items) {
-    root.querySelectorAll('.track-btn[data-tid]').forEach(b => {
-      b.onclick = e => {
-        e.stopPropagation();
-        const id = b.dataset.tid, it = items[id];
-        if (Tracker.has(id)) { Tracker.remove(id); App.toast('已從不會清單移除'); }
-        else if (it) Tracker.add(it);
-        const on = Tracker.has(id);
-        root.querySelectorAll('.track-btn[data-tid]').forEach(x => {
-          if (x.dataset.tid !== id) return;
-          x.classList.toggle('on', on);
-          x.textContent = on ? '✓ 已在清單' : '＋ 加入不會清單';
-        });
-      };
-    });
-  }
+  // 「＋不會清單」按鈕改用 core 的共用 App.trackBtn（點擊由 core 統一處理）
+  const bindTrack = () => { };
   function errorView(el, title, msg) {
     el.innerHTML = `<div class="panel t-err"><div class="t-big">🧭</div><h2>${esc(title)}</h2><p class="muted">${esc(msg)}</p>
       <button class="btn primary" id="tBack">🏙️ 返回日本街道</button></div>`;
@@ -221,7 +202,7 @@
           <div class="t-zh">${esc(w.zh || '')}</div>
           ${w.hint ? `<div class="t-hint">${esc(w.hint)}</div>` : ''}
           ${kind === 'phrase' && w.use ? `<div class="t-use">🕒 <b>使用時機：</b>${esc(w.use)}</div>` : ''}
-          <div>${trackHTML(it.id)}</div></div>`;
+          <div>${App.trackBtn(it)}</div></div>`;
       }).join('')}</div>`;
     pane.querySelectorAll('.t-word').forEach(c => c.onclick = () => { const w = list[+c.dataset.i]; App.speak(w.kana || w.jp); });
     bindTrack(pane, items);
@@ -495,7 +476,7 @@
           fb.innerHTML = `<span class="t-fb-ng">❌ 答錯了</span>`;
         }
         fb.innerHTML += ` <span class="jp lv-u ${lvCls(lv)}">${esc(w.jp)}</span>${w.kana && w.kana !== w.jp ? `（${esc(w.kana)}）` : ''} ${esc(w.romaji || '')} ＝ ${esc(w.zh)}
-          ${w.hint ? `<div class="muted">${esc(w.hint)}</div>` : ''}<div>${trackHTML(it.id)}</div>`;
+          ${w.hint ? `<div class="muted">${esc(w.hint)}</div>` : ''}<div>${App.trackBtn(it)}</div>`;
         bindTrack(fb, { [it.id]: it });
         if (Q.type !== 'listen') say();
         nx.innerHTML = `<button class="btn primary">${i + 1 >= qs.length ? '看結果 🏁' : '下一題 ➜'}</button>`;
@@ -541,7 +522,7 @@
     next(0);
   }
   App.register('drill', {
-    title: '自由練習', icon: '🎯', nav: false,
+    title: '自由練習', icon: '🎯', nav: false, navParent: 'home',
     render(el, params) {
       params = params || {};
       const list = arr(params.scenes).map(findScene).filter(Boolean);
@@ -556,10 +537,11 @@
           <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
           <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>
         <div class="panel" id="tPane"></div>`;
-      const home = params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
+      const home = params.trip ? { label: '本站下一步 ➜', route: 'trip-stop' } : params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
       const saveSit = st => { if (params.sit && window.PracticeAPI) PracticeAPI.setSit(params.sit, st); };
-      el.querySelector('#tBack').textContent = params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
-      el.querySelector('#tBack').onclick = () => App.go(home.route, home.params);
+      el.querySelector('#tBack').textContent = params.trip ? '🗺️ 回地圖' : params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
+      if (params.trip) home.back = 1;
+      el.querySelector('#tBack').onclick = () => params.trip ? App.go('play') : App.go(home.route, home.params);
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
       if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {

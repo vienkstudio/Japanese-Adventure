@@ -28,15 +28,18 @@
 <script>window.SCENES = window.SCENES || [];</script>
 <script src="data/scenes-1.js"></script>
 <script src="data/scenes-2.js"></script>
+<script src="data/scene-ext.js"></script>
 <script src="data/cards.js"></script>
 <script src="data/menus.js"></script>
 <script src="data/travel.js"></script>
+<script src="data/travel-ext.js"></script>
+<script src="data/travel-stops.js"></script>
 <!-- 核心 -->
 <script src="js/core.js"></script>
 <script src="js/game.js"></script>
 <!-- 首頁 -->
 <script>
-App.register('home', { title: '首頁', icon: '🏠', nav: true, render(el) { Travel.renderTitle(el); } });
+App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, render(el) { Travel.renderTitle(el); } });
 </script>
 <!-- 功能模組 -->
 <script src="js/quest.js"></script>
@@ -45,6 +48,9 @@ App.register('home', { title: '首頁', icon: '🏠', nav: true, render(el) { Tr
 <script src="js/review.js"></script>
 <script src="js/travel.js"></script>
 <script>
+// 延遲載入：特訓、手冊第一次打開才下載
+App.lazy([['boot', { title: '特訓', icon: '🎧', nav: true, navOrder: 3 }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'boot' }]], ['data/drills.js', 'js/drill.js']);
+App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: true, navOrder: 2 }]], ['js/phrasebook.js']);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>

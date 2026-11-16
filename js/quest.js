@@ -182,19 +182,6 @@
   }
   window.QuestAPI = { isUnlocked, nextQuest, play };
 
-  function trackBtnHTML(id) {
-    const on = Tracker.has(id);
-    return `<button class="track-btn${on ? ' on' : ''}" data-tid="${App.esc(id)}">${on ? '✓ 已在清單' : '＋ 加入不會清單'}</button>`;
-  }
-  function bindTrack(root, itemOf) {
-    root.querySelectorAll('.track-btn[data-tid]').forEach(b => b.onclick = () => {
-      const id = b.dataset.tid;
-      if (Tracker.has(id)) Tracker.remove(id); else Tracker.add(itemOf(id));
-      const on = Tracker.has(id);
-      b.classList.toggle('on', on);
-      b.textContent = on ? '✓ 已在清單' : '＋ 加入不會清單';
-    });
-  }
 
   /* ---------------- 題目產生 ---------------- */
   function pickDistractors(ans, pool, extra, n) {
@@ -265,7 +252,7 @@
 .q-circ{width:68px;height:68px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9em;background:#ededea;border:none;box-shadow:none;transition:transform .1s;position:relative}
 .q-nd:active .q-circ{transform:scale(.92)}
 .q-nd.cl .q-circ{background:var(--pri);box-shadow:0 4px 12px rgba(255,107,91,.35)}
-.q-nd.open .q-circ{background:#fff;box-shadow:0 0 0 3px var(--pri),var(--shadow)}
+.q-nd.open .q-circ{background:var(--card);box-shadow:0 0 0 3px var(--pri),var(--shadow)}
 .q-nd.lock .q-circ{background:#ededea;filter:grayscale(1);opacity:.7}
 .q-nd.lock .q-circ::after{content:"🔒";position:absolute;right:-4px;bottom:-4px;font-size:.5em}
 .q-nd.boss .q-circ{width:84px;height:84px;font-size:2.5em}
@@ -403,10 +390,9 @@
         <div class="q-fh">${ok ? (willWin ? '🏆 最後一擊！' : pickOne(['⭕ 命中！', '⭕ 漂亮！', '⭕ 正確！'])) : '❌ 被反擊了！記住它：'}</div>
         <div><span class="q-fk jp">${it.h}・${it.k}</span> 念 <b>${App.esc(it.r)}</b>　諧音「${App.esc(it.hint)}」 ${it.emoji}</div>
         ${ok ? '' : assoc}
-        <div class="q-fr">${trackBtnHTML(tid)} <button class="btn sm ghost speak" id="qRe">🔊</button>
+        <div class="q-fr">${App.trackBtn(App.kanaItem(it.raw))} <button class="btn sm ghost speak" id="qRe">🔊</button>
           <button class="btn primary" id="qNext">${last ? '查看結果 ➜' : '下一題 ➜'}</button></div>
       </div>`;
-      bindTrack($('#qFb'), () => App.kanaItem(it.raw));
       $('#qRe').onclick = () => App.speak(it.h);
       $('#qNext').onclick = () => { if (last) finish(); else { G.i++; show(); } };
       setTimeout(() => { const n = $('#qNext'); if (n && n.scrollIntoView) n.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 50);
@@ -454,6 +440,6 @@
   }
   const pickOne = a => a[Math.random() * a.length | 0];
 
-  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: false, render(el, params) { Travel.renderHome(el, params); } });
+  App.register('map', { title: '冒險地圖', icon: '🗺️', nav: false, transient: true, render() { App.go('play'); } });
   App.register('quest', { title: '關卡', icon: '⚔️', nav: false, render: renderQuest });
 })();

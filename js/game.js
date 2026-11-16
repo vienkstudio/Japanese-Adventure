@@ -91,7 +91,7 @@
     { id: 'review', label: '複習不會清單 5 次', icon: '📌', goal: 5, xp: 15 }
   ];
   function daily() {
-    const S = App.state, today = new Date().toISOString().slice(0, 10);
+    const S = App.state, today = App.today();
     if (!S.daily || S.daily.date !== today) S.daily = { date: today, ok: 0, quests: 0, review: 0, claimed: {} };
     return S.daily;
   }
@@ -110,9 +110,9 @@
   function avatar() { return App.state.avatar || '🧳'; }
   function pickAvatar(cb) {
     const lv = App.level;
-    const close = App.modal(`<h2>選擇你的角色</h2><p class="muted">升級可以解鎖更多角色！</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${AVATARS.map(([e, l]) =>
-        `<button class="btn g-av" data-e="${e}" ${lv < l ? 'disabled' : ''} style="font-size:2em;flex-direction:column;min-height:72px;${avatar() === e ? 'box-shadow:0 0 0 3px var(--purple)' : ''}">${e}<small style="font-size:.4em">${lv < l ? '🔒Lv.' + l : 'Lv.' + l}</small></button>`).join('')}</div>`,
+    const close = App.modal(`<h2>選擇你的角色</h2><p class="muted">升級解鎖更多角色；每站第一次通過會掉落 🎁 限定頭像</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${AVATARS.concat((App.state.avatarsOwned || []).map(e => [e, 0])).map(([e, l]) =>
+        `<button class="btn g-av" data-e="${e}" ${lv < l ? 'disabled' : ''} style="font-size:2em;flex-direction:column;min-height:72px;${avatar() === e ? 'box-shadow:0 0 0 3px var(--purple)' : ''}">${e}<small style="font-size:.4em">${lv < l ? '🔒Lv.' + l : l ? 'Lv.' + l : '🎁'}</small></button>`).join('')}</div>`,
       [{ label: '關閉' }]);
     document.querySelectorAll('.g-av').forEach(b => b.onclick = () => { App.state.avatar = b.dataset.e; App.save(); sfx('coin'); close(); cb && cb(); });
   }

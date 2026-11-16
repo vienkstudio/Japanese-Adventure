@@ -16,13 +16,13 @@
     st.textContent = `
 /* 首頁 */
 .h-me{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;color:#fff;background:var(--pri)}
-.h-av{font-size:2.3em;width:60px;height:60px;flex:none;border-radius:50%;background:#fff;border:none;cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
+.h-av{font-size:2.3em;width:60px;height:60px;flex:none;border-radius:50%;background:var(--card);border:none;cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
 .h-inf{flex:1;min-width:0}
 .h-inf b{font-size:1.1em;color:#fff}
 .h-inf .bar{margin:6px 0;background:rgba(255,255,255,.35)}
-.h-inf .bar>div{background:#fff}
+.h-inf .bar>div{background:var(--card)}
 .h-inf small{font-size:.78em;opacity:.92}
-.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:none;border-radius:20px;background:#fff;color:var(--text);cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .1s}
+.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:none;border-radius:20px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .1s}
 .h-next:active{transform:scale(.97)}
 .h-next .i{font-size:2em;width:52px;height:52px;flex:none;border-radius:50%;background:var(--pri-t);display:flex;align-items:center;justify-content:center}
 .h-next .t{flex:1;min-width:0;line-height:1.3}
@@ -31,12 +31,12 @@
 .h-next .go{width:40px;height:40px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1em;flex:none}
 @keyframes hpulse{0%,100%{transform:none}50%{transform:scale(1.015)}}
 .h-daily{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0}
-.h-daily>div{position:relative;overflow:hidden;background:#fff;border:none;border-radius:14px;padding:6px 8px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow)}
+.h-daily>div{position:relative;overflow:hidden;background:var(--card);border:none;border-radius:14px;padding:6px 8px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow)}
 .h-daily>div span{font-size:1.3em}
 .h-daily i{position:absolute;left:0;bottom:0;height:3px;background:var(--acc)}
 .h-daily .ok{background:var(--acc-t)}
 .h-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.h-lv button{border:none;border-radius:16px;background:#fff;padding:8px 2px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);line-height:1.25;transition:transform .1s}
+.h-lv button{border:none;border-radius:16px;background:var(--card);padding:8px 2px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);line-height:1.25;transition:transform .1s}
 .h-lv button:active{transform:scale(.95)}
 .h-lv button b{display:block;font-size:1em}
 .h-lv button small{display:block;font-size:.68em;color:var(--muted)}
@@ -44,7 +44,7 @@
 .h-lv button.on{background:var(--pri);color:#fff}
 .h-lv button.on small,.h-lv button.on i{color:rgba(255,255,255,.88)}
 .h-worlds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 8px 12px;border:none;border-radius:20px;background:#fff;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
+.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 8px 12px;border:none;border-radius:20px;background:var(--card);cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
 .h-w:active{transform:scale(.96)}
 .h-w .ic{font-size:2.2em;line-height:1.1;width:56px;height:56px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
 .h-w b{font-size:.98em}
@@ -53,7 +53,7 @@
 .h-w .pg i{display:block;height:100%;background:var(--acc);border-radius:3px}
 .h-w .md{position:absolute;top:6px;right:8px;font-size:1.2em}
 /* 場景關卡地圖 */
-.p-stage{position:relative;overflow:hidden;border-radius:22px;padding:16px;color:var(--text);margin-bottom:8px;background:#fff;box-shadow:var(--shadow)}
+.p-stage{position:relative;overflow:hidden;border-radius:22px;padding:16px;color:var(--text);margin-bottom:8px;background:var(--card);box-shadow:var(--shadow)}
 .p-sbig{position:absolute;right:14px;top:12px;font-size:3em;width:72px;height:72px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
 .p-stt small{color:var(--muted)}
 .p-stt h2{margin:0;color:var(--text);font-size:1.5em}
@@ -69,13 +69,13 @@
 .g-hud .btn{margin:0;min-width:40px;padding:5px 10px}
 .g-ttl{flex:1;min-width:0;line-height:1.25}
 .g-ttl b{display:block;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.g-ttl small{color:var(--muted);font-size:.75em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.g-ttl small{color:var(--muted);font-size:.82em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .g-st{display:flex;flex-direction:column;align-items:flex-end;font-weight:800;font-size:.88em;line-height:1.3}
 .g-hit{animation:qshake .4s}
-.g-queue{display:flex;gap:4px;justify-content:space-between;margin:10px 0 6px;padding:8px 6px;background:#fff;border-radius:18px;box-shadow:var(--shadow)}
+.g-queue{display:flex;gap:4px;justify-content:space-between;margin:6px 0 4px;padding:4px 6px;max-height:44px;overflow:hidden;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
 .g-f{flex:1;text-align:center;color:var(--muted);opacity:.45;line-height:1.1}
 .g-f span{font-size:1.45em;display:block}
-.g-f small{font-size:.66em}
+.g-f small{display:none}
 .g-f.cur{opacity:1;color:var(--text)}
 .g-f.cur span{animation:float 1.2s ease-in-out infinite}
 .g-f.done{opacity:.9}
@@ -97,12 +97,12 @@
 .m-board{border:none;border-radius:18px;background:var(--paper);padding:10px;margin-top:8px}
 .m-board h3{margin:2px 0 8px;color:var(--text);text-align:center;font-size:.95em}
 .m-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.m-it{position:relative;background:#fff;border:none;border-radius:14px;padding:10px 6px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
+.m-it{position:relative;background:var(--card);border:none;border-radius:14px;padding:10px 6px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
 .m-it:active{transform:scale(.96)}
 .m-it .e{font-size:1.4em;line-height:1}
 .m-it .j{font-weight:800;font-size:1.02em;line-height:1.3}
-.m-it .k{font-size:.72em;color:var(--muted)}
-.m-it .z{font-size:.75em;color:var(--acc-d)}
+.m-it .k{font-size:.82em;color:var(--muted)}
+.m-it .z{font-size:.82em;color:var(--acc-d)}
 .m-it.sel{box-shadow:0 0 0 2px var(--pri)}
 .m-noz .z{display:none}
 /* QR 點餐（像點餐 App：白底列表，左品名、右價格與 − 數量 ＋） */
@@ -111,52 +111,52 @@
 .g-first{position:relative}
 .g-arrow{position:absolute;right:10px;top:-10px;background:var(--pri);color:#fff;font-size:.72em;font-weight:800;border-radius:999px;padding:1px 10px;animation:float 1.2s ease-in-out infinite}
 .m-situ{margin:8px 0 0;padding:8px 12px;border-radius:14px;background:var(--paper);font-size:.9em}
-.m-menu{margin-top:10px;border:none;border-radius:18px;background:#fff;box-shadow:var(--shadow);overflow:hidden}
-.m-head{background:#fff;color:var(--text);text-align:left;font-weight:800;padding:12px 14px 6px;font-size:1em}
+.m-menu{margin-top:10px;border:none;border-radius:18px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.m-head{background:var(--card);color:var(--text);text-align:left;font-weight:800;padding:12px 14px 6px;font-size:1em}
 .m-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 8px;border-bottom:1px solid var(--line);scrollbar-width:none}
 .m-tabs::-webkit-scrollbar{display:none}
-.m-tabs button{flex:none;border:none;border-radius:999px;background:var(--paper);padding:6px 14px;font-weight:700;color:var(--muted);cursor:pointer;min-height:34px;font-family:inherit}
+.m-tabs button{flex:none;border:none;border-radius:999px;background:var(--paper);padding:6px 14px;font-weight:700;color:var(--muted);cursor:pointer;min-height:44px;font-family:inherit}
 .m-tabs button.on{background:var(--pri);color:#fff}
-.m-rows{max-height:52vh;overflow:auto}
+.m-rows{}
 .m-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #f2f2f0}
 .m-row.sel{background:var(--pri-t)}
 .m-nm{flex:1;min-width:0;line-height:1.25}
 .m-nm b{display:block;font-size:1em;font-weight:700}
-.m-nm small{display:block;font-size:.72em;color:var(--muted)}
+.m-nm small{display:block;font-size:.82em;color:var(--muted)}
 .m-nm small.z{color:var(--acc-d)}
 .m-e{float:left;font-size:1.3em;margin-right:6px}
 .m-pr{font-weight:700;color:var(--text);white-space:nowrap;font-size:.95em;text-align:right;line-height:1.2}
 .m-pr small{display:block;font-size:.66em;font-weight:400;color:var(--muted)}
 .m-q{display:flex;align-items:center;gap:4px;flex:none}
-.m-q button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:#fff;font-size:1.15em;font-weight:700;cursor:pointer;color:var(--text);line-height:1;padding:0;transition:transform .1s}
+.m-q button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:var(--card);font-size:1.15em;font-weight:700;cursor:pointer;color:var(--text);line-height:1;padding:0;transition:transform .1s}
 .m-q button[data-d="1"]{background:var(--pri);border-color:var(--pri);color:#fff}
 .m-q button:active{transform:scale(.88)}
 .m-q span{min-width:22px;text-align:center;font-weight:800;font-size:1.05em}
-.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + 8px);z-index:5;margin-top:10px;padding:10px 12px;border:none;border-radius:20px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + var(--safeB, 0px) + 8px);z-index:5;margin-top:10px;padding:10px 12px;border:none;border-radius:20px;background:var(--card);box-shadow:0 6px 24px rgba(0,0,0,.12)}
 .m-cl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .m-cb{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .m-cb b{color:var(--text);font-size:1.1em}
 .m-cb .btn{margin:0}
 /* 券売機 */
-.k-mac{margin-top:10px;border:none;border-radius:20px;background:#fff;padding:12px;box-shadow:var(--shadow)}
+.k-mac{margin-top:10px;border:none;border-radius:20px;background:var(--card);padding:12px;box-shadow:var(--shadow)}
 .k-top{text-align:center;font-weight:800;color:var(--muted);font-size:.85em}
 .k-disp{background:#222;color:#7cf5d8;font-family:ui-monospace,monospace;text-align:right;padding:8px 12px;border-radius:12px;margin:8px 0;font-size:1.1em}
 .k-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.k-b{border:none;border-radius:14px;background:#f2f2ef;padding:8px 2px;font-family:inherit;color:#aaa;cursor:pointer;line-height:1.2;min-height:70px;transition:transform .1s}
+.k-b{border:none;border-radius:14px;background:var(--chip);padding:8px 2px;font-family:inherit;color:#aaa;cursor:pointer;line-height:1.2;min-height:70px;transition:transform .1s}
 .k-b:active{transform:scale(.95)}
 .k-b small{display:block;font-size:.64em}
 .k-b b{display:block;font-size:.88em}
 .k-b.lit{background:var(--pri-t);color:var(--text);box-shadow:0 0 0 2px var(--pri)}
 .k-money{display:flex;gap:6px;margin:10px 0}
-.k-money button{flex:1;border:1px solid var(--line2);border-radius:999px;background:#fff;padding:9px 0;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s}
+.k-money button{flex:1;border:1px solid var(--line2);border-radius:999px;background:var(--card);padding:9px 0;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s}
 .k-money button:active{transform:scale(.95)}
 .k-tix{min-height:28px;margin-bottom:6px}
 /* 家系客製 */
-.o-board{margin-top:10px;border:none;border-radius:20px;background:#fff;padding:12px;box-shadow:var(--shadow)}
+.o-board{margin-top:10px;border:none;border-radius:20px;background:var(--card);padding:12px;box-shadow:var(--shadow)}
 .o-row{margin-bottom:10px}
 .o-name{font-weight:800;margin-bottom:6px;font-size:.92em}
 .o-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.o-opts button{border:none;border-radius:999px;background:#f2f2ef;padding:9px 2px;font-size:1em;font-weight:700;cursor:pointer;line-height:1.2;color:var(--text);transition:transform .1s}
+.o-opts button{border:none;border-radius:999px;background:var(--chip);padding:9px 2px;font-size:1em;font-weight:700;cursor:pointer;line-height:1.2;color:var(--text);transition:transform .1s}
 .o-opts button:active{transform:scale(.95)}
 .o-opts button small{display:block;font-size:.62em;font-weight:400;color:var(--muted)}
 .o-opts button.on{background:var(--pri);color:#fff}
@@ -167,8 +167,8 @@
 .c-card{perspective:1000px;max-width:440px;margin:8px auto;height:300px;cursor:pointer}
 .c-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
 .c-card.flip .c-in{transform:rotateY(180deg)}
-.c-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:none;border-radius:24px;background:#fff;box-shadow:var(--shadow2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
-.c-back{transform:rotateY(180deg);background:#fff}
+.c-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:none;border-radius:24px;background:var(--card);box-shadow:var(--shadow2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+.c-back{transform:rotateY(180deg);background:var(--card)}
 .c-face .c-jp{font-size:2.3em;font-weight:800;line-height:1.35;word-break:break-all}
 .c-face .c-top{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;font-size:.8em;color:var(--muted)}
 .c-ex{margin-top:8px;font-size:.9em;background:var(--paper);border:none;border-radius:12px;padding:6px 10px}
@@ -180,18 +180,18 @@
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
 .h-save{margin:8px 2px 0;font-size:.78em;color:var(--muted);text-align:center}
 .h-save a{color:var(--pri);font-weight:700}
-.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:10px;border:none;border-radius:999px;background:#fff;color:var(--text);cursor:pointer;box-shadow:var(--shadow);font-family:inherit;font-weight:700;transition:transform .1s}
+.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:10px;border:none;border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--shadow);font-family:inherit;font-weight:700;transition:transform .1s}
 .h-gsb:active{transform:scale(.97)}
 .h-gsb b{color:var(--pri)}
 .gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;padding:4px}
 .gs-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
-.gs-seal{width:72px;height:72px;border-radius:50%;background:#f2f2ef;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.6;filter:grayscale(1)}
+.gs-seal{width:72px;height:72px;border-radius:50%;background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.6;filter:grayscale(1)}
 .gs-cell.ok .gs-seal{opacity:1;filter:none;background:var(--pri);color:#fff;transform:rotate(-6deg);box-shadow:0 4px 12px rgba(255,107,91,.35)}
 .gs-ic{font-size:1.6em;line-height:1}
 .gs-nm{font-weight:800;font-size:.6em;line-height:1.1;text-align:center;max-width:62px}
 .gs-cell small{font-size:.66em;color:var(--muted)}
 .gs-cell.ok small{color:var(--pri);font-weight:800}
-#playerChip .sv{font-size:1em;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center}
+#playerChip .sv{font-size:1em;cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center}
 `;
     document.head.appendChild(st);
   })();
@@ -222,82 +222,7 @@
 
   // 備份碼：複製一段文字保存，之後貼回即可還原（任何環境都能用）
   // 備份：分享到手機（存到 iCloud 雲碟／Google 雲端硬碟／LINE…）、存成檔案（自選位置）、複製備份碼；還原：選檔案或貼備份碼
-  function parseBackup(txt) {
-    txt = String(txt || '').trim();
-    let o = null;
-    try { o = JSON.parse(txt); } catch (e) { try { o = JSON.parse(decodeURIComponent(escape(atob(txt)))); } catch (e2) { } }
-    if (o && o.state) o = o.state;
-    if (!o || typeof o.xp !== 'number') throw new Error('bad');
-    return o;
-  }
-  function backup() {
-    const st = App.state, code = btoa(unescape(encodeURIComponent(JSON.stringify(st))));
-    const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
-    const fname = '日語冒險備份-' + stamp + '.json';
-    const json = JSON.stringify({ app: '日語冒險', v: 1, t: Date.now(), state: st });
-    App.modal(`<h2>💾 備份／還原進度</h2>
-      <p class="muted" style="font-size:.85em;margin:.3em 0">目前：Lv.${App.level}・${st.xp} XP・不會清單 ${Tracker.count()} 個</p>
-      <div class="sec-t" style="margin:10px 0 6px">備份</div>
-      <div class="bk-g">
-        <button class="btn primary" id="bkShare">📤 分享備份<small>選 iCloud 雲碟、Google 雲端、LINE…</small></button>
-        <button class="btn" id="bkSave">📁 存成檔案<small>自己選要放的位置</small></button>
-        <button class="btn" id="bkCopy">📋 複製備份碼<small>貼到備忘錄／Keep</small></button>
-      </div>
-      <textarea id="bkOut" readonly style="width:100%;height:46px;font-size:.65em;margin-top:6px">${code}</textarea>
-      <div class="sec-t" style="margin:10px 0 6px">還原</div>
-      <div class="bk-g">
-        <label class="btn" style="margin:0">📂 從檔案還原<small>選先前存的 .json</small><input type="file" id="bkFile" accept=".json,.txt,application/json,text/plain" style="display:none"></label>
-      </div>
-      <textarea id="bkIn" placeholder="或在這裡貼上備份碼，再按「還原」" style="width:100%;height:46px;font-size:.65em;margin-top:6px"></textarea>
-      <style>.bk-g{display:grid;gap:6px}.bk-g .btn{margin:0;flex-direction:column;line-height:1.25;min-height:50px}.bk-g .btn small{font-weight:normal;font-size:.75em;opacity:.85}</style>`,
-      [{ label: '關閉' }, { label: '還原', cls: 'primary' }]);
-    const bg = [...document.querySelectorAll('.modal-bg')].pop(), $ = q => bg.querySelector(q);
-    const copy = () => {
-      const out = $('#bkOut'); out.focus(); out.select(); let ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) { }
-      if (!ok && navigator.clipboard) navigator.clipboard.writeText(code).then(() => App.toast('📋 已複製備份碼', 'ok')).catch(() => App.toast('請長按上方文字框，手動全選複製'));
-      else App.toast(ok ? '📋 已複製備份碼，貼到備忘錄或 Keep 保存' : '請長按上方文字框，手動全選複製');
-    };
-    const download = () => {
-      try {
-        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-        const aEl = document.createElement('a'); aEl.href = url; aEl.download = fname; document.body.appendChild(aEl); aEl.click(); aEl.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-        App.toast('📁 已送出下載（若沒反應，請改用「複製備份碼」）');
-      } catch (e) { copy(); }
-    };
-    $('#bkShare').onclick = async () => {
-      try {
-        const file = typeof File === 'function' ? new File([json], fname, { type: 'application/json' }) : null;
-        if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: '日語冒險備份' }); App.toast('✅ 已分享備份', 'ok'); return; }
-        if (navigator.share) { await navigator.share({ title: '日語冒險備份碼', text: code }); App.toast('✅ 已分享備份碼', 'ok'); return; }
-        App.toast('這裡不支援分享，已改用複製'); copy();
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;     // 使用者自己取消
-        App.toast('分享被瀏覽器擋住，已改用複製'); copy();
-      }
-    };
-    $('#bkSave').onclick = async () => {
-      if (window.showSaveFilePicker) {
-        try {
-          const h = await showSaveFilePicker({ suggestedName: fname, types: [{ description: '日語冒險備份', accept: { 'application/json': ['.json'] } }] });
-          const w = await h.createWritable(); await w.write(json); await w.close();
-          App.toast('✅ 已存到你選的位置', 'ok'); return;
-        } catch (e) { if (e && e.name === 'AbortError') return; }
-      }
-      download();
-    };
-    $('#bkCopy').onclick = copy;
-    const restore = txt => {
-      try { const o = parseBackup(txt); bg.remove(); App.loadState(o); App.toast(`✅ 已還原：Lv.${App.level}・${o.xp} XP`, 'ok'); }
-      catch (e) { App.toast('❌ 備份內容不正確'); }
-    };
-    $('#bkFile').onchange = e => {
-      const f = e.target.files && e.target.files[0]; if (!f) return;
-      const r = new FileReader(); r.onload = () => restore(r.result); r.onerror = () => App.toast('❌ 讀不到這個檔案'); r.readAsText(f);
-    };
-    [...bg.querySelectorAll('.modal-btns .btn')].pop().onclick = () => restore($('#bkIn').value);
-  }
+  const backup = () => App.backup();
 
   /* ---------------- 御朱印帳：地點全部節點三星即可得 ---------------- */
   const allWorlds = () => LEVELS.flatMap(L => L.worlds).filter(w => worldInfo(w));
@@ -502,7 +427,7 @@
   }
 
   App.register('cards', { title: '字卡', icon: '🎴', nav: false, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
-  App.register('practice', { title: '練習', icon: '🎯', nav: false, render() { setTimeout(() => App.go('practice-map'), 0); } });
+  App.register('practice', { title: '練習', icon: '🎯', nav: false, transient: true, render() { setTimeout(() => App.go('practice-map'), 0); } });
 
   /* =========================================================
      路由：menu — 互動情境遊戲（params {id, m}）
@@ -547,8 +472,40 @@
   // 說出口的品名：去掉括號註記（例：生ビール（中）→ 生ビール），或用資料裡的 sp／spk
   const spJ = it => it.sp || String(it.jp).replace(/（[^）]*）/g, '');
   const spK = it => it.spk || String(it.kana).replace(/（[^）]*）/g, '').replace(/\s.*$/, '');
+  // 依程度換句型：N3 請求（〜お願いできますか）、N2 敬語（〜いただけますか／恐れ入りますが）、N1 委婉（差し支えなければ〜でしょうか）
+  // rude：干擾選項用的失禮說法（命令口氣／朋友口語）
+  const REG_LV = { N3: 1, N2: 2, N1: 3 };
+  function reg(r, type, lv, rude) {
+    let jp = r.jp, kana = r.kana;
+    const end = (a, b, ak, bk) => { if (!jp.endsWith(a)) return false; jp = jp.slice(0, -a.length) + b; if (kana.endsWith(ak)) kana = kana.slice(0, -ak.length) + bk; return true; };
+    const pre = (j, k) => {
+      if (jp.startsWith('すみません、')) { jp = jp.slice(6); kana = kana.replace(/^すみません、/, ''); }
+      jp = j + jp; kana = k + kana;
+    };
+    if (rude) {
+      end('ください', 'くれ', 'ください', 'くれ') || end('お願いします', '頼む', 'おねがいします', 'たのむ') || end('ですか', '？', 'ですか', '？');
+      return { jp, kana };
+    }
+    const L = REG_LV[lv] || 0;
+    if (!L) return r;
+    if (type === 'ask') {
+      if (L >= 2) { end('ですか', 'でしょうか', 'ですか', 'でしょうか'); pre(L === 3 ? 'お忙しいところ恐れ入りますが、' : '恐れ入りますが、', L === 3 ? 'おいそがしいところおそれいりますが、' : 'おそれいりますが、'); }
+      else { end('ですか', 'か教えてもらえますか', 'ですか', 'かおしえてもらえますか'); if (!jp.startsWith('すみません、')) pre('すみません、', 'すみません、'); }
+      return { jp, kana };
+    }
+    const E = [null, ['お願いできますか', 'おねがいできますか'], ['いただけますか', 'いただけますか'], ['いただけますでしょうか', 'いただけますでしょうか']][L];
+    if (!end('ください', E[0], 'ください', E[1])) end('お願いします', L === 1 ? 'お願いできますか' : 'お願いできますでしょうか', 'おねがいします', L === 1 ? 'おねがいできますか' : 'おねがいできますでしょうか');
+    if (L === 3) { if (type === 'pref' || type === 'request') pre('差し支えなければ、', 'さしつかえなければ、'); else pre('恐れ入りますが、', 'おそれいりますが、'); }
+    else if (L === 2 && type === 'request') pre('恐れ入りますが、', 'おそれいりますが、');
+    return { jp, kana };
+  }
+  const RUDE_FB = { ask: '「〜どこ？」是朋友間的口語，對店員、陌生人不夠禮貌', def: '「くれ／頼む」是命令口氣，對店員很失禮' };
   function build(m, t, o) {
     o = o || {};
+    const r0 = build0(m, t, o);
+    return reg(r0, m.type, o.lv, o.rude);
+  }
+  function build0(m, t, o) {
     const x = Object.assign({}, t[0], o.item ? { it: o.item } : {}, o.qty ? { n: o.qty } : {});
     const tt = [x].concat(t.slice(1));
     const q = (y, f) => CNT[cOf(m, y.it)][f][y.n];
@@ -560,10 +517,10 @@
     const sm = m.type === 'request' ? 'すみません、' : '';   // 主動拜託店員時先說「すみません」   // np：不加「もう」（例：充電器是借，不是「再一個」）
     return { jp: sm + tt.map(y => `${spJ(y.it)}を${pr(y)}${q(y, 'jp')}`).join('と、') + end, kana: sm + tt.map(y => `${spK(y.it)}を${pr(y)}${q(y, 'k')}`).join('と、') + endK };
   }
-  function sayChoices(m, t) {
-    const out = [Object.assign(build(m, t), { correct: true })];
+  function sayChoices(m, t, lv) {
+    const out = [Object.assign(build(m, t, { lv }), { correct: true })];
     const other = App.shuffle(m.items.filter(i => !t.some(x => x.it === i)))[0];
-    const add = (o, fb) => { const s = build(m, t, o); if (!out.some(z => z.jp === s.jp)) out.push(Object.assign(s, { fb })); };
+    const add = (o, fb) => { const s = build(m, t, Object.assign({ lv }, o)); if (!out.some(z => z.jp === s.jp)) out.push(Object.assign(s, { fb })); };
     if (m.type === 'ask') {
       // 有自訂句尾（問月台、問時間）時，「〜はどこですか」也說得通，不能當錯誤選項
       const pool = m.tail ? App.sample(ASK_TAILS.filter(a => a.jp !== 'はどこですか'), 2) : ASK_TAILS.filter(a => a.jp !== ASK_TAILS[0].jp);
@@ -578,6 +535,10 @@
       if (m.type === 'ticket') add({ kara: true }, '「から」是「從…出發」，到某地要用「まで」');
       else add({ give: true }, '「あげます」是「我給你」，要東西要說「ください／お願いします」');
       if (other) add({ item: other }, `品項錯了：${other.jp} 是「${other.zh}」`);
+    }
+    if (REG_LV[lv] >= 2) {   // N2／N1：加一個失禮說法當干擾，練「場合」
+      add({ rude: true }, m.type === 'ask' ? RUDE_FB.ask : RUDE_FB.def);
+      const r = out.pop(); out.splice(1, 0, r);
     }
     return App.shuffle(out.slice(0, 4));
   }
@@ -604,7 +565,7 @@
     // 依程度調整：耐心秒數、中文看板、讀音提示、小意外次數
     const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: true, inc: 1 };
     if (LV) GOPT.zh = DIFF.zh;
-    const back = TRIP ? { label: '下一關 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
+    const back = TRIP ? { label: '本站下一步 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
     const key = id + ':m' + mi + (LV ? '@' + LV : ''), G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
     const N = m.type === 'qa' && m.seq ? Math.min(8, m.qs.length) : 5, PAT = DIFF.pat;   // 旅伴人數；依序對答的情境＝每個流程一位
     // 真實小意外：每局必出一次（店員講太快要請他重說／品項賣完）
@@ -840,8 +801,8 @@
       };
     }
     function say(task) {
-      const r0 = build(m, task);
-      sayStep(sayChoices(m, task), () => App.wordItem({ jp: r0.jp, kana: r0.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase'), () => { const so = isInc('soldout'); if (so) { so.done = true; soldOut(task); } else answer(task); });
+      const r0 = build(m, task, { lv: LV });
+      sayStep(sayChoices(m, task, LV), () => App.wordItem({ jp: r0.jp, kana: r0.kana, zh: sc.name + '：' + task.map(t => t.it.zh + (hasQty(m) ? '×' + t.n : '')).join('、'), hint: '情境：' + m.name }, sc.name, 'phrase'), () => { const so = isInc('soldout'); if (so) { so.done = true; soldOut(task); } else answer(task); });
     }
     // 小意外：品項賣完
     function soldOut(task) {
@@ -1036,7 +997,8 @@
       const stars = alive ? Math.max(1, Math.min(S.hearts, acc >= 0.9 ? 3 : acc >= 0.7 ? 2 : 1)) : 0;
       const prevSt = sitStars(key);
       setSit(key, stars);
-      const xp = stars ? [0, 10, 15, 20][stars] + (stars === 3 && prevSt < 3 ? 10 : 0) : 0;   // 依星數固定 XP；首次三星 +10
+      const XPS = [0, 10, 15, 20];   // XP 規則（全站統一）：刷新最佳星數才補差額＋首次三星 +10；重玩沒進步給 3 XP
+      const xp = !stars ? 0 : stars > prevSt ? XPS[stars] - XPS[prevSt] + (stars === 3 ? 10 : 0) : 3;
       const r = xp ? App.addXP(xp, stars === 3 && prevSt < 3 ? '情境挑戰・首次三星' : '情境挑戰') : { gained: 0 };
       if (stars) { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[id] = true; App.save(); }
       const nx = TRIP ? back : mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: { id, m: mi + 1 } } : back;
@@ -1052,6 +1014,6 @@
     hud(); guide(false); round();
   }
   const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
-  App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, render: renderMenu });
+  App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, navParent: 'home', render: renderMenu });
   window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS, backup };
 })();

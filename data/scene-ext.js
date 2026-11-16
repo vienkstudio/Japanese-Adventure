@@ -1,0 +1,573 @@
+/* 場景加深：補足每場景單字 ≥30、會話句 ≥20。載入於 scenes-1/2 之後。 */
+window.SCENE_EXT = {
+  // ==================== 便利商店 ====================
+  konbini: {
+    vocab: [
+      { jp:'コンビニ', kana:'こんびに', romaji:'konbini', zh:'便利商店', hint:'諧音：摳恩逼尼', emoji:'🏪' },
+      { jp:'肉まん', kana:'にくまん', romaji:'nikuman', zh:'肉包', hint:'諧音：尼哭慢', emoji:'🥟' },
+      { jp:'おでん', kana:'おでん', romaji:'oden', zh:'關東煮', hint:'諧音：歐點', emoji:'🍢' },
+      { jp:'サンドイッチ', kana:'さんどいっち', romaji:'sandoitchi', zh:'三明治', hint:'諧音：桑兜伊吃', emoji:'🥪' },
+      { jp:'パン', kana:'ぱん', romaji:'pan', zh:'麵包', hint:'諧音：胖', emoji:'🍞' },
+      { jp:'アイス', kana:'あいす', romaji:'aisu', zh:'冰淇淋、冰品', hint:'諧音：阿伊斯', emoji:'🍦' },
+      { jp:'カップ麺', kana:'かっぷめん', romaji:'kappumen', zh:'杯麵', hint:'諧音：卡噗面', emoji:'🍜' },
+      { jp:'揚げ物', kana:'あげもの', romaji:'agemono', zh:'炸物（櫃台熱食）', hint:'諧音：阿給摸諾', emoji:'🍗' },
+      { jp:'雑誌', kana:'ざっし', romaji:'zasshi', zh:'雜誌', hint:'諧音：雜西', emoji:'📰' },
+      { jp:'電池', kana:'でんち', romaji:'denchi', zh:'電池', hint:'諧音：點吃', emoji:'🔋' },
+      { jp:'充電器', kana:'じゅうでんき', romaji:'jūdenki', zh:'充電器', hint:'諧音：啾～點ki', emoji:'🔌' },
+      { jp:'傘', kana:'かさ', romaji:'kasa', zh:'雨傘', hint:'諧音：卡薩', emoji:'☂️' },
+      { jp:'ゴミ箱', kana:'ごみばこ', romaji:'gomibako', zh:'垃圾桶', hint:'諧音：勾咪巴摳', emoji:'🗑️' },
+      { jp:'電子マネー', kana:'でんしまねー', romaji:'denshi manē', zh:'電子錢包', hint:'諧音：點西 媽內～', emoji:'📱' },
+      { jp:'交通系ICカード', kana:'こうつうけいあいしーかーど', romaji:'kōtsūkei aishī kādo', zh:'交通IC卡（Suica 等）', hint:'諧音：摳～此～ke～ 阿伊西～ 卡～兜', emoji:'💳' },
+      { jp:'コピー機', kana:'こぴーき', romaji:'kopīki', zh:'影印機', hint:'諧音：摳匹～ki', emoji:'🖨️' },
+      { jp:'ATM', kana:'えーてぃーえむ', romaji:'ē tī emu', zh:'提款機', hint:'諧音：欸～踢～欸姆', emoji:'🏧' },
+      { jp:'小銭', kana:'こぜに', romaji:'kozeni', zh:'零錢', hint:'諧音：摳賊尼', emoji:'🪙' },
+      { jp:'賞味期限', kana:'しょうみきげん', romaji:'shōmi kigen', zh:'賞味期限（保存期限）', hint:'諧音：休～咪 ki給恩', emoji:'📅' },
+      { jp:'新商品', kana:'しんしょうひん', romaji:'shin shōhin', zh:'新商品', hint:'諧音：心 休～hin', emoji:'✨' }
+    ],
+    phrases: [
+      { jp:'袋をください', kana:'ふくろをください', romaji:'fukuro o kudasai', zh:'請給我袋子', hint:'諧音：夫哭囉歐 哭搭賽', use:'結帳時需要袋子' },
+      { jp:'小さい袋でいいです', kana:'ちいさいふくろでいいです', romaji:'chiisai fukuro de ii desu', zh:'小袋子就好', hint:'諧音：七～賽 夫哭囉爹 伊～爹斯', use:'東西不多，請店員給小袋子' },
+      { jp:'別々の袋に入れてもらえますか', kana:'べつべつのふくろにいれてもらえますか', romaji:'betsubetsu no fukuro ni irete moraemasu ka', zh:'可以分開裝嗎？', hint:'諧音：被此被此諾 夫哭囉尼 伊勒貼 摸拉欸媽斯卡', use:'熱便當和冷飲想分開裝時' },
+      { jp:'温めなくていいです', kana:'あたためなくていいです', romaji:'atatamenakute ii desu', zh:'不用加熱', hint:'諧音：阿他他妹那哭貼 伊～爹斯', use:'買便當但不想微波時' },
+      { jp:'肉まんを一つください', kana:'にくまんをひとつください', romaji:'nikuman o hitotsu kudasai', zh:'請給我一個肉包', hint:'諧音：尼哭慢歐 hi偷此 哭搭賽', use:'指著櫃台旁的蒸籠時' },
+      { jp:'交通系ICで払います', kana:'こうつうけいあいしーではらいます', romaji:'kōtsūkei aishī de haraimasu', zh:'我用交通卡付', hint:'諧音：摳～此～ke～ 阿伊西～爹 哈拉伊媽斯', use:'用 Suica、ICOCA 結帳時' },
+      { jp:'レシートは大丈夫です', kana:'れしーとはだいじょうぶです', romaji:'reshīto wa daijōbu desu', zh:'收據不用了', hint:'諧音：勒西～偷哇 搭伊久～布爹斯', use:'不需要收據時' },
+      { jp:'ATMはありますか', kana:'えーてぃーえむはありますか', romaji:'ē tī emu wa arimasu ka', zh:'有提款機嗎？', hint:'諧音：欸～踢～欸姆哇 阿哩媽斯卡', use:'想用海外卡領日圓時' },
+      { jp:'レジ袋はご利用ですか', kana:'れじぶくろはごりようですか', romaji:'rejibukuro wa goriyō desu ka', zh:'需要塑膠袋嗎？', hint:'諧音：勒基布哭囉哇 勾哩優～爹斯卡', use:'聽到店員問（結帳時）' },
+      { jp:'温めますか', kana:'あたためますか', romaji:'atatamemasu ka', zh:'要加熱嗎？', hint:'諧音：阿他他妹媽斯卡', use:'聽到店員問（買便當時）' },
+      { jp:'お箸はおつけしますか', kana:'おはしはおつけしますか', romaji:'ohashi wa otsuke shimasu ka', zh:'需要附筷子嗎？', hint:'諧音：歐哈西哇 歐此ke 西媽斯卡', use:'聽到店員問' },
+      { jp:'ポイントカードはお持ちですか', kana:'ぽいんとかーどはおもちですか', romaji:'pointo kādo wa omochi desu ka', zh:'有集點卡嗎？', hint:'諧音：剖因偷卡～兜哇 歐摸吃爹斯卡', use:'聽到店員問（沒有就說「ないです」）' },
+      { jp:'お支払い方法はどうされますか', kana:'おしはらいほうほうはどうされますか', romaji:'oshiharai hōhō wa dō saremasu ka', zh:'要用什麼方式付款？', hint:'諧音：歐西哈拉伊 齁～齁～哇 兜～薩勒媽斯卡', use:'聽到店員問' },
+      { jp:'年齢確認のボタンを押してください', kana:'ねんれいかくにんのぼたんをおしてください', romaji:'nenrei kakunin no botan o oshite kudasai', zh:'請按年齡確認按鈕', hint:'諧音：內恩累 卡哭您諾 玻探歐 歐西貼 哭搭賽', use:'聽到店員說（買酒時）' },
+      { jp:'千円お預かりします', kana:'せんえんおあずかりします', romaji:'sen en oazukari shimasu', zh:'收您一千圓', hint:'諧音：森恩 歐阿茲卡哩 西媽斯', use:'聽到店員說（收錢時）' }
+    ]
+  },
+
+  // ==================== 拉麵店 ====================
+  ramen: {
+    vocab: [
+      { jp:'味玉', kana:'あじたま', romaji:'ajitama', zh:'溏心蛋', hint:'諧音：阿基他媽', emoji:'🥚' },
+      { jp:'海苔', kana:'のり', romaji:'nori', zh:'海苔', hint:'諧音：諾哩', emoji:'🟩' },
+      { jp:'メンマ', kana:'めんま', romaji:'menma', zh:'筍乾', hint:'諧音：面媽', emoji:'🎋' },
+      { jp:'ネギ', kana:'ねぎ', romaji:'negi', zh:'蔥', hint:'諧音：內gi', emoji:'🌱' },
+      { jp:'もやし', kana:'もやし', romaji:'moyashi', zh:'豆芽菜', hint:'諧音：摸呀西', emoji:'🌾' },
+      { jp:'スープ', kana:'すーぷ', romaji:'sūpu', zh:'湯頭', hint:'諧音：斯～噗', emoji:'🍲' },
+      { jp:'つけ麺', kana:'つけめん', romaji:'tsukemen', zh:'沾麵', hint:'諧音：此ke面', emoji:'🍜' },
+      { jp:'細麺', kana:'ほそめん', romaji:'hosomen', zh:'細麵', hint:'諧音：齁搜面', emoji:'〰️' },
+      { jp:'太麺', kana:'ふとめん', romaji:'futomen', zh:'粗麵', hint:'諧音：夫偷面', emoji:'🍝' },
+      { jp:'柔らかめ', kana:'やわらかめ', romaji:'yawarakame', zh:'（麵）軟一點', hint:'諧音：呀哇拉卡妹', emoji:'☁️' },
+      { jp:'普通', kana:'ふつう', romaji:'futsū', zh:'普通、正常', hint:'諧音：夫此～', emoji:'👌' },
+      { jp:'味の濃さ', kana:'あじのこさ', romaji:'aji no kosa', zh:'味道濃淡', hint:'諧音：阿基諾 摳薩', emoji:'🧂' },
+      { jp:'油', kana:'あぶら', romaji:'abura', zh:'油（背脂）', hint:'諧音：阿布拉', emoji:'💧' },
+      { jp:'トッピング', kana:'とっぴんぐ', romaji:'toppingu', zh:'加料', hint:'諧音：偷拼古', emoji:'➕' },
+      { jp:'並盛', kana:'なみもり', romaji:'namimori', zh:'一般份量', hint:'諧音：那咪摸哩', emoji:'🥣' },
+      { jp:'チャーハン', kana:'ちゃーはん', romaji:'chāhan', zh:'炒飯', hint:'諧音：恰～哈恩', emoji:'🍳' },
+      { jp:'ライス', kana:'らいす', romaji:'raisu', zh:'白飯', hint:'諧音：賴斯', emoji:'🍚' },
+      { jp:'辛い', kana:'からい', romaji:'karai', zh:'辣', hint:'諧音：卡拉伊', emoji:'🌶️' },
+      { jp:'紙エプロン', kana:'かみえぷろん', romaji:'kami epuron', zh:'紙圍兜', hint:'諧音：卡咪 欸噗隆', emoji:'🧻' },
+      { jp:'行列', kana:'ぎょうれつ', romaji:'gyōretsu', zh:'排隊人龍', hint:'諧音：gyo～勒此', emoji:'🚶' }
+    ],
+    phrases: [
+      { jp:'券売機の使い方を教えてください', kana:'けんばいきのつかいかたをおしえてください', romaji:'kenbaiki no tsukaikata o oshiete kudasai', zh:'請教我怎麼用售票機', hint:'諧音：開恩百ki諾 此卡伊卡他歐 歐西欸貼 哭搭賽', use:'看不懂售票機按鈕時' },
+      { jp:'おすすめはどれですか', kana:'おすすめはどれですか', romaji:'osusume wa dore desu ka', zh:'推薦哪一個？', hint:'諧音：歐斯斯妹哇 兜勒爹斯卡', use:'看著售票機不知道按哪顆時' },
+      { jp:'味玉を追加でお願いします', kana:'あじたまをついかでおねがいします', romaji:'ajitama o tsuika de onegai shimasu', zh:'請幫我加溏心蛋', hint:'諧音：阿基他媽歐 此伊卡爹 歐內嘎伊西媽斯', use:'想加點配料時' },
+      { jp:'味は普通でお願いします', kana:'あじはふつうでおねがいします', romaji:'aji wa futsū de onegai shimasu', zh:'味道普通就好', hint:'諧音：阿基哇 夫此～爹 歐內嘎伊西媽斯', use:'店員問濃淡時' },
+      { jp:'油少なめでお願いします', kana:'あぶらすくなめでおねがいします', romaji:'abura sukuname de onegai shimasu', zh:'油少一點', hint:'諧音：阿布拉 斯哭那妹爹 歐內嘎伊西媽斯', use:'怕太油膩時' },
+      { jp:'ネギ抜きでお願いします', kana:'ねぎぬきでおねがいします', romaji:'negi nuki de onegai shimasu', zh:'不要加蔥', hint:'諧音：內gi 奴ki爹 歐內嘎伊西媽斯', use:'不吃蔥時' },
+      { jp:'辛さは選べますか', kana:'からさはえらべますか', romaji:'karasa wa erabemasu ka', zh:'可以選辣度嗎？', hint:'諧音：卡拉薩哇 欸拉背媽斯卡', use:'點辣味拉麵前' },
+      { jp:'紙エプロンをください', kana:'かみえぷろんをください', romaji:'kami epuron o kudasai', zh:'請給我紙圍兜', hint:'諧音：卡咪欸噗隆歐 哭搭賽', use:'怕湯汁噴到衣服時' },
+      { jp:'替え玉、硬めで', kana:'かえだま、かためで', romaji:'kaedama, katame de', zh:'加麵，要硬的', hint:'諧音：卡欸搭媽 卡他妹爹', use:'吃到一半加麵時（博多拉麵）' },
+      { jp:'美味しかったです', kana:'おいしかったです', romaji:'oishikatta desu', zh:'很好吃', hint:'諧音：歐伊西卡他爹斯', use:'離開時對店員說' },
+      { jp:'いらっしゃいませ！何名様ですか', kana:'いらっしゃいませ！なんめいさまですか', romaji:'irasshaimase! nanmei-sama desu ka', zh:'歡迎光臨！幾位？', hint:'諧音：伊拉峽伊媽賊 南妹薩媽爹斯卡', use:'聽到店員說（進門時）' },
+      { jp:'食券をお預かりします', kana:'しょっけんをおあずかりします', romaji:'shokken o oazukari shimasu', zh:'收您的餐券', hint:'諧音：休開恩歐 歐阿茲卡哩西媽斯', use:'聽到店員說（入座後）' },
+      { jp:'麺の硬さはどうしますか', kana:'めんのかたさはどうしますか', romaji:'men no katasa wa dō shimasu ka', zh:'麵要多硬？', hint:'諧音：面諾 卡他薩哇 兜～西媽斯卡', use:'聽到店員問' },
+      { jp:'味の濃さはどうされますか', kana:'あじのこさはどうされますか', romaji:'aji no kosa wa dō saremasu ka', zh:'味道要濃還是淡？', hint:'諧音：阿基諾摳薩哇 兜～薩勒媽斯卡', use:'聽到店員問' },
+      { jp:'空いているお席へどうぞ', kana:'あいているおせきへどうぞ', romaji:'aite iru oseki e dōzo', zh:'請坐空位', hint:'諧音：阿伊貼伊嚕 歐誰ki欸 兜～走', use:'聽到店員說' },
+      { jp:'ニンニク入れますか', kana:'にんにくいれますか', romaji:'ninniku iremasu ka', zh:'要加大蒜嗎？', hint:'諧音：您尼哭 伊勒媽斯卡', use:'聽到店員問（二郎系拉麵）' }
+    ]
+  },
+
+  // ==================== 咖啡廳 ====================
+  cafe: {
+    vocab: [
+      { jp:'カフェ', kana:'かふぇ', romaji:'kafe', zh:'咖啡廳', hint:'諧音：卡ㄈㄟ', emoji:'☕' },
+      { jp:'ブレンドコーヒー', kana:'ぶれんどこーひー', romaji:'burendo kōhī', zh:'綜合咖啡', hint:'諧音：布連兜 摳～hi～', emoji:'☕' },
+      { jp:'アメリカーノ', kana:'あめりかーの', romaji:'amerikāno', zh:'美式咖啡', hint:'諧音：阿妹哩卡～諾', emoji:'☕' },
+      { jp:'カプチーノ', kana:'かぷちーの', romaji:'kapuchīno', zh:'卡布奇諾', hint:'諧音：卡噗七～諾', emoji:'☕' },
+      { jp:'ココア', kana:'ここあ', romaji:'kokoa', zh:'可可', hint:'諧音：摳摳阿', emoji:'🍫' },
+      { jp:'オレンジジュース', kana:'おれんじじゅーす', romaji:'orenji jūsu', zh:'柳橙汁', hint:'諧音：歐連基 啾～斯', emoji:'🍊' },
+      { jp:'トースト', kana:'とーすと', romaji:'tōsuto', zh:'吐司', hint:'諧音：偷～斯偷', emoji:'🍞' },
+      { jp:'モーニング', kana:'もーにんぐ', romaji:'mōningu', zh:'早餐套餐', hint:'諧音：摸～寧古', emoji:'🌅' },
+      { jp:'パンケーキ', kana:'ぱんけーき', romaji:'pankēki', zh:'鬆餅', hint:'諧音：胖ke～ki', emoji:'🥞' },
+      { jp:'セット', kana:'せっと', romaji:'setto', zh:'套餐', hint:'諧音：誰偷', emoji:'🍽️' },
+      { jp:'デカフェ', kana:'でかふぇ', romaji:'dekafe', zh:'低咖啡因', hint:'諧音：爹卡ㄈㄟ', emoji:'😴' },
+      { jp:'豆乳', kana:'とうにゅう', romaji:'tōnyū', zh:'豆奶', hint:'諧音：偷～妞～', emoji:'🥛' },
+      { jp:'シロップ', kana:'しろっぷ', romaji:'shiroppu', zh:'糖漿', hint:'諧音：西囉噗', emoji:'🍯' },
+      { jp:'ストロー', kana:'すとろー', romaji:'sutorō', zh:'吸管', hint:'諧音：斯偷囉～', emoji:'🥤' },
+      { jp:'蓋', kana:'ふた', romaji:'futa', zh:'杯蓋', hint:'諧音：夫他', emoji:'🧢' },
+      { jp:'喫煙席', kana:'きつえんせき', romaji:'kitsuenseki', zh:'吸菸座位', hint:'諧音：ki此恩 誰ki', emoji:'🚬' },
+      { jp:'コンセント', kana:'こんせんと', romaji:'konsento', zh:'插座', hint:'諧音：摳恩森偷', emoji:'🔌' },
+      { jp:'番号札', kana:'ばんごうふだ', romaji:'bangōfuda', zh:'號碼牌', hint:'諧音：棒勾～夫搭', emoji:'🔢' },
+      { jp:'返却口', kana:'へんきゃくぐち', romaji:'henkyakuguchi', zh:'餐具回收處', hint:'諧音：嘿恩kya哭 古吃', emoji:'🔙' }
+    ],
+    phrases: [
+      { jp:'アイスラテをひとつください', kana:'あいすらてをひとつください', romaji:'aisu rate o hitotsu kudasai', zh:'請給我一杯冰拿鐵', hint:'諧音：阿伊斯拉貼歐 hi偷此 哭搭賽', use:'點飲料時' },
+      { jp:'このセットにします', kana:'このせっとにします', romaji:'kono setto ni shimasu', zh:'我要這個套餐', hint:'諧音：摳諾 誰偷尼 西媽斯', use:'指著菜單點套餐時' },
+      { jp:'豆乳に変更できますか', kana:'とうにゅうにへんこうできますか', romaji:'tōnyū ni henkō dekimasu ka', zh:'可以換成豆奶嗎？', hint:'諧音：偷～妞～尼 嘿恩摳～ 爹ki媽斯卡', use:'不喝牛奶時' },
+      { jp:'甘さ控えめにできますか', kana:'あまさひかえめにできますか', romaji:'amasa hikaeme ni dekimasu ka', zh:'可以少甜嗎？', hint:'諧音：阿媽薩 hi卡欸妹尼 爹ki媽斯卡', use:'怕太甜時' },
+      { jp:'モーニングは何時までですか', kana:'もーにんぐはなんじまでですか', romaji:'mōningu wa nanji made desu ka', zh:'早餐套餐供應到幾點？', hint:'諧音：摸～寧古哇 南基媽爹 爹斯卡', use:'早上想點早餐套餐時' },
+      { jp:'席は空いていますか', kana:'せきはあいていますか', romaji:'seki wa aite imasu ka', zh:'有空位嗎？', hint:'諧音：誰ki哇 阿伊貼 伊媽斯卡', use:'進門找座位時' },
+      { jp:'先に席を取ってもいいですか', kana:'さきにせきをとってもいいですか', romaji:'saki ni seki o totte mo ii desu ka', zh:'可以先佔位嗎？', hint:'諧音：薩ki尼 誰ki歐 偷貼摸 伊～爹斯卡', use:'點餐前想先找位子時' },
+      { jp:'コンセントは使えますか', kana:'こんせんとはつかえますか', romaji:'konsento wa tsukaemasu ka', zh:'可以用插座嗎？', hint:'諧音：摳恩森偷哇 此卡欸媽斯卡', use:'手機要充電時' },
+      { jp:'ストローをください', kana:'すとろーをください', romaji:'sutorō o kudasai', zh:'請給我吸管', hint:'諧音：斯偷囉～歐 哭搭賽', use:'沒拿到吸管時' },
+      { jp:'店内でお召し上がりですか', kana:'てんないでおめしあがりですか', romaji:'tennai de omeshiagari desu ka', zh:'內用嗎？', hint:'諧音：ten那伊爹 歐妹西阿嘎哩 爹斯卡', use:'聽到店員問' },
+      { jp:'お持ち帰りですか', kana:'おもちかえりですか', romaji:'omochikaeri desu ka', zh:'外帶嗎？', hint:'諧音：歐摸吃卡欸哩 爹斯卡', use:'聽到店員問' },
+      { jp:'サイズはいかがなさいますか', kana:'さいずはいかがなさいますか', romaji:'saizu wa ikaga nasaimasu ka', zh:'要什麼尺寸？', hint:'諧音：賽茲哇 伊卡嘎 那賽媽斯卡', use:'聽到店員問' },
+      { jp:'ホットとアイス、どちらになさいますか', kana:'ほっととあいす、どちらになさいますか', romaji:'hotto to aisu, dochira ni nasaimasu ka', zh:'要熱的還是冰的？', hint:'諧音：齁偷偷 阿伊斯 兜吃拉尼 那賽媽斯卡', use:'聽到店員問' },
+      { jp:'番号札を持ってお待ちください', kana:'ばんごうふだをもっておまちください', romaji:'bangōfuda o motte omachi kudasai', zh:'請拿著號碼牌稍候', hint:'諧音：棒勾～夫搭歐 摸貼 歐媽吃 哭搭賽', use:'聽到店員說（點完餐）' },
+      { jp:'お先にお席をお取りください', kana:'おさきにおせきをおとりください', romaji:'osaki ni oseki o otori kudasai', zh:'請先找好座位', hint:'諧音：歐薩ki尼 歐誰ki歐 歐偷哩 哭搭賽', use:'聽到店員說（人多時）' }
+    ]
+  },
+
+  // ==================== 藥妝店 ====================
+  drugstore: {
+    vocab: [
+      { jp:'ドラッグストア', kana:'どらっぐすとあ', romaji:'doraggu sutoa', zh:'藥妝店', hint:'諧音：兜拉古 斯偷阿', emoji:'🏬' },
+      { jp:'薬剤師', kana:'やくざいし', romaji:'yakuzaishi', zh:'藥劑師', hint:'諧音：呀哭紮伊西', emoji:'🧑‍⚕️' },
+      { jp:'処方箋', kana:'しょほうせん', romaji:'shohōsen', zh:'處方箋', hint:'諧音：休齁～森', emoji:'📄' },
+      { jp:'錠剤', kana:'じょうざい', romaji:'jōzai', zh:'藥錠', hint:'諧音：久～紮伊', emoji:'💊' },
+      { jp:'粉薬', kana:'こなぐすり', romaji:'konagusuri', zh:'藥粉', hint:'諧音：摳那古斯哩', emoji:'🧂' },
+      { jp:'酔い止め', kana:'よいどめ', romaji:'yoidome', zh:'暈車藥', hint:'諧音：優伊兜妹', emoji:'🚗' },
+      { jp:'下痢止め', kana:'げりどめ', romaji:'geridome', zh:'止瀉藥', hint:'諧音：給哩兜妹', emoji:'🚽' },
+      { jp:'便秘薬', kana:'べんぴやく', romaji:'benpiyaku', zh:'便秘藥', hint:'諧音：本匹呀哭', emoji:'💩' },
+      { jp:'痛み止め', kana:'いたみどめ', romaji:'itamidome', zh:'止痛藥', hint:'諧音：伊他咪兜妹', emoji:'🩹' },
+      { jp:'かゆみ止め', kana:'かゆみどめ', romaji:'kayumidome', zh:'止癢藥', hint:'諧音：卡瘀咪兜妹', emoji:'🦟' },
+      { jp:'のど飴', kana:'のどあめ', romaji:'nodoame', zh:'喉糖', hint:'諧音：諾兜阿妹', emoji:'🍬' },
+      { jp:'シャンプー', kana:'しゃんぷー', romaji:'shanpū', zh:'洗髮精', hint:'諧音：香噗～', emoji:'🧴' },
+      { jp:'洗顔料', kana:'せんがんりょう', romaji:'senganryō', zh:'洗面乳', hint:'諧音：森甘溜～', emoji:'🫧' },
+      { jp:'乳液', kana:'にゅうえき', romaji:'nyūeki', zh:'乳液', hint:'諧音：妞～欸ki', emoji:'🧴' },
+      { jp:'口紅', kana:'くちべに', romaji:'kuchibeni', zh:'口紅', hint:'諧音：哭吃背尼', emoji:'💄' },
+      { jp:'コンタクトレンズ', kana:'こんたくとれんず', romaji:'kontakuto renzu', zh:'隱形眼鏡', hint:'諧音：摳恩他哭偷 連茲', emoji:'👁️' },
+      { jp:'生理用品', kana:'せいりようひん', romaji:'seiri yōhin', zh:'生理用品', hint:'諧音：誰～哩 優～hin', emoji:'🩸' },
+      { jp:'歯ブラシ', kana:'はぶらし', romaji:'haburashi', zh:'牙刷', hint:'諧音：哈布拉西', emoji:'🪥' },
+      { jp:'副作用', kana:'ふくさよう', romaji:'fukusayō', zh:'副作用', hint:'諧音：夫哭薩優～', emoji:'⚠️' },
+      { jp:'子供用', kana:'こどもよう', romaji:'kodomoyō', zh:'兒童用', hint:'諧音：摳兜摸優～', emoji:'🧒' }
+    ],
+    phrases: [
+      { jp:'この商品を探しています', kana:'このしょうひんをさがしています', romaji:'kono shōhin o sagashite imasu', zh:'我在找這個商品', hint:'諧音：摳諾 休～hin歐 薩嘎西貼 伊媽斯', use:'給店員看手機裡的商品照片時' },
+      { jp:'在庫はありますか', kana:'ざいこはありますか', romaji:'zaiko wa arimasu ka', zh:'還有庫存嗎？', hint:'諧音：紮伊摳哇 阿哩媽斯卡', use:'貨架上賣完時' },
+      { jp:'一人いくつまで買えますか', kana:'ひとりいくつまでかえますか', romaji:'hitori ikutsu made kaemasu ka', zh:'一個人限買幾個？', hint:'諧音：hi偷哩 伊哭此媽爹 卡欸媽斯卡', use:'熱門商品有限購時' },
+      { jp:'これは子供も飲めますか', kana:'これはこどももものめますか', romaji:'kore wa kodomo mo nomemasu ka', zh:'這個小孩也能吃嗎？', hint:'諧音：摳勒哇 摳兜摸摸 諾妹媽斯卡', use:'幫小孩買藥時' },
+      { jp:'眠くなりますか', kana:'ねむくなりますか', romaji:'nemuku narimasu ka', zh:'吃了會想睡嗎？', hint:'諧音：內母哭 那哩媽斯卡', use:'買感冒藥、暈車藥時確認副作用' },
+      { jp:'食後に飲みますか', kana:'しょくごにのみますか', romaji:'shokugo ni nomimasu ka', zh:'是飯後吃嗎？', hint:'諧音：休哭勾尼 諾咪媽斯卡', use:'確認服藥時間' },
+      { jp:'敏感肌でも使えますか', kana:'びんかんはだでもつかえますか', romaji:'binkanhada demo tsukaemasu ka', zh:'敏感肌也能用嗎？', hint:'諧音：逼恩看哈搭爹摸 此卡欸媽斯卡', use:'買保養品時' },
+      { jp:'喉が痛いです', kana:'のどがいたいです', romaji:'nodo ga itai desu', zh:'喉嚨痛', hint:'諧音：諾兜嘎 伊他伊爹斯', use:'向藥劑師說明症狀' },
+      { jp:'胃の調子が悪いです', kana:'いのちょうしがわるいです', romaji:'i no chōshi ga warui desu', zh:'胃不太舒服', hint:'諧音：伊諾 秋～西嘎 哇嚕伊爹斯', use:'向藥劑師說明症狀' },
+      { jp:'何かお探しですか', kana:'なにかおさがしですか', romaji:'nani ka osagashi desu ka', zh:'在找什麼嗎？', hint:'諧音：那尼卡 歐薩嘎西爹斯卡', use:'聽到店員問' },
+      { jp:'ほかに飲んでいる薬はありますか', kana:'ほかにのんでいるくすりはありますか', romaji:'hoka ni nonde iru kusuri wa arimasu ka', zh:'有在吃其他藥嗎？', hint:'諧音：齁卡尼 諾恩爹伊嚕 哭斯哩哇 阿哩媽斯卡', use:'聽到藥劑師問' },
+      { jp:'一日三回、食後に飲んでください', kana:'いちにちさんかい、しょくごにのんでください', romaji:'ichinichi sankai, shokugo ni nonde kudasai', zh:'一天三次，飯後服用', hint:'諧音：伊吃尼吃 桑卡伊 休哭勾尼 諾恩爹 哭搭賽', use:'聽到藥劑師說' },
+      { jp:'お一人様三点までです', kana:'おひとりさまさんてんまでです', romaji:'ohitori-sama santen made desu', zh:'每人限購三件', hint:'諧音：歐hi偷哩薩媽 桑ten媽爹爹斯', use:'聽到店員說' },
+      { jp:'免税のお手続きにはパスポートが必要です', kana:'めんぜいのおてつづきにはぱすぽーとがひつようです', romaji:'menzei no otetsuzuki ni wa pasupōto ga hitsuyō desu', zh:'辦免稅需要護照', hint:'諧音：面賊～諾 歐貼此茲ki尼哇 趴斯剖～偷嘎 hi此優～爹斯', use:'聽到店員說' },
+      { jp:'こちらは免税対象外です', kana:'こちらはめんぜいたいしょうがいです', romaji:'kochira wa menzei taishōgai desu', zh:'這個不適用免稅', hint:'諧音：摳吃拉哇 面賊～ 他伊休～嘎伊爹斯', use:'聽到店員說' }
+    ]
+  },
+
+  // ==================== 居酒屋・餐廳 ====================
+  izakaya: {
+    vocab: [
+      { jp:'ハイボール', kana:'はいぼーる', romaji:'haibōru', zh:'威士忌蘇打', hint:'諧音：嗨玻～嚕', emoji:'🥃' },
+      { jp:'梅酒', kana:'うめしゅ', romaji:'umeshu', zh:'梅酒', hint:'諧音：烏妹咻', emoji:'🍑' },
+      { jp:'サワー', kana:'さわー', romaji:'sawā', zh:'沙瓦（水果調酒）', hint:'諧音：薩哇～', emoji:'🍋' },
+      { jp:'ウーロン茶', kana:'うーろんちゃ', romaji:'ūroncha', zh:'烏龍茶', hint:'諧音：烏～隆恰', emoji:'🍵' },
+      { jp:'瓶ビール', kana:'びんびーる', romaji:'bin bīru', zh:'瓶裝啤酒', hint:'諧音：逼恩 逼～嚕', emoji:'🍺' },
+      { jp:'冷奴', kana:'ひややっこ', romaji:'hiyayakko', zh:'涼拌豆腐', hint:'諧音：hi呀呀摳', emoji:'🧊' },
+      { jp:'だし巻き卵', kana:'だしまきたまご', romaji:'dashimaki tamago', zh:'高湯玉子燒', hint:'諧音：搭西媽ki 他媽勾', emoji:'🍳' },
+      { jp:'ポテトフライ', kana:'ぽてとふらい', romaji:'poteto furai', zh:'薯條', hint:'諧音：剖貼偷 夫拉伊', emoji:'🍟' },
+      { jp:'串カツ', kana:'くしかつ', romaji:'kushikatsu', zh:'炸串', hint:'諧音：哭西卡此', emoji:'🍢' },
+      { jp:'お茶漬け', kana:'おちゃづけ', romaji:'ochazuke', zh:'茶泡飯', hint:'諧音：歐恰茲ke', emoji:'🍚' },
+      { jp:'取り皿', kana:'とりざら', romaji:'torizara', zh:'分菜小盤', hint:'諧音：偷哩紮拉', emoji:'🍽️' },
+      { jp:'おしぼり', kana:'おしぼり', romaji:'oshibori', zh:'濕毛巾', hint:'諧音：歐西玻哩', emoji:'🧻' },
+      { jp:'お代わり', kana:'おかわり', romaji:'okawari', zh:'再來一杯（一碗）', hint:'諧音：歐卡哇哩', emoji:'🔁' },
+      { jp:'タッチパネル', kana:'たっちぱねる', romaji:'tatchi paneru', zh:'點餐平板', hint:'諧音：他吃 趴內嚕', emoji:'📲' },
+      { jp:'ラストオーダー', kana:'らすとおーだー', romaji:'rasuto ōdā', zh:'最後點餐', hint:'諧音：拉斯偷 歐～搭～', emoji:'⏰' },
+      { jp:'席料', kana:'せきりょう', romaji:'sekiryō', zh:'座位費', hint:'諧音：誰ki溜～', emoji:'💴' },
+      { jp:'割り勘', kana:'わりかん', romaji:'warikan', zh:'平分付帳', hint:'諧音：哇哩看', emoji:'🤝' },
+      { jp:'未成年', kana:'みせいねん', romaji:'miseinen', zh:'未成年', hint:'諧音：咪誰～內恩', emoji:'🔞' }
+    ],
+    phrases: [
+      { jp:'二人です、空いていますか', kana:'ふたりです、あいていますか', romaji:'futari desu, aite imasu ka', zh:'兩位，有位子嗎？', hint:'諧音：夫他哩爹斯 阿伊貼伊媽斯卡', use:'沒預約直接進店時' },
+      { jp:'とりあえず生で', kana:'とりあえずなまで', romaji:'toriaezu nama de', zh:'先來杯生啤', hint:'諧音：偷哩阿欸茲 那媽爹', use:'坐下第一輪點飲料時' },
+      { jp:'同じものをもう一杯', kana:'おなじものをもういっぱい', romaji:'onaji mono o mō ippai', zh:'同樣的再來一杯', hint:'諧音：歐那基摸諾歐 摸～ 伊趴伊', use:'續杯時' },
+      { jp:'これは何ですか', kana:'これはなんですか', romaji:'kore wa nan desu ka', zh:'這是什麼？', hint:'諧音：摳勒哇 南爹斯卡', use:'指著菜單看不懂時' },
+      { jp:'取り皿をください', kana:'とりざらをください', romaji:'torizara o kudasai', zh:'請給我小盤子', hint:'諧音：偷哩紮拉歐 哭搭賽', use:'大家分菜時' },
+      { jp:'お水をください', kana:'おみずをください', romaji:'omizu o kudasai', zh:'請給我水', hint:'諧音：歐咪茲歐 哭搭賽', use:'想要白開水時' },
+      { jp:'アルコールなしのドリンクはありますか', kana:'あるこーるなしのどりんくはありますか', romaji:'arukōru nashi no dorinku wa arimasu ka', zh:'有無酒精飲料嗎？', hint:'諧音：阿嚕摳～嚕 那西諾 兜哩恩哭哇 阿哩媽斯卡', use:'不喝酒時' },
+      { jp:'これは注文していません', kana:'これはちゅうもんしていません', romaji:'kore wa chūmon shite imasen', zh:'我們沒點這個', hint:'諧音：摳勒哇 啾～摸恩 西貼伊媽森', use:'送錯菜時' },
+      { jp:'お飲み物は何になさいますか', kana:'おのみものはなにになさいますか', romaji:'onomimono wa nani ni nasaimasu ka', zh:'要喝點什麼？', hint:'諧音：歐諾咪摸諾哇 那尼尼 那賽媽斯卡', use:'聽到店員問（入座後）' },
+      { jp:'ご注文はタッチパネルでお願いします', kana:'ごちゅうもんはたっちぱねるでおねがいします', romaji:'gochūmon wa tatchi paneru de onegai shimasu', zh:'請用平板點餐', hint:'諧音：勾啾～摸恩哇 他吃趴內嚕爹 歐內嘎伊西媽斯', use:'聽到店員說' },
+      { jp:'お通しです', kana:'おとおしです', romaji:'otōshi desu', zh:'這是開胃小菜（會收費）', hint:'諧音：歐偷～西爹斯', use:'聽到店員說（端上小菜時）' },
+      { jp:'二時間制になります', kana:'にじかんせいになります', romaji:'nijikansei ni narimasu', zh:'用餐限時兩小時', hint:'諧音：尼基看誰～尼 那哩媽斯', use:'聽到店員說' },
+      { jp:'ラストオーダーのお時間です', kana:'らすとおーだーのおじかんです', romaji:'rasuto ōdā no ojikan desu', zh:'最後點餐時間到了', hint:'諧音：拉斯偷歐～搭～諾 歐基看爹斯', use:'聽到店員說' },
+      { jp:'ご注文はお揃いですか', kana:'ごちゅうもんはおそろいですか', romaji:'gochūmon wa osoroi desu ka', zh:'餐點都上齊了嗎？', hint:'諧音：勾啾～摸恩哇 歐搜囉伊爹斯卡', use:'聽到店員問' },
+      { jp:'お席までご案内します', kana:'おせきまでごあんないします', romaji:'oseki made goannai shimasu', zh:'帶您入座', hint:'諧音：歐誰ki媽爹 勾安那伊西媽斯', use:'聽到店員說' }
+    ]
+  },
+
+  // ==================== 服飾店 ====================
+  clothes: {
+    vocab: [
+      { jp:'Tシャツ', kana:'てぃーしゃつ', romaji:'tī shatsu', zh:'T恤', hint:'諧音：踢～峽此', emoji:'👕' },
+      { jp:'ジャケット', kana:'じゃけっと', romaji:'jaketto', zh:'夾克', hint:'諧音：甲ke偷', emoji:'🧥' },
+      { jp:'コート', kana:'こーと', romaji:'kōto', zh:'大衣', hint:'諧音：摳～偷', emoji:'🧥' },
+      { jp:'セーター', kana:'せーたー', romaji:'sētā', zh:'毛衣', hint:'諧音：誰～他～', emoji:'🧶' },
+      { jp:'ジーンズ', kana:'じーんず', romaji:'jīnzu', zh:'牛仔褲', hint:'諧音：基～恩茲', emoji:'👖' },
+      { jp:'靴下', kana:'くつした', romaji:'kutsushita', zh:'襪子', hint:'諧音：哭此西他', emoji:'🧦' },
+      { jp:'バッグ', kana:'ばっぐ', romaji:'baggu', zh:'包包', hint:'諧音：巴古', emoji:'👜' },
+      { jp:'サイズ', kana:'さいず', romaji:'saizu', zh:'尺寸', hint:'諧音：賽茲', emoji:'📏' },
+      { jp:'素材', kana:'そざい', romaji:'sozai', zh:'材質', hint:'諧音：搜紮伊', emoji:'🧵' },
+      { jp:'綿', kana:'めん', romaji:'men', zh:'棉', hint:'諧音：面', emoji:'☁️' },
+      { jp:'長い', kana:'ながい', romaji:'nagai', zh:'長', hint:'諧音：那嘎伊', emoji:'📐' },
+      { jp:'短い', kana:'みじかい', romaji:'mijikai', zh:'短', hint:'諧音：咪基卡伊', emoji:'✂️' },
+      { jp:'きつい', kana:'きつい', romaji:'kitsui', zh:'緊', hint:'諧音：ki此伊', emoji:'😣' },
+      { jp:'ゆるい', kana:'ゆるい', romaji:'yurui', zh:'鬆', hint:'諧音：瘀嚕伊', emoji:'😌' },
+      { jp:'裾上げ', kana:'すそあげ', romaji:'susoage', zh:'改褲長', hint:'諧音：斯搜阿給', emoji:'🪡' },
+      { jp:'在庫', kana:'ざいこ', romaji:'zaiko', zh:'庫存', hint:'諧音：紮伊摳', emoji:'📦' },
+      { jp:'新作', kana:'しんさく', romaji:'shinsaku', zh:'新款', hint:'諧音：心薩哭', emoji:'✨' },
+      { jp:'鏡', kana:'かがみ', romaji:'kagami', zh:'鏡子', hint:'諧音：卡嘎咪', emoji:'🪞' },
+      { jp:'黒', kana:'くろ', romaji:'kuro', zh:'黑色', hint:'諧音：哭囉', emoji:'⚫' },
+      { jp:'白', kana:'しろ', romaji:'shiro', zh:'白色', hint:'諧音：西囉', emoji:'⚪' }
+    ],
+    phrases: [
+      { jp:'Mサイズはありますか', kana:'えむさいずはありますか', romaji:'emu saizu wa arimasu ka', zh:'有 M 號嗎？', hint:'諧音：欸姆賽茲哇 阿哩媽斯卡', use:'找特定尺寸時' },
+      { jp:'これの黒はありますか', kana:'これのくろはありますか', romaji:'kore no kuro wa arimasu ka', zh:'這件有黑色嗎？', hint:'諧音：摳勒諾 哭囉哇 阿哩媽斯卡', use:'想找同款不同顏色時' },
+      { jp:'少しきついです', kana:'すこしきついです', romaji:'sukoshi kitsui desu', zh:'有點緊', hint:'諧音：斯摳西 ki此伊爹斯', use:'試穿後告訴店員' },
+      { jp:'ちょうどいいです', kana:'ちょうどいいです', romaji:'chōdo ii desu', zh:'剛剛好', hint:'諧音：秋～兜 伊～爹斯', use:'試穿後覺得合身時' },
+      { jp:'鏡はどこですか', kana:'かがみはどこですか', romaji:'kagami wa doko desu ka', zh:'鏡子在哪？', hint:'諧音：卡嘎咪哇 兜摳爹斯卡', use:'想照鏡子時' },
+      { jp:'洗濯機で洗えますか', kana:'せんたくきであらえますか', romaji:'sentakuki de araemasu ka', zh:'可以用洗衣機洗嗎？', hint:'諧音：森他哭ki爹 阿拉欸媽斯卡', use:'確認保養方式時' },
+      { jp:'裾上げをお願いできますか', kana:'すそあげをおねがいできますか', romaji:'susoage o onegai dekimasu ka', zh:'可以幫我改褲長嗎？', hint:'諧音：斯搜阿給歐 歐內嘎伊 爹ki媽斯卡', use:'買褲子太長時' },
+      { jp:'どのくらいかかりますか', kana:'どのくらいかかりますか', romaji:'dono kurai kakarimasu ka', zh:'要多久？', hint:'諧音：兜諾哭拉伊 卡卡哩媽斯卡', use:'問修改要等多久' },
+      { jp:'プレゼント用に包んでもらえますか', kana:'ぷれぜんとようにつつんでもらえますか', romaji:'purezento-yō ni tsutsunde moraemasu ka', zh:'可以包成禮物嗎？', hint:'諧音：噗勒賊恩偷優～尼 此此恩爹 摸拉欸媽斯卡', use:'買來送人時' },
+      { jp:'よろしければご試着もできます', kana:'よろしければごしちゃくもできます', romaji:'yoroshikereba goshichaku mo dekimasu', zh:'需要的話可以試穿', hint:'諧音：優囉西ke勒巴 勾西恰哭摸 爹ki媽斯', use:'聽到店員說' },
+      { jp:'試着は何点ですか', kana:'しちゃくはなんてんですか', romaji:'shichaku wa nanten desu ka', zh:'要試穿幾件？', hint:'諧音：西恰哭哇 南ten爹斯卡', use:'聽到店員問（進試衣間前）' },
+      { jp:'靴を脱いでお上がりください', kana:'くつをぬいでおあがりください', romaji:'kutsu o nuide oagari kudasai', zh:'請脫鞋再進去', hint:'諧音：哭此歐 奴伊爹 歐阿嘎哩 哭搭賽', use:'聽到店員說（試衣間前）' },
+      { jp:'フェイスカバーをお使いください', kana:'ふぇいすかばーをおつかいください', romaji:'feisu kabā o otsukai kudasai', zh:'請使用防妝面罩', hint:'諧音：ㄈㄟ斯卡巴～歐 歐此卡伊 哭搭賽', use:'聽到店員說（試穿上衣時）' },
+      { jp:'サイズはいかがでしたか', kana:'さいずはいかがでしたか', romaji:'saizu wa ikaga deshita ka', zh:'尺寸還可以嗎？', hint:'諧音：賽茲哇 伊卡嘎 爹西他卡', use:'聽到店員問（試穿完）' },
+      { jp:'こちらはセール対象外です', kana:'こちらはせーるたいしょうがいです', romaji:'kochira wa sēru taishōgai desu', zh:'這件不在特價範圍', hint:'諧音：摳吃拉哇 誰～嚕 他伊休～嘎伊爹斯', use:'聽到店員說' },
+      { jp:'ただいま在庫を確認します', kana:'ただいまざいこをかくにんします', romaji:'tadaima zaiko o kakunin shimasu', zh:'我馬上幫您確認庫存', hint:'諧音：他搭伊媽 紮伊摳歐 卡哭您西媽斯', use:'聽到店員說' }
+    ]
+  },
+
+  // ==================== 問路 ====================
+  directions: {
+    vocab: [
+      { jp:'交差点', kana:'こうさてん', romaji:'kōsaten', zh:'十字路口', hint:'諧音：摳～薩ten', emoji:'➕' },
+      { jp:'横断歩道', kana:'おうだんほどう', romaji:'ōdan hodō', zh:'斑馬線', hint:'諧音：歐～單 齁兜～', emoji:'🚸' },
+      { jp:'突き当たり', kana:'つきあたり', romaji:'tsukiatari', zh:'（路的）盡頭', hint:'諧音：此ki阿他哩', emoji:'🧱' },
+      { jp:'向かい', kana:'むかい', romaji:'mukai', zh:'對面', hint:'諧音：母卡伊', emoji:'↔️' },
+      { jp:'隣', kana:'となり', romaji:'tonari', zh:'隔壁', hint:'諧音：偷那哩', emoji:'👫' },
+      { jp:'手前', kana:'てまえ', romaji:'temae', zh:'（靠這邊的）前面', hint:'諧音：貼媽欸', emoji:'👇' },
+      { jp:'先', kana:'さき', romaji:'saki', zh:'前方、再過去', hint:'諧音：薩ki', emoji:'👉' },
+      { jp:'入口', kana:'いりぐち', romaji:'iriguchi', zh:'入口', hint:'諧音：伊哩古吃', emoji:'🚪' },
+      { jp:'何階', kana:'なんがい', romaji:'nangai', zh:'幾樓', hint:'諧音：南嘎伊', emoji:'🏢' },
+      { jp:'北', kana:'きた', romaji:'kita', zh:'北', hint:'諧音：ki他', emoji:'⬆️' },
+      { jp:'南', kana:'みなみ', romaji:'minami', zh:'南', hint:'諧音：咪那咪', emoji:'⬇️' },
+      { jp:'東', kana:'ひがし', romaji:'higashi', zh:'東', hint:'諧音：hi嘎西', emoji:'➡️' },
+      { jp:'西', kana:'にし', romaji:'nishi', zh:'西', hint:'諧音：尼西', emoji:'⬅️' },
+      { jp:'坂', kana:'さか', romaji:'saka', zh:'坡道', hint:'諧音：薩卡', emoji:'⛰️' },
+      { jp:'一つ目', kana:'ひとつめ', romaji:'hitotsume', zh:'第一個', hint:'諧音：hi偷此妹', emoji:'1️⃣' },
+      { jp:'二つ目', kana:'ふたつめ', romaji:'futatsume', zh:'第二個', hint:'諧音：夫他此妹', emoji:'2️⃣' },
+      { jp:'曲がる', kana:'まがる', romaji:'magaru', zh:'轉彎', hint:'諧音：媽嘎嚕', emoji:'↪️' },
+      { jp:'渡る', kana:'わたる', romaji:'wataru', zh:'過（馬路、橋）', hint:'諧音：哇他嚕', emoji:'🚶' },
+      { jp:'目印', kana:'めじるし', romaji:'mejirushi', zh:'地標', hint:'諧音：妹基嚕西', emoji:'📍' },
+      { jp:'徒歩', kana:'とほ', romaji:'toho', zh:'步行', hint:'諧音：偷齁', emoji:'👟' }
+    ],
+    phrases: [
+      { jp:'この住所に行きたいです', kana:'このじゅうしょにいきたいです', romaji:'kono jūsho ni ikitai desu', zh:'我想去這個地址', hint:'諧音：摳諾 啾～休尼 伊ki他伊爹斯', use:'給對方看手機上的地址時' },
+      { jp:'今いる場所はこの地図のどこですか', kana:'いまいるばしょはこのちずのどこですか', romaji:'ima iru basho wa kono chizu no doko desu ka', zh:'我現在的位置在地圖哪裡？', hint:'諧音：伊媽伊嚕 巴休哇 摳諾 吃茲諾 兜摳爹斯卡', use:'拿地圖確認目前位置時' },
+      { jp:'道に迷いました', kana:'みちにまよいました', romaji:'michi ni mayoimashita', zh:'我迷路了', hint:'諧音：咪吃尼 媽優伊媽西他', use:'向路人或交番求助時' },
+      { jp:'近くにコンビニはありますか', kana:'ちかくにこんびにはありますか', romaji:'chikaku ni konbini wa arimasu ka', zh:'附近有便利商店嗎？', hint:'諧音：吃卡哭尼 摳恩逼尼哇 阿哩媽斯卡', use:'找便利商店時' },
+      { jp:'右ですか、左ですか', kana:'みぎですか、ひだりですか', romaji:'migi desu ka, hidari desu ka', zh:'右邊還是左邊？', hint:'諧音：咪gi爹斯卡 hi搭哩爹斯卡', use:'沒聽清楚方向時再確認' },
+      { jp:'バスとタクシー、どちらがいいですか', kana:'ばすとたくしー、どちらがいいですか', romaji:'basu to takushī, dochira ga ii desu ka', zh:'搭公車還是計程車比較好？', hint:'諧音：巴斯偷 他哭西～ 兜吃拉嘎 伊～爹斯卡', use:'不知道怎麼過去時' },
+      { jp:'ゆっくり話してください', kana:'ゆっくりはなしてください', romaji:'yukkuri hanashite kudasai', zh:'請說慢一點', hint:'諧音：瘀哭哩 哈那西貼 哭搭賽', use:'對方講太快聽不懂時' },
+      { jp:'書いてもらえますか', kana:'かいてもらえますか', romaji:'kaite moraemasu ka', zh:'可以寫下來嗎？', hint:'諧音：卡伊貼 摸拉欸媽斯卡', use:'請對方寫地名或畫路線' },
+      { jp:'ありがとうございました、助かりました', kana:'ありがとうございました、たすかりました', romaji:'arigatō gozaimashita, tasukarimashita', zh:'謝謝您，幫了大忙', hint:'諧音：阿哩嘎偷 勾紮伊媽西他 他斯卡哩媽西他', use:'問完路道謝時' },
+      { jp:'この道をまっすぐ行ってください', kana:'このみちをまっすぐいってください', romaji:'kono michi o massugu itte kudasai', zh:'這條路直走', hint:'諧音：摳諾咪吃歐 媽斯古 伊貼 哭搭賽', use:'聽到路人說' },
+      { jp:'二つ目の信号を右に曲がってください', kana:'ふたつめのしんごうをみぎにまがってください', romaji:'futatsume no shingō o migi ni magatte kudasai', zh:'第二個紅綠燈右轉', hint:'諧音：夫他此妹諾 心勾～歐 咪gi尼 媽嘎貼 哭搭賽', use:'聽到路人說' },
+      { jp:'突き当たりを左です', kana:'つきあたりをひだりです', romaji:'tsukiatari o hidari desu', zh:'走到底左轉', hint:'諧音：此ki阿他哩歐 hi搭哩爹斯', use:'聽到路人說' },
+      { jp:'左手に見えます', kana:'ひだりてにみえます', romaji:'hidarite ni miemasu', zh:'在左手邊會看到', hint:'諧音：hi搭哩貼尼 咪欸媽斯', use:'聽到路人說' },
+      { jp:'コンビニの向かいです', kana:'こんびにのむかいです', romaji:'konbini no mukai desu', zh:'在便利商店對面', hint:'諧音：摳恩逼尼諾 母卡伊爹斯', use:'聽到路人說' },
+      { jp:'歩いて五分くらいです', kana:'あるいてごふんくらいです', romaji:'aruite gofun kurai desu', zh:'走路大約五分鐘', hint:'諧音：阿嚕伊貼 勾夫恩 哭拉伊爹斯', use:'聽到路人說' },
+      { jp:'ちょっとわからないです', kana:'ちょっとわからないです', romaji:'chotto wakaranai desu', zh:'我也不太清楚', hint:'諧音：秋偷 哇卡拉那伊爹斯', use:'聽到路人說（換人再問）' },
+      { jp:'一緒に行きましょうか', kana:'いっしょにいきましょうか', romaji:'issho ni ikimashō ka', zh:'我帶你過去吧？', hint:'諧音：伊休尼 伊ki媽休～卡', use:'聽到熱心路人說' }
+    ]
+  },
+
+  // ==================== 車站・電車 ====================
+  station: {
+    vocab: [
+      { jp:'駅員', kana:'えきいん', romaji:'ekiin', zh:'站務員', hint:'諧音：欸ki因', emoji:'🧑‍✈️' },
+      { jp:'券売機', kana:'けんばいき', romaji:'kenbaiki', zh:'售票機', hint:'諧音：開恩百ki', emoji:'🎫' },
+      { jp:'運賃', kana:'うんちん', romaji:'unchin', zh:'車資', hint:'諧音：烏恩金', emoji:'💴' },
+      { jp:'精算機', kana:'せいさんき', romaji:'seisanki', zh:'補票機', hint:'諧音：誰～桑ki', emoji:'🧾' },
+      { jp:'片道', kana:'かたみち', romaji:'katamichi', zh:'單程', hint:'諧音：卡他咪吃', emoji:'➡️' },
+      { jp:'往復', kana:'おうふく', romaji:'ōfuku', zh:'來回', hint:'諧音：歐～夫哭', emoji:'🔁' },
+      { jp:'急行', kana:'きゅうこう', romaji:'kyūkō', zh:'急行（停靠站較少）', hint:'諧音：Q～摳～', emoji:'🚆' },
+      { jp:'特急', kana:'とっきゅう', romaji:'tokkyū', zh:'特急（需另購特急券）', hint:'諧音：偷Q～', emoji:'🚅' },
+      { jp:'始発', kana:'しはつ', romaji:'shihatsu', zh:'首班車', hint:'諧音：西哈此', emoji:'🌅' },
+      { jp:'終点', kana:'しゅうてん', romaji:'shūten', zh:'終點站', hint:'諧音：咻～ten', emoji:'🏁' },
+      { jp:'次', kana:'つぎ', romaji:'tsugi', zh:'下一站、下一班', hint:'諧音：此gi', emoji:'⏭️' },
+      { jp:'遅れ', kana:'おくれ', romaji:'okure', zh:'誤點', hint:'諧音：歐哭勒', emoji:'⏳' },
+      { jp:'運転見合わせ', kana:'うんてんみあわせ', romaji:'unten miawase', zh:'暫停行駛', hint:'諧音：烏恩ten 咪阿哇賊', emoji:'⛔' },
+      { jp:'時刻表', kana:'じこくひょう', romaji:'jikokuhyō', zh:'時刻表', hint:'諧音：基摳哭hyo～', emoji:'🕒' },
+      { jp:'路線図', kana:'ろせんず', romaji:'rosenzu', zh:'路線圖', hint:'諧音：囉森茲', emoji:'🗺️' },
+      { jp:'女性専用車両', kana:'じょせいせんようしゃりょう', romaji:'josei sen\'yō sharyō', zh:'女性專用車廂', hint:'諧音：久誰～ 森優～ 峽溜～', emoji:'🚺' },
+      { jp:'優先席', kana:'ゆうせんせき', romaji:'yūsenseki', zh:'博愛座', hint:'諧音：瘀～森誰ki', emoji:'♿' },
+      { jp:'コインロッカー', kana:'こいんろっかー', romaji:'koin rokkā', zh:'投幣置物櫃', hint:'諧音：摳因 囉卡～', emoji:'🔐' },
+      { jp:'満員電車', kana:'まんいんでんしゃ', romaji:'man\'in densha', zh:'擠滿人的電車', hint:'諧音：慢因 點峽', emoji:'😵' }
+    ],
+    phrases: [
+      { jp:'京都まで片道一枚ください', kana:'きょうとまでかたみちいちまいください', romaji:'Kyōto made katamichi ichimai kudasai', zh:'一張到京都的單程票', hint:'諧音：kyo～偷媽爹 卡他咪吃 伊吃媽伊 哭搭賽', use:'在售票窗口買票時' },
+      { jp:'席を予約したいです', kana:'せきをよやくしたいです', romaji:'seki o yoyaku shitai desu', zh:'我想訂座位', hint:'諧音：誰ki歐 優呀哭 西他伊爹斯', use:'在綠色窗口劃新幹線指定席時' },
+      { jp:'この切符で乗れますか', kana:'このきっぷでのれますか', romaji:'kono kippu de noremasu ka', zh:'這張票能搭嗎？', hint:'諧音：摳諾 ki噗爹 諾勒媽斯卡', use:'拿票給站務員確認時' },
+      { jp:'改札を通れません', kana:'かいさつをとおれません', romaji:'kaisatsu o tōremasen', zh:'過不了閘門', hint:'諧音：卡伊薩此歐 偷～勒媽森', use:'刷卡被擋時找站務員' },
+      { jp:'乗り過ごしました', kana:'のりすごしました', romaji:'norisugoshimashita', zh:'我坐過站了', hint:'諧音：諾哩斯勾西媽西他', use:'告訴站務員要補票或折返時' },
+      { jp:'切符をなくしました', kana:'きっぷをなくしました', romaji:'kippu o nakushimashita', zh:'我車票弄丟了', hint:'諧音：ki噗歐 那哭西媽西他', use:'出站前找不到票時' },
+      { jp:'次の電車は何時ですか', kana:'つぎのでんしゃはなんじですか', romaji:'tsugi no densha wa nanji desu ka', zh:'下一班車幾點？', hint:'諧音：此gi諾 點峽哇 南基爹斯卡', use:'錯過車時' },
+      { jp:'何分くらいかかりますか', kana:'なんぷんくらいかかりますか', romaji:'nanpun kurai kakarimasu ka', zh:'大概要幾分鐘？', hint:'諧音：南噗恩 哭拉伊 卡卡哩媽斯卡', use:'問車程時' },
+      { jp:'コインロッカーはどこですか', kana:'こいんろっかーはどこですか', romaji:'koin rokkā wa doko desu ka', zh:'置物櫃在哪裡？', hint:'諧音：摳因囉卡～哇 兜摳爹斯卡', use:'想寄放行李時' },
+      { jp:'間もなく一番線に電車が参ります', kana:'まもなくいちばんせんにでんしゃがまいります', romaji:'mamonaku ichiban-sen ni densha ga mairimasu', zh:'電車即將進入一號月台', hint:'諧音：媽摸那哭 伊吃棒森尼 點峽嘎 媽伊哩媽斯', use:'聽到月台廣播' },
+      { jp:'黄色い線の内側までお下がりください', kana:'きいろいせんのうちがわまでおさがりください', romaji:'kiiroi sen no uchigawa made osagari kudasai', zh:'請退到黃線內側', hint:'諧音：ki～囉伊森諾 烏吃嘎哇媽爹 歐薩嘎哩 哭搭賽', use:'聽到月台廣播' },
+      { jp:'ドアが閉まります。ご注意ください', kana:'どあがしまります。ごちゅういください', romaji:'doa ga shimarimasu. gochūi kudasai', zh:'車門即將關閉，請注意', hint:'諧音：兜阿嘎 西媽哩媽斯 勾啾～伊 哭搭賽', use:'聽到月台廣播' },
+      { jp:'次は新宿です', kana:'つぎはしんじゅくです', romaji:'tsugi wa Shinjuku desu', zh:'下一站是新宿', hint:'諧音：此gi哇 心啾哭爹斯', use:'聽到車內廣播' },
+      { jp:'お出口は右側です', kana:'おでぐちはみぎがわです', romaji:'odeguchi wa migigawa desu', zh:'出口在右側', hint:'諧音：歐爹古吃哇 咪gi嘎哇爹斯', use:'聽到車內廣播' },
+      { jp:'精算機で精算してください', kana:'せいさんきでせいさんしてください', romaji:'seisanki de seisan shite kudasai', zh:'請到補票機補票', hint:'諧音：誰～桑ki爹 誰～桑 西貼 哭搭賽', use:'聽到站務員說' },
+      { jp:'人身事故の影響で遅れています', kana:'じんしんじこのえいきょうでおくれています', romaji:'jinshin jiko no eikyō de okurete imasu', zh:'因人身事故造成誤點', hint:'諧音：金心基摳諾 欸～kyo～爹 歐哭勒貼伊媽斯', use:'聽到廣播（電車誤點時）' }
+    ]
+  },
+
+  // ==================== 飯店入住 ====================
+  hotel: {
+    vocab: [
+      { jp:'ホテル', kana:'ほてる', romaji:'hoteru', zh:'飯店', hint:'諧音：齁貼嚕', emoji:'🏨' },
+      { jp:'旅館', kana:'りょかん', romaji:'ryokan', zh:'日式旅館', hint:'諧音：溜看', emoji:'🏯' },
+      { jp:'シングル', kana:'しんぐる', romaji:'shinguru', zh:'單人房', hint:'諧音：心古嚕', emoji:'🛏️' },
+      { jp:'ツイン', kana:'ついん', romaji:'tsuin', zh:'雙床房', hint:'諧音：此因', emoji:'🛏️' },
+      { jp:'ダブル', kana:'だぶる', romaji:'daburu', zh:'一大床房', hint:'諧音：搭布嚕', emoji:'🛌' },
+      { jp:'カードキー', kana:'かーどきー', romaji:'kādo kī', zh:'房卡', hint:'諧音：卡～兜 ki～', emoji:'🔑' },
+      { jp:'夕食', kana:'ゆうしょく', romaji:'yūshoku', zh:'晚餐', hint:'諧音：瘀～休哭', emoji:'🍱' },
+      { jp:'大浴場', kana:'だいよくじょう', romaji:'daiyokujō', zh:'大浴場', hint:'諧音：搭伊優哭久～', emoji:'♨️' },
+      { jp:'浴衣', kana:'ゆかた', romaji:'yukata', zh:'浴衣', hint:'諧音：瘀卡他', emoji:'👘' },
+      { jp:'アメニティ', kana:'あめにてぃ', romaji:'ameniti', zh:'盥洗備品', hint:'諧音：阿妹尼踢', emoji:'🧴' },
+      { jp:'ドライヤー', kana:'どらいやー', romaji:'doraiyā', zh:'吹風機', hint:'諧音：兜拉伊呀～', emoji:'💨' },
+      { jp:'冷蔵庫', kana:'れいぞうこ', romaji:'reizōko', zh:'冰箱', hint:'諧音：勒～走～摳', emoji:'🧊' },
+      { jp:'枕', kana:'まくら', romaji:'makura', zh:'枕頭', hint:'諧音：媽哭拉', emoji:'🛏️' },
+      { jp:'毛布', kana:'もうふ', romaji:'mōfu', zh:'毛毯', hint:'諧音：摸～夫', emoji:'🧣' },
+      { jp:'宿泊税', kana:'しゅくはくぜい', romaji:'shukuhakuzei', zh:'住宿稅', hint:'諧音：咻哭哈哭賊～', emoji:'💴' },
+      { jp:'非常口', kana:'ひじょうぐち', romaji:'hijōguchi', zh:'緊急出口', hint:'諧音：hi久～古吃', emoji:'🚨' },
+      { jp:'掃除', kana:'そうじ', romaji:'sōji', zh:'打掃', hint:'諧音：搜～基', emoji:'🧹' },
+      { jp:'延泊', kana:'えんぱく', romaji:'enpaku', zh:'續住', hint:'諧音：欸恩趴哭', emoji:'📅' },
+      { jp:'宅配便', kana:'たくはいびん', romaji:'takuhaibin', zh:'宅配', hint:'諧音：他哭哈伊逼恩', emoji:'📦' }
+    ],
+    phrases: [
+      { jp:'予約していないのですが、今夜空いていますか', kana:'よやくしていないのですが、こんやあいていますか', romaji:'yoyaku shite inai no desu ga, kon\'ya aite imasu ka', zh:'我沒預約，今晚有空房嗎？', hint:'諧音：優呀哭西貼 伊那伊諾爹斯嘎 摳恩呀 阿伊貼伊媽斯卡', use:'臨時找住宿時' },
+      { jp:'チェックインの前に荷物を預けられますか', kana:'ちぇっくいんのまえににもつをあずけられますか', romaji:'chekkuin no mae ni nimotsu o azukeraremasu ka', zh:'入住前可以先寄放行李嗎？', hint:'諧音：切哭因諾 媽欸尼 尼摸此歐 阿茲ke拉勒媽斯卡', use:'太早到飯店時' },
+      { jp:'お湯が出ません', kana:'おゆがでません', romaji:'oyu ga demasen', zh:'沒有熱水', hint:'諧音：歐瘀嘎 爹媽森', use:'打電話到櫃台反映時' },
+      { jp:'エアコンがつきません', kana:'えあこんがつきません', romaji:'eakon ga tsukimasen', zh:'冷氣開不了', hint:'諧音：欸阿摳恩嘎 此ki媽森', use:'房間設備有問題時' },
+      { jp:'鍵を部屋に置いたまま出てしまいました', kana:'かぎをへやにおいたままでてしまいました', romaji:'kagi o heya ni oita mama dete shimaimashita', zh:'我把鑰匙忘在房間裡了', hint:'諧音：卡gi歐 嘿呀尼 歐伊他媽媽 爹貼西媽伊媽西他', use:'被反鎖在門外時' },
+      { jp:'部屋の掃除は大丈夫です', kana:'へやのそうじはだいじょうぶです', romaji:'heya no sōji wa daijōbu desu', zh:'房間不用打掃', hint:'諧音：嘿呀諾 搜～基哇 搭伊久～布爹斯', use:'連住時不需要清潔' },
+      { jp:'一泊延長できますか', kana:'いっぱくえんちょうできますか', romaji:'ippaku enchō dekimasu ka', zh:'可以多住一晚嗎？', hint:'諧音：伊趴哭 欸恩秋～ 爹ki媽斯卡', use:'想續住時' },
+      { jp:'タクシーを呼んでもらえますか', kana:'たくしーをよんでもらえますか', romaji:'takushī o yonde moraemasu ka', zh:'可以幫我叫計程車嗎？', hint:'諧音：他哭西～歐 優恩爹 摸拉欸媽斯卡', use:'退房要去機場時' },
+      { jp:'近くにおすすめのお店はありますか', kana:'ちかくにおすすめのおみせはありますか', romaji:'chikaku ni osusume no omise wa arimasu ka', zh:'附近有推薦的店嗎？', hint:'諧音：吃卡哭尼 歐斯斯妹諾 歐咪賊哇 阿哩媽斯卡', use:'找晚餐地點時問櫃台' },
+      { jp:'パスポートをお預かりしてもよろしいですか', kana:'ぱすぽーとをおあずかりしてもよろしいですか', romaji:'pasupōto o oazukari shite mo yoroshii desu ka', zh:'可以借一下護照嗎？', hint:'諧音：趴斯剖～偷歐 歐阿茲卡哩西貼摸 優囉西～爹斯卡', use:'聽到櫃台說（外國旅客須影印護照）' },
+      { jp:'こちらにご記入をお願いします', kana:'こちらにごきにゅうをおねがいします', romaji:'kochira ni gokinyū o onegai shimasu', zh:'請填寫這裡', hint:'諧音：摳吃拉尼 勾ki妞～歐 歐內嘎伊西媽斯', use:'聽到櫃台說' },
+      { jp:'お部屋は705号室です', kana:'おへやはななまるごごうしつです', romaji:'oheya wa nana-maru-go gōshitsu desu', zh:'您的房間是 705 號房', hint:'諧音：歐嘿呀哇 那那媽嚕勾 勾～西此爹斯', use:'聽到櫃台說' },
+      { jp:'チェックアウトは十時です', kana:'ちぇっくあうとはじゅうじです', romaji:'chekkuauto wa jūji desu', zh:'退房時間是十點', hint:'諧音：切哭阿烏偷哇 啾～基爹斯', use:'聽到櫃台說' },
+      { jp:'朝食は二階のレストランでございます', kana:'ちょうしょくはにかいのれすとらんでございます', romaji:'chōshoku wa nikai no resutoran de gozaimasu', zh:'早餐在二樓餐廳', hint:'諧音：秋～休哭哇 尼卡伊諾 勒斯偷拉恩爹 勾紮伊媽斯', use:'聽到櫃台說' },
+      { jp:'宿泊税を別途頂戴しております', kana:'しゅくはくぜいをべっとちょうだいしております', romaji:'shukuhakuzei o betto chōdai shite orimasu', zh:'另外收取住宿稅', hint:'諧音：咻哭哈哭賊～歐 背偷 秋～搭伊 西貼歐哩媽斯', use:'聽到櫃台說（結帳時）' },
+      { jp:'お荷物はおいくつですか', kana:'おにもつはおいくつですか', romaji:'onimotsu wa oikutsu desu ka', zh:'行李有幾件？', hint:'諧音：歐尼摸此哇 歐伊哭此爹斯卡', use:'聽到櫃台問（寄放行李時）' }
+    ]
+  },
+
+  // ==================== 神社・觀光 ====================
+  shrine: {
+    vocab: [
+      { jp:'手水舎', kana:'ちょうずや', romaji:'chōzuya', zh:'洗手亭', hint:'諧音：秋～茲呀', emoji:'⛲' },
+      { jp:'本殿', kana:'ほんでん', romaji:'honden', zh:'正殿', hint:'諧音：齁恩點', emoji:'⛩️' },
+      { jp:'拝殿', kana:'はいでん', romaji:'haiden', zh:'拜殿（參拜處）', hint:'諧音：哈伊點', emoji:'🙏' },
+      { jp:'狛犬', kana:'こまいぬ', romaji:'komainu', zh:'狛犬（守護石獸）', hint:'諧音：摳媽伊奴', emoji:'🐕' },
+      { jp:'鈴', kana:'すず', romaji:'suzu', zh:'鈴鐺', hint:'諧音：斯茲', emoji:'🔔' },
+      { jp:'お線香', kana:'おせんこう', romaji:'osenkō', zh:'線香', hint:'諧音：歐森摳～', emoji:'🕯️' },
+      { jp:'仏像', kana:'ぶつぞう', romaji:'butsuzō', zh:'佛像', hint:'諧音：布此走～', emoji:'🗿' },
+      { jp:'五重塔', kana:'ごじゅうのとう', romaji:'gojū no tō', zh:'五重塔', hint:'諧音：勾啾～諾偷～', emoji:'🏯' },
+      { jp:'庭園', kana:'ていえん', romaji:'teien', zh:'庭園', hint:'諧音：貼～欸恩', emoji:'🌳' },
+      { jp:'紅葉', kana:'こうよう', romaji:'kōyō', zh:'紅葉', hint:'諧音：摳～優～', emoji:'🍁' },
+      { jp:'桜', kana:'さくら', romaji:'sakura', zh:'櫻花', hint:'諧音：薩哭拉', emoji:'🌸' },
+      { jp:'御朱印帳', kana:'ごしゅいんちょう', romaji:'goshuinchō', zh:'御朱印帳', hint:'諧音：勾咻因秋～', emoji:'📖' },
+      { jp:'凶', kana:'きょう', romaji:'kyō', zh:'凶（籤）', hint:'諧音：kyo～', emoji:'😱' },
+      { jp:'二礼二拍手一礼', kana:'にれいにはくしゅいちれい', romaji:'nirei nihakushu ichirei', zh:'二拜二拍手一拜', hint:'諧音：尼勒～ 尼哈哭咻 伊吃勒～', emoji:'🙇' },
+      { jp:'縁結び', kana:'えんむすび', romaji:'enmusubi', zh:'結緣、姻緣', hint:'諧音：欸恩母斯逼', emoji:'💕' },
+      { jp:'拝観料', kana:'はいかんりょう', romaji:'haikanryō', zh:'（寺院）參觀費', hint:'諧音：哈伊看溜～', emoji:'💴' },
+      { jp:'撮影禁止', kana:'さつえいきんし', romaji:'satsuei kinshi', zh:'禁止攝影', hint:'諧音：薩此欸～ 金西', emoji:'🚫' },
+      { jp:'立入禁止', kana:'たちいりきんし', romaji:'tachiiri kinshi', zh:'禁止進入', hint:'諧音：他吃伊哩 金西', emoji:'⛔' },
+      { jp:'観光案内所', kana:'かんこうあんないしょ', romaji:'kankō annaisho', zh:'觀光服務處', hint:'諧音：看摳～ 安那伊休', emoji:'ℹ️' },
+      { jp:'パンフレット', kana:'ぱんふれっと', romaji:'panfuretto', zh:'簡介手冊', hint:'諧音：胖夫勒偷', emoji:'📄' }
+    ],
+    phrases: [
+      { jp:'大人二枚ください', kana:'おとなにまいください', romaji:'otona nimai kudasai', zh:'兩張全票', hint:'諧音：歐偷那 尼媽伊 哭搭賽', use:'買門票時' },
+      { jp:'学生割引はありますか', kana:'がくせいわりびきはありますか', romaji:'gakusei waribiki wa arimasu ka', zh:'有學生優惠嗎？', hint:'諧音：嘎哭誰～ 哇哩逼ki哇 阿哩媽斯卡', use:'買門票時' },
+      { jp:'中国語のパンフレットはありますか', kana:'ちゅうごくごのぱんふれっとはありますか', romaji:'chūgokugo no panfuretto wa arimasu ka', zh:'有中文簡介嗎？', hint:'諧音：啾～勾哭勾諾 胖夫勒偷哇 阿哩媽斯卡', use:'在入口或案內所' },
+      { jp:'靴は脱ぎますか', kana:'くつはぬぎますか', romaji:'kutsu wa nugimasu ka', zh:'要脫鞋嗎？', hint:'諧音：哭此哇 奴gi媽斯卡', use:'進寺院建築前' },
+      { jp:'このお守りは何のご利益がありますか', kana:'このおまもりはなんのごりやくがありますか', romaji:'kono omamori wa nan no goriyaku ga arimasu ka', zh:'這個御守保佑什麼？', hint:'諧音：摳諾 歐媽摸哩哇 南諾 勾哩呀哭嘎 阿哩媽斯卡', use:'挑御守時' },
+      { jp:'おみくじを結ぶ場所はどこですか', kana:'おみくじをむすぶばしょはどこですか', romaji:'omikuji o musubu basho wa doko desu ka', zh:'綁籤詩的地方在哪？', hint:'諧音：歐咪哭基歐 母斯布 巴休哇 兜摳爹斯卡', use:'抽到不好的籤想綁起來時' },
+      { jp:'御朱印帳も売っていますか', kana:'ごしゅいんちょうもうっていますか', romaji:'goshuinchō mo utte imasu ka', zh:'也有賣御朱印帳嗎？', hint:'諧音：勾咻因秋～摸 烏貼伊媽斯卡', use:'第一次收集御朱印時' },
+      { jp:'ガイドツアーはありますか', kana:'がいどつあーはありますか', romaji:'gaido tsuā wa arimasu ka', zh:'有導覽行程嗎？', hint:'諧音：嘎伊兜 此阿～哇 阿哩媽斯卡', use:'想跟導覽參觀時' },
+      { jp:'最寄りのバス停はどこですか', kana:'もよりのばすていはどこですか', romaji:'moyori no basutei wa doko desu ka', zh:'最近的公車站在哪？', hint:'諧音：摸優哩諾 巴斯貼～哇 兜摳爹斯卡', use:'參觀完要離開時' },
+      { jp:'撮影はご遠慮ください', kana:'さつえいはごえんりょください', romaji:'satsuei wa goenryo kudasai', zh:'請勿拍照', hint:'諧音：薩此欸～哇 勾欸恩溜 哭搭賽', use:'聽到工作人員說' },
+      { jp:'中では靴をお脱ぎください', kana:'なかではくつをおぬぎください', romaji:'naka de wa kutsu o onugi kudasai', zh:'進去請脫鞋', hint:'諧音：那卡爹哇 哭此歐 歐奴gi 哭搭賽', use:'聽到工作人員說' },
+      { jp:'御朱印は書き置きのみとなっております', kana:'ごしゅいんはかきおきのみとなっております', romaji:'goshuin wa kakioki nomi to natte orimasu', zh:'御朱印只提供預先寫好的紙本', hint:'諧音：勾咻因哇 卡ki歐ki 諾咪偷 那貼歐哩媽斯', use:'聽到社務所說' },
+      { jp:'初穂料は五百円です', kana:'はつほりょうはごひゃくえんです', romaji:'hatsuhoryō wa gohyaku en desu', zh:'奉納金是五百圓', hint:'諧音：哈此齁溜～哇 勾hya哭恩爹斯', use:'聽到社務所說（求御朱印、御守時）' },
+      { jp:'受付は四時半までです', kana:'うけつけはよじはんまでです', romaji:'uketsuke wa yoji han made desu', zh:'受理到四點半', hint:'諧音：烏ke此ke哇 優基哈恩 媽爹爹斯', use:'聽到工作人員說' },
+      { jp:'順番にお並びください', kana:'じゅんばんにおならびください', romaji:'junban ni onarabi kudasai', zh:'請依序排隊', hint:'諧音：啾恩棒尼 歐那拉逼 哭搭賽', use:'聽到工作人員說' },
+      { jp:'立ち止まらないでください', kana:'たちどまらないでください', romaji:'tachidomaranaide kudasai', zh:'請不要停下腳步', hint:'諧音：他吃兜媽拉那伊爹 哭搭賽', use:'聽到人潮管制人員說（新年、祭典）' }
+    ]
+  },
+
+  // ==================== 機場 ====================
+  airport: {
+    vocab: [
+      { jp:'入国審査', kana:'にゅうこくしんさ', romaji:'nyūkoku shinsa', zh:'入境審查', hint:'諧音：妞～摳哭 心薩', emoji:'🛂' },
+      { jp:'税関', kana:'ぜいかん', romaji:'zeikan', zh:'海關', hint:'諧音：賊～看', emoji:'🛃' },
+      { jp:'検疫', kana:'けんえき', romaji:'ken\'eki', zh:'檢疫', hint:'諧音：開恩欸ki', emoji:'🩺' },
+      { jp:'申告', kana:'しんこく', romaji:'shinkoku', zh:'申報', hint:'諧音：心摳哭', emoji:'📝' },
+      { jp:'指紋', kana:'しもん', romaji:'shimon', zh:'指紋', hint:'諧音：西摸恩', emoji:'👆' },
+      { jp:'滞在先', kana:'たいざいさき', romaji:'taizaisaki', zh:'住宿地點', hint:'諧音：他伊紮伊薩ki', emoji:'🏨' },
+      { jp:'乗り継ぎ', kana:'のりつぎ', romaji:'noritsugi', zh:'轉機', hint:'諧音：諾哩此gi', emoji:'🔄' },
+      { jp:'機内持ち込み', kana:'きないもちこみ', romaji:'kinai mochikomi', zh:'隨身登機', hint:'諧音：ki那伊 摸吃摳咪', emoji:'🎒' },
+      { jp:'手荷物受取所', kana:'てにもつうけとりしょ', romaji:'tenimotsu uketorisho', zh:'行李提領處', hint:'諧音：貼尼摸此 烏ke偷哩休', emoji:'🧳' },
+      { jp:'紛失', kana:'ふんしつ', romaji:'funshitsu', zh:'遺失', hint:'諧音：夫恩西此', emoji:'❓' },
+      { jp:'破損', kana:'はそん', romaji:'hason', zh:'損壞', hint:'諧音：哈搜恩', emoji:'💥' },
+      { jp:'為替レート', kana:'かわせれーと', romaji:'kawase rēto', zh:'匯率', hint:'諧音：卡哇賊 勒～偷', emoji:'💱' },
+      { jp:'手数料', kana:'てすうりょう', romaji:'tesūryō', zh:'手續費', hint:'諧音：貼斯～溜～', emoji:'💴' },
+      { jp:'到着ロビー', kana:'とうちゃくろびー', romaji:'tōchaku robī', zh:'入境大廳', hint:'諧音：偷～恰哭 囉逼～', emoji:'🛬' },
+      { jp:'保安検査', kana:'ほあんけんさ', romaji:'hoan kensa', zh:'安全檢查', hint:'諧音：齁安 開恩薩', emoji:'🔍' },
+      { jp:'液体', kana:'えきたい', romaji:'ekitai', zh:'液體', hint:'諧音：欸ki他伊', emoji:'💧' },
+      { jp:'モバイルバッテリー', kana:'もばいるばってりー', romaji:'mobairu batterī', zh:'行動電源', hint:'諧音：摸巴伊嚕 巴貼哩～', emoji:'🔋' },
+      { jp:'国際線', kana:'こくさいせん', romaji:'kokusaisen', zh:'國際線', hint:'諧音：摳哭薩伊森', emoji:'🌏' },
+      { jp:'国内線', kana:'こくないせん', romaji:'kokunaisen', zh:'國內線', hint:'諧音：摳哭那伊森', emoji:'🗾' },
+      { jp:'リムジンバス', kana:'りむじんばす', romaji:'rimujin basu', zh:'機場巴士', hint:'諧音：哩母金 巴斯', emoji:'🚌' }
+    ],
+    phrases: [
+      { jp:'新宿のホテルに泊まります', kana:'しんじゅくのほてるにとまります', romaji:'Shinjuku no hoteru ni tomarimasu', zh:'我住新宿的飯店', hint:'諧音：心啾哭諾 齁貼嚕尼 偷媽哩媽斯', use:'審查官問住哪裡時' },
+      { jp:'申告するものはありません', kana:'しんこくするものはありません', romaji:'shinkoku suru mono wa arimasen', zh:'沒有要申報的東西', hint:'諧音：心摳哭 斯嚕摸諾哇 阿哩媽森', use:'海關問時回答' },
+      { jp:'荷物が出てきません', kana:'にもつがでてきません', romaji:'nimotsu ga dete kimasen', zh:'我的行李沒出來', hint:'諧音：尼摸此嘎 爹貼ki媽森', use:'在行李轉盤等不到時，找航空公司櫃台' },
+      { jp:'スーツケースが壊れています', kana:'すーつけーすがこわれています', romaji:'sūtsukēsu ga kowarete imasu', zh:'行李箱壞了', hint:'諧音：斯～此ke～斯嘎 摳哇勒貼伊媽斯', use:'領到損壞的行李時' },
+      { jp:'一万円を千円札に崩してください', kana:'いちまんえんをせんえんさつにくずしてください', romaji:'ichiman en o sen en satsu ni kuzushite kudasai', zh:'請把一萬圓換成千圓鈔', hint:'諧音：伊吃慢恩歐 森恩薩此尼 哭茲西貼 哭搭賽', use:'在兌換處要小額鈔票時' },
+      { jp:'予約したSIMを受け取りたいです', kana:'よやくしたしむをうけとりたいです', romaji:'yoyaku shita shimu o uketoritai desu', zh:'我要領取預約的 SIM 卡', hint:'諧音：優呀哭西他 西姆歐 烏ke偷哩他伊爹斯', use:'在租借櫃台出示預約號碼時' },
+      { jp:'リムジンバスの乗り場はどこですか', kana:'りむじんばすののりばはどこですか', romaji:'rimujin basu no noriba wa doko desu ka', zh:'機場巴士在哪裡搭？', hint:'諧音：哩母金巴斯諾 諾哩巴哇 兜摳爹斯卡', use:'出關後找交通時' },
+      { jp:'通路側に変えられますか', kana:'つうろがわにかえられますか', romaji:'tsūrogawa ni kaeraremasu ka', zh:'可以換到靠走道嗎？', hint:'諧音：此～囉嘎哇尼 卡欸拉勒媽斯卡', use:'報到劃位時' },
+      { jp:'渡航の目的は何ですか', kana:'とこうのもくてきはなんですか', romaji:'tokō no mokuteki wa nan desu ka', zh:'來日目的是什麼？', hint:'諧音：偷摳～諾 摸哭貼ki哇 南爹斯卡', use:'聽到審查官問（回答「観光です」）' },
+      { jp:'何日間滞在されますか', kana:'なんにちかんたいざいされますか', romaji:'nannichikan taizai saremasu ka', zh:'要停留幾天？', hint:'諧音：南尼吃看 他伊紮伊 薩勒媽斯卡', use:'聽到審查官問' },
+      { jp:'どちらにお泊まりですか', kana:'どちらにおとまりですか', romaji:'dochira ni otomari desu ka', zh:'住在哪裡？', hint:'諧音：兜吃拉尼 歐偷媽哩爹斯卡', use:'聽到審查官問' },
+      { jp:'両手の人差し指を置いてください', kana:'りょうてのひとさしゆびをおいてください', romaji:'ryōte no hitosashiyubi o oite kudasai', zh:'請放上兩手食指', hint:'諧音：溜～貼諾 hi偷薩西瘀逼歐 歐伊貼 哭搭賽', use:'聽到審查官說（按指紋）' },
+      { jp:'カメラを見てください', kana:'かめらをみてください', romaji:'kamera o mite kudasai', zh:'請看鏡頭', hint:'諧音：卡妹拉歐 咪貼 哭搭賽', use:'聽到審查官說（拍臉部照片）' },
+      { jp:'申告するものはありますか', kana:'しんこくするものはありますか', romaji:'shinkoku suru mono wa arimasu ka', zh:'有要申報的東西嗎？', hint:'諧音：心摳哭 斯嚕摸諾哇 阿哩媽斯卡', use:'聽到海關問' },
+      { jp:'かばんを開けてもよろしいですか', kana:'かばんをあけてもよろしいですか', romaji:'kaban o akete mo yoroshii desu ka', zh:'可以打開您的包包嗎？', hint:'諧音：卡棒歐 阿ke貼摸 優囉西～爹斯卡', use:'聽到海關問（抽檢）' },
+      { jp:'お預けのお荷物はございますか', kana:'おあずけのおにもつはございますか', romaji:'oazuke no onimotsu wa gozaimasu ka', zh:'有要託運的行李嗎？', hint:'諧音：歐阿茲ke諾 歐尼摸此哇 勾紮伊媽斯卡', use:'聽到報到櫃台問' }
+    ]
+  },
+
+  // ==================== 緊急求助・藥局 ====================
+  emergency: {
+    vocab: [
+      { jp:'110番', kana:'ひゃくとおばん', romaji:'hyakutōban', zh:'報警電話 110', hint:'諧音：hya哭偷～棒', emoji:'👮' },
+      { jp:'119番', kana:'ひゃくじゅうきゅうばん', romaji:'hyakujūkyūban', zh:'消防、救護車電話 119', hint:'諧音：hya哭啾～Q～棒', emoji:'🚑' },
+      { jp:'消防車', kana:'しょうぼうしゃ', romaji:'shōbōsha', zh:'消防車', hint:'諧音：休～玻～峽', emoji:'🚒' },
+      { jp:'火事', kana:'かじ', romaji:'kaji', zh:'火災', hint:'諧音：卡基', emoji:'🔥' },
+      { jp:'地震', kana:'じしん', romaji:'jishin', zh:'地震', hint:'諧音：基心', emoji:'🏚️' },
+      { jp:'避難所', kana:'ひなんじょ', romaji:'hinanjo', zh:'避難所', hint:'諧音：hi南久', emoji:'🏫' },
+      { jp:'怪我', kana:'けが', romaji:'kega', zh:'受傷', hint:'諧音：ke嘎', emoji:'🩹' },
+      { jp:'骨折', kana:'こっせつ', romaji:'kossetsu', zh:'骨折', hint:'諧音：摳誰此', emoji:'🦴' },
+      { jp:'吐き気', kana:'はきけ', romaji:'hakike', zh:'想吐', hint:'諧音：哈ki ke', emoji:'🤢' },
+      { jp:'下痢', kana:'げり', romaji:'geri', zh:'拉肚子', hint:'諧音：給哩', emoji:'🚽' },
+      { jp:'咳', kana:'せき', romaji:'seki', zh:'咳嗽', hint:'諧音：誰ki', emoji:'😷' },
+      { jp:'めまい', kana:'めまい', romaji:'memai', zh:'頭暈', hint:'諧音：妹媽伊', emoji:'😵' },
+      { jp:'喘息', kana:'ぜんそく', romaji:'zensoku', zh:'氣喘', hint:'諧音：賊恩搜哭', emoji:'🫁' },
+      { jp:'血液型', kana:'けつえきがた', romaji:'ketsuekigata', zh:'血型', hint:'諧音：ke此欸ki嘎他', emoji:'🩸' },
+      { jp:'診察', kana:'しんさつ', romaji:'shinsatsu', zh:'看診', hint:'諧音：心薩此', emoji:'🩺' },
+      { jp:'受付', kana:'うけつけ', romaji:'uketsuke', zh:'掛號處、櫃台', hint:'諧音：烏ke此ke', emoji:'🗂️' },
+      { jp:'盗難', kana:'とうなん', romaji:'tōnan', zh:'失竊', hint:'諧音：偷～南', emoji:'🦹' },
+      { jp:'大使館', kana:'たいしかん', romaji:'taishikan', zh:'大使館（台灣為駐日代表處）', hint:'諧音：他伊西看', emoji:'🏛️' },
+      { jp:'痴漢', kana:'ちかん', romaji:'chikan', zh:'色狼', hint:'諧音：吃看', emoji:'🚨' },
+      { jp:'迷子', kana:'まいご', romaji:'maigo', zh:'走失（的人）', hint:'諧音：媽伊勾', emoji:'🧒' }
+    ],
+    phrases: [
+      { jp:'気分が悪いです', kana:'きぶんがわるいです', romaji:'kibun ga warui desu', zh:'我身體不舒服', hint:'諧音：ki布恩嘎 哇嚕伊爹斯', use:'突然不舒服向旁人求助時' },
+      { jp:'吐き気がします', kana:'はきけがします', romaji:'hakike ga shimasu', zh:'我想吐', hint:'諧音：哈ki ke嘎 西媽斯', use:'向醫生、藥劑師說明症狀' },
+      { jp:'足をひねりました', kana:'あしをひねりました', romaji:'ashi o hinerimashita', zh:'我扭到腳了', hint:'諧音：阿西歐 hi內哩媽西他', use:'受傷時說明狀況' },
+      { jp:'薬のアレルギーがあります', kana:'くすりのあれるぎーがあります', romaji:'kusuri no arerugī ga arimasu', zh:'我對藥物過敏', hint:'諧音：哭斯哩諾 阿勒嚕gi～嘎 阿哩媽斯', use:'看診、拿藥前告知' },
+      { jp:'海外旅行保険に入っています', kana:'かいがいりょこうほけんにはいっています', romaji:'kaigai ryokō hoken ni haitte imasu', zh:'我有保旅遊平安險', hint:'諧音：卡伊嘎伊 溜摳～ 齁開恩尼 哈伊貼伊媽斯', use:'醫院櫃台問保險時' },
+      { jp:'診断書をください', kana:'しんだんしょをください', romaji:'shindansho o kudasai', zh:'請給我診斷證明', hint:'諧音：心單休歐 哭搭賽', use:'回國申請保險理賠用' },
+      { jp:'盗まれました', kana:'ぬすまれました', romaji:'nusumaremashita', zh:'東西被偷了', hint:'諧音：奴斯媽勒媽西他', use:'到交番報案時' },
+      { jp:'パスポートをなくしました', kana:'ぱすぽーとをなくしました', romaji:'pasupōto o nakushimashita', zh:'我護照弄丟了', hint:'諧音：趴斯剖～偷歐 那哭西媽西他', use:'到交番或代表處時' },
+      { jp:'台湾の代表処に連絡したいです', kana:'たいわんのだいひょうしょにれんらくしたいです', romaji:'Taiwan no daihyōsho ni renraku shitai desu', zh:'我想聯絡台灣駐日代表處', hint:'諧音：他伊灣諾 搭伊hyo～休尼 連拉哭 西他伊爹斯', use:'護照遺失、重大事故時' },
+      { jp:'どうしましたか', kana:'どうしましたか', romaji:'dō shimashita ka', zh:'怎麼了？', hint:'諧音：兜～西媽西他卡', use:'聽到醫護人員或警察問' },
+      { jp:'いつからですか', kana:'いつからですか', romaji:'itsu kara desu ka', zh:'從什麼時候開始的？', hint:'諧音：伊此卡拉 爹斯卡', use:'聽到醫生問（回答「昨日からです」）' },
+      { jp:'どこが痛いですか', kana:'どこがいたいですか', romaji:'doko ga itai desu ka', zh:'哪裡痛？', hint:'諧音：兜摳嘎 伊他伊爹斯卡', use:'聽到醫生問' },
+      { jp:'保険証はお持ちですか', kana:'ほけんしょうはおもちですか', romaji:'hokenshō wa omochi desu ka', zh:'有健保卡嗎？', hint:'諧音：齁開恩休～哇 歐摸吃爹斯卡', use:'聽到醫院櫃台問（外國人須自費）' },
+      { jp:'こちらの問診票にご記入ください', kana:'こちらのもんしんひょうにごきにゅうください', romaji:'kochira no monshinhyō ni gokinyū kudasai', zh:'請填寫問診單', hint:'諧音：摳吃拉諾 摸恩心hyo～尼 勾ki妞～ 哭搭賽', use:'聽到醫院櫃台說' },
+      { jp:'火事ですか、救急ですか', kana:'かじですか、きゅうきゅうですか', romaji:'kaji desu ka, kyūkyū desu ka', zh:'是火災還是急救？', hint:'諧音：卡基爹斯卡 Q～Q～爹斯卡', use:'聽到 119 接線員問' },
+      { jp:'遺失届を出してください', kana:'いしつとどけをだしてください', romaji:'ishitsu todoke o dashite kudasai', zh:'請填寫遺失申報', hint:'諧音：伊西此 偷兜ke歐 搭西貼 哭搭賽', use:'聽到警察說' }
+    ]
+  },
+
+  // ==================== 燒肉店 ====================
+  yakiniku: {
+    vocab: [
+      { jp:'焼肉', kana:'やきにく', romaji:'yakiniku', zh:'燒肉', hint:'諧音：呀ki尼哭', emoji:'🥩' },
+      { jp:'牛タン', kana:'ぎゅうたん', romaji:'gyūtan', zh:'牛舌', hint:'諧音：gyu～探', emoji:'👅' },
+      { jp:'上カルビ', kana:'じょうかるび', romaji:'jō karubi', zh:'上等牛五花', hint:'諧音：久～ 卡嚕逼', emoji:'🥩' },
+      { jp:'ミノ', kana:'みの', romaji:'mino', zh:'牛胃（第一胃）', hint:'諧音：咪諾', emoji:'🐄' },
+      { jp:'レバー', kana:'ればー', romaji:'rebā', zh:'肝', hint:'諧音：勒巴～', emoji:'🫀' },
+      { jp:'豚トロ', kana:'とんとろ', romaji:'tontoro', zh:'豬頸肉', hint:'諧音：偷恩偷囉', emoji:'🐖' },
+      { jp:'鶏もも', kana:'とりもも', romaji:'torimomo', zh:'雞腿肉', hint:'諧音：偷哩摸摸', emoji:'🍗' },
+      { jp:'ウインナー', kana:'ういんなー', romaji:'uinnā', zh:'小香腸', hint:'諧音：烏因那～', emoji:'🌭' },
+      { jp:'野菜盛り', kana:'やさいもり', romaji:'yasai mori', zh:'綜合蔬菜', hint:'諧音：呀薩伊 摸哩', emoji:'🥬' },
+      { jp:'ビビンバ', kana:'びびんば', romaji:'bibinba', zh:'韓式拌飯', hint:'諧音：逼逼恩巴', emoji:'🍲' },
+      { jp:'冷麺', kana:'れいめん', romaji:'reimen', zh:'冷麵', hint:'諧音：勒～面', emoji:'🍜' },
+      { jp:'卵スープ', kana:'たまごすーぷ', romaji:'tamago sūpu', zh:'蛋花湯', hint:'諧音：他媽勾 斯～噗', emoji:'🥚' },
+      { jp:'ナムル', kana:'なむる', romaji:'namuru', zh:'韓式涼拌菜', hint:'諧音：那母嚕', emoji:'🥗' },
+      { jp:'サンチュ', kana:'さんちゅ', romaji:'sanchu', zh:'包肉生菜', hint:'諧音：桑啾', emoji:'🥬' },
+      { jp:'レモン', kana:'れもん', romaji:'remon', zh:'檸檬', hint:'諧音：勒摸恩', emoji:'🍋' },
+      { jp:'火加減', kana:'ひかげん', romaji:'hikagen', zh:'火候', hint:'諧音：hi卡給恩', emoji:'🔥' },
+      { jp:'生焼け', kana:'なまやけ', romaji:'namayake', zh:'沒烤熟', hint:'諧音：那媽呀ke', emoji:'⚠️' },
+      { jp:'単品', kana:'たんぴん', romaji:'tanpin', zh:'單點', hint:'諧音：探拼', emoji:'📋' },
+      { jp:'時間制', kana:'じかんせい', romaji:'jikansei', zh:'限時制', hint:'諧音：基看誰～', emoji:'⏱️' },
+      { jp:'煙', kana:'けむり', romaji:'kemuri', zh:'煙', hint:'諧音：ke母哩', emoji:'💨' }
+    ],
+    phrases: [
+      { jp:'食べ放題でお願いします', kana:'たべほうだいでおねがいします', romaji:'tabehōdai de onegai shimasu', zh:'我們要吃到飽', hint:'諧音：他背齁～搭伊爹 歐內嘎伊西媽斯', use:'店員問要套餐或單點時' },
+      { jp:'単品でお願いします', kana:'たんぴんでおねがいします', romaji:'tanpin de onegai shimasu', zh:'我們單點', hint:'諧音：探拼爹 歐內嘎伊西媽斯', use:'不想吃到飽時' },
+      { jp:'追加で上カルビを一人前', kana:'ついかでじょうかるびをいちにんまえ', romaji:'tsuika de jō karubi o ichininmae', zh:'加點一份上等牛五花', hint:'諧音：此伊卡爹 久～卡嚕逼歐 伊吃您媽欸', use:'加點肉時' },
+      { jp:'おすすめの部位はどれですか', kana:'おすすめのぶいはどれですか', romaji:'osusume no bui wa dore desu ka', zh:'推薦哪個部位？', hint:'諧音：歐斯斯妹諾 布伊哇 兜勒爹斯卡', use:'不知道點什麼肉時' },
+      { jp:'何分くらい焼けばいいですか', kana:'なんぷんくらいやけばいいですか', romaji:'nanpun kurai yakeba ii desu ka', zh:'要烤幾分鐘？', hint:'諧音：南噗恩哭拉伊 呀ke巴 伊～爹斯卡', use:'不確定烤多久時' },
+      { jp:'これはもう焼けていますか', kana:'これはもうやけていますか', romaji:'kore wa mō yakete imasu ka', zh:'這個烤好了嗎？', hint:'諧音：摳勒哇 摸～ 呀ke貼伊媽斯卡', use:'不確定熟了沒時' },
+      { jp:'火を弱くしてもらえますか', kana:'ひをよわくしてもらえますか', romaji:'hi o yowaku shite moraemasu ka', zh:'可以把火調小嗎？', hint:'諧音：hi歐 優哇哭西貼 摸拉欸媽斯卡', use:'火太大肉一直燒焦時' },
+      { jp:'タレをもう少しください', kana:'たれをもうすこしください', romaji:'tare o mō sukoshi kudasai', zh:'請再給我一點醬汁', hint:'諧音：他勒歐 摸～斯摳西 哭搭賽', use:'沾醬用完時' },
+      { jp:'ご飯の小をください', kana:'ごはんのしょうをください', romaji:'gohan no shō o kudasai', zh:'請給我小碗白飯', hint:'諧音：勾哈恩諾 休～歐 哭搭賽', use:'點白飯時選小份' },
+      { jp:'エプロンをお借りできますか', kana:'えぷろんをおかりできますか', romaji:'epuron o okari dekimasu ka', zh:'可以借圍裙嗎？', hint:'諧音：欸噗隆歐 歐卡哩 爹ki媽斯卡', use:'怕油噴到衣服時' },
+      { jp:'コースと単品、どちらになさいますか', kana:'こーすとたんぴん、どちらになさいますか', romaji:'kōsu to tanpin, dochira ni nasaimasu ka', zh:'要套餐還是單點？', hint:'諧音：摳～斯偷 探拼 兜吃拉尼 那賽媽斯卡', use:'聽到店員問' },
+      { jp:'九十分制となっております', kana:'きゅうじっぷんせいとなっております', romaji:'kyūjippun-sei to natte orimasu', zh:'用餐限時九十分鐘', hint:'諧音：Q～基噗恩誰～偷 那貼歐哩媽斯', use:'聽到店員說（吃到飽）' },
+      { jp:'タレと塩、どちらになさいますか', kana:'たれとしお、どちらになさいますか', romaji:'tare to shio, dochira ni nasaimasu ka', zh:'要醬汁還是鹽味？', hint:'諧音：他勒偷 西歐 兜吃拉尼 那賽媽斯卡', use:'聽到店員問' },
+      { jp:'網をお取り替えしましょうか', kana:'あみをおとりかえしましょうか', romaji:'ami o otorikae shimashō ka', zh:'要幫您換烤網嗎？', hint:'諧音：阿咪歐 歐偷哩卡欸 西媽休～卡', use:'聽到店員問' },
+      { jp:'よく焼いてお召し上がりください', kana:'よくやいておめしあがりください', romaji:'yoku yaite omeshiagari kudasai', zh:'請烤熟再吃', hint:'諧音：優哭 呀伊貼 歐妹西阿嘎哩 哭搭賽', use:'聽到店員說（豬肉、內臟）' },
+      { jp:'お肉の焼き方をご説明しますね', kana:'おにくのやきかたをごせつめいしますね', romaji:'oniku no yakikata o gosetsumei shimasu ne', zh:'我來說明肉的烤法', hint:'諧音：歐尼哭諾 呀ki卡他歐 勾誰此妹～ 西媽斯內', use:'聽到店員說' },
+      { jp:'食べ残しは別料金になります', kana:'たべのこしはべつりょうきんになります', romaji:'tabenokoshi wa betsu ryōkin ni narimasu', zh:'吃剩要另外收費', hint:'諧音：他背諾摳西哇 背此溜～金尼 那哩媽斯', use:'聽到店員說（吃到飽）' }
+    ]
+  }
+};
+(function () {
+  (window.SCENES || []).forEach(s => {
+    const x = window.SCENE_EXT[s.id]; if (!x) return;
+    ['vocab', 'phrases'].forEach(k => { const have = new Set((s[k] || []).map(i => i.jp)); (x[k] || []).forEach(i => { if (!have.has(i.jp)) { (s[k] = s[k] || []).push(i); have.add(i.jp); } }); });
+  });
+})();

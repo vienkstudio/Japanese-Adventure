@@ -1,9 +1,10 @@
 .trip-shell{
-  --trip-ink:#162c32;
-  --trip-muted:#4e6263;
-  --trip-green:#16675b;
-  --trip-red:#a63933;
-  --trip-line:#d3e3da;
+  /* 統一配色：沿用全站 --pri／--acc 色票 */
+  --trip-ink:var(--text);
+  --trip-muted:var(--muted);
+  --trip-green:var(--acc-d);
+  --trip-red:var(--pri);
+  --trip-line:var(--line2);
   width:min(100%,720px);
   margin:0 auto;
   color:var(--trip-ink);
@@ -48,10 +49,10 @@
 .trip-levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .trip-level{
   display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;
-  min-height:66px;padding:8px 12px;border:1px solid var(--trip-line);border-radius:14px;background:#fff;text-align:left;
+  min-height:66px;padding:8px 12px;border:1px solid var(--trip-line);border-radius:14px;background:var(--card);text-align:left;
 }
-.trip-level:hover{border-color:var(--trip-green);background:#f3faf6}
-.trip-level-id{background:#e3f1ea;color:var(--trip-green);font-weight:900;min-width:2.65rem;text-align:center;padding:6px;border-radius:9px}
+.trip-level:hover{border-color:var(--trip-green);background:var(--chip)}
+.trip-level-id{background:var(--acc-t);color:var(--trip-green);font-weight:900;min-width:2.65rem;text-align:center;padding:6px;border-radius:9px}
 .trip-level strong,.trip-level small{display:block}
 .trip-level small{color:var(--trip-muted);font-size:.77rem;line-height:1.4}
 .trip-level-arrow{color:var(--trip-green);font-size:1.15rem}
@@ -63,9 +64,9 @@
   min-height:44px;border-radius:12px;padding:8px 14px;font-weight:750;
 }
 .trip-shell .trip-primary{background:var(--trip-green);border:1px solid var(--trip-green);color:#fff}
-.trip-shell .trip-primary:not(:disabled):hover{background:#104f45}
-.trip-shell .trip-primary:disabled{background:#edf1ef;color:#516463;border-color:var(--trip-line);cursor:default}
-.trip-shell .trip-secondary{background:#fff;border:1px solid var(--trip-line);color:var(--trip-green)}
+.trip-shell .trip-primary:not(:disabled):hover{filter:brightness(.92)}
+.trip-shell .trip-primary:disabled{background:var(--chip);color:var(--muted);border-color:var(--trip-line);cursor:default}
+.trip-shell .trip-secondary{background:var(--card);border:1px solid var(--trip-line);color:var(--trip-green)}
 .trip-shell .trip-secondary:hover{border-color:var(--trip-green)}
 .trip-map{
   position:relative;
@@ -117,7 +118,7 @@
 .trip-stop-drugstore{--trip-roof:#2e8b7a}
 .trip-stop-yakiniku{--trip-roof:#6b3a2a}
 .trip-stop>span{font-size:clamp(.95rem,3.5vw,1.75rem);line-height:1}
-.trip-stop strong{font-size:clamp(.64rem,2.7vw,.94rem);white-space:nowrap;line-height:1.15}
+.trip-stop strong{font-size:clamp(.75rem,2.9vw,.94rem);white-space:nowrap;line-height:1.15}
 .trip-stop small{
   position:absolute;top:-5px;right:-4px;
   display:grid;place-items:center;width:18px;height:18px;border-radius:50%;
@@ -157,26 +158,26 @@
 .trip-action{text-align:right}
 .trip-location{margin-bottom:5px !important;font-size:.81rem;color:var(--trip-muted)}
 .trip-step{font-weight:800;font-size:.86rem;color:var(--trip-green);padding:4px 0}
-.trip-dialog,.trip-result{padding:clamp(12px,3vw,22px);border:1px solid var(--trip-line);border-radius:16px;background:#fff}
+.trip-dialog,.trip-result{padding:clamp(12px,3vw,22px);border:1px solid var(--trip-line);border-radius:16px;background:var(--card)}
 .trip-dialog h2{font-size:1rem;line-height:1.55}
-.trip-line{display:flex;align-items:flex-start;flex-direction:column;gap:5px;background:#e9f4ee;border-radius:12px;padding:12px;margin-top:10px}
+.trip-line{display:flex;align-items:flex-start;flex-direction:column;gap:5px;background:var(--acc-t);border-radius:12px;padding:12px;margin-top:10px}
 .trip-line>span{color:var(--trip-green);font-weight:800;font-size:.8rem}
 .trip-line>p{font-weight:700;font-size:clamp(1rem,3vw,1.15rem)}
 .trip-hint{margin-top:7px;color:var(--trip-muted);font-size:.88rem}
 .trip-hint summary{cursor:pointer;min-height:36px;line-height:36px;text-decoration:underline;text-underline-offset:3px}
 .trip-choices{display:grid;gap:8px;margin-top:12px}
 .trip-shell .trip-answer{
-  width:100%;min-height:48px;border:1px solid #c6d8cd;background:#fff;
+  width:100%;min-height:48px;border:1px solid #c6d8cd;background:var(--card);
   border-radius:12px;padding:10px 14px;text-align:left;font-size:.99rem;
 }
-.trip-shell .trip-answer:not(:disabled):hover{border-color:var(--trip-green);background:#f6fbf7}
+.trip-shell .trip-answer:not(:disabled):hover{border-color:var(--trip-green);background:var(--chip)}
 .trip-shell .trip-answer:disabled{cursor:default}
-.trip-shell .trip-answer.trip-right{border-color:var(--trip-green);background:#e3f4e9;color:#124536}
-.trip-shell .trip-answer.trip-wrong{border-color:var(--trip-red);background:#fcebe8;color:#802822}
+.trip-shell .trip-answer.trip-right{border-color:var(--trip-green);background:var(--acc-t);color:var(--text)}
+.trip-shell .trip-answer.trip-wrong{border-color:var(--trip-red);background:var(--pri-t);color:var(--text)}
 .trip-feedback:empty{display:none}
 .trip-feedback{margin-top:12px;padding:9px 12px;border-radius:12px;font-size:.87rem}
-.trip-right-note{background:#e3f4e9;color:#124536}
-.trip-wrong-note{background:#fcebe8;color:#802822}
+.trip-right-note{background:var(--acc-t);color:var(--text)}
+.trip-wrong-note{background:var(--pri-t);color:var(--text)}
 .trip-next{margin-top:8px}
 .trip-next[hidden]{display:none}
 .trip-result h2{margin:2px 0 12px}
@@ -196,37 +197,37 @@
 .trip-hud{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-weight:800}
 .trip-hearts{font-size:1.05em;letter-spacing:1px}
 .trip-combo{background:var(--pri,#ff6b5b);color:#fff;border-radius:999px;padding:0 8px;font-size:.8em;animation:pop .25s}
-.trip-group{grid-column:1/-1;margin:8px 2px 0;font-weight:800;font-size:.9em;color:var(--muted,#888)}
+.trip-group{grid-column:1/-1;margin:8px 2px 0;font-weight:800;font-size:.9em;color:var(--muted)}
 
 /* 站內流程 */
-.trip-hub-sub{color:var(--muted,#888);font-size:.88em;margin:4px 2px 10px}
+.trip-hub-sub{color:var(--muted);font-size:.88em;margin:4px 2px 10px}
 .trip-hub-sub b{color:var(--pri,#ff6b5b)}
 .trip-steps{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}
-.trip-stepc{display:flex;align-items:center;gap:10px;background:#fff;border-radius:18px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:transform .1s}
+.trip-stepc{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:transform .1s}
 .trip-stepc:active{transform:scale(.98)}
 .trip-stepc.cur{box-shadow:0 0 0 2px var(--pri,#ff6b5b),0 2px 10px rgba(0,0,0,.06)}
-.trip-sn{width:26px;height:26px;border-radius:50%;background:#ededea;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85em;flex:none}
+.trip-sn{width:26px;height:26px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85em;flex:none}
 .trip-stepc.ok .trip-sn{background:var(--acc,#2ec4a6);color:#fff}
 .trip-stepc.cur .trip-sn{background:var(--pri,#ff6b5b);color:#fff}
 .trip-si{font-size:1.5em;flex:none}
 .trip-st{flex:1;min-width:0;line-height:1.25}
 .trip-st b{display:block}
-.trip-st small{color:var(--muted,#888);font-size:.75em}
+.trip-st small{color:var(--muted);font-size:.75em}
 .trip-ss{color:var(--gold,#ffb703);font-size:.85em;letter-spacing:1px;flex:none}
 .trip-hub-done{text-align:center;font-weight:800;font-size:1.1em}
 .trip-stop small.trip-prog{background:var(--pri,#ff6b5b)!important}
 .trip-story{background:var(--pri-t,#fff0ee);border-radius:14px;padding:8px 12px;font-size:.88em;margin:0 0 8px}
-.trip-route{font-size:.85em;color:var(--muted,#888);margin:6px 2px;line-height:1.8}
+.trip-route{font-size:.85em;color:var(--muted);margin:6px 2px;line-height:1.8}
 .trip-route span{filter:grayscale(1);opacity:.55}
 .trip-route span.ok{filter:none;opacity:1}
 /* 入門・五十音 */
-.kn-score{text-align:center;color:var(--muted,#888);font-size:.88em;margin:6px 0 0}
+.kn-score{text-align:center;color:var(--muted);font-size:.88em;margin:6px 0 0}
 .kn-q{font-size:5em;text-align:center;font-weight:700;line-height:1.2;margin:4px 0}
 /* 簡化版 */
 .trip-go{display:flex;align-items:center;gap:10px;margin-top:10px}
 .trip-go .trip-location{flex:1;margin:0;font-size:.9em}
-.trip-count{text-align:center;color:var(--muted,#888);font-size:.8em;margin:6px 0 0}
-.kn-q{display:block;margin:6px auto 0;border:none;background:none;font-size:5.4em;font-weight:700;line-height:1.15;cursor:pointer;color:var(--text,#222);font-family:inherit}
+.trip-count{text-align:center;color:var(--muted);font-size:.8em;margin:6px 0 0}
+.kn-q{display:block;margin:6px auto 0;border:none;background:none;font-size:5.4em;font-weight:700;line-height:1.15;cursor:pointer;color:var(--text);font-family:inherit}
 .kn-ans{text-align:center;min-height:1.4em;margin:0;color:var(--pri,#ff6b5b);font-weight:700}
 .trip-kana .kn-links{text-align:center;font-size:.9em;margin-top:14px}
 .trip-kana .kn-q{font-size:5.4rem!important;padding:0;min-height:0;background:none!important;border:none!important;box-shadow:none!important;width:auto}
@@ -237,20 +238,69 @@
 .tt-logo{width:128px;height:128px}
 .tt-logo svg{width:100%;height:100%}
 .tt-name{margin:8px 0 0;font-size:2em;font-weight:800}
-.tt-sub{margin:2px 0 22px;color:var(--muted,#888)}
+.tt-sub{margin:2px 0 22px;color:var(--muted)}
 .tt-menu{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
-.tt-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;border-radius:999px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px;font:inherit;font-size:1.1em;font-weight:800;color:var(--text,#222);cursor:pointer;transition:transform .1s}
+.tt-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;border-radius:999px;background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px;font:inherit;font-size:1.1em;font-weight:800;color:var(--text);cursor:pointer;transition:transform .1s}
 .tt-btn:active{transform:scale(.97)}
 .tt-btn.primary{background:var(--pri,#ff6b5b);color:#fff}
 .tt-btn small{font-size:.66em;font-weight:500;opacity:.9}
 .tt-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.tt-levels button{border:none;border-radius:16px;background:#f2f2ef;padding:10px 4px;font:inherit;cursor:pointer;color:var(--text,#222);line-height:1.25}
+.tt-levels button{border:none;border-radius:16px;background:var(--chip);padding:10px 4px;font:inherit;cursor:pointer;color:var(--text);line-height:1.25}
 .tt-levels button b{display:block;font-size:1.1em}
-.tt-levels button small{font-size:.7em;color:var(--muted,#888)}
+.tt-levels button small{font-size:.7em;color:var(--muted)}
 .tt-levels button.on{background:var(--pri,#ff6b5b);color:#fff}
 .tt-levels button.on small{color:rgba(255,255,255,.9)}
 .tt-lbl{text-align:left;font-weight:800;margin:8px 0 0}
 .tt-rows{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.tt-row{border:none;border-radius:14px;background:#f2f2ef;padding:12px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--text,#222)}
-.trip-lvnow{display:flex;align-items:center;justify-content:space-between;width:100%;border:none;border-radius:999px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:10px 16px;margin:2px 0 10px;font:inherit;font-weight:800;cursor:pointer;color:var(--text,#222)}
+.tt-row{border:none;border-radius:14px;background:var(--chip);padding:12px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--text)}
+.trip-lvnow{display:flex;align-items:center;justify-content:space-between;width:100%;border:none;border-radius:999px;background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,.06);padding:10px 16px;margin:2px 0 10px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
 .trip-lvnow span{font-size:.8em;color:var(--pri,#ff6b5b)}
+/* ===== 首頁：標頭、連勝提醒、每日任務 ===== */
+.tt{padding:14px 8px 10px}
+.tt-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.tt-head .tt-logo{width:64px;height:64px}
+.tt-head .tt-name{margin:0;font-size:1.6em;text-align:left}
+.tt-head .tt-sub{margin:0;text-align:left}
+.tt-risk{background:var(--pri-t);color:var(--pri);font-weight:800;border-radius:14px;padding:8px 14px;margin:0 0 10px;max-width:360px}
+.tt-menu{max-width:360px}
+.tt-btn.sub{background:var(--card);box-shadow:none;border:1px solid var(--line2);font-size:1em;padding:10px}
+.tt-daily{margin:2px 0}
+.tt-lv0{display:flex;flex-direction:column;align-items:center;width:100%;border:none;border-radius:16px;background:var(--acc-t);color:var(--acc-d);padding:14px;margin:10px 0 4px;font:inherit;cursor:pointer;min-height:64px}
+.tt-lv0 b{font-size:1.15em}.tt-lv0 small{font-size:.85em;color:var(--text)}
+.tt-lv0.on{background:var(--acc-d);color:#fff}.tt-lv0.on small{color:#fff}
+.tt-levels button{min-height:64px}
+.tt-levels button i{display:block;font-style:normal;font-size:.72em;color:var(--muted);margin-top:3px;line-height:1.3}
+.tt-levels button.on i{color:rgba(255,255,255,.9)}
+/* ===== 入門：教字卡、小考、答錯放大 ===== */
+.kn-prog{text-align:center;margin:6px 0 4px;font-size:.92em;color:var(--muted)}
+.kn-bar{max-width:320px;margin:0 auto 10px}
+.kn-sets button[data-lock]{opacity:.55}
+.kn-teach{text-align:center}
+.kn-step{color:var(--muted);font-weight:700;margin:4px 0}
+.kn-big{font-size:6rem;line-height:1.1;border:none;background:var(--card);box-shadow:var(--shadow);border-radius:24px;width:160px;height:160px;cursor:pointer;color:var(--text)}
+.kn-rom{font-size:2em;font-weight:800;color:var(--pri);margin:8px 0 0}
+.kn-hint{font-size:1.05em;margin:6px 0 12px}
+.kn-hint small{color:var(--muted);font-size:.85em}
+.kn-nav{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:10px 0}
+.kn-nav .btn{min-height:48px;padding:0 22px}
+.kn-score{text-align:center;color:var(--muted);font-weight:700;margin:4px 0}
+.kn-miss{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--pri-t);border-radius:18px;padding:12px;margin:8px auto;max-width:320px;color:var(--text)}
+.kn-miss b{font-size:3.2rem;line-height:1.1;color:var(--pri)}
+.kn-miss span{font-size:1.6em;font-weight:800}
+.kn-miss small{font-size:.95em}
+/* ===== 地圖：鎖定的店、御朱印 ===== */
+.trip-stop.trip-locked{opacity:.6;filter:grayscale(.7)}
+.trip-under{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.trip-under .trip-count{margin:0}
+.trip-gos{border:none;border-radius:999px;background:var(--pri-t);color:var(--pri);font:inherit;font-weight:800;padding:8px 14px;min-height:44px;cursor:pointer}
+.tg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.tg-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;border-radius:50%;border:2px dashed var(--line2);color:var(--muted)}
+.tg-cell span{font-size:1.5em;filter:grayscale(1);opacity:.5}
+.tg-cell small{font-size:.75em}
+.tg-cell.ok{border:2px solid var(--pri);background:var(--pri-t);color:var(--pri)}
+.tg-cell.ok span{filter:none;opacity:1}
+.trip-drop{color:var(--pri);font-weight:800}
+.trip-fb-act{margin-top:8px}
+
+/* 地圖建築與方向鍵永遠是淺底，文字固定深色（深色模式也清楚） */
+.trip-stop,.trip-dpad button{color:#222}

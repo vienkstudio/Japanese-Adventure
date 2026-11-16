@@ -1,14 +1,20 @@
-// 離線快取：改版時請把 VERSION 加 1
-const VERSION = 'jpq-v16';
-const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './kana-data.js', './data/scenes-1.js', './data/scenes-2.js', './data/cards.js', './data/menus.js', './data/travel.js',
-  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js',
+// 離線快取：改版時請把 VERSION 加 1。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
+const VERSION = 'jpq-v19';
+const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './kana-data.js',
+  './data/scenes-1.js', './data/scenes-2.js', './data/scene-ext.js', './data/cards.js', './data/menus.js',
+  './data/travel.js', './data/travel-ext.js', './data/travel-stops.js', './data/drills.js',
+  './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js', './js/drill.js', './js/phrasebook.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/logo.svg', './icons/icon-512.png',
   './日文講義.html', './50音訓練表.html'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => encodeURI(f)))).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
-// 網路優先，失敗才用快取（確保改版後拿到新檔）
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('jpq-v') && k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+// 網路優先（4 秒逾時），失敗才用快取
+const timeout = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(VERSION).then(c => c.put(e.request, cp)); return r; })
-    .catch(() => caches.match(e.request, { ignoreSearch: true })));
+  const req = e.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  e.respondWith(timeout(fetch(req), 4000).then(r => {
+    if (r && r.ok) { const cp = r.clone(); caches.open(VERSION).then(c => c.put(req, cp)); }
+    return r;
+  }).catch(() => caches.match(req, { ignoreSearch: true }).then(m => m || fetch(req))));
 });

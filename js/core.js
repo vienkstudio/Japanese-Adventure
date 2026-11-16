@@ -5,11 +5,24 @@
    ========================================================= */
 (function () {
   const KEY = 'jpQuest.v1';
-  const DEF = { xp: 0, cleared: {}, tracked: [], log: [], streak: { last: null, days: 0 }, sceneDone: {} };
+  const SCHEMA = 2;
+  const DEF = { v: SCHEMA, xp: 0, cleared: {}, tracked: [], log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
+  const fresh = () => JSON.parse(JSON.stringify(DEF));
+  // 存檔升級：舊版缺欄位補齊、型別修正
+  function migrate(o) {
+    const st = Object.assign(fresh(), o && typeof o === 'object' ? o : {});
+    if (!Array.isArray(st.tracked)) st.tracked = [];
+    if (!Array.isArray(st.log)) st.log = [];
+    ['cleared', 'sceneDone'].forEach(k => { if (!st[k] || typeof st[k] !== 'object') st[k] = {}; });
+    if (!st.streak || typeof st.streak !== 'object') st.streak = fresh().streak;
+    if ((st.v || 1) < 2) st.tracked.forEach(t => { if (t.due == null) t.due = 0; });   // v1 → v2：不會清單加複習排程
+    st.v = SCHEMA;
+    return st;
+  }
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }, del(k) { try { localStorage.removeItem(k); } catch (e) { } } };
   let S;
-  try { S = Object.assign({}, DEF, JSON.parse(LS.get(KEY) || '{}')); }
-  catch (e) { S = JSON.parse(JSON.stringify(DEF)); }
+  try { S = migrate(JSON.parse(LS.get(KEY) || '{}')); }
+  catch (e) { S = fresh(); }
 
   // 等級門檻：第 n 級需要 LEVELS[n-1] XP
   const LEVELS = [0, 60, 150, 280, 450, 670, 940, 1260, 1640, 2080, 2600, 3200, 3900, 4700, 5600];
@@ -31,9 +44,21 @@
       .catch(e => { if (e && e.code === 'invalid_argument') { CL.ref = null; } CL.status = lsOK ? 'local' : 'none'; })
       .finally(() => { CL.busy = false; renderNav(); if (CL.dirty) cloudPush(); });
   }
+  /* ---- IndexedDB：存檔備援（localStorage 被清掉時可救回）＋給大型資料用的 key-value 儲存 App.idb ---- */
+  const IDB = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      try { const r = indexedDB.open('jpQuest', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }
+      catch (e) { rej(e); }
+    }));
+    const tx = (mode, fn) => open().then(db => new Promise((res, rej) => { const t = db.transaction('kv', mode), rq = fn(t.objectStore('kv')); t.oncomplete = () => res(rq && rq.result); t.onerror = () => rej(t.error); }));
+    return { get: k => tx('readonly', s => s.get(k)).catch(() => undefined), set: (k, v) => tx('readwrite', s => s.put(v, k)).catch(() => { }), del: k => tx('readwrite', s => s.delete(k)).catch(() => { }) };
+  })();
+  let idbT = null;
   function save() {
     S._t = Date.now();
     LS.set(KEY, JSON.stringify(S));
+    clearTimeout(idbT); idbT = setTimeout(() => IDB.set('save', JSON.stringify(S)), 800);
     if (CL.ref) { clearTimeout(CL.timer); CL.timer = setTimeout(cloudPush, 1500); }
     listeners.forEach(f => { try { f(S); } catch (e) { console.error(e); } });
   }
@@ -48,22 +73,32 @@
       CL.ref = ref;
       const d = snap.exists ? snap.data() : null;
       if (d && d.s && (d.t || 0) > (S._t || 0)) {
-        try { S = Object.assign({}, DEF, JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
+        try { S = migrate(JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
       } else if (S.xp || S.tracked.length || Object.keys(S.cleared).length) cloudPush();
       else CL.status = 'cloud';
       renderNav();
     } catch (e) { }
   }
 
-  // 連續學習天數
-  (function streak() {
-    const today = new Date().toISOString().slice(0, 10);
-    if (S.streak.last === today) return;
-    const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-    S.streak.days = S.streak.last === y ? S.streak.days + 1 : 1;
-    S.streak.last = today;
-    LS.set(KEY, JSON.stringify(S));
-  })();
+  // 連續學習天數：用本地日期；真的有練習（拿到 XP）才算；每週 1 次斷一天自動保護
+  const dayKey = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const dayAgo = n => dayKey(new Date(Date.now() - n * 864e5));
+  const weekKey = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return dayKey(d); };
+  function touchStreak() {
+    const st = S.streak, today = dayKey();
+    if (st.last === today) return;
+    if (st.last === dayAgo(1)) st.days++;
+    else if (st.last === dayAgo(2) && st.days > 0 && st.freezeWeek !== weekKey()) { st.days++; st.freezeWeek = weekKey(); setTimeout(() => toast('🧊 連勝保護：昨天沒練，幫你保住了（每週 1 次）', 'ok'), 1200); }
+    else st.days = 1;
+    st.last = today;
+  }
+  // 連勝狀態：done 今天已練；risk 今天還沒練、再不練會斷
+  function streakInfo() {
+    const st = S.streak, today = dayKey();
+    const alive = st.last === today || st.last === dayAgo(1) || (st.last === dayAgo(2) && st.freezeWeek !== weekKey());
+    const days = alive ? st.days || 0 : 0;
+    return { days, done: st.last === today, risk: days > 0 && st.last !== today };
+  }
 
   /* ---------------- 工具 ---------------- */
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -115,19 +150,26 @@
     n = Math.round(n || 0); if (n <= 0) return { gained: 0, levelUp: false };
     const before = levelOf(S.xp);
     S.xp += n;
+    touchStreak();
     S.log.unshift({ t: Date.now(), xp: n, reason: reason || '' });
     S.log = S.log.slice(0, 50);
     const after = levelOf(S.xp);
     save();
     toast(`✨ +${n} XP ${reason ? '・' + esc(reason) : ''}`, 'xp');
-    if (after > before) setTimeout(() => modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p><p class="muted">新的關卡或場景可能已解鎖！</p>`, [{ label: '太棒了！', cls: 'primary' }]) && document.body.lastElementChild.classList.add('keep'), 400);
+    if (after > before) setTimeout(() => modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p>${unlockHTML(after)}`, [{ label: '太棒了！', cls: 'primary' }]) && document.body.lastElementChild.classList.add('keep'), 400);
     if (after > before) remindBackup(`升到 Lv.${after} 了`);
     return { gained: n, levelUp: after > before };
+  }
+  // 升級解鎖說明：各模組用 App.addUnlock(fn(lv) → 字串陣列) 登記
+  const unlockFns = [];
+  function unlockHTML(lv) {
+    const items = unlockFns.flatMap(f => { try { return f(lv) || []; } catch (e) { return []; } });
+    return items.length ? `<p>🔓 解鎖：<b>${items.map(esc).join('、')}</b></p>` : '';
   }
   // 備份提醒：非雲端存檔時，每升一級、每完成 5 關提醒一次
   function remindBackup(why) {
     if (CL.status === 'cloud') return;
-    setTimeout(() => toast(`💾 ${esc(why)}！記得點頂部 💾 備份進度${CL.status === 'none' ? '（這裡無法自動存檔）' : '（進度只存在這台裝置）'}`), 2600);
+    setTimeout(() => toast(`💾 ${esc(why)}！記得到 ⚙️ 設定 →「💾 備份」保存進度${CL.status === 'none' ? '（這裡無法自動存檔）' : '（進度只存在這台裝置）'}`), 2600);
   }
   function noteClear() {
     S.clearN = (S.clearN || 0) + 1; save();
@@ -171,7 +213,7 @@
     const btns = [];
     if (opts.retry) btns.push({ label: '🔄 再玩一次', onClick: opts.retry });
     if (opts.back) btns.push({ label: opts.back.label || '返回', onClick: () => go(opts.back.route, opts.back.params) });
-    if (opts.next) btns.push({ label: opts.next.label || '下一關 ➜', cls: 'primary', onClick: () => go(opts.next.route, opts.next.params) });
+    if (opts.next) btns.push({ label: opts.next.label || '下一站 ➜', cls: 'primary', onClick: () => go(opts.next.route, opts.next.params) });
     if (!btns.length) btns.push({ label: '確定', cls: 'primary' });
     return modal(html, btns);
   }
@@ -180,30 +222,40 @@
   const routes = {};
   const order = [];
   function register(name, def) { routes[name] = def; if (!order.includes(name)) order.push(name); if (started) { renderNav(); } }
-  // 路由：記憶體為主，網址只放單純的 #名稱（相容 Claude 網站等沙盒環境）
-  let CUR = null;
-  const lastParams = {};
-  function readHash() {
-    let h = '';
-    try { h = location.hash.replace(/^#\/?/, ''); } catch (e) { }
-    const [name, q] = h.split('?');
-    const params = {};
-    (q || '').split('&').filter(Boolean).forEach(p => { const [k, v] = p.split('='); params[decodeURIComponent(k)] = decodeURIComponent(v || ''); });
-    return { name: name || 'home', params };
-  }
-  function parseHash() { return CUR || (CUR = readHash()); }
-  const HIST = [];
+  // 路由：狀態放在 history.state（不改網址，相容 Claude 網站沙盒）；手機返回鍵＝回上一頁。
+  // 路由定義 transient:true 表示「只負責轉址」的頁面，不留在歷史紀錄。
+  let CUR = null, IDX = 0, canHist = false;
+  const HIST = [];   // history API 不能用時的備援
+  function parseHash() { return CUR || { name: 'home', params: {} }; }
   function go(name, params, isBack) {
-    if (!isBack && CUR && CUR.name !== 'trip-stop' && !(CUR.name === name && JSON.stringify(CUR.params) === JSON.stringify(params || {}))) { HIST.push(CUR); if (HIST.length > 30) HIST.shift(); }
-    if (name === 'home' && !isBack) HIST.length = 0;
-    CUR = { name, params: params || {} };
-    lastParams[name] = CUR.params;
-    // 不改網址的 #：在 Claude App 裡改 # 可能讓整頁重新載入，卡在舊頁面。路由只存在記憶體裡。
+    params = params || {};
+    const same = CUR && CUR.name === name && JSON.stringify(CUR.params) === JSON.stringify(params);
+    const fromTransient = CUR && routes[CUR.name] && routes[CUR.name].transient;
+    if (!isBack && !same && CUR) {
+      if (fromTransient) { if (canHist) try { history.replaceState({ jpq: 1, i: IDX, name, params }, ''); } catch (e) { } }
+      else if (canHist) { try { history.pushState({ jpq: 1, i: IDX + 1, name, params }, ''); IDX++; } catch (e) { canHist = false; HIST.push(CUR); } }
+      else { HIST.push(CUR); if (HIST.length > 30) HIST.shift(); }
+    }
+    CUR = { name, params };
     render();
   }
   function back() {
+    if (canHist && IDX > 0) { history.back(); return; }
     const p = HIST.pop();
     if (p) go(p.name, p.params, true); else go('home', null, true);
+  }
+  function initHistory() {
+    try {
+      history.replaceState({ jpq: 1, i: 0, name: 'home', params: {} }, '');
+      canHist = true;
+      window.addEventListener('popstate', e => {
+        const st = e.state;
+        if (!st || !st.jpq) { IDX = 0; CUR = { name: 'home', params: {} }; render(); return; }
+        IDX = st.i || 0;
+        CUR = { name: st.name || 'home', params: st.params || {} };
+        render();
+      });
+    } catch (e) { canHist = false; }
   }
   let started = false;
   function render() {
@@ -222,8 +274,8 @@
   function renderNav() {
     const nav = document.getElementById('nav');
     if (!nav) return;
-    const cur = parseHash().name;
-    nav.innerHTML = order.filter(n => routes[n].nav).map(n => {
+    const cur0 = parseHash().name, cur = (routes[cur0] && routes[cur0].navParent) || cur0;
+    nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
       const badge = n === 'review' && Tracker.count() ? `<span class="badge">${Tracker.count()}</span>` : '';
       return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"><span class="ni">${r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
@@ -235,16 +287,49 @@
     if (pc) {
       const lo = LEVELS[lv - 1], hi = LEVELS[lv] || LEVELS[lv - 1] + 1000;
       const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
-      pc.innerHTML = `<button class="icon-btn" id="setBtn" title="設定">⚙️</button>`;
+      const sk = streakInfo();
+      pc.innerHTML = `<button class="pc-lv" id="lvBtn" type="button" title="${S.xp} XP"><b>Lv.${lv}</b><span class="pc-xp"><i style="width:${Math.max(4, Math.min(100, (S.xp - lo) / (hi - lo) * 100))}%"></i></span></button>
+        <span class="pc-fire${sk.done ? ' on' : ''}" title="${sk.risk ? '今天還沒練，練一題就能保住連勝' : '連續學習天數'}">🔥${sk.days}</span>
+        <button class="icon-btn" id="setBtn" type="button" title="設定">⚙️</button>`;
+      document.getElementById('lvBtn').onclick = () => modal(`<h2>Lv.${lv} ${esc(TITLES[lv - 1] || '')}</h2><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
       document.getElementById('setBtn').onclick = () => window.Travel && Travel.openSettings();
       const sv = pc.querySelector('.sv'); if (sv) { sv.title += '（點我備份）'; sv.onclick = () => window.PracticeAPI && PracticeAPI.backup(); }
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
       let bk = document.getElementById('backBtn');
       if (!bk) { bk = document.createElement('button'); bk.id = 'backBtn'; bk.className = 'icon-btn'; bk.title = '回上一頁'; bk.textContent = '←'; const top = document.querySelector('#top .in'); top.insertBefore(bk, top.firstChild); bk.onclick = back; }
-      bk.style.visibility = cur === 'home' ? 'hidden' : 'visible';
+      bk.style.visibility = cur0 === 'home' ? 'hidden' : 'visible';
     }
   }
-  function start() { started = true; CUR = { name: 'home', params: {} }; lastParams[CUR.name] = CUR.params; onChange(renderNav); render(); cloudInit(); }
+  function start() { started = true; CUR = { name: 'home', params: {} }; initHistory(); onChange(renderNav); render(); cloudInit(); idbRestore(); }
+  // localStorage 沒資料（被清除、私密模式切換）但 IndexedDB 有較新的存檔 → 還原
+  function idbRestore() {
+    IDB.get('save').then(v => {
+      if (!v) { if (S._t) IDB.set('save', JSON.stringify(S)); return; }
+      let o; try { o = migrate(JSON.parse(v)); } catch (e) { return; }
+      if ((o._t || 0) > (S._t || 0) && (o.xp || (o.tracked || []).length)) { S = o; LS.set(KEY, JSON.stringify(S)); render(); toast('💾 已從備援存檔還原進度', 'ok'); }
+    });
+  }
+  // 延遲載入：先登記路由外殼，第一次進入時才依序載入 scripts，載完自動重畫
+  const loadedJS = {};
+  function loadScript(src) {
+    return loadedJS[src] || (loadedJS[src] = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = src;
+      s.onload = res; s.onerror = () => { delete loadedJS[src]; rej(new Error(src)); };
+      document.head.appendChild(s);
+    }));
+  }
+  function lazy(defs, srcs) {
+    const load = () => srcs.reduce((p, s) => p.then(() => loadScript(s)), Promise.resolve());
+    defs.forEach(([name, def]) => register(name, Object.assign({}, def, {
+      lazy: true,
+      render(el) {
+        el.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>';
+        load().then(() => { if (CUR && CUR.name === name && routes[name] && !routes[name].lazy) render(); })
+          .catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
+      }
+    })));
+    return load;
+  }
   function onChange(fn) { listeners.push(fn); }
 
   /* ---------------- Tracker：不會清單 ----------------
@@ -256,7 +341,8 @@
       if (!item || !item.id) return false;
       const ex = this.get(item.id);
       if (ex) { if (ex.mastered) { ex.mastered = false; ex.streak = 0; save(); } return false; }
-      S.tracked.unshift(Object.assign({ source: '其他' }, item, { added: Date.now(), right: 0, wrong: 0, streak: 0, mastered: false }));
+      S.tracked.unshift(Object.assign({ source: '其他' }, item, { added: Date.now(), right: 0, wrong: 0, streak: 0, mastered: false, due: 0 }));
+      if (!S.trackHelp) { S.trackHelp = 1; setTimeout(() => toast('📌 答錯或不熟的字會收進「不會清單」，回首頁按「📌 今日複習」就能複習', 'ok'), 1500); }
       save();
       if (!silent) toast(`📌 已加入不會清單：${esc(item.jp)}`);
       return true;
@@ -266,17 +352,39 @@
     get(id) { return S.tracked.find(t => t.id === id) || null; },
     list(includeMastered) { return S.tracked.filter(t => includeMastered || !t.mastered); },
     count() { return S.tracked.filter(t => !t.mastered).length; },
-    // 複習時呼叫：連續答對 3 次 → mastered
+    // 複習時呼叫：間隔排程（答對後 1→3→7 天再出現；答錯立刻再練）；連續答對 3 次 → mastered
     mark(id, correct) {
       const t = this.get(id); if (!t) return null;
-      if (correct) { t.right++; t.streak++; if (t.streak >= 3 && !t.mastered) { t.mastered = true; toast(`🎓 已掌握：${esc(t.jp)}`, 'ok'); } }
-      else { t.wrong++; t.streak = 0; t.mastered = false; }
+      if (correct) { t.right++; t.streak++; t.due = Date.now() + [0, 1, 3, 7][Math.min(3, t.streak)] * 864e5 - 36e5; if (t.streak >= 3 && !t.mastered) { t.mastered = true; toast(`🎓 已掌握：${esc(t.jp)}`, 'ok'); } }
+      else { t.wrong++; t.streak = 0; t.mastered = false; t.due = 0; }
       save(); return t;
     },
+    // 今天該複習的（到期或剛加入）
+    dueList() { const now = Date.now(); return S.tracked.filter(t => !t.mastered && (t.due || 0) <= now); },
+    dueCount() { return this.dueList().length; },
     clearMastered() { S.tracked = S.tracked.filter(t => !t.mastered); save(); },
     exportJSON() { return JSON.stringify(S.tracked, null, 2); },
     importJSON(txt) { const arr = JSON.parse(txt); if (!Array.isArray(arr)) throw new Error('格式錯誤'); let n = 0; arr.forEach(i => { if (i && i.id && !this.get(i.id)) { S.tracked.push(i); n++; } }); save(); return n; }
   };
+
+  // 共用「＋不會清單」按鈕：trackBtn(item) 產生 HTML，點擊由事件代理處理
+  const TB = new Map();
+  function trackBtn(item, small) {
+    if (!item || !item.id) return '';
+    TB.set(item.id, item);
+    const on = Tracker.has(item.id);
+    return `<button type="button" class="track-btn${on ? ' on' : ''}${small ? ' sm' : ''}" data-track="${esc(item.id)}">${on ? '✓ 已在清單' : '＋ 不會清單'}</button>`;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.track-btn[data-track]');
+    if (!b) return;
+    e.stopPropagation();
+    const id = b.dataset.track;
+    if (Tracker.has(id)) { Tracker.remove(id); toast('已從不會清單移除'); }
+    else if (TB.get(id)) Tracker.add(TB.get(id));
+    const on = Tracker.has(id);
+    document.querySelectorAll('.track-btn[data-track]').forEach(x => { if (x.dataset.track === id) { x.classList.toggle('on', on); x.textContent = on ? '✓ 已在清單' : '＋ 不會清單'; } });
+  });
 
   // 把 KANA 陣列的一列轉成清單項目
   function kanaItem(k) {
@@ -287,6 +395,85 @@
     return { id: (kind || 'word') + ':' + w.jp, jp: w.jp, kana: w.kana || '', romaji: w.romaji || '', zh: w.zh, hint: w.hint || '', emoji: w.emoji || '', source: sceneName || '其他' };
   }
 
+  /* ---------------- 備份／還原（原在 practice.js） ---------------- */
+  function parseBackup(txt) {
+    txt = String(txt || '').trim();
+    let o = null;
+    try { o = JSON.parse(txt); } catch (e) { try { o = JSON.parse(decodeURIComponent(escape(atob(txt)))); } catch (e2) { } }
+    if (o && o.state) o = o.state;
+    if (!o || typeof o.xp !== 'number') throw new Error('bad');
+    return o;
+  }
+  function backup() {
+    const st = App.state, code = btoa(unescape(encodeURIComponent(JSON.stringify(st))));
+    const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const fname = '日語冒險備份-' + stamp + '.json';
+    const json = JSON.stringify({ app: '日語冒險', v: 1, t: Date.now(), state: st });
+    App.modal(`<h2>💾 備份／還原進度</h2>
+      <p class="muted" style="font-size:.85em;margin:.3em 0">目前：Lv.${App.level}・${st.xp} XP・不會清單 ${Tracker.count()} 個</p>
+      <div class="sec-t" style="margin:10px 0 6px">備份</div>
+      <div class="bk-g">
+        <button class="btn primary" id="bkShare">📤 分享備份<small>選 iCloud 雲碟、Google 雲端、LINE…</small></button>
+        <button class="btn" id="bkSave">📁 存成檔案<small>自己選要放的位置</small></button>
+        <button class="btn" id="bkCopy">📋 複製備份碼<small>貼到備忘錄／Keep</small></button>
+      </div>
+      <textarea id="bkOut" readonly style="width:100%;height:46px;font-size:.65em;margin-top:6px">${code}</textarea>
+      <div class="sec-t" style="margin:10px 0 6px">還原</div>
+      <div class="bk-g">
+        <label class="btn" style="margin:0">📂 從檔案還原<small>選先前存的 .json</small><input type="file" id="bkFile" accept=".json,.txt,application/json,text/plain" style="display:none"></label>
+      </div>
+      <textarea id="bkIn" placeholder="或在這裡貼上備份碼，再按「還原」" style="width:100%;height:46px;font-size:.65em;margin-top:6px"></textarea>
+      <style>.bk-g{display:grid;gap:6px}.bk-g .btn{margin:0;flex-direction:column;line-height:1.25;min-height:50px}.bk-g .btn small{font-weight:normal;font-size:.75em;opacity:.85}</style>`,
+      [{ label: '關閉' }, { label: '還原', cls: 'primary' }]);
+    const bg = [...document.querySelectorAll('.modal-bg')].pop(), $ = q => bg.querySelector(q);
+    const copy = () => {
+      const out = $('#bkOut'); out.focus(); out.select(); let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { }
+      if (!ok && navigator.clipboard) navigator.clipboard.writeText(code).then(() => App.toast('📋 已複製備份碼', 'ok')).catch(() => App.toast('請長按上方文字框，手動全選複製'));
+      else App.toast(ok ? '📋 已複製備份碼，貼到備忘錄或 Keep 保存' : '請長按上方文字框，手動全選複製');
+    };
+    const download = () => {
+      try {
+        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const aEl = document.createElement('a'); aEl.href = url; aEl.download = fname; document.body.appendChild(aEl); aEl.click(); aEl.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        App.toast('📁 已送出下載（若沒反應，請改用「複製備份碼」）');
+      } catch (e) { copy(); }
+    };
+    $('#bkShare').onclick = async () => {
+      try {
+        const file = typeof File === 'function' ? new File([json], fname, { type: 'application/json' }) : null;
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: '日語冒險備份' }); App.toast('✅ 已分享備份', 'ok'); return; }
+        if (navigator.share) { await navigator.share({ title: '日語冒險備份碼', text: code }); App.toast('✅ 已分享備份碼', 'ok'); return; }
+        App.toast('這裡不支援分享，已改用複製'); copy();
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;     // 使用者自己取消
+        App.toast('分享被瀏覽器擋住，已改用複製'); copy();
+      }
+    };
+    $('#bkSave').onclick = async () => {
+      if (window.showSaveFilePicker) {
+        try {
+          const h = await showSaveFilePicker({ suggestedName: fname, types: [{ description: '日語冒險備份', accept: { 'application/json': ['.json'] } }] });
+          const w = await h.createWritable(); await w.write(json); await w.close();
+          App.toast('✅ 已存到你選的位置', 'ok'); return;
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      download();
+    };
+    $('#bkCopy').onclick = copy;
+    const restore = txt => {
+      try { const o = parseBackup(txt); bg.remove(); App.loadState(o); App.toast(`✅ 已還原：Lv.${App.level}・${o.xp} XP`, 'ok'); }
+      catch (e) { App.toast('❌ 備份內容不正確'); }
+    };
+    $('#bkFile').onchange = e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = () => restore(r.result); r.onerror = () => App.toast('❌ 讀不到這個檔案'); r.readAsText(f);
+    };
+    [...bg.querySelectorAll('.modal-btns .btn')].pop().onclick = () => restore($('#bkIn').value);
+  }
+
+
   window.App = {
     get state() { return S; },
     LEVELS, TITLES, levelOf,
@@ -296,10 +483,12 @@
     speak: speakJP, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
     back,
-    resetAll() { LS.del(KEY); S = JSON.parse(JSON.stringify(DEF)); save(); if (CL.ref) cloudPush(); go('home'); },
+    resetAll() { LS.del(KEY); IDB.del('save'); S = fresh(); save(); if (CL.ref) cloudPush(); go('home'); },
     get saveStatus() { return CL.status; },
     noteClear,
-    loadState(o) { S = Object.assign({}, JSON.parse(JSON.stringify(DEF)), o); save(); if (CL.ref) cloudPush(); render(); },
+    loadState(o) { S = migrate(JSON.parse(JSON.stringify(o))); save(); if (CL.ref) cloudPush(); render(); },
+    trackBtn, streakInfo, today: dayKey, backup, lazy, loadScript, idb: IDB,
+    addUnlock(fn) { unlockFns.push(fn); },
     store: LS
   };
   window.Tracker = Tracker;
