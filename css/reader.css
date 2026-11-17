@@ -149,6 +149,7 @@ input[type=file].rd-in{padding:8px}
 .sg-modes{margin:var(--sp-2) 0}
 .sg-modes button{min-height:44px}
 .sg-tg{margin:var(--sp-2) 0}
+.sg-page [hidden]{display:none}
 .sg-help{margin:var(--sp-1) 0 var(--sp-2)}
 
 /* 歌詞 */

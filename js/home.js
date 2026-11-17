@@ -66,6 +66,7 @@
         <button type="button" data-go="boot"><span aria-hidden="true">🎧</span>特訓</button>
         <button type="button" data-go="songs"><span aria-hidden="true">🎵</span>歌曲</button>
         <button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>
+        <button type="button" data-go="mind3d"><span aria-hidden="true">🌐</span>3D 心智圖</button>
       </div>
       <details class="hm-map" id="hm-map"><summary>🗾 日本地圖</summary><div class="mapbox"></div></details>
     </section>`;

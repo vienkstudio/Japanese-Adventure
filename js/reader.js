@@ -8,7 +8,7 @@
   if (!document.querySelector('link[href$="css/reader.css"]')) {
     const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'css/reader.css'; document.head.appendChild(l);
   }
-  const NHK = 'https://www3.nhk.or.jp/news/easy/';
+  const NHK = LinkImport.NHK;
   const MAXLEN = 50000;
   const ST = () => { const S = App.state; if (!S.read || typeof S.read !== 'object') S.read = {}; if (!S.read.done) S.read.done = {}; return S.read; };
   const prof = () => { try { if (typeof App.profile === 'function') return App.profile() || {}; } catch (e) { } return {}; };
@@ -56,7 +56,7 @@
     const m = text.match(/https?:\/\/\S+$/);
     if (!url && m) { url = m[0]; text = text.slice(0, m.index).trim(); }
     try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) { }
-    return { title, text: text.slice(0, MAXLEN), url };
+    return { title, text: text.slice(0, MAXLEN), url: LinkImport.publicURL(url)?.href || '' };
   }
 
   /* ---------------- 閱讀首頁 ---------------- */
@@ -65,9 +65,12 @@
     render(el, params) {
       params = params || {};
       const sh = readShare();
-      if (sh) { App.go('read', { mode: 'paste', share: sh }); return; }
+      if (sh) {
+        App.go('read', sh.url && !sh.text ? { mode: 'url', url: sh.url } : { mode: 'paste', share: sh });
+        return;
+      }
       if (params.mode === 'paste') return pasteView(el, params.share || {});
-      if (params.mode === 'url') return urlView(el);
+      if (params.mode === 'url') return urlView(el, params);
       homeView(el, params);
     }
   });
@@ -86,8 +89,8 @@
       </button>
       <div class="rd-acts">
         <button type="button" class="rd-act" data-act="paste"><span>📋</span>貼上文章</button>
-        <button type="button" class="rd-act" data-act="url"><span>🔗</span>貼網址</button>
-        <a class="rd-act" href="${NHK}" target="_blank" rel="noopener"><span>🗞️</span>NHK 簡單新聞</a>
+        <button type="button" class="rd-act" data-act="url"><span>🔗</span>匯入文章網址</button>
+        <button type="button" class="rd-act" data-act="nhk"><span>🗞️</span>匯入 NHK 新聞</button>
         <button type="button" class="rd-act" data-act="songs"><span>🎵</span>歌曲跟唱</button>
       </div>
       <h3 class="rd-h3">📚 文章庫</h3>
@@ -102,7 +105,9 @@
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv }));
     el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
       const a = b.dataset.act;
-      if (a === 'songs') App.go('songs'); else App.go('read', { mode: a });
+      if (a === 'songs') App.go('songs');
+      else if (a === 'nhk') App.go('read', { mode: 'url', url: NHK, auto: true });
+      else App.go('read', { mode: a });
     });
     docIndex().then(idx => {
       const box = el.querySelector('#rdMine'); if (!box) return;
@@ -141,33 +146,51 @@
     const base = location.origin + location.pathname;
     return "javascript:(function(){var s=String(getSelection()).trim();if(!s){var r=document.querySelector('article,main,[role=main]')||document.body;s=[].map.call(r.querySelectorAll('h1,h2,h3,p,li'),function(e){return e.innerText.trim()}).filter(Boolean).join('\\n')}s=s.slice(0,6000);window.open('" + base + "?share=1&title='+encodeURIComponent(document.title)+'&url='+encodeURIComponent(location.href)+'&text='+encodeURIComponent(s))})()";
   }
-  function urlView(el) {
+  function urlView(el, params) {
     const bm = bookmarklet(), httpOK = /^https?:/.test(location.protocol);
     el.innerHTML = `<div class="rd-home">
-      <h2 class="rd-h2">🔗 貼網址</h2>
-      <label class="rd-lbl">文章網址<input id="rdU" class="rd-in" type="url" inputmode="url" placeholder="https://…"></label>
-      <div class="rd-row"><button type="button" class="btn" id="rdOpen">開啟原網頁</button><button type="button" class="btn primary" id="rdPaste">我複製好了，貼上 ➜</button></div>
-      <div class="rd-box">
-        <p><b>為什麼不能直接讀網址？</b>瀏覽器的安全規則（CORS）不讓一個網站直接讀另一個網站的內容，所以要請你幫忙把文字帶過來。三種方法：</p>
-        <ol class="rd-ol">
-          <li><b>複製貼上（最簡單）</b>：按「開啟原網頁」→ 長按選取本文 → 複製 → 回來按「我複製好了，貼上」。</li>
-          <li><b>手機分享（Android）</b>：先把本站「加到主畫面」安裝，之後在任何網頁選取文字或按「分享」→ 選「日語冒險」，文章就會直接打開。</li>
-          <li><b>電腦書籤小工具</b>：把下面的按鈕拖到書籤列。在新聞網頁上點它（可先選取一段文字），就會把本文送到這裡。${httpOK ? '' : '<br><span class="rd-warn">（需要用 http/https 網址開啟本站才能用）</span>'}</li>
-        </ol>
+      <h2 class="rd-h2">🔗 匯入日文文章</h2>
+      <form id="rdImport">
+        <label class="rd-lbl">公開文章網址<input id="rdU" class="rd-in" type="url" inputmode="url" placeholder="https://…" value="${esc(params.url || '')}" required></label>
+        <div class="rd-row"><button type="submit" class="btn primary" id="rdFetch">匯入並開始讀</button><button type="button" class="btn" id="rdPaste">手動貼上全文</button></div>
+        <p id="rdImportStatus" class="rd-tip" role="status" aria-live="polite"></p>
+      </form>
+      <p class="muted rd-tip">支援單篇日文文章、NHK 簡單新聞首頁，以及提供 RSS 的公開新聞網站。需要代讀時，網址會交由 Jina Reader 擷取文字。</p>
+      <details class="rd-box rd-det"><summary>開啟原文或使用書籤小工具</summary>
+        <p><button type="button" class="btn" id="rdOpen">開啟原網頁</button></p>
+        <p>可把按鈕拖到書籤列，在原網頁按一下就送出選取的文字。${httpOK ? '' : '（需透過網站開啟日語冒險。）'}</p>
         <div class="rd-row"><a class="btn rd-bm" href="${esc(bm)}" onclick="return false" draggable="true">📰 讀日文</a><button type="button" class="btn" id="rdCopyBm">複製程式碼</button></div>
-        <details class="rd-det"><summary>書籤程式碼（手動新增書籤時，把它貼在「網址」欄）</summary><textarea class="rd-in rd-code" rows="4" readonly>${esc(bm)}</textarea></details>
-      </div>
-      <p class="muted rd-tip">想每天讀新聞？<a href="${NHK}" target="_blank" rel="noopener">NHK NEWS WEB EASY</a> 是給初學者的簡單新聞，讀完把全文貼回來就能查詞、加字卡。</p>
+        <details id="rdBmCode"><summary>書籤程式碼</summary><textarea class="rd-in rd-code" rows="4" readonly>${esc(bm)}</textarea></details>
+      </details>
     </div>`;
-    const u = el.querySelector('#rdU');
-    const val = () => { const v = u.value.trim(); return /^https?:\/\/\S+$/i.test(v) ? v : ''; };
-    el.querySelector('#rdOpen').onclick = () => { const v = val(); if (!v) { toast('請輸入 http 開頭的網址'); u.focus(); return; } window.open(v, '_blank', 'noopener'); };
-    el.querySelector('#rdPaste').onclick = () => App.go('read', { mode: 'paste', share: { url: val(), text: '', title: '' } });
+    const u = el.querySelector('#rdU'), form = el.querySelector('#rdImport');
+    const submit = form.querySelector('#rdFetch'), status = form.querySelector('#rdImportStatus');
+    const val = () => LinkImport.publicURL(u.value);
+    el.querySelector('#rdOpen').onclick = () => { const v = val(); if (!v) { toast('請輸入公開網頁網址'); u.focus(); return; } window.open(v.href, '_blank', 'noopener'); };
+    el.querySelector('#rdPaste').onclick = () => App.go('read', { mode: 'paste', share: { url: val()?.href || '', text: '', title: '' } });
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (submit.disabled) return;
+      const url = val();
+      if (!url) { status.textContent = '請輸入公開的文章網址'; u.focus(); return; }
+      submit.disabled = true;
+      status.textContent = LinkImport.nhkHome(url) ? '正在找最新的 NHK 簡單新聞…' : '正在擷取文章正文…';
+      try {
+        const d = LinkImport.nhkHome(url) ? await LinkImport.latestNHK() : await LinkImport.article(url.href);
+        if (!form.isConnected) return;
+        const id = await saveDoc({ ...d, src: 'url' });
+        if (form.isConnected) App.go('read-article', { doc: id });
+      } catch (err) {
+        if (form.isConnected) status.textContent = (err.message || '匯入失敗') + '。也可以改用「手動貼上全文」。';
+      } finally { submit.disabled = false; }
+    };
     el.querySelector('#rdCopyBm').onclick = () => {
       const done = () => toast('✅ 已複製書籤程式碼', 'ok');
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(bm).then(done).catch(() => { el.querySelector('.rd-det').open = true; });
-      else el.querySelector('.rd-det').open = true;
+      const show = () => { const box = el.querySelector('#rdBmCode'); if (box) box.open = true; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(bm).then(done).catch(show);
+      else show();
     };
+    if (params.auto) form.requestSubmit();
   }
 
   /* ---------------- 共用：詞的 HTML 與查詞卡（歌曲也用） ---------------- */

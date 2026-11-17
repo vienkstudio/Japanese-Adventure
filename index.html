@@ -65,7 +65,7 @@ const MIND_DATA = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/gram
 App.lazy([['kb', { title: '知識庫', icon: '📚', nav: true, navOrder: 4 }], ['kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }], ['mind', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js']));
 App.lazy([['mind3d', { title: '3D 心智圖', icon: '🧠', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js', 'vendor/3d-force-graph.min.js', 'js/mind3d.js', 'js/mind-game.js']));
 // 閱讀與歌曲（D）
-const READ_JS = ['data/reading/daily.js', 'js/jp-text.js', 'js/reader.js', 'js/songs.js'];
+const READ_JS = ['data/reading/daily.js', 'js/jp-text.js', 'js/link-import.js', 'js/reader.js', 'js/songs.js'];
 App.lazy([['read', { title: '閱讀', icon: '📰', nav: true, navOrder: 3 }], ['read-article', { title: '閱讀', icon: '📰', nav: false, navParent: 'read' }],
   ['songs', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }], ['song', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }]], READ_JS);
 App.start();

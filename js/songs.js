@@ -1,6 +1,6 @@
 // 歌曲跟唱（D 組）：路由 songs（歌曲清單／新增編輯）、song（跟唱頁）
 // 依賴：App、Tracker、JPText（js/jp-text.js）、Reader（js/reader.js：tokensHTML、wordCard）
-// 存放 App.idb：'songs:index'＝[{id,title,at,n,src}]、'song:<id>'＝{id,title,src:{type:'yt'|'file'|'tts', yt, name, mime, buf}, lines:[{jp,zh,t}], at}
+// 存放 App.idb：'songs:index'＝[{id,title,at,n,src}]、'song:<id>'＝{id,title,src:{type:'yt'|'url'|'file'|'tts', yt, url, name, mime, buf}, lines:[{jp,zh,t}], at}
 // 不進 App.state、不上雲；錄音只在記憶體，離開頁面即丟。本站不內建任何有版權的歌詞，示範曲為自編。
 (function () {
   'use strict';
@@ -53,14 +53,8 @@
   }
   function setPref(k, v) { const p = pref(); p[k] = v; try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) { } }
 
-  function ytId(u) {
-    u = String(u || '').trim();
-    if (/^[\w-]{11}$/.test(u)) return u;
-    const m = u.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/|\/v\/)([\w-]{11})/);
-    return m ? m[1] : '';
-  }
   const fmt = t => (t == null || isNaN(t)) ? '—' : `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}.${Math.floor((t * 10) % 10)}`;
-  const SRC_NAME = { yt: '▶️ YouTube', file: '🎧 音檔', tts: '🗣️ 語音朗讀' };
+  const SRC_NAME = { yt: '▶️ YouTube', url: '🔗 音訊網址', file: '🎧 音檔', tts: '🗣️ 語音朗讀' };
 
   /* ---------------- 歌曲清單 ---------------- */
   App.register('songs', {
@@ -75,19 +69,46 @@
   function listView(el) {
     el.innerHTML = `<div class="sg-home">
       <div class="sg-head"><h2 class="rd-h2">🎵 歌曲跟唱</h2></div>
-      <p class="muted rd-tip">貼上你喜歡的日文歌詞，搭配 YouTube 或手機裡的音檔：逐句高亮、點詞查意思、填空聽寫、慢速、A-B 循環、錄音跟唱。</p>
-      <button type="button" class="btn primary block" id="sgNew">＋ 新增歌曲</button>
+      <form id="sgImport">
+        <label class="rd-lbl">歌曲網址<input class="rd-in" type="url" id="sgLink" inputmode="url" placeholder="YouTube、YouTube Music 或音訊檔網址" required></label>
+        <div class="rd-row"><button type="submit" id="sgFetch" class="btn primary">一鍵匯入歌曲</button><button type="button" class="btn" id="sgNew">上傳音檔或貼歌詞</button></div>
+        <p class="rd-tip" id="sgImportStatus" role="status" aria-live="polite"></p>
+      </form>
+      <p class="muted rd-tip">YouTube 會自動帶入標題，再用歌名與歌手查找 LRCLIB 的日文歌詞。沒有找到歌詞時，仍可匯入音源。</p>
       <h3 class="rd-h3">示範曲</h3>
       <div class="rd-list"><button type="button" class="rd-item" data-song="demo"><span class="rd-ic" aria-hidden="true">🌅</span><span class="rd-it"><b lang="ja">${esc(DEMO.title)}</b><small class="muted">自編童謠・${DEMO.lines.length} 句・語音朗讀</small></span>${App.state.cleared && App.state.cleared['song:demo'] ? '<span class="rd-done">✔</span>' : ''}</button></div>
       <h3 class="rd-h3">我的歌</h3>
       <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
-      <p class="muted rd-tip">歌詞與音檔只存在這台裝置，不會上傳。請只使用你有權使用的內容；本站不提供任何歌詞。</p>
+      <p class="muted rd-tip">儲存的歌曲留在這台裝置。YouTube 與音訊網址播放時需要連網。</p>
     </div>`;
     el.querySelector('#sgNew').onclick = () => App.go('songs', { mode: 'new' });
+    const form = el.querySelector('#sgImport'), submit = form.querySelector('#sgFetch'), status = form.querySelector('#sgImportStatus');
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (submit.disabled) return;
+      const input = form.querySelector('#sgLink');
+      const yt = LinkImport.youtubeID(input.value), audio = LinkImport.audio(input.value);
+      if (!yt && !audio) { status.textContent = '請貼上 YouTube、YouTube Music 或 HTTPS 音訊檔網址（例如 .mp3、.m4a）'; input.focus(); return; }
+      const id = yt ? 'yt:' + yt : 'audio:' + audio.href;
+      submit.disabled = true;
+      status.textContent = yt ? '正在讀取歌曲資訊與搜尋歌詞…' : '正在匯入音訊…';
+      try {
+        const existing = await getSong(id);
+        if (!existing) {
+          const data = yt ? await LinkImport.youtube(yt) : { title: audio.title, lines: [] };
+          if (!form.isConnected) return;
+          const src = yt ? { type: 'yt', yt } : { type: 'url', url: audio.href };
+          await putSong({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines });
+        }
+        if (form.isConnected) App.go('song', { id });
+      } catch {
+        if (form.isConnected) status.textContent = '歌曲匯入失敗，請稍後再試或改用音檔。';
+      } finally { submit.disabled = false; }
+    };
     el.querySelectorAll('[data-song]').forEach(b => b.onclick = () => App.go('song', { id: b.dataset.song }));
     songIndex().then(idx => {
       const box = el.querySelector('#sgMine'); if (!box) return;
-      if (!idx.length) { box.innerHTML = '<p class="muted rd-tip">還沒有歌。按「＋ 新增歌曲」貼上歌詞就能開始。</p>'; return; }
+      if (!idx.length) { box.innerHTML = '<p class="muted rd-tip">還沒有歌曲。可以用網址、音檔或歌詞新增一首。</p>'; return; }
       const cl = App.state.cleared || {};
       box.innerHTML = idx.map(s => `<div class="rd-item rd-mine"><button type="button" class="rd-open" data-song="${esc(s.id)}"><span class="rd-ic" aria-hidden="true">🎵</span><span class="rd-it"><b lang="ja">${esc(s.title)}</b><small class="muted">${s.n} 句・${esc(SRC_NAME[s.src] || '')}${s.src !== 'tts' ? `・已對時 ${s.timed || 0}/${s.n}` : ''}</small></span>${cl['song:' + s.id] ? '<span class="rd-done">✔</span>' : ''}</button><button type="button" class="rd-del" data-del="${esc(s.id)}" aria-label="刪除">✕</button></div>`).join('');
       box.querySelectorAll('[data-song]').forEach(b => b.onclick = () => App.go('song', { id: b.dataset.song }));
@@ -105,11 +126,12 @@
       <div class="sg-head"><h2 class="rd-h2">${old ? '✏️ 編輯歌曲' : '＋ 新增歌曲'}</h2></div>
       <label class="rd-lbl">歌名<input id="sgT" class="rd-in" maxlength="60" value="${esc(s.title)}" placeholder="例：我最喜歡的歌"></label>
       <div class="rd-lbl">音源</div>
-      <div class="rd-tg sg-srcs" role="group" aria-label="音源">${['yt', 'file', 'tts'].map(k => `<button type="button" data-src="${k}" class="${k === type ? 'on' : ''}" aria-pressed="${k === type}">${SRC_NAME[k]}</button>`).join('')}</div>
+      <div class="rd-tg sg-srcs" role="group" aria-label="音源">${['yt', 'url', 'file', 'tts'].map(k => `<button type="button" data-src="${k}" class="${k === type ? 'on' : ''}" aria-pressed="${k === type}">${SRC_NAME[k]}</button>`).join('')}</div>
       <div class="sg-srcbox" data-for="yt"><label class="rd-lbl">YouTube 網址<input id="sgY" class="rd-in" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" value="${s.src.yt ? 'https://youtu.be/' + esc(s.src.yt) : ''}"></label><p class="muted rd-tip">需要連網。有些影片不允許嵌入播放，會顯示錯誤，可改用音檔。</p></div>
+      <div class="sg-srcbox" data-for="url"><label class="rd-lbl">HTTPS 音訊檔網址<input id="sgU" class="rd-in" type="url" inputmode="url" placeholder="https://…/song.mp3" value="${esc(s.src.url || '')}"></label></div>
       <div class="sg-srcbox" data-for="file"><label class="rd-lbl">選擇音檔（mp3、m4a…）<input id="sgF" class="rd-in" type="file" accept="audio/*,video/mp4"></label><p class="muted rd-tip" id="sgFn">${s.src.name ? '目前：' + esc(s.src.name) : '音檔只存在這台裝置（最大 60MB），可離線播放。'}</p></div>
       <div class="sg-srcbox" data-for="tts"><p class="muted rd-tip">沒有音源時，用裝置的日文語音一句一句念（不會唱，但可練讀音與聽寫）。</p></div>
-      <label class="rd-lbl">日文歌詞（每行一句）<textarea id="sgL" class="rd-in rd-ta" rows="9" lang="ja" placeholder="一行一句，空行會略過">${esc(s.lines.map(l => l.jp).join('\n'))}</textarea></label>
+      <label class="rd-lbl">日文歌詞（每行一句，有音源時可留空）<textarea id="sgL" class="rd-in rd-ta" rows="9" lang="ja" placeholder="一行一句，空行會略過">${esc(s.lines.map(l => l.jp).join('\n'))}</textarea></label>
       <label class="rd-lbl">中文翻譯（可不填；一行對一句）<textarea id="sgZ" class="rd-in rd-ta" rows="6" placeholder="第 1 行對應第 1 句…">${esc(s.lines.map(l => l.zh || '').join('\n').replace(/\n+$/, ''))}</textarea></label>
       <div class="rd-row"><button type="button" class="btn" id="sgCancel">取消</button><button type="button" class="btn primary" id="sgSave">儲存並開始 ➜</button></div>
       <p class="muted rd-tip">存好後在跟唱頁按「⏱ 對時」，邊聽邊點，每句開始時按一下，就能逐句高亮。</p>
@@ -132,13 +154,17 @@
       const jp = $('#sgL').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 300);
       const zhRaw = $('#sgZ').value.replace(/\r/g, '').split('\n').map(x => x.trim());
       const zh = zhRaw.filter((x, i) => x || i < zhRaw.length - 1);
-      if (!jp.length) { toast('請貼上歌詞'); $('#sgL').focus(); return; }
-      if (!/[぀-ヿ㐀-鿿]/.test(jp.join(''))) { toast('看起來不是日文歌詞喔'); return; }
+      if (!jp.length && type === 'tts') { toast('語音朗讀需要日文歌詞'); $('#sgL').focus(); return; }
+      if (jp.length && !/[぀-ヿ㐀-鿿]/.test(jp.join(''))) { toast('看起來不是日文歌詞喔'); return; }
       const src = { type };
       if (type === 'yt') {
-        const v = ytId($('#sgY').value);
+        const v = LinkImport.youtubeID($('#sgY').value);
         if (!v) { toast('看不懂這個 YouTube 網址'); $('#sgY').focus(); return; }
         src.yt = v;
+      } else if (type === 'url') {
+        const a = LinkImport.audio($('#sgU').value);
+        if (!a) { toast('請輸入 HTTPS 音訊檔網址'); $('#sgU').focus(); return; }
+        src.url = a.href; src.name = a.title;
       } else if (type === 'file') {
         if (file) {
           try { src.buf = await file.arrayBuffer(); src.name = file.name; src.mime = file.type || 'audio/mpeg'; }
@@ -148,8 +174,8 @@
       }
       // 歌詞沒改的句子保留原本的對時
       const oldT = new Map(); s.lines.forEach((l, i) => { if (l.t != null) oldT.set(i + '|' + l.jp, l.t); });
-      const keepT = src.type === s.src.type && (src.type !== 'yt' || src.yt === s.src.yt) && !(src.type === 'file' && file);
-      s.title = $('#sgT').value.trim().slice(0, 60) || jp[0].slice(0, 20);
+      const keepT = src.type === s.src.type && src.yt === s.src.yt && src.url === s.src.url && !(src.type === 'file' && file);
+      s.title = ($('#sgT').value.trim() || jp[0] || src.name || 'YouTube・' + src.yt).slice(0, 60);
       s.src = src;
       s.lines = jp.map((x, i) => ({ jp: x, zh: zh[i] || '', t: keepT && oldT.has(i + '|' + x) ? oldT.get(i + '|' + x) : null }));
       if (zh.length && zh.length !== jp.length) toast(`翻譯 ${zh.length} 行、歌詞 ${jp.length} 句，已依行號對應`);
@@ -161,17 +187,20 @@
   /* ---------------- 播放器 ---------------- */
   // 共同介面：kind、timed、time()、play()、pause()、playing()、seek(t)、rate(r)、dur()、destroy()
   function audioPlayer(box, s) {
-    const blob = new Blob([s.src.buf], { type: s.src.mime || 'audio/mpeg' });
-    const url = URL.createObjectURL(blob);
-    box.innerHTML = `<audio class="sg-audio" controls preload="metadata" src="${url}"></audio>`;
+    const remote = s.src.type === 'url';
+    const url = remote ? LinkImport.audio(s.src.url)?.href : URL.createObjectURL(new Blob([s.src.buf], { type: s.src.mime || 'audio/mpeg' }));
+    box.innerHTML = `<audio class="sg-audio" controls preload="metadata"></audio><p class="sg-note" hidden>音訊無法播放，來源可能限制外部播放或已失效。</p>`;
     const a = box.querySelector('audio');
+    const error = box.querySelector('.sg-note');
+    a.addEventListener('error', () => { error.hidden = false; });
+    if (url) a.src = url; else error.hidden = false;
     a.preservesPitch = true;
     return {
       kind: 'file', timed: true,
       time: () => a.currentTime, dur: () => a.duration || 0,
       play: () => a.play().catch(() => { }), pause: () => a.pause(), playing: () => !a.paused,
       seek: t => { a.currentTime = Math.max(0, t); }, rate: r => { a.playbackRate = r; },
-      destroy: () => { a.pause(); a.removeAttribute('src'); try { a.load(); } catch (e) { } URL.revokeObjectURL(url); }
+      destroy: () => { a.pause(); a.removeAttribute('src'); try { a.load(); } catch (e) { } if (!remote) URL.revokeObjectURL(url); }
     };
   }
 
@@ -257,10 +286,13 @@
 
   async function songView(el, id) {
     el.innerHTML = '<p class="center muted rd-load">🎵 準備歌詞中…</p>';
+    const loading = el.firstElementChild;
     const s = await getSong(id);
+    if (!loading.isConnected) return;
     if (!s) { el.innerHTML = '<div class="panel center"><p>找不到這首歌（可能已刪除）。</p><button class="btn primary" type="button">回歌曲清單</button></div>'; el.querySelector('button').onclick = () => App.go('songs'); return; }
-    await JPText.ready();
-    if (!el.isConnected) return;
+    if (s.lines.length) await JPText.ready();
+    if (!loading.isConnected) return;
+    const hasLyrics = s.lines.length > 0;
     const P = pref();
     const V = { s, P, tokens: s.lines.map(l => JPText.tokenize(l.jp)), cur: -1, mode: 'sing', rate: 1, A: null, B: null, mark: 0, recs: [], rec: null, dict: null, dictBest: 0, listened: false, dirty: false };
     const prof = (App.profile && App.profile()) || {};
@@ -272,12 +304,12 @@
     el.innerHTML = `<div class="sg-page">
       <div class="sg-head"><h2 class="rd-h2" lang="ja">${esc(s.title)}</h2>${s.demo ? '' : '<button type="button" class="btn ghost sg-edit" aria-label="編輯">✏️</button>'}</div>
       <div class="sg-media"></div>
-      <div class="tabs sg-modes" role="tablist">
+      <div class="tabs sg-modes" role="tablist" ${hasLyrics ? '' : 'hidden'}>
         <button type="button" data-mode="sing" class="on" role="tab">🎤 跟唱</button>
         ${s.src.type === 'tts' ? '' : '<button type="button" data-mode="mark" role="tab">⏱ 對時</button>'}
         <button type="button" data-mode="dict" role="tab">✍️ 填空</button>
       </div>
-      <div class="rd-tg sg-tg" role="group" aria-label="顯示">
+      <div class="rd-tg sg-tg" role="group" aria-label="顯示" ${hasLyrics ? '' : 'hidden'}>
         <button type="button" data-t="y" aria-pressed="${!!P.y}" class="${P.y ? 'on' : ''}">讀音</button>
         <button type="button" data-t="r" aria-pressed="${!!P.r}" class="${P.r ? 'on' : ''}">羅馬字</button>
         <button type="button" data-t="z" aria-pressed="${!!P.z}" class="${P.z ? 'on' : ''}">中文</button>
@@ -287,14 +319,14 @@
       <div class="sg-lyr rd-doc mine ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''}" lang="ja"></div>
       <div class="sg-recs"></div>
       <div class="sg-dictbar" hidden><button type="button" class="btn" id="sgReDict">🔀 換一組</button><button type="button" class="btn primary" id="sgCheck">對答案</button></div>
-      <button type="button" class="btn primary block sg-finish">✔ 練完這首</button>
+      <button type="button" class="btn primary block sg-finish" ${hasLyrics ? '' : 'hidden'}>✔ 練完這首</button>
       <div class="sg-ctl" role="toolbar" aria-label="播放控制">
         <div class="sg-ctl-row">
           <button type="button" class="sg-b sg-play" aria-label="播放">▶</button>
           <span class="sg-time" aria-live="off">${s.src.type === 'tts' ? '' : '0:00.0'}</span>
           <div class="sg-rates" role="group" aria-label="速度">${RATES.map(r => `<button type="button" data-rate="${r}" class="${r === 1 ? 'on' : ''}">${r}×</button>`).join('')}</div>
         </div>
-        <div class="sg-ctl-row sg-row2">
+        <div class="sg-ctl-row sg-row2" ${hasLyrics ? '' : 'hidden'}>
           <button type="button" class="sg-b" data-ab="A" aria-label="循環起點設在目前這句">A</button>
           <button type="button" class="sg-b" data-ab="B" aria-label="循環終點設在目前這句">B</button>
           <button type="button" class="sg-b" data-ab="one" aria-label="單句循環">🔁</button>
@@ -318,7 +350,7 @@
       }
     };
     if (s.src.type === 'yt' && s.src.yt) V.P2 = ytPlayer(media, s, () => syncPlay(V));
-    else if (s.src.type === 'file' && s.src.buf) V.P2 = audioPlayer(media, s);
+    else if (s.src.type === 'url' || (s.src.type === 'file' && s.src.buf)) V.P2 = audioPlayer(media, s);
     else { V.P2 = ttsPlayer(s, hooks); media.innerHTML = '<p class="sg-note">🗣️ 語音朗讀模式：按 ▶ 一句一句念。</p>'; }
     if (V.P2.kind === 'file') { const a = media.querySelector('audio'); a.addEventListener('play', () => syncPlay(V)); a.addEventListener('pause', () => syncPlay(V)); }
 
@@ -343,8 +375,8 @@
     $('.sg-finish').onclick = () => finish(V);
     $('.sg-lyr').addEventListener('click', e => onLyrClick(V, e));
 
-    drawLines(V);
-    setMode(V, 'sing');
+    if (hasLyrics) setMode(V, 'sing');
+    else $('.sg-help').textContent = '音源已匯入。點上方「編輯」即可加入日文歌詞。';
     // 計時：高亮、循環、錄音自動停、離開頁面清理
     V.timer = setInterval(() => tick(V), 150);
   }
@@ -632,5 +664,5 @@
     });
   }
 
-  window.Songs = { DEMO, ytId, list: songIndex };
+  window.Songs = { DEMO, ytId: LinkImport.youtubeID, list: songIndex };
 })();

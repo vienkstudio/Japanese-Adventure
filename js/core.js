@@ -303,6 +303,10 @@
   let CUR = null, IDX = 0, canHist = false;
   const HIST = [];   // history API 不能用時的備援
   function parseHash() { return CUR || { name: 'home', params: {} }; }
+  function entryRoute() {
+    if (new URLSearchParams(location.search).has('share')) return 'read';
+    return { '#mind3d': 'mind3d', '#read': 'read', '#songs': 'songs' }[location.hash] || 'home';
+  }
   function go(name, params, isBack) {
     params = params || {};
     const same = CUR && CUR.name === name && JSON.stringify(CUR.params) === JSON.stringify(params);
@@ -322,7 +326,7 @@
   }
   function initHistory() {
     try {
-      history.replaceState({ jpq: 1, i: 0, name: 'home', params: {} }, '');
+      history.replaceState({ jpq: 1, i: 0, name: CUR.name, params: CUR.params }, '');
       canHist = true;
       window.addEventListener('popstate', e => {
         const st = e.state;
@@ -330,7 +334,7 @@
         if (skipPop) { skipPop = false; if (st && st.jpq) IDX = st.i || 0; return; }
         const top = LAYERS[LAYERS.length - 1];
         if (top) { LAYERS.pop(); top.remove(); if (st && st.jpq) IDX = st.i || 0; return; }
-        if (!st || !st.jpq) { IDX = 0; CUR = { name: 'home', params: {} }; render(); return; }
+        if (!st || !st.jpq) { IDX = 0; CUR = { name: entryRoute(), params: {} }; render(); return; }
         // 轉址頁（transient）不重跑，順著方向再跳一格，避免返回時重開已完成的關卡
         if (routes[st.name] && routes[st.name].transient && (st.i || 0) > 0) { const fwd = (st.i || 0) > IDX; IDX = st.i || 0; fwd ? history.forward() : history.back(); return; }
         IDX = st.i || 0;
@@ -434,7 +438,7 @@
     document.dispatchEvent(new CustomEvent('profilechange', { detail: profile() }));
     return profile();
   }
-  function start() { started = true; applyTheme(); CUR = { name: 'home', params: {} }; initHistory(); onChange(renderNav); render(); cloudInit(); idbRestore(); }
+  function start() { started = true; applyTheme(); CUR = { name: entryRoute(), params: {} }; initHistory(); onChange(renderNav); render(); cloudInit(); idbRestore(); }
   // localStorage 沒資料（被清除、私密模式切換）但 IndexedDB 有較新的存檔 → 還原
   function idbRestore() {
     IDB.get('save').then(v => {

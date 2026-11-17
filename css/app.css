@@ -260,7 +260,7 @@ input,textarea,select{background:var(--card);color:var(--text);border:1px solid 
 .hm-task .t b{display:block;font-size:var(--fs-md)}
 .hm-task .t small{display:block;color:var(--muted);font-size:var(--fs-sm);line-height:1.35}
 .hm-task .go{color:var(--pri);font-weight:800;flex:none}
-.hm-more{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-2)}
+.hm-more{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--sp-2)}
 .hm-more button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;border-radius:var(--r-m);background:var(--chip);color:var(--text);min-height:68px;padding:var(--sp-2) 2px;font:inherit;font-size:var(--fs-sm);font-weight:700;cursor:pointer}
 .hm-more button span{font-size:1.5em;line-height:1.1}
 .hm-map{border-radius:var(--r-l);background:var(--card);box-shadow:var(--shadow);overflow:hidden}

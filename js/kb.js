@@ -183,7 +183,7 @@
       <button type="button" class="kb-ti${on('conj')}" data-nav="conj">🔁 動詞變化<small>${CONJ.length}</small></button>
       <button type="button" class="kb-ti${on('fav')}" data-nav="fav">⭐ 收藏<small>${Object.keys(ST.fav).length}</small></button>
       <button type="button" class="kb-ti${on('recent')}" data-nav="recent">🕘 最近開啟</button>
-      <button type="button" class="kb-ti" data-nav="3d">🌐 3D 實驗</button>
+      <button type="button" class="kb-ti" data-nav="3d">🌐 3D 心智圖</button>
     </div>`;
   }
 
@@ -228,6 +228,7 @@
           ${ready ? `<p class="kb-ready">✨ 已學 80%，可挑戰 ${LV[LVI[lv] + 1]}</p>` : ''}</div>` : ''}</div>`;
     };
     c.innerHTML = `<h1 class="kb-h1">📚 知識庫</h1>
+      <button type="button" class="btn" data-nav="3d">🌐 開啟 3D 心智圖</button>
       ${nextCard()}
       <div class="kb-sec">各等級進度</div>
       ${LV.map(lvCard).join('')}
@@ -236,7 +237,6 @@
         <button type="button" class="kb-qb" data-nav="db" data-kind="word" data-lv="${me}" data-preset="travel">🧳 旅遊必備單字</button>
         <button type="button" class="kb-qb" data-nav="conj">🔁 動詞變化</button>
         <button type="button" class="kb-qb" data-nav="fav">⭐ 收藏</button>
-        <button type="button" class="kb-qb" data-nav="3d">🌐 3D 實驗</button>
       </div>
       <p class="kb-foot muted">詞彙清單：open-anki-jlpt-decks（MIT，源自 tanos.co.uk JLPT 清單，CC BY）；JLPT 官方 2010 年後未公布清單，分級僅供參考。「核心」＝在本站冒險、手冊、特訓或文法例句中出現過的字。中文釋義、分類與文法為本站整理。</p>`;
     loadLv(me).then(() => { if (C() === c && !c.querySelector('.kb-next-w')) { const n = c.querySelector('.kb-next'); if (n) n.outerHTML = nextCard(); } }).catch(() => { });
