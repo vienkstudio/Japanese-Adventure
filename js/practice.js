@@ -361,7 +361,7 @@
   App.register('stage', { title: '場景關卡', icon: '🗺️', nav: false, render: renderStage });
 
   /* ---- 🎴 分級字卡 ---- */
-  const DECKS = [['hira', 'あ', '平假名'], ['kata', 'ア', '片假名'], ['daku', '゛', '濁音・拗音'], ['mine', '📌', '不會清單'], ['jlpt', '📗', 'N5–N1 單字'], ['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
+  const DECKS = [['hira', 'あ', '平假名'], ['kata', 'ア', '片假名'], ['daku', '゛', '濁音・拗音'], ['mine', '📌', '不會清單'], ['sent', '🃏', '冒險句卡'], ['jlpt', '📗', 'N5–N1 單字'], ['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
   const KANA_DECK = { hira: 1, kata: 1, daku: 1 };
   // 五十音字卡：正面假名，背面讀音、諧音、聯想、字源
   function kanaCards(k) {
@@ -388,6 +388,7 @@
     if (KANA_DECK[k]) return kanaCards(k);
     if (k === 'mine') return Tracker.list().map(t => ({ id: t.id, kind: 'mine', jp: t.jp, kana: t.kana || '', romaji: t.romaji || '', zh: t.zh || '', hint: t.hint || '', ex: '', exzh: '', emoji: t.emoji || '', lv: (window.CARDS && CARDS.levelOf ? CARDS.levelOf(t.jp, 'word') : 'x') || 'x', source: t.source || '不會清單' }));
     if (k === 'jlpt') return jlptCards();
+    if (k === 'sent') return Object.values(((App.state.world || {}).cards) || {}).reverse().map(c => ({ id: 'phrase:' + c.jp, kind: 'sent', jp: c.jp, kana: c.kana || '', romaji: '', zh: c.zh || '', hint: '', ex: '', exzh: '', emoji: '', lv: 'x', source: '冒險句卡' }));
     if (window.CARDS && CARDS.decks[k]) return CARDS.decks[k].cards;
     const seen = new Set(), out = [];
     scenes().forEach(s => arr(k === 'word' ? s.vocab : s.phrases).forEach(w => {
@@ -405,7 +406,7 @@
     const c = list[UI.ci];
     const LVS = ['N5', 'N4', 'N3', 'N2', 'N1', 'x'];
     body.innerHTML = `<div class="tabs">${DECKS.map(([k, i, n]) => `<button data-dk="${k}" class="${UI.deck === k ? 'on' : ''}">${i} ${n}</button>`).join('')}</div>
-      ${KANA_DECK[UI.deck] || UI.deck === 'mine' ? '' : `<div class="tabs" style="margin-top:0"><button data-lf="all" class="${UI.lvF === 'all' ? 'on' : ''}">全部級 ${all.length}</button>${LVS.filter(cnt).map(l => `<button data-lf="${l}" class="${UI.lvF === l ? 'on' : ''}">${CARDS.LV_NAME[l]} ${cnt(l)}</button>`).join('')}</div>`}
+      ${KANA_DECK[UI.deck] || UI.deck === 'mine' || UI.deck === 'sent' ? '' : `<div class="tabs" style="margin-top:0"><button data-lf="all" class="${UI.lvF === 'all' ? 'on' : ''}">全部級 ${all.length}</button>${LVS.filter(cnt).map(l => `<button data-lf="${l}" class="${UI.lvF === l ? 'on' : ''}">${CARDS.LV_NAME[l]} ${cnt(l)}</button>`).join('')}</div>`}
       <div class="tabs" style="margin-top:0">${[['all', '全部'], ['3', '😵 困難'], ['2', '🤔 普通'], ['1', '😊 簡單'], ['0', '未評']].map(([k, n]) => `<button data-df="${k}" class="${UI.dF === k ? 'on' : ''}">${n} ${k === 'all' ? '' : all.filter(x => diffOf(x.id) === +k).length}</button>`).join('')}</div>
       ${c ? `<div class="c-card" id="cCard"><div class="c-in">
           <div class="c-face"><div class="c-top"><span>${UI.ci + 1} / ${list.length}</span>${c.kind === 'kana' ? '' : lvBadge(c.lv)}</div>
@@ -423,7 +424,7 @@
         <div class="c-nav"><button class="btn sm" id="cPrev">◀ 上一張</button>
           <span><button class="btn sm ghost" id="cSay">🔊</button><button class="track-btn${Tracker.has(c.id) ? ' on' : ''}" id="cTrack">${Tracker.has(c.id) ? '✓ 已在清單' : '＋ 不會清單'}</button></span>
           <button class="btn sm" id="cNext">下一張 ▶</button></div>`
-        : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}
+        : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : UI.deck === 'sent' ? '還沒有句卡：在冒險的店裡說對一句就會收集。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}
       ${KANA_DECK[UI.deck] ? '' : `<div class="panel" style="font-size:.82em"><div class="lv-legend">底線顏色：${LVS.map(lvBadge).join('')}</div><div class="muted" style="margin-top:6px">${esc(window.CARDS ? CARDS.NOTE : '')}</div>
         <div class="muted">自評難度會自動儲存在本機，可用上方「困難」篩選集中複習。</div></div>`}`;
     const re = () => cardsView(body);
@@ -432,7 +433,13 @@
     body.querySelectorAll('[data-df]').forEach(b => b.onclick = () => { UI.dF = b.dataset.df; UI.ci = 0; re(); });
     if (!c) return;
     const say = () => App.speak(c.kind === 'kana' ? c.jp : (c.kana || c.jp));
-    body.querySelector('#cCard').onclick = () => { const cc = body.querySelector('#cCard'); cc.classList.toggle('flip'); if (cc.classList.contains('flip')) say(); };
+    body.querySelector('#cCard').onclick = () => {
+      const cc = body.querySelector('#cCard'); cc.classList.toggle('flip');
+      if (!cc.classList.contains('flip')) return;
+      say();
+      const t = App.today(), d = App.state.cardDay && App.state.cardDay.d === t ? App.state.cardDay : { d: t, n: 0 };
+      d.n++; App.state.cardDay = d; App.save();
+    };
     body.querySelector('#cSay').onclick = say;
     body.querySelector('#cPrev').onclick = () => { UI.ci = (UI.ci - 1 + list.length) % list.length; re(); };
     body.querySelector('#cNext').onclick = () => { UI.ci = (UI.ci + 1) % list.length; re(); };

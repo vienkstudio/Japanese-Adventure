@@ -500,14 +500,13 @@
       <h2 class="jp-t">🗾 日本地圖<small>全部地區都開放，想去哪就去哪；①②③ 是推薦順序</small></h2>
       <button type="button" class="jp-cont" id="jp-next"><span>▶</span><span>${esc(n.label)}<small>${esc(n.sub || '')}</small></span></button>
       <div id="jp-mapbox"></div>
-      <div class="jp-list">${W.regions.map((r, i) => `<button type="button" class="jp-reg" data-r="${r.id}"><span class="ic">${r.icon}</span><span class="t"><b>${'①②③④⑤⑥'[i] || ''} ${esc(r.name)} <small lang="ja">${esc(r.jp)}</small></b><small>${esc(r.desc)}</small></span><em>${World.cardCount(r.id) ? '🃏' + World.cardCount(r.id) : ''}${regionStamps(r.id) ? ' ⛩️' + regionStamps(r.id) : ''}</em></button>`).join('')}</div>
       <div class="jp-grid"><button type="button" class="jp-tile" id="jp-cards">🃏 我的句卡<small>${World.cardCount()} 張・說對就收集</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
     </section>`;
     japan(el.querySelector('#jp-mapbox'));
     el.querySelector('#jp-next').onclick = () => App.go(n.route, n.params);
     el.querySelectorAll('.jp-reg').forEach(b => b.onclick = () => App.go('play', { r: b.dataset.r }));
     el.querySelector('#jp-gs').onclick = goshuin;
-    el.querySelector('#jp-cards').onclick = cardsModal;
+    el.querySelector('#jp-cards').onclick = () => App.go('cards', { deck: 'sent' });
   }
   function cardsModal() {
     const list = Object.values(st().cards).reverse();

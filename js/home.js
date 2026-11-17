@@ -46,14 +46,16 @@
     const practiced = !!(d && ((d.ok || 0) + (d.review || 0) + (d.quests || 0) + (d.clear || 0) > 0));
     const kanaToday = App.state.kanaDay === App.today();
     const rd = readDone();
+    const cd = App.state.cardDay || {}, cardsN = cd.d === App.today() ? cd.n || 0 : 0, ld = App.state.lastDone || {};
+    const cardTask = n => ({ id: 'cards', n, done: cardsN >= 10, b: kanaFirst ? '翻 10 張五十音字卡' : '翻 10 張字卡', s: cardsN >= 10 ? '今天翻完了 👍' : `今天已翻 ${cardsN}／10 張`, go: () => App.go('cards', kanaFirst ? { deck: 'hira' } : {}) });
     const tasks = [
       total
         ? { id: 'rev', n: 1, done: !due, b: due ? `複習 ${due} 個字` : '今日複習', s: due ? '答錯或不熟的字，到期了' : '今天的都複習完了 👍', go: () => App.go('review') }
-        : { id: 'rev', n: 1, done: practiced, b: '練習任一題', s: practiced ? '今天練過了 👍' : '今天答對任何一題就打勾', go: () => kanaFirst ? goKana() : App.go(nx.route, nx.params) },
+        : cardTask(1),
       { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read') },
       kanaFirst
-        ? { id: 'kana', n: 3, done: kanaToday, b: '五十音一組', s: kanaToday ? '今天學過了 👍 想多學也可以' : `學 5 個新字＋小考（已學 ${kl}／${KANA_N}）`, go: goKana }
-        : { id: 'play', n: 3, done: !!(d && d.quests), b: '在任一間店完成 1 件事', s: nx.sub || nx.label, go: () => App.go(nx.route, nx.params) }
+        ? (total ? cardTask(3) : { id: 'kq', n: 3, done: ld.kana === App.today(), b: '五十音小練習', s: '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) })
+        : { id: 'chal', n: 3, done: ld.chal === App.today(), b: `${String(p.lv || 'n5').toUpperCase()} 挑戰一輪`, s: ld.chal === App.today() ? '今天挑戰過了 👍' : '仿 JLPT 題型，10 題', go: () => App.go('challenge') }
     ];
     const doneN = tasks.filter(t => t.done).length;
     el.innerHTML = `<section class="hm">
@@ -188,7 +190,7 @@
       ${voiceBox()}
       <div class="st-box"><h2>🧰 其他</h2><div class="st-rows">
         ${G ? `<button type="button" class="st-row" id="st-sfx">${G.sfxOn() ? '🔊 音效' : '🔇 音效'}<small>${G.sfxOn() ? '開' : '關'}</small></button>` : ''}
-        <button type="button" class="st-row" id="st-av">🎭 換頭像・⛩️ 御朱印帳<small>›</small></button>
+        <button type="button" class="st-row" id="st-av">🎭 換頭像<small>›</small></button>
         <button type="button" class="st-row" id="st-bk">💾 備份／還原存檔<small>${App.saveStatus === 'cloud' ? '已雲端存檔' : '存在這台裝置'}</small></button>
       </div></div>
       <div class="st-box"><h2>⚠️ 危險區</h2>
@@ -206,8 +208,6 @@
     bindVoice(el);
     const sf =q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); settings(el); };
     q('#st-av').onclick = () => {
-      if (has(window.World, 'goshuin')) return World.goshuin();
-      if (window.Travel && has(Travel, 'goshuin')) return Travel.goshuin();
       if (G && has(G, 'pickAvatar')) G.pickAvatar(() => App.render());
     };
     q('#st-bk').onclick = () => App.backup();
