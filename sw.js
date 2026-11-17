@@ -1,5 +1,5 @@
 // 離線快取：改版時請把 VERSION 加 1。個別檔案下載失敗不影響安裝（新檔還沒上線時也能裝）。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
-const VERSION = 'jpq-v25';
+const VERSION = 'jpq-v26';
 const FILES = ['./', './index.html', './css/tokens.css', './css/app.css', './css/kb.css', './css/reader.css', './js/home.js',
   './js/kb.js', './js/jp-text.js', './js/reader.js', './js/songs.js', './data/reading/daily.js', './css/travel.css', './css/mind.css', './css/world.css', './kana-data.js',
   './js/phrase.js', './js/world.js', './js/world-quest.js', './data/world/hokkaido-2.js', './data/world/hokkaido-3.js', './data/world/hokkaido.js', './data/world/index.js', './data/world/kyoto-2.js', './data/world/kyoto-3.js', './data/world/kyoto.js', './data/world/okinawa-2.js', './data/world/okinawa.js', './data/world/osaka-2.js', './data/world/osaka-3.js', './data/world/osaka.js', './data/world/tokyo-1.js', './data/world/tokyo-2.js', './data/world/tokyo-3.js', './data/world/tokyo-3b.js', './data/world/tokyo-4.js', './data/world/tokyo-4b.js', './data/world/tokyo-5.js', './data/world/tokyo-6.js', './data/world/tokyo-7.js', './data/world/tokyo-8.js',
