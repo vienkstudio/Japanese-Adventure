@@ -12,8 +12,9 @@
 | 4 | `data/cards.js`、`data/menus.js` | 分級字卡、情境小遊戲菜單（`MENUS[sceneId]`） |
 | 5 | `data/travel.js` → `travel-ext.js` → `travel-stops.js` | `TravelData`：難度、13 站、每站每級 5 題狀況題 |
 | 7 | `js/core.js` → `js/game.js` | `App`、`Tracker`；音效、每日任務、頭像 |
-| 8 | inline | `home` 路由（交給 `Travel.renderTitle`） |
+| 8 | inline | `home` 路由（交給 `World.home`） |
 | 9 | `js/quest.js`、`practice.js`、`town.js`、`review.js`、`travel.js` | 功能模組 |
+| 9b | `js/phrase.js` → `data/world/index.js` → `js/world.js` → `js/world-quest.js` | 冒險世界（地區資料 `data/world/<檔>.js` 進入該地區才載入） |
 | 10 | inline | `App.lazy(...)` 登記延遲載入路由 → `App.start()` → 註冊 `sw.js` |
 | 延遲 | `data/drills.js`＋`js/drill.js`（第一次進 `boot`）、`js/phrasebook.js`（第一次進 `phrasebook`） | 特訓、會話手冊 |
 
@@ -29,7 +30,9 @@ App.streakInfo() -> {days, done, risk}
 App.today() -> 'YYYY-MM-DD'（本地）
 App.addUnlock(fn(lv) -> ['解鎖項目'])   // 升級彈窗列出真的解鎖的內容
 App.completeQuest(id, stars, baseXP) / App.noteClear()
-App.showResult({title, stars, correct, total, gained, wrong, retry, back:{label,route,params}, next:{label,route,params}})
+App.reward(id, stars, reason) -> {stars, prevStars, gained, levelUp, firstClear}   // 依 XP 規則給獎勵，星數存 S.cleared[id]
+App.showResult({title, stars, correct, total, gained, wrong, note, ok, retry, back:{label,route?,params}, next:{label,route,params}})
+//  note：額外說明 HTML；ok：確定鈕文字（只關閉）；back 不給 route ＝ App.back()
 App.modal(html, [{label, cls, onClick}]) / App.toast(html, 'xp'|'ok'|'')
 App.speak(jp, rate?) / App.esc / App.shuffle / App.sample
 App.kanaItem(KANA列) / App.wordItem(word, sceneName, 'word'|'phrase')
@@ -67,6 +70,7 @@ Tracker.dueList() / dueCount()   // 今日該複習
 | `daily`、`avatar` | game.js |
 | `avatarsOwned` | travel.js 寫入（掉落）、game.js 讀取 |
 | `trip`（`level`、`runs[難度]`、`stamps`）、`kanaL` | travel.js |
+| `world`（`lv`、`stamps`、`dex`、`zones`、`pos`、`spots`、`last`、`at`） | world.js／world-quest.js |
 | `sit`、`sceneDone`、`cardDiff`、`guide` | practice.js（town.js 也寫 `sceneDone`） |
 | `drill`、`drillOpt` | drill.js |
 
@@ -75,12 +79,14 @@ Tracker.dueList() / dueCount()   // 今日該複習
 ## 路由一覽
 | 路由 | 模組 | 說明 |
 |---|---|---|
-| `home`（nav 1） | inline → travel.js | 首頁：繼續、新開始、每日任務、今日複習、手冊、特訓、設定 |
+| `home`（nav 1） | inline → world-quest.js | 首頁：日本地圖、繼續冒險、程度、每日任務、今日複習、御朱印、手冊、特訓、五十音入門、設定 |
+| `play` | world.js | 冒險世界：params `{r 地區, d 街區, s 店}`；沒有 s＝街區地圖，有 s＝店內 |
+| `event` | world-quest.js | 店家狀況題（沿用 data/travel*.js，依店的 scene） |
 | `phrasebook`（nav 2） | phrasebook.js | 旅遊會話手冊：分類、搜尋、語音、全螢幕給店員看 |
 | `boot`（nav 3）、`boot-play` | drill.js | 實戰特訓：店員問句、看板、數字、🧩 組句子（把詞塊排成句子） |
 | `review`（nav 4） | review.js | 不會清單 |
 | `mind`（nav 5） | mind3d.js＋mind-game.js | 3D 心智圖：N5–N1 詞彙／文法／時態網／學習路線＋任務腳本 |
-| `play` | travel.js | 入門＝教 5 字→小考 10 題；N5–N1＝東京地圖（13 站，4 站依等級解鎖） |
+| `trip` | travel.js | 舊版旅程（非入口）：入門＝教 5 字→小考 10 題；N5–N1＝東京 13 站。首頁「五十音入門」進這裡 |
 | `trip-stop`（transient） | travel.js | 站內流程：本站單字→情境小遊戲→對話／口說→狀況題 |
 | `trip-event` | travel.js | 狀況題（5 題、3 顆愛心，歸零結束） |
 | `trip-next`（transient） | travel.js | 走到最近一個未通過的店 |
@@ -122,3 +128,13 @@ class 前綴：`trip-`（旅程地圖）、`tt-`（首頁）、`kn-`（入門）
 - 3D 檢視對腳本開放的 API：`MIND.view`（`setMode`、`focus`、`expand`、`flyTo`、`apply`、`HL` 高亮、`intercept` 攔截節點點擊、`learn`…）。
 - XP：任務完成依星數 10／15／20，規則同全站；答錯的單字自動進不會清單。
 - 資料重建與來源：`docs/資料來源.md`。
+
+## 冒險世界（路由 `play`、`event`，首頁 `home`）
+日本地圖（5 地區，蓋御朱印解鎖：東京 0、京都 4、大阪 8、北海道 12、沖繩 16）→ 街區格子地圖（點了自動走過去）→ 店內格子地圖。全部由資料驅動。
+- 資料：`data/world/index.js`（`WORLD.LEVELS`、`WORLD.regions[{id,x,y,need,files,order}]`、`WORLD.pack(region,{districts,shops})`）；各地區檔 `data/world/*.js`。格式見 `docs/世界資料格式.md`，改完跑 `node tools/check-world.mjs`（0 錯誤才算完成）。
+- 引擎：`js/world.js`（地圖、店內流程：store 拿商品→收銀台；eat 入座→菜單→叫店員→上菜→櫃台結帳；service 櫃台辦手續；自由對話組句）、`js/phrase.js`（`Phrase.make/check/count/yen/spoken/INTENTS`，依程度 N5–N1 換禮貌層級）、`js/world-quest.js`（委託板、問路、狀況題、日本地圖 `World.japan(el)`、首頁 `World.home(el)`、御朱印 `World.goshuin()`）。
+- 對外：`window.World = { st, lv, li, showKana, showZh, loadRegion, loadEvents, regionOf, pickLevel, Q, tx, item, X, japan, goshuin, home, stampCount, missionsOf, progress }`。
+- 存檔 `App.state.world`：`lv` 程度（N5–N1）、`stamps[店id]={r,i,n,t}` 御朱印、`dex[店id]=[商品索引]` 圖鑑、`zones[店id]='A,B'` 走過的區域、`pos[街區id]=[x,y]`、`spots['街區:key']=1` 打卡、`last[地區]=街區id`、`at={r,d,s,label}` 繼續冒險位置。
+- 委託星數：`App.state.cleared['w:<店>:<委託>@<程度>']`、問路 `'w:<街區>:route@<程度>'`；獎勵一律走 `App.reward`。一間店完成 5 個委託蓋御朱印並掉落頭像。
+- 樣式 `css/world.css`：前綴 `wd-`（地圖、面板）、`jp-`（首頁、日本地圖）、`ev-`（狀況題）。
+- 舊旅程 `travel.js` 的路由改名為 `trip`，不再是入口。

@@ -1,6 +1,7 @@
 // 離線快取：改版時請把 VERSION 加 1。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
-const VERSION = 'jpq-v22';
-const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './css/mind.css', './kana-data.js',
+const VERSION = 'jpq-v23';
+const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './css/mind.css', './css/world.css', './kana-data.js',
+  './js/phrase.js', './js/world.js', './js/world-quest.js', './data/world/hokkaido-2.js', './data/world/hokkaido-3.js', './data/world/hokkaido.js', './data/world/index.js', './data/world/kyoto-2.js', './data/world/kyoto-3.js', './data/world/kyoto.js', './data/world/okinawa-2.js', './data/world/okinawa.js', './data/world/osaka-2.js', './data/world/osaka-3.js', './data/world/osaka.js', './data/world/tokyo-1.js', './data/world/tokyo-2.js', './data/world/tokyo-3.js', './data/world/tokyo-3b.js', './data/world/tokyo-4.js', './data/world/tokyo-4b.js', './data/world/tokyo-5.js', './data/world/tokyo-6.js', './data/world/tokyo-7.js', './data/world/tokyo-8.js',
   './data/scenes-1.js', './data/scenes-2.js', './data/scene-ext.js', './data/cards.js', './data/menus.js',
   './data/travel.js', './data/travel-ext.js', './data/travel-stops.js', './data/drills.js',
   './js/core.js', './js/game.js', './js/quest.js', './js/practice.js', './js/town.js', './js/review.js', './js/travel.js', './js/drill.js', './js/phrasebook.js', './js/mind3d.js', './js/mind-game.js', './data/mind/scripts.js',
