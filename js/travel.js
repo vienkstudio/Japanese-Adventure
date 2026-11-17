@@ -111,7 +111,7 @@
   function chooseLevel(level) {
     App.state.trip = { ...App.state.trip, level: level.id, runs: App.state.trip?.runs || {} };
     App.save();
-    App.go('play');
+    App.go('trip');
   }
 
   function renderMap(el, level) {
@@ -303,7 +303,7 @@
         title: allDone ? '🎉 46 個平假名全部學完！片假名開放了' : stars ? `${newItems.length ? '學會 ' + newItems.map(x => x.g).join('') : '複習完成'}！` : '再練一次就會了',
         stars, correct: R.ok, total: qs.length, gained, wrong: R.wrong,
         retry: () => renderKana(el), back: { label: '🏠 回首頁', route: 'home' },
-        next: { label: learned(KUI.set).length < kanaBase(KUI.set).length ? '下一組新字 ➜' : '再複習一局 ➜', route: 'play', params: { r: Date.now() } }
+        next: { label: learned(KUI.set).length < kanaBase(KUI.set).length ? '下一組新字 ➜' : '再複習一局 ➜', route: 'trip', params: { r: Date.now() } }
       });
     };
     ask();
@@ -342,7 +342,7 @@
         <button class="tt-btn sub" id="tt-set" type="button">⚙️ 設定</button>
       </div>
     </section>`;
-    const c = el.querySelector('#tt-cont'); if (c) c.onclick = () => App.go('play');
+    const c = el.querySelector('#tt-cont'); if (c) c.onclick = () => App.go('trip');
     el.querySelector('#tt-new').onclick = newGame;
     el.querySelector('#tt-set').onclick = openSettings;
     el.querySelector('#tt-rev').onclick = () => App.go('review');
@@ -363,7 +363,7 @@
       const runs = Object.assign({}, T.runs); delete runs[lv];
       App.state.trip = Object.assign({}, T, { level: lv, runs }); App.save();
       document.querySelectorAll('.modal-bg').forEach(m => m.remove());
-      App.go('play');
+      App.go('trip');
     });
   }
   let confirmed = false;
@@ -409,7 +409,7 @@
   function renderEncounter(el) {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop || !stop.events[level.id]) { App.go('play'); return; }
+    if (!stop || !stop.events[level.id]) { App.go('trip'); return; }
     const events = stop.events[level.id];
     const G = window.Game || { sfx() { }, floatText() { }, burst() { }, shake() { } };
     let at = 0, correct = 0, hearts = 3, combo = 0, best = 0, wrongItems = [];
@@ -424,7 +424,7 @@
 
     function begin(rendered) {
       el.innerHTML = `<section class="trip-shell trip-event">${makeHeader()}${rendered}</section>`;
-      el.querySelector('#trip-back').onclick = () => App.go('play');
+      el.querySelector('#trip-back').onclick = () => App.go('trip');
     }
     const restart = () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); };
 
@@ -447,7 +447,7 @@
         title: hearts <= 0 ? '💔 愛心用完了，本站結束' : passed ? `${stop.icon} ${stop.name} 通過！` + (best >= 2 ? `（最高 ${best} 連擊）` : '') : '再試一次挑戰本站',
         stars, correct, total: n, gained: Math.max(0, gained), wrong: wrongItems,
         retry: restart,
-        back: { label: '🗺️ 返回地圖', route: 'play' },
+        back: { label: '🗺️ 返回地圖', route: 'trip' },
         next: nowStop > 0 ? { label: '下一站 ➜', route: 'trip-next' } : null
       });
       begin(`<div class="trip-result">
@@ -459,7 +459,7 @@
         <button type="button" class="trip-secondary" id="trip-return">🗺️ 返回地圖</button>
       </div>`);
       const nb = el.querySelector('#trip-next'); if (nb) nb.onclick = () => App.go('trip-next');
-      el.querySelector('#trip-return').onclick = () => App.go('play');
+      el.querySelector('#trip-return').onclick = () => App.go('trip');
       el.querySelector('#trip-retry').onclick = restart;
     }
 
@@ -532,23 +532,23 @@
   function renderStopHub() {
     const level = selectedLevel();
     const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop || level.kana) { App.go('play'); return; }
+    if (!stop || level.kana) { App.go('trip'); return; }
     const steps = hubSteps(level, run, stop);
     checkDrop(level, run, stop);
     if (HUB.stop !== stop.id) enterHub(stop.id, steps);
     HUB.i++;
-    if (HUB.i >= steps.length) { HUB.stop = null; App.toast(stopStars(level, run, stop) ? `🎉 ${stop.name} 完成！` : `${stop.name} 還有關卡沒過，再進去挑戰`); App.go('play'); return; }
+    if (HUB.i >= steps.length) { HUB.stop = null; App.toast(stopStars(level, run, stop) ? `🎉 ${stop.name} 完成！` : `${stop.name} 還有關卡沒過，再進去挑戰`); App.go('trip'); return; }
     App.toast(`${stop.icon} ${stop.name}　${HUB.i + 1}／${steps.length}：${steps[HUB.i].name}`);
     steps[HUB.i].go();
   }
   // 下一站：走到最近一個還沒通過、已解鎖的店
   function nextStop() {
     const level = selectedLevel();
-    if (!level || level.kana) { App.go('play'); return; }
+    if (!level || level.kana) { App.go('trip'); return; }
     const run = tripRun(level);
     const cand = stops.filter(s => !locked(s) && s.tile !== run.tile && stopStars(level, run, s) === 0)
       .map(s => [s, routeBetween(run.tile, s.tile).length]).sort((a, b) => a[1] - b[1]);
-    if (!cand.length) { App.toast('🎉 這個難度能去的店都通過了！'); App.go('play'); return; }
+    if (!cand.length) { App.toast('🎉 這個難度能去的店都通過了！'); App.go('trip'); return; }
     const st = cand[0][0];
     run.tile = st.tile; saveRun(level, run);
     HUB.stop = null;
@@ -557,6 +557,6 @@
   }
   App.register('trip-next', { title: '下一站', icon: '🚶', nav: false, transient: true, navParent: 'home', render: nextStop });
   App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, transient: true, navParent: 'home', render: renderStopHub });
-  App.register('play', { title: '遊玩', icon: '🗾', nav: false, navParent: 'home', render: renderPlay });
+  App.register('trip', { title: '舊版旅程', icon: '🗾', nav: false, navParent: 'home', render: renderPlay });
   window.Travel = { renderTitle, renderPlay, openSettings };
 })();
