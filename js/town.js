@@ -17,7 +17,7 @@
 .t-head .t-icon{font-size:2.4em;line-height:1;width:64px;height:64px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none}
 .t-head .t-info{flex:1;min-width:180px}
 .t-head h2{margin:0}
-.t-mission{background:var(--ai);color:#fff;border:none;border-radius:18px;padding:10px 14px;font-weight:bold;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.t-mission{background:var(--ai);color:var(--on-pri);border:none;border-radius:18px;padding:10px 14px;font-weight:bold;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .t-mission .bar{flex:1;min-width:120px}
 .t-tips summary{cursor:pointer;font-weight:bold}
 .t-tips ul{margin:8px 0 0;padding-left:1.3em}
@@ -46,14 +46,14 @@
 .t-opts{grid-template-columns:1fr!important;max-width:600px}
 .t-opts .choice{font-size:1.08em;text-align:left;padding:10px 14px}
 .t-opts .choice .t-aid{display:block}
-.t-opts .choice.ok .t-aid,.t-opts .choice.ng .t-aid{color:#fff}
+.t-opts .choice.ok .t-aid,.t-opts .choice.ng .t-aid{color:var(--on-pri)}
 .t-mic{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0}
-.t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:1px solid var(--line);background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(255,107,91,.35)}
+.t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:1px solid var(--line);background:var(--pri);color:var(--on-pri);cursor:pointer;box-shadow:0 4px 14px color-mix(in srgb,var(--pri) 35%,transparent)}
 .t-micbtn.on{animation:tmic 1s infinite}
 .t-micbtn:disabled{background:var(--chip);cursor:not-allowed}
 .t-showopt{display:block;margin:6px auto}
 .t-heard{font-size:.9em;min-height:1.3em;text-align:center}
-@keyframes tmic{0%{box-shadow:0 0 0 0 rgba(255,107,91,.6)}100%{box-shadow:0 0 0 16px rgba(255,107,91,0)}}
+@keyframes tmic{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--pri) 60%,transparent)}100%{box-shadow:0 0 0 16px transparent}}
 .t-fb-ok{color:var(--acc-d);font-weight:bold}
 .t-fb-ng{color:var(--shu);font-weight:bold}
 .t-sum{text-align:center}
@@ -76,10 +76,10 @@
   /* ---------------- 共用 ---------------- */
   const scenes = () => (Array.isArray(window.SCENES) ? window.SCENES.filter(s => s && s.id) : []);
   const findScene = id => scenes().find(s => s.id === id) || null;
-  const unlocked = s => (s.unlockLevel || 1) <= App.level;
+  const unlocked = () => true;   // 等級不再當鎖
   const isDone = id => !!(App.state.sceneDone && App.state.sceneDone[id]);
   const arr = a => (Array.isArray(a) ? a : []);
-  let aidOn = true;                 // 初學者模式：顯示讀音/中文
+  let aidOn = App.profile().assist !== 'none';   // 顯示讀音/中文：預設依 profile.assist
   const tabMem = {};                // 每個場景記住目前分頁
   let listenOn = false;             // 聽力挑戰：對方的話先模糊
   let micOn = false;                // 口說模式：預設用說的回答
@@ -159,7 +159,7 @@
       }
       const tips = arr(sc.tips);
       el.innerHTML = `
-        <div class="panel t-head" style="--tc:${esc(sc.color || '#ccc')}">
+        <div class="panel t-head" style="--tc:${esc(sc.color || 'var(--line2)')}">
           <div class="t-icon">${esc(sc.icon || '🏠')}</div>
           <div class="t-info"><h2>${esc(sc.name)}</h2><div class="muted">${esc(sc.desc || '')}</div></div>
           <button class="btn sm ghost" id="tBack">${mission ? '🗺️ 冒險地圖' : '🏙️ 返回街道'}</button>
@@ -543,7 +543,7 @@
       const KN = { word: '📚 單字測驗', phrase: '💬 句子測驗', mix: '⚡ 綜合測驗', dialog: '🎭 對話演練', speak: '🎤 口說對話', shadow: '🔁 跟讀練習' };
       const kind = kind0;
       const one = list.length === 1 ? list[0] : null;
-      el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || '#c73e2e' : '#c73e2e')}">
+      el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || 'var(--pri)' : 'var(--pri)')}">
           <div class="t-icon">${esc(one ? one.icon : '🗾')}</div>
           <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
           <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>

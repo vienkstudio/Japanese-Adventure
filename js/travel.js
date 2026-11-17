@@ -18,15 +18,18 @@
   };
   const stopAt = tile => stops.find(stop => stop.tile === tile);
   const canWalk = tile => layout[tile] === 'road' || layout[tile] === 'stop';
-  const selectedLevel = () => levels.find(level => level.id === App.state.trip?.level);
+  // 程度一律讀 App.profile()（單一設定）；舊旅程的難度只是對應過來
+  const LV2TRIP = { zero: 'K0', n5: 'N5', n4: 'N4', n3: 'N3', n2: 'N2', n1: 'N1' };
+  const TRIP2LV = { K0: 'zero', N5: 'n5', N4: 'n4', N3: 'n3', N2: 'n2', N1: 'n1' };
+  const tripState = () => { const T = App.state.trip || (App.state.trip = {}); if (!T.runs || typeof T.runs !== 'object') T.runs = {}; return T; };
+  const selectedLevel = () => { tripState(); return levels.find(level => level.id === LV2TRIP[App.profile().lv]) || levels[1]; };
   const startTile = 2;
   const tagOf = level => level.tag || level.id;
   const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   // 新店解鎖等級（升級時真的開新店）
   const STOP_LV = { cafe: 2, directions: 3, clothes: 4, emergency: 5 };
   const lockLv = stop => STOP_LV[stop.id] || 1;
-  const locked = stop => App.level < lockLv(stop);
-  App.addUnlock(lv => stops.filter(s => lockLv(s) === lv).map(s => `${s.icon} ${s.name}（地圖新店）`));
+  const locked = () => false;   // 程度與等級都不再當鎖：所有店直接開放
   // 首次通過一站的掉落：御朱印＋隨機頭像
   const DROPS = ['🍣', '🍙', '🍡', '🎎', '🗻', '🦝', '🐸', '🎏', '🍵', '🐟', '🌸', '🎐', '🍜'];
   function firstClearDrop(stop) {
@@ -104,13 +107,12 @@
   }
 
   function saveRun(level, run, save = true) {
-    App.state.trip.runs[level.id] = run;
+    tripState().runs[level.id] = run;
     if (save) App.save();
   }
 
   function chooseLevel(level) {
-    App.state.trip = { ...App.state.trip, level: level.id, runs: App.state.trip?.runs || {} };
-    App.save();
+    App.setProfile({ lv: TRIP2LV[level.id] || 'n5' });
     App.go('trip');
   }
 
@@ -303,106 +305,23 @@
         title: allDone ? '🎉 46 個平假名全部學完！片假名開放了' : stars ? `${newItems.length ? '學會 ' + newItems.map(x => x.g).join('') : '複習完成'}！` : '再練一次就會了',
         stars, correct: R.ok, total: qs.length, gained, wrong: R.wrong,
         retry: () => renderKana(el), back: { label: '🏠 回首頁', route: 'home' },
-        next: { label: learned(KUI.set).length < kanaBase(KUI.set).length ? '下一組新字 ➜' : '再複習一局 ➜', route: 'trip', params: { r: Date.now() } }
+        next: { label: learned(KUI.set).length < kanaBase(KUI.set).length ? '下一組新字 ➜' : '再複習一局 ➜', route: 'trip', params: { r: Date.now(), kana: 1 } }
       });
     };
     ask();
   }
 
   /* ---------- 遊玩畫面：目前難度的內容（入門＝出題；N5～N1＝地圖） ---------- */
-  function renderPlay(el) {
-    const level = selectedLevel() || levels[0];
-    el.innerHTML = `<button class="trip-lvnow" type="button">${esc(tagOf(level))}・${esc(level.label)} <span>切換難度 ▾</span></button><div id="trip-body"></div>`;
-    el.querySelector('.trip-lvnow').onclick = () => pickLevel();
+  function renderPlay(el, params) {
+    const kana = params && params.kana, level = kana ? levels.find(l => l.kana) : selectedLevel();
+    el.innerHTML = `<button class="trip-lvnow" type="button">${kana ? '🔰 五十音入門' : '程度：' + esc(App.LV_NAMES[App.profile().lv])} <span>${kana ? '' : '在設定修改 ›'}</span></button><div id="trip-body"></div>`;
+    el.querySelector('.trip-lvnow').onclick = () => { if (!kana) App.go('settings'); };
     const body = el.querySelector('#trip-body');
     if (level.kana) renderKana(body); else renderMap(body, level);
   }
 
-  /* ---------- 首頁主選單：繼續／新開始／設定 ---------- */
-  const LOGO = () => (document.querySelector('#top .logo .lg') || {}).innerHTML || '';
-  const hasSave = () => !!(App.state.trip && App.state.trip.level && selectedLevel());
-  function progressText() {
-    const level = selectedLevel(); if (!level) return '';
-    if (level.kana) return `${tagOf(level)}・${level.label}`;
-    const run = tripRun(level);
-    return `${tagOf(level)}・${level.label}　完成 ${stops.filter(st => stopStars(level, run, st) > 0).length}／${stops.length} 站`;
-  }
-  function renderTitle(el) {
-    const G = window.Game, d = G ? G.daily() : null, due = Tracker.dueCount(), sk = App.streakInfo();
-    el.innerHTML = `<section class="tt">
-      <div class="tt-head"><div class="tt-logo">${LOGO()}</div><div><h1 class="tt-name">日語冒險</h1><p class="tt-sub">邊旅行邊學日文</p></div></div>
-      ${sk.risk ? `<p class="tt-risk">🔥 已連續 ${sk.days} 天！今天還沒練，練一題就能保住</p>` : ''}
-      <div class="tt-menu">
-        ${hasSave() ? `<button class="tt-btn primary" id="tt-cont" type="button">▶ 繼續<small>${esc(progressText())}</small></button>` : ''}
-        <button class="tt-btn${hasSave() ? ' sub' : ' primary'}" id="tt-new" type="button">✨ 新開始${hasSave() ? '<small>換難度從頭玩（其他難度與 XP 保留）</small>' : '<small>第一次來？從這裡選難度</small>'}</button>
-        ${d ? `<div class="h-daily tt-daily">${G.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0); return `<div class="${d.claimed[m.id] ? 'ok' : ''}"><span>${d.claimed[m.id] ? '✅' : m.icon}</span><small>${esc(m.label)}</small><i style="width:${v / m.goal * 100}%"></i></div>`; }).join('')}</div>` : ''}
-        <button class="tt-btn" id="tt-rev" type="button">📌 今日複習<small>${due ? `${due} 個字該複習了` : Tracker.count() ? '今天的都複習完了 👍' : '答錯的字會自動收進來'}</small></button>
-        <button class="tt-btn" id="tt-book" type="button">📖 旅遊會話手冊<small>緊急・交通・點餐・購物・住宿，可放大給店員看</small></button>
-        <button class="tt-btn" id="tt-drill" type="button">🎧 實戰特訓<small>店員問句・看板・數字</small></button>
-        <button class="tt-btn sub" id="tt-set" type="button">⚙️ 設定</button>
-      </div>
-    </section>`;
-    const c = el.querySelector('#tt-cont'); if (c) c.onclick = () => App.go('trip');
-    el.querySelector('#tt-new').onclick = newGame;
-    el.querySelector('#tt-set').onclick = openSettings;
-    el.querySelector('#tt-rev').onclick = () => App.go('review');
-    el.querySelector('#tt-book').onclick = () => App.go('phrasebook');
-    el.querySelector('#tt-drill').onclick = () => App.go('boot');
-  }
-  const levelBtns = cur => {
-    const k = levels[0];
-    return `<button type="button" data-lv="${k.id}" class="tt-lv0${cur && cur.id === k.id ? ' on' : ''}"><b>🔰 ${esc(tagOf(k))}・${esc(k.label)}</b><small>完全沒學過日文選這個：從五十音開始，先教再考</small></button>
-      <div class="tt-levels">${levels.slice(1).map(l => `<button type="button" data-lv="${l.id}" class="${cur && cur.id === l.id ? 'on' : ''}"><b>${esc(tagOf(l))}</b><small>${esc(l.label)}</small><i>${esc(l.detail || '')}</i></button>`).join('')}</div>`;
-  };
-  function newGame() {
-    App.modal(`<h2>✨ 新開始</h2><p class="muted">選一個難度${hasSave() ? '。只會重來「該難度」的地圖進度；XP、不會清單、其他難度都保留' : '開始'}</p>${levelBtns(null)}`, [{ label: '取消' }]);
-    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => {
-      const lv = b.dataset.lv, T = App.state.trip || {};
-      const has = T.runs && T.runs[lv] && Object.keys(T.runs[lv].stars || {}).length;
-      if (has && !confirmNew()) return;
-      const runs = Object.assign({}, T.runs); delete runs[lv];
-      App.state.trip = Object.assign({}, T, { level: lv, runs }); App.save();
-      document.querySelectorAll('.modal-bg').forEach(m => m.remove());
-      App.go('trip');
-    });
-  }
-  let confirmed = false;
-  function confirmNew() {   // 第二次點才真的清除（避免誤觸）
-    if (confirmed) return true;
-    confirmed = true; App.toast('⚠️ 這個難度已有進度，再點一次確定重來'); setTimeout(() => { confirmed = false; }, 3000);
-    return false;
-  }
-  let confirmedAll = false;
-  function confirmAll() {
-    if (confirmedAll) return true;
-    confirmedAll = true; App.toast('⚠️ 會清除 XP、不會清單、所有難度。再點一次確定'); setTimeout(() => { confirmedAll = false; }, 3000);
-    return false;
-  }
-  function pickLevel() {
-    App.modal(`<h2>切換難度</h2><p class="muted">各難度的進度分開保存</p>${levelBtns(selectedLevel())}`, [{ label: '關閉' }]);
-    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => { document.querySelectorAll('.modal-bg').forEach(m => m.remove()); chooseLevel(levels.find(l => l.id === b.dataset.lv)); });
-  }
-  function openSettings() {
-    const G = window.Game;
-    App.modal(`<h2>⚙️ 設定</h2>
-      <p class="tt-lbl">難度</p>${levelBtns(selectedLevel())}
-      <div class="tt-rows">
-        ${G ? `<button class="tt-row" id="st-sfx" type="button">${G.sfxOn() ? '🔊 音效：開' : '🔇 音效：關'}</button>` : ''}
-        <button class="tt-row" id="st-av" type="button">🎭 換頭像・⛩️ 御朱印帳</button>
-        <button class="tt-row" id="st-bk" type="button">💾 備份／還原存檔</button>
-        <button class="tt-row" id="st-clear" type="button">🗑️ 清除全部進度</button>
-      </div>`, [{ label: '完成', cls: 'primary' }]);
-    const q = s => document.querySelector('.modal ' + s);
-    document.querySelectorAll('.modal [data-lv]').forEach(b => b.onclick = () => {
-      document.querySelectorAll('.modal [data-lv]').forEach(x => x.classList.toggle('on', x === b));
-      App.state.trip = Object.assign({ runs: {} }, App.state.trip, { level: b.dataset.lv }); App.save();
-      App.toast(`難度改為 ${tagOf(levels.find(l => l.id === b.dataset.lv))}`);
-    });
-    const sf = q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); sf.textContent = G.sfxOn() ? '🔊 音效：開' : '🔇 音效：關'; };
-    q('#st-bk').onclick = () => { document.querySelectorAll('.modal-bg').forEach(m => m.remove()); App.backup(); };
-    q('#st-av').onclick = () => { document.querySelectorAll('.modal-bg').forEach(m => m.remove()); goshuinModal(); };
-    q('#st-clear').onclick = () => { if (!confirmAll()) return; document.querySelectorAll('.modal-bg').forEach(m => m.remove()); App.resetAll(); };
-  }
+  /* ---------- 設定：改到設定頁（js/home.js 的 settings 路由） ---------- */
+  function openSettings() { App.go('settings'); }
 
   // 狀況題：支援物件格式 {scene, prompt, translation, answers, explanation, reading}；舊的位置陣列自動轉換
   const evObj = e => Array.isArray(e) ? { scene: e[0], prompt: e[1], translation: e[2], answers: e[3], explanation: e[4], reading: e[5] } : e;
@@ -557,6 +476,6 @@
   }
   App.register('trip-next', { title: '下一站', icon: '🚶', nav: false, transient: true, navParent: 'home', render: nextStop });
   App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, transient: true, navParent: 'home', render: renderStopHub });
-  App.register('trip', { title: '舊版旅程', icon: '🗾', nav: false, navParent: 'home', render: renderPlay });
-  window.Travel = { renderTitle, renderPlay, openSettings };
+  App.register('trip', { title: '旅程・五十音', icon: '🗾', nav: false, navParent: 'home', render: renderPlay });
+  window.Travel = { renderPlay, openSettings, goshuin: goshuinModal };
 })();

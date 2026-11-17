@@ -28,15 +28,23 @@ const SCENES = ['konbini', 'ramen', 'cafe', 'drugstore', 'izakaya', 'clothes', '
 const CNT = ['tsu', 'ko', 'mai', 'hon', 'hai', 'satsu', 'nin', 'soku', 'chaku', 'hako', 'fukuro', 'sara', 'dai', 'haku', 'kai', 'mei'];
 const STYLES = ['y', 'g', 'b', 'r', 'k', 'w', 'o', 'p'];
 const isStr = s => typeof s === 'string' && s.trim().length > 0;
-const KANA_OK = /^[぀-ゟー、。！？・…\s「」（）〜~,.!?0-9０-９]*$/;
+const KANA_OK = /^[぀-ゟ゠-ヿー、。！？・…\s「」（）〜~,.!?0-9０-９]*$/;   // 平假名＋片假名（片假名詞保留片假名）
+const KATA_RUN = /[ァ-ヶヽヾ][ァ-ヶーヽヾ]*/g;
+const toHira = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+// 片假名字詞的讀音不可以寫成平假名（例：空港ターミナル → くうこうターミナル，不是 くうこうたーみなる）
+function kataCheck(jp, kana, what) {
+  if (typeof jp !== 'string' || typeof kana !== 'string') return;
+  for (const m of jp.matchAll(KATA_RUN)) { const k = m[0]; if (k.length < 2) continue; if (kana.includes(toHira(k)) && !kana.includes(k)) E(`${what} 片假名「${k}」的讀音寫成了平假名：「${kana}」`); }
+}
 const need = (o, keys, what) => keys.forEach(k => { if (!isStr(o[k])) E(`${what} 缺少 ${k}`); });
 function kanaPair(o, what) {   // {jp,kana,zh}
   if (!o || typeof o !== 'object') return E(`${what} 應為 {jp,kana,zh}`);
   need(o, ['jp', 'zh'], what);
   if (typeof o.kana !== 'string') E(`${what} 缺少 kana`);
-  else if (!KANA_OK.test(o.kana)) E(`${what} 的 kana 含有非平假名字元：「${o.kana}」`);
+  else if (!KANA_OK.test(o.kana)) E(`${what} 的 kana 含有非假名字元：「${o.kana}」`);
+  else kataCheck(o.jp, o.kana, what);
 }
-const kanaOnly = (k, what) => { if (typeof k !== 'string' || !k) E(`${what} 缺少 kana`); else if (!KANA_OK.test(k)) E(`${what} 的 kana 含有非平假名字元：「${k}」`); };
+const kanaOnly = (k, what, jp) => { if (typeof k !== 'string' || !k) E(`${what} 缺少 kana`); else if (!KANA_OK.test(k)) E(`${what} 的 kana 含有非假名字元：「${k}」`); else kataCheck(jp, k, what); };
 
 function grid(map, what, min, max) {
   if (!Array.isArray(map) || !map.length || map.some(r => typeof r !== 'string')) { E(`${what} map 應為字串陣列`); return null; }
@@ -68,7 +76,7 @@ function checkReach(g, keys, walk, start, what) {
 const sceneUsed = {};
 for (const id in W.districts) {
   const d = W.districts[id]; cur = 'district ' + id;
-  need(d, ['id', 'name', 'jp', 'kana', 'icon', 'desc'], '街區'); kanaOnly(d.kana, '街區');
+  need(d, ['id', 'name', 'jp', 'kana', 'icon', 'desc'], '街區'); kanaOnly(d.kana, '街區', d.jp);
   const g = grid(d.map, '街區', [9, 9], [11, 13]); if (!g) continue;
   const BASE = '=.#^~ ';
   const keys = keysOnMap(g, d.map, BASE), P = d.places || {};
@@ -81,7 +89,7 @@ for (const id in W.districts) {
     if (!(p.type in cnt)) { E(`${w} type「${p.type}」不合法`); continue; }
     cnt[p.type]++;
     if (p.type === 'shop') { if (!isStr(p.shop)) E(`${w} 缺少 shop`); else if (!W.shops[p.shop]) (partial ? Wn : E)(`${w} 指向不存在的店 ${p.shop}`); }
-    if (p.type === 'gate' || p.type === 'spot' || p.type === 'npc') { need(p, ['icon', 'name', 'jp'], w); kanaOnly(p.kana, w); }
+    if (p.type === 'gate' || p.type === 'spot' || p.type === 'npc') { need(p, ['icon', 'name', 'jp'], w); kanaOnly(p.kana, w, p.jp); }
     if (p.type === 'spot') { need(p, ['tip'], w); if (p.say) kanaPair(p.say, w + '.say'); }
     if (p.type === 'sign') { kanaPair(p, w); if (p.style && !STYLES.includes(p.style)) E(`${w} style 不合法`); }
     if (p.type === 'npc') { if (!Array.isArray(p.lines) || p.lines.length < 2) E(`${w} lines 至少 2 句`); else p.lines.forEach((l, i) => kanaPair(l, `${w}.lines[${i}]`)); }
@@ -100,7 +108,7 @@ for (const id in W.shops) {
   if (!['store', 'eat', 'service'].includes(s.kind)) E(`kind「${s.kind}」不合法`);
   if (s.scene !== null && !SCENES.includes(s.scene)) E(`scene「${s.scene}」不合法（沒有就填 null）`);
   if (s.scene) { if (sceneUsed[s.scene]) E(`scene ${s.scene} 已被 ${sceneUsed[s.scene]} 使用`); sceneUsed[s.scene] = id; }
-  need(s, ['icon', 'name', 'jp', 'kana', 'desc'], '店'); kanaOnly(s.kana, '店');
+  need(s, ['icon', 'name', 'jp', 'kana', 'desc'], '店'); kanaOnly(s.kana, '店', s.jp);
   if (!Array.isArray(s.tips) || s.tips.length < 3 || s.tips.length > 6) E('tips 應有 3–6 條');
   const g = grid(s.map, '店', [7, 7], [11, 11]); if (!g) continue;
   const flat = s.map.join(''), exits = [...flat].filter(c => c === '+').length;
@@ -117,7 +125,7 @@ for (const id in W.shops) {
     if (z.type === 'menu' && keys[k]) Wn(`${w} 是 menu，不需要畫在地圖上`);
     if (z.type === 'deco') { need(z, ['icon'], w); continue; }
     if (z.type === 'sign') { kanaPair(z, w); if (z.style && !STYLES.includes(z.style)) E(`${w} style 不合法`); continue; }
-    need(z, ['icon', 'jp', 'zh'], w); kanaOnly(z.kana, w);
+    need(z, ['icon', 'jp', 'zh'], w); kanaOnly(z.kana, w, z.jp);
     if (['shelf', 'machine', 'counter', 'facility'].includes(z.type)) { if (!z.loc) E(`${w} 缺少 loc`); else kanaPair(z.loc, w + '.loc'); }
     if (z.type === 'counter' && !(z.npc && isStr(z.npc.who) && isStr(z.npc.emoji))) E(`${w} 缺少 npc:{who,emoji}`);
     if (z.hours) kanaPair(z.hours, w + '.hours');
@@ -137,7 +145,7 @@ for (const id in W.shops) {
   if (items.length < 20 || items.length > 40) E(`items 應有 24–36 個（目前 ${items.length}）`);
   items.forEach((it, i) => {
     const w = `items[${i}] ${it.id || ''}`;
-    need(it, ['id', 'jp', 'zh', 'emoji', 'zone'], w); kanaOnly(it.kana, w);
+    need(it, ['id', 'jp', 'zh', 'emoji', 'zone'], w); kanaOnly(it.kana, w, it.jp);
     if (ids.has(it.id)) E(`${w} id 重複`); ids.add(it.id);
     if (jps.has(it.jp)) E(`${w} jp 重複：${it.jp}`); jps.add(it.jp);
     if (/[（(]/.test(it.jp || '')) E(`${w} jp 不要有括號註記`);
@@ -145,7 +153,7 @@ for (const id in W.shops) {
     if (it.c && !CNT.includes(it.c)) E(`${w} 量詞 c「${it.c}」不合法`);
     const z = Z[it.zone];
     if (!z) E(`${w} zone「${it.zone}」不存在`); else if (!['shelf', 'machine', 'menu', 'counter'].includes(z.type)) E(`${w} zone「${it.zone}」的類型 ${z.type} 不能放商品`);
-    if (it.say) { need(it.say, ['jp'], w + '.say'); kanaOnly(it.say.kana, w + '.say'); }
+    if (it.say) { need(it.say, ['jp'], w + '.say'); kanaOnly(it.say.kana, w + '.say', it.say.jp); }
     (it.tags || []).forEach(t => tags.add(t));
   });
   for (const k in Z) if (['shelf', 'machine', 'menu'].includes(Z[k].type) && !items.some(it => it.zone === k)) E(`zones.${k}（${Z[k].type}）沒有任何商品`);
@@ -161,7 +169,7 @@ for (const id in W.shops) {
     if (a.when !== 'always' && !/^tag:.+/.test(a.when || '')) E(`${w} when 應為 always 或 tag:xxx`);
     else if (a.when !== 'always' && !tags.has(a.when.slice(4))) E(`${w} 的標籤 ${a.when} 沒有任何商品使用`);
     if (!Array.isArray(a.v) || a.v.length < 3 || a.v.length > 5) E(`${w} v 應有 3–5 種說法`);
-    else a.v.forEach((p, j) => { if (!Array.isArray(p) || !isStr(p[0])) E(`${w}.v[${j}] 應為 [日文, 讀音]`); else kanaOnly(p[1], `${w}.v[${j}]`); });
+    else a.v.forEach((p, j) => { if (!Array.isArray(p) || !isStr(p[0])) E(`${w}.v[${j}] 應為 [日文, 讀音]`); else kanaOnly(p[1], `${w}.v[${j}]`, p[0]); });
     if (!Array.isArray(a.a) || a.a.length < 1 || a.a.length > 3) E(`${w} a 應有 1–3 個`);
     else { const vs = new Set(); a.a.forEach((x, j) => { kanaPair(x, `${w}.a[${j}]`); need(x, ['val', 'brief'], `${w}.a[${j}]`); if (vs.has(x.val)) E(`${w} val 重複`); vs.add(x.val); }); }
     if (!Array.isArray(a.bad) || a.bad.length < 1 || a.bad.length > 2) E(`${w} bad 應有 1–2 個`);
@@ -184,7 +192,7 @@ for (const id in W.shops) {
   /* 委託 */
   list('quests', 2, 3).forEach((q, i) => {
     const w = `quests[${i}] ${q.id || ''}`;
-    need(q, ['id', 'title', 'zh', 'jp'], w); kanaOnly(q.kana, w);
+    need(q, ['id', 'title', 'zh', 'jp'], w); kanaOnly(q.kana, w, q.jp);
     if (!Array.isArray(q.items) || !q.items.length || q.items.length > 4) { E(`${w} items 應有 1–4 項`); return; }
     const qt = new Set();
     q.items.forEach(([iid, n]) => { const it = items.find(x => x.id === iid); if (!it) E(`${w} 商品 ${iid} 不存在`); else (it.tags || []).forEach(t => qt.add(t)); if (!(n >= 1 && n <= 3)) E(`${w} 數量應為 1–3`); });
@@ -207,7 +215,7 @@ for (const id in W.shops) {
     d.steps.forEach((st, j) => {
       const ws = `${w}.steps[${j}]`;
       need(st, ['speaker', 'emoji', 'jp', 'zh'], ws);
-      if (typeof st.kana !== 'string' || !KANA_OK.test(st.kana)) E(`${ws} kana 不合法`);
+      if (typeof st.kana !== 'string' || !KANA_OK.test(st.kana)) E(`${ws} kana 不合法`); else kataCheck(st.jp, st.kana, ws);
       if (!Array.isArray(st.choices) || st.choices.length !== 3) { E(`${ws} choices 應為 3 個`); return; }
       st.choices.forEach((c, k) => { kanaPair(c, `${ws}.choices[${k}]`); need(c, ['feedback'], `${ws}.choices[${k}]`); if (typeof c.correct !== 'boolean') E(`${ws}.choices[${k}] 缺少 correct`); });
       if (!st.choices.some(c => c.correct)) E(`${ws} 沒有正確選項`);

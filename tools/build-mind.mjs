@@ -25,6 +25,45 @@ const addS = (k, id) => { if (!k) return; if (!sceneOf.has(k)) sceneOf.set(k, ne
 for (const s of sctx.window.SCENES || []) for (const v of s.vocab || []) { addS(v.jp, s.id); }
 for (const [id, ext] of Object.entries(sctx.window.SCENE_EXT || {})) for (const v of (ext && ext.vocab) || []) addS(v.jp, id);
 
+// ---- 人工修正（不改 annot 原檔） ----
+// 詞彙：'N3|新興' → {zh, pos, wh}
+const LEX_FIX = {
+  'N3|新興': { zh: '新興；新近興起', pos: 'n', wh: '事' }
+};
+// 文法類別重分類（原「其他」52 條）
+const GCAT_FIX = {
+  '〜です': '基本句型', '〜があります': '基本句型', '〜がいます': '基本句型', 'い形容詞＋です': '基本句型', 'な形容詞＋です': '基本句型', '〜だ': '基本句型', '〜が上手だ': '基本句型',
+  'これ／それ／あれ／どれ': '指示詞', 'この／その／あの／どの': '指示詞', 'ここ／そこ／あそこ／どこ': '指示詞',
+  '〜ことができる': '可能能力', '〜（ら）れる（可能）': '可能能力', '〜が見える・〜が聞こえる': '可能能力', '〜がする': '樣態',
+  '〜って（主題）': '主題提示', '〜といえば': '主題提示', '〜ぶり': '時間先後',
+  '〜合う': '複合動詞', '〜直す': '複合動詞', '〜そびれる': '複合動詞', '〜あぐねる': '複合動詞',
+  '〜ついでに': '附帶同時', '〜かたがた': '附帶同時', '〜がてら': '附帶同時', '〜かたわら': '附帶同時',
+  '〜ものだ（回想）': '語氣態度', '〜ものだ（感嘆）': '語氣態度',
+  '〜によって（手段）': '手段根據', '〜を通じて／〜を通して': '手段根據', '〜をもとに': '手段根據', '〜に基づいて': '手段根據', '〜に沿って': '手段根據', '〜をもって（手段）': '手段根據', '〜をこめて': '樣態',
+  '〜かわりに（代替）': '代替交換', '〜かわりに（交換）': '代替交換', '〜に代わって': '代替交換', '〜かわりに': '代替交換', '〜にかわって': '代替交換',
+  '〜的': '名詞化形式', '〜たらどう／〜てはどうか': '建議勸誘', '〜もかまわず': '逆接讓步', '〜にあって': '對象範圍',
+  '〜ものとする': '推測判斷', '〜ものとして': '推測判斷', '〜と相まって': '原因理由', '〜をいいことに': '原因理由', '〜とでもいうべき': '引用傳聞'
+};
+// 「其他」桶依詞性／中文重新分到 desc（顏色形容）、act（基本動作）、func（指示功能詞）
+const COLOR = /色|顏|形狀/;
+function fixScene(scs, pos, zh) {
+  if (scs.length > 1 && scs.includes('abs')) scs = scs.filter(s => s !== 'abs');
+  if (scs[0] !== 'abs') return scs;
+  if (pos === 'i' || pos === 'na' || COLOR.test(zh || '')) return ['desc'];
+  if (pos === 'v') return ['act'];
+  if (['pron', 'adv', 'conj', 'part', 'pre', 'suf', 'exp', 'int', 'ctr'].includes(pos)) return ['func'];
+  return scs;
+}
+// 核心標記：出現在本站內容（冒險世界、場景、特訓、旅程、字卡、手冊）或文法例句者
+let CORPUS = '';
+for (const f of fs.readdirSync(P('data/world/'))) CORPUS += fs.readFileSync(P('data/world/' + f), 'utf8');
+for (const f of ['data/cards.js', 'data/drills.js', 'data/menus.js', 'data/scene-ext.js', 'data/scenes-1.js', 'data/scenes-2.js', 'data/travel-ext.js', 'data/travel-stops.js', 'data/travel.js', 'js/phrasebook.js'])
+  if (fs.existsSync(P(f))) CORPUS += fs.readFileSync(P(f), 'utf8');
+for (const f of ['grammar-n54.jsonl', 'grammar-n3.jsonl', 'grammar-n2.jsonl', 'grammar-n1.jsonl'])
+  if (fs.existsSync(P('tools/annot/out/' + f))) CORPUS += fs.readFileSync(P('tools/annot/out/' + f), 'utf8');
+const head = e => e.split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim();
+const isCore = e => { const j = head(e); return j.length >= 2 && CORPUS.includes(j); };
+
 // ---- 詞彙 ----
 const seen = new Set(); const stats = { lex: {}, gram: {} }; let sceneHit = 0; const groups = {};
 const variants = e => e.split(/[;；]/).map(s => s.trim()).filter(Boolean);
@@ -45,20 +84,22 @@ for (const n of [5, 4, 3, 2, 1]) {
     if (!a) W('noann', lv + ' ' + r.expr);
     else if (a[1] !== r.expr) W('mismatch', `${lv} #${i} ${a[1]} != ${r.expr}`);
     let [, , zh, pos, grp, wh, sc] = a || [];
+    const fx = LEX_FIX[lv + '|' + r.expr]; if (fx) { zh = fx.zh || zh; pos = fx.pos || pos; wh = fx.wh || wh; }
     if (!POS.has(pos)) { if (a) W('pos', `${lv} ${r.expr} ${pos}`); pos = ''; }
     if (!WH.has(wh)) { if (a) W('wh', `${lv} ${r.expr} ${wh}`); wh = pos === 'v' ? '事' : pos === 'i' || pos === 'na' || pos === 'adv' ? '狀' : '物'; }
     grp = /^[123s]$/.test(grp || '') ? grp : '';
     if (pos === 'v' && !grp) { W('grp', `${lv} ${r.expr}`); grp = /[いえ]る$/.test(r.kana) ? '2' : '1'; }
     let scs = (sc || '').split(',').map(s => s.trim()).filter(s => { const ok = SC.has(s); if (!ok && s) W('sc', `${lv} ${r.expr} ${s}`); return ok; });
     if (!scs.length) scs = ['abs'];
+    scs = fixScene(scs, pos, zh);
     const subs = new Set();
     for (const k of [...variants(r.expr), r.kana]) for (const s of sceneOf.get(k) || []) subs.add(s);
     if (subs.size) { sceneHit++; for (const s of subs) { if (!scs.includes(M.SUB[s])) scs.push(M.SUB[s]); scs.push(s); } }
     const gk = wh + '|' + scs[0]; (groups[lv] = groups[lv] || {})[gk] = (groups[lv][gk] || 0) + 1;
-    out.push([r.expr, r.kana === r.expr ? '' : r.kana, zh || r.en, pos, grp, wh, scs.join(',')]);
+    out.push([r.expr, r.kana === r.expr ? '' : r.kana, zh || r.en, pos, grp, wh, scs.join(','), isCore(r.expr) ? 1 : 0]);
   });
   stats.lex[lv] = out.length;
-  const body = `// 自動產生（tools/build-mind.mjs），勿手改。欄位：[jp, kana(同jp時空), zh, pos, grp, wh, sc]\n(window.MIND = window.MIND || { lex: {}, gram: [] }).lex.${lv} = ${JSON.stringify(out).replace(/\],\[/g, '],\n[')};\n`;
+  const body = `// 自動產生（tools/build-mind.mjs），勿手改。欄位：[jp, kana(同jp時空), zh, pos, grp, wh, sc, core(本站常用=1)]\n(window.MIND = window.MIND || { lex: {}, gram: [] }).lex.${lv} = ${JSON.stringify(out).replace(/\],\[/g, '],\n[')};\n`;
   fs.writeFileSync(P(`data/mind/lex-n${n}.js`), body);
 }
 
@@ -73,6 +114,8 @@ for (const f of ['grammar-n54.jsonl', 'grammar-n3.jsonl', 'grammar-n2.jsonl', 'g
     let g; try { g = JSON.parse(l); } catch (e) { W('gjson', `${f}:${i + 1}`); return; }
     if (!(g.lv in lvOrder)) { W('glv', g.pat); return; }
     if (byPat.has(g.pat)) { W('gdup', g.pat); return; }
+    if (GCAT_FIX[g.pat]) g.cat = GCAT_FIX[g.pat];
+    else if (g.lv === 'N5' && /^[ぁ-ん]{1,3}(（[^）]*）)?$/.test(g.pat)) g.cat = '助詞';
     if (!GCAT.has(g.cat)) { W('gcat', `${g.pat} ${g.cat}`); g.cat = '其他'; }
     if (!WH.has(g.wh)) { W('gwh', `${g.pat} ${g.wh}`); g.wh = '事'; }
     g.sc = (g.sc || []).filter(s => SC.has(s)); if (!g.sc.length) g.sc = ['abs'];

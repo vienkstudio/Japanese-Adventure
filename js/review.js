@@ -15,7 +15,7 @@
 .rv-stat b{display:block;font-size:1.8em;color:var(--red);line-height:1.2}
 .rv-chip{cursor:pointer;font-family:inherit}
 .rv-chip{min-height:44px;color:var(--text)}
-.rv-chip.rv-on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.rv-chip.rv-on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
 .rv-due{display:inline-block;font-size:.82em;border-radius:999px;padding:0 8px;background:var(--chip);color:var(--muted);margin-top:2px}
 .rv-due.now{background:var(--pri-t);color:var(--pri-d);font-weight:700}
 .rv-next{background:var(--acc-t);border-radius:14px;padding:10px 12px;margin:8px 0}
@@ -38,6 +38,15 @@
 .rv-modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 .rv-opt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
 .rv-opt .tabs{margin:0}
+.rv-h{margin:0 0 var(--sp-2)}
+.rv-go{flex-direction:column;min-height:56px;font-size:var(--fs-lg)}
+.rv-go small{font-weight:500;font-size:var(--fs-sm);color:var(--on-pri-2)}
+.rv-more{margin:var(--sp-2) 0}
+.rv-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--muted)}
+.rv-gap{margin-top:var(--sp-2)}
+.rv-info{font-size:var(--fs-sm)}
+.rv-center{justify-content:center;margin-top:14px}
+.rv-sp{flex:1}
 .rv-prog{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .rv-prog .bar{flex:1}
 .rv-card{perspective:1000px;max-width:460px;margin:10px auto;cursor:pointer;height:280px}
@@ -70,7 +79,7 @@
   body.rv-printing #main>*:not(.rv-printarea){display:none!important}
   body.rv-printing .rv-printarea .rv-ops{display:none!important}
   body.rv-printing .rv-printhead{display:block}
-  .rv-item{break-inside:avoid;border:1px solid #ccc}
+  .rv-item{break-inside:avoid;border:1px solid var(--line2)}
   .rv-item.rv-done{opacity:1}
 }`;
   if (typeof document !== 'undefined' && !document.getElementById('css-review')) {
@@ -179,7 +188,7 @@
         <p>闖關時答錯的字會<b>自動</b>加進來；看到不熟的字，也可以按「＋ 加入不會清單」。</p>
         <p class="muted">連續答對 3 次就算「已掌握」🎓</p>
         <div><button class="btn primary" data-go="home">🗾 去冒險</button></div>
-        <div class="rv-opt" style="justify-content:center;margin-top:14px"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
+        <div class="rv-opt rv-center"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
       </div>`;
       bindCommon(el);
       return;
@@ -187,12 +196,9 @@
     if (ui.src && !all.some(t => (t.source || '其他') === ui.src)) ui.src = '';
     el.innerHTML = `
       <div class="panel noprint">
-        <h2>📌 不會清單</h2>
-        <div class="rv-stats" id="rvStats"></div>
-        <div class="chips" id="rvChips"></div>
-      </div>
-      <div class="panel noprint">
-        <h3 style="margin-top:0">🎯 開始複習</h3>
+        <h2 class="rv-h">📌 複習</h2>
+        <button class="btn primary block rv-go" data-mode="flash">▶ 開始複習<small id="rvGoSub"></small></button>
+        <details class="rv-more"><summary>換題型、範圍、題數</summary>
         <div class="rv-opt"><b>範圍：</b><div class="tabs" id="rvScope">
           <button data-v="due">⏰ 今日到期</button><button data-v="all">提前複習全部</button><button data-v="filter">目前篩選結果</button></div></div>
         <div class="rv-opt"><b>題數：</b><div class="tabs" id="rvCount">
@@ -202,10 +208,15 @@
           <div class="card click" data-mode="choice"><div class="icon">✏️</div><h3>選擇題</h3><div class="muted">日→中、中→日、🎧 聽音選字</div></div>
           <div class="card click" data-mode="type"><div class="icon">⌨️</div><h3>拼音輸入</h3><div class="muted">看日文打出羅馬拼音</div></div>
         </div>
-        <div class="rv-opt" style="margin-top:8px"><b>選擇題題型：</b><div class="tabs" id="rvCmode">
+        <div class="rv-opt rv-gap"><b>選擇題題型：</b><div class="tabs" id="rvCmode">
           <button data-v="mix">混合</button><button data-v="j2z">日→中</button><button data-v="z2j">中→日</button><button data-v="listen">🎧 聽音</button></div></div>
-        <div class="muted" id="rvScopeInfo" style="font-size:.9em"></div>
+        </details>
+        <div class="muted rv-info" id="rvScopeInfo"></div>
         ${App.voiceHTML ? App.voiceHTML() : ''}
+      </div>
+      <div class="panel noprint">
+        <div class="rv-stats" id="rvStats"></div>
+        <div class="chips" id="rvChips"></div>
       </div>
       <div class="panel rv-printarea">
         <div class="rv-printhead"><h2>📌 日語不會清單</h2><div class="muted" id="rvPrintInfo"></div></div>
@@ -215,7 +226,7 @@
         </div>
         <div class="rv-tools noprint">
           <label><input type="checkbox" id="rvShowM"> 顯示已掌握</label>
-          <span style="flex:1"></span>
+          <span class="rv-sp"></span>
           <button class="btn sm ghost" data-act="clearM">🧹 清除已掌握</button>
           <button class="btn sm ghost" data-act="export">📤 匯出</button>
           <button class="btn sm ghost" data-act="import">📥 匯入</button>
@@ -291,6 +302,7 @@
       info.innerHTML = ui.scope === 'due' && !n
         ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個到期：<b>${esc(nd.jp)}</b>（${when}）` : ''}<br><span class="muted">想多練可以選「提前複習全部」。</span></div>`
         : `本次範圍共 ${n} 個項目${ui.scope === 'due' ? '（間隔排程：答對後 1→3→7 天再出現）' : ''}`;
+      const gs = el.querySelector('#rvGoSub'); if (gs) gs.textContent = n ? `閃卡・${Math.min(n, ui.count === 'all' ? n : +ui.count)} 題` : '今天沒有到期的，可展開下方改範圍';
     }
     const pi = el.querySelector('#rvPrintInfo');
     if (pi) pi.textContent = `共 ${list.length} 項${ui.src ? '・來源：' + ui.src : ''}・${new Date().toLocaleDateString()}`;
@@ -576,7 +588,7 @@
     if (rw) rw.onclick = () => startSession(el, s.mode, wrongs.map(w => Tracker.get(w.id)).filter(Boolean));
   }
 
-  App.register('review', { title: '不會清單', icon: '📌', nav: true, navOrder: 4, render });
+  App.register('review', { title: '複習', icon: '📌', nav: true, navOrder: 5, render });
 
   // 供測試／其他模組使用
   W.ReviewAPI = { normRomaji, romajiMatch, kanaToRomaji, romajiOf };

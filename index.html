@@ -12,14 +12,18 @@
 <link rel="icon" href="icons/logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>日語冒險｜闖關學日文</title>
+<script>/* 先套主題，避免閃爍（設定由 App.setTheme 寫入 jpQuest.ui） */try{var u=JSON.parse(localStorage.getItem("jpQuest.ui")||"{}"),h=document.documentElement;if(u.theme==="light"||u.theme==="dark")h.setAttribute("data-theme",u.theme);h.setAttribute("data-palette",u.palette||"coral");if(u.fs&&u.fs!=="m")h.setAttribute("data-fs",u.fs);}catch(e){}</script>
+<link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/travel.css">
 <link rel="stylesheet" href="css/mind.css">
 <link rel="stylesheet" href="css/world.css">
+<link rel="stylesheet" href="css/kb.css">
+<link rel="stylesheet" href="css/reader.css">
 </head>
 <body>
 <header id="top"><div class="in">
-  <a class="logo" href="#home"><span class="lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true"><circle cx="15" cy="20" r="6.5" fill="#ff6b5b"/><circle cx="26" cy="11" r="6.5" fill="#ff6b5b"/><circle cx="38" cy="11" r="6.5" fill="#ff6b5b"/><circle cx="49" cy="20" r="6.5" fill="#ff6b5b"/><path d="M32 24c-4 0-6 3-8.5 7.5L12 50c-2 4 0 8 5 8h30c5 0 7-4 5-8L40.5 31.5C38 27 36 24 32 24z" fill="#2b4a7a"/><path d="M32 24c-4 0-6 3-8.5 7.5l-3.2 5.3 4.2-2.6 3.5 3 4-3.4 4 3.4 3.5-3 4.2 2.6-3.2-5.3C38 27 36 24 32 24z" fill="#fff"/></svg></span><span class="t">日語冒險</span></a>
+  <a class="logo" href="#home"><span class="lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true"><circle cx="15" cy="20" r="6.5" style="fill:var(--pri)"/><circle cx="26" cy="11" r="6.5" style="fill:var(--pri)"/><circle cx="38" cy="11" r="6.5" style="fill:var(--pri)"/><circle cx="49" cy="20" r="6.5" style="fill:var(--pri)"/><path d="M32 24c-4 0-6 3-8.5 7.5L12 50c-2 4 0 8 5 8h30c5 0 7-4 5-8L40.5 31.5C38 27 36 24 32 24z" style="fill:var(--text)"/><path d="M32 24c-4 0-6 3-8.5 7.5l-3.2 5.3 4.2-2.6 3.5 3 4-3.4 4 3.4 3.5-3 4.2 2.6-3.2-5.3C38 27 36 24 32 24z" style="fill:var(--card)"/></svg></span><span class="t">日語冒險</span></a>
   <nav id="nav"></nav>
   <div id="playerChip"></div>
 </div></header>
@@ -39,10 +43,8 @@
 <!-- 核心 -->
 <script src="js/core.js"></script>
 <script src="js/game.js"></script>
-<!-- 首頁 -->
-<script>
-App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, render(el) { World.home(el); } });
-</script>
+<!-- 首頁、設定、首次程度選擇 -->
+<script src="js/home.js"></script>
 <!-- 功能模組 -->
 <script src="js/quest.js"></script>
 <script src="js/practice.js"></script>
@@ -55,10 +57,17 @@ App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, re
 <script src="js/world.js"></script>
 <script src="js/world-quest.js"></script>
 <script>
-// 延遲載入：特訓、手冊第一次打開才下載
-App.lazy([['boot', { title: '特訓', icon: '🎧', nav: true, navOrder: 3 }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'boot' }]], ['data/drills.js', 'js/drill.js']);
-App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: true, navOrder: 2 }]], ['js/phrasebook.js']);
-App.lazy([['mind', { title: '心智圖', icon: '🧠', nav: true, navOrder: 5 }]], ['vendor/3d-force-graph.min.js', 'data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js', 'js/mind3d.js', 'js/mind-game.js']);
+// 延遲載入：第一次進入才下載。導覽 5 鈕：home 1、play 2（B 在 world.js 設定）、read 3、kb 4、review 5
+App.lazy([['boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }]], ['data/drills.js', 'js/drill.js']);
+App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home' }]], ['js/phrasebook.js']);
+// 知識庫（C）：kb、kb-page；mind3d＝舊 3D 心智圖（實驗功能）
+const MIND_DATA = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js'];
+App.lazy([['kb', { title: '知識庫', icon: '📚', nav: true, navOrder: 4 }], ['kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }], ['mind', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js']));
+App.lazy([['mind3d', { title: '3D 心智圖', icon: '🧠', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js', 'vendor/3d-force-graph.min.js', 'js/mind3d.js', 'js/mind-game.js']));
+// 閱讀與歌曲（D）
+const READ_JS = ['data/reading/daily.js', 'js/jp-text.js', 'js/reader.js', 'js/songs.js'];
+App.lazy([['read', { title: '閱讀', icon: '📰', nav: true, navOrder: 3 }], ['read-article', { title: '閱讀', icon: '📰', nav: false, navParent: 'read' }],
+  ['songs', { title: '歌曲', icon: '🎵', nav: false, navParent: 'home' }], ['song', { title: '歌曲', icon: '🎵', nav: false, navParent: 'home' }]], READ_JS);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>

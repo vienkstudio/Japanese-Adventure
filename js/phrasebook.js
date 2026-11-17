@@ -20,8 +20,8 @@
 .pb h1{font-size:1.4em;margin:6px 0 10px}
 .pb-search{width:100%;font:inherit;font-size:1.05em;padding:12px 16px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--text);min-height:48px}
 .pb-cats{display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
-.pb-cats button{flex:none;border:none;border-radius:999px;background:var(--chip,#f2f2ef);color:var(--text);font:inherit;font-weight:800;padding:10px 16px;min-height:44px;cursor:pointer}
-.pb-cats button.on{background:var(--pri);color:#fff}
+.pb-cats button{flex:none;border:none;border-radius:999px;background:var(--chip);color:var(--text);font:inherit;font-weight:800;padding:10px 16px;min-height:44px;cursor:pointer}
+.pb-cats button.on{background:var(--pri);color:var(--on-pri)}
 .pb-cats button.emer:not(.on){background:var(--pri-t);color:var(--pri)}
 .pb h2{font-size:1.05em;margin:18px 0 6px}
 .pb-row{display:flex;gap:10px;align-items:flex-start;background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:10px 12px;margin:8px 0}
@@ -33,19 +33,19 @@
 .pb-t .zh{font-size:.95em}
 .pb-t .use{color:var(--muted);font-size:.82em}
 .pb-act{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-.pb-act .track-btn{font-size:.75em;padding:2px 8px}
+.pb-act .track-btn{font-size:.8125rem;padding:2px 10px}
 .pb details{margin:10px 0}
 .pb summary{cursor:pointer;font-weight:800;min-height:44px;display:flex;align-items:center}
 .pb-voc{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .pb-voc button{border:none;background:var(--card);box-shadow:var(--shadow);border-radius:14px;padding:8px 10px;text-align:left;font:inherit;color:var(--text);cursor:pointer;min-height:44px}
 .pb-voc b{display:block}.pb-voc small{color:var(--muted);font-size:.82em}
 .pb-empty{color:var(--muted);text-align:center;margin:30px 0}
-.pb-full{position:fixed;inset:0;z-index:300;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:pointer}
+.pb-full{position:fixed;inset:0;z-index:300;background:var(--card);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:pointer}
 .pb-full .big{font-size:var(--pbz,clamp(2.8rem,15vw,7rem));font-weight:800;line-height:1.25;word-break:break-all;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",sans-serif}
-.pb-full .kk{font-size:1.5rem;color:#444;margin-top:12px}
-.pb-full .zz{font-size:1.3rem;color:#444;margin-top:18px}
-.pb-full .x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:48px;height:48px;border-radius:50%;border:1px solid #ccc;background:#fff;color:#111;font-size:1.3em;cursor:pointer}
-.pb-full .tip{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.9rem;color:#888}`;
+.pb-full .kk{font-size:1.5rem;color:var(--muted);margin-top:12px}
+.pb-full .zz{font-size:1.3rem;color:var(--muted);margin-top:18px}
+.pb-full .x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line2);background:var(--card);color:var(--text);font-size:1.3em;cursor:pointer}
+.pb-full .tip{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.9rem;color:var(--muted)}`;
     document.head.appendChild(s);
   })();
 
@@ -94,10 +94,10 @@
 
   function render(el) {
     el.innerHTML = `<section class="pb">
-      <h1>📖 旅遊會話手冊</h1>${App.voiceHTML ? App.voiceHTML() : ''}
+      <h1>📖 旅遊會話手冊</h1>
       <input class="pb-search" type="search" placeholder="搜尋：廁所、多少錢、いくら、toire…" value="${esc(UI.q)}" aria-label="搜尋會話">
       <div class="pb-cats">${CATS.map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}">${n}</button>`).join('')}</div>
-      <div id="pb-list"></div></section>`;
+      <div id="pb-list"></div>${App.voiceHTML ? App.voiceHTML() : ''}</section>`;
     const box = el.querySelector('#pb-list');
     const paint = () => {
       box.innerHTML = list();
@@ -114,5 +114,5 @@
     paint();
   }
 
-  App.register('phrasebook', { title: '手冊', icon: '📖', nav: true, navOrder: 2, render });
+  App.register('phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home', render });
 })();

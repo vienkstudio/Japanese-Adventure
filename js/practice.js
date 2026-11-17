@@ -15,11 +15,11 @@
     const st = document.createElement('style'); st.id = 'css-practice';
     st.textContent = `
 /* 首頁 */
-.h-me{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;color:#fff;background:var(--pri)}
+.h-me{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;color:var(--on-pri);background:var(--pri)}
 .h-av{font-size:2.3em;width:60px;height:60px;flex:none;border-radius:50%;background:var(--card);border:none;cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
 .h-inf{flex:1;min-width:0}
-.h-inf b{font-size:1.1em;color:#fff}
-.h-inf .bar{margin:6px 0;background:rgba(255,255,255,.35)}
+.h-inf b{font-size:1.1em;color:var(--on-pri)}
+.h-inf .bar{margin:6px 0;background:color-mix(in srgb,var(--on-pri) 35%,transparent)}
 .h-inf .bar>div{background:var(--card)}
 .h-inf small{font-size:.78em;opacity:.92}
 .h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:none;border-radius:20px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .1s}
@@ -28,7 +28,7 @@
 .h-next .t{flex:1;min-width:0;line-height:1.3}
 .h-next small{color:var(--muted);font-size:.78em;display:block}
 .h-next b{font-size:1.15em}
-.h-next .go{width:40px;height:40px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1em;flex:none}
+.h-next .go{width:40px;height:40px;border-radius:50%;background:var(--pri);color:var(--on-pri);display:flex;align-items:center;justify-content:center;font-size:1em;flex:none}
 @keyframes hpulse{0%,100%{transform:none}50%{transform:scale(1.015)}}
 .h-daily{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0}
 .h-daily>div{position:relative;overflow:hidden;background:var(--card);border:none;border-radius:14px;padding:6px 8px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow)}
@@ -41,8 +41,8 @@
 .h-lv button b{display:block;font-size:1em}
 .h-lv button small{display:block;font-size:.68em;color:var(--muted)}
 .h-lv button i{font-style:normal;font-size:.66em;color:var(--muted)}
-.h-lv button.on{background:var(--pri);color:#fff}
-.h-lv button.on small,.h-lv button.on i{color:rgba(255,255,255,.88)}
+.h-lv button.on{background:var(--pri);color:var(--on-pri)}
+.h-lv button.on small,.h-lv button.on i{color:var(--on-pri-2)}
 .h-worlds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 8px 12px;border:none;border-radius:20px;background:var(--card);cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
 .h-w:active{transform:scale(.96)}
@@ -63,7 +63,7 @@
 .p-sbtn{display:flex;gap:6px;flex-wrap:wrap}
 .p-sbtn .btn{margin:0}
 .p-nsub{font-size:.66em;color:var(--muted);margin-top:1px}
-.q-nd.todo .q-circ{background:#ededea}
+.q-nd.todo .q-circ{background:var(--chip)}
 /* 情境遊戲 HUD */
 .g-hud{display:flex;align-items:center;gap:8px}
 .g-hud .btn{margin:0;min-width:40px;padding:5px 10px}
@@ -85,8 +85,8 @@
 .g-patb div{height:100%;background:var(--acc);border-radius:4px;transition:width .2s linear}
 .g-patb div.mid{background:var(--gold)}
 .g-patb div.low{background:var(--pri);animation:fade .5s infinite alternate}
-.g-patb div.relax{background:#d8d8d4}
-.g-combo{background:var(--pri);color:#fff;border-radius:999px;padding:0 8px;font-size:.85em;animation:pop .25s}
+.g-patb div.relax{background:var(--line2)}
+.g-combo{background:var(--pri);color:var(--on-pri);border-radius:999px;padding:0 8px;font-size:.85em;animation:pop .25s}
 .g-opt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .g-ask{display:flex;gap:10px;align-items:center;background:var(--pri-t);border:none;border-radius:18px;padding:10px 12px}
 .g-av{font-size:2.1em;line-height:1;animation:float 2s ease-in-out infinite}
@@ -109,16 +109,16 @@
 .m-list{margin:4px 0 0;padding-left:1.1em;line-height:1.5}
 .m-list b{font-size:1.06em}
 .g-first{position:relative}
-.g-arrow{position:absolute;right:10px;top:-10px;background:var(--pri);color:#fff;font-size:.72em;font-weight:800;border-radius:999px;padding:1px 10px;animation:float 1.2s ease-in-out infinite}
+.g-arrow{position:absolute;right:10px;top:-10px;background:var(--pri);color:var(--on-pri);font-size:.72em;font-weight:800;border-radius:999px;padding:1px 10px;animation:float 1.2s ease-in-out infinite}
 .m-situ{margin:8px 0 0;padding:8px 12px;border-radius:14px;background:var(--paper);font-size:.9em}
 .m-menu{margin-top:10px;border:none;border-radius:18px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
 .m-head{background:var(--card);color:var(--text);text-align:left;font-weight:800;padding:12px 14px 6px;font-size:1em}
 .m-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 8px;border-bottom:1px solid var(--line);scrollbar-width:none}
 .m-tabs::-webkit-scrollbar{display:none}
 .m-tabs button{flex:none;border:none;border-radius:999px;background:var(--paper);padding:6px 14px;font-weight:700;color:var(--muted);cursor:pointer;min-height:44px;font-family:inherit}
-.m-tabs button.on{background:var(--pri);color:#fff}
+.m-tabs button.on{background:var(--pri);color:var(--on-pri)}
 .m-rows{}
-.m-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #f2f2f0}
+.m-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .m-row.sel{background:var(--pri-t)}
 .m-nm{flex:1;min-width:0;line-height:1.25}
 .m-nm b{display:block;font-size:1em;font-weight:700}
@@ -129,10 +129,10 @@
 .m-pr small{display:block;font-size:.66em;font-weight:400;color:var(--muted)}
 .m-q{display:flex;align-items:center;gap:4px;flex:none}
 .m-q button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:var(--card);font-size:1.15em;font-weight:700;cursor:pointer;color:var(--text);line-height:1;padding:0;transition:transform .1s}
-.m-q button[data-d="1"]{background:var(--pri);border-color:var(--pri);color:#fff}
+.m-q button[data-d="1"]{background:var(--pri);border-color:var(--pri);color:var(--on-pri)}
 .m-q button:active{transform:scale(.88)}
 .m-q span{min-width:22px;text-align:center;font-weight:800;font-size:1.05em}
-.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + var(--safeB, 0px) + 8px);z-index:5;margin-top:10px;padding:10px 12px;border:none;border-radius:20px;background:var(--card);box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.m-cart{position:sticky;bottom:calc(var(--navH, 64px) + var(--safeB, 0px) + 8px);z-index:5;margin-top:10px;padding:10px 12px;border:none;border-radius:20px;background:var(--card);box-shadow:0 6px 24px var(--shade2)}
 .m-cl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .m-cb{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .m-cb b{color:var(--text);font-size:1.1em}
@@ -140,9 +140,9 @@
 /* 券売機 */
 .k-mac{margin-top:10px;border:none;border-radius:20px;background:var(--card);padding:12px;box-shadow:var(--shadow)}
 .k-top{text-align:center;font-weight:800;color:var(--muted);font-size:.85em}
-.k-disp{background:#222;color:#7cf5d8;font-family:ui-monospace,monospace;text-align:right;padding:8px 12px;border-radius:12px;margin:8px 0;font-size:1.1em}
+.k-disp{background:var(--sg-k);color:var(--acc-k);font-family:ui-monospace,monospace;text-align:right;padding:8px 12px;border-radius:12px;margin:8px 0;font-size:1.1em}
 .k-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.k-b{border:none;border-radius:14px;background:var(--chip);padding:8px 2px;font-family:inherit;color:#aaa;cursor:pointer;line-height:1.2;min-height:70px;transition:transform .1s}
+.k-b{border:none;border-radius:14px;background:var(--chip);padding:8px 2px;font-family:inherit;color:var(--muted);cursor:pointer;line-height:1.2;min-height:70px;transition:transform .1s}
 .k-b:active{transform:scale(.95)}
 .k-b small{display:block;font-size:.64em}
 .k-b b{display:block;font-size:.88em}
@@ -159,8 +159,8 @@
 .o-opts button{border:none;border-radius:999px;background:var(--chip);padding:9px 2px;font-size:1em;font-weight:700;cursor:pointer;line-height:1.2;color:var(--text);transition:transform .1s}
 .o-opts button:active{transform:scale(.95)}
 .o-opts button small{display:block;font-size:.62em;font-weight:400;color:var(--muted)}
-.o-opts button.on{background:var(--pri);color:#fff}
-.o-opts button.on small{color:rgba(255,255,255,.88)}
+.o-opts button.on{background:var(--pri);color:var(--on-pri)}
+.o-opts button.on small{color:var(--on-pri-2)}
 .g-steps{text-align:left;padding-left:1.3em;line-height:1.8}
 .g-note{text-align:left;font-size:.85em;background:var(--acc-t);border-radius:14px;padding:8px 12px}
 /* 字卡 */
@@ -174,7 +174,7 @@
 .c-ex{margin-top:8px;font-size:.9em;background:var(--paper);border:none;border-radius:12px;padding:6px 10px}
 .c-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:440px;margin:10px auto}
 .c-rate .btn{margin:0;flex-direction:column;line-height:1.2;font-size:.88em;border-radius:18px}
-.c-rate .btn.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.c-rate .btn.on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
@@ -186,7 +186,7 @@
 .gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;padding:4px}
 .gs-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
 .gs-seal{width:72px;height:72px;border-radius:50%;background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.6;filter:grayscale(1)}
-.gs-cell.ok .gs-seal{opacity:1;filter:none;background:var(--pri);color:#fff;transform:rotate(-6deg);box-shadow:0 4px 12px rgba(255,107,91,.35)}
+.gs-cell.ok .gs-seal{opacity:1;filter:none;background:var(--pri);color:var(--on-pri);transform:rotate(-6deg);box-shadow:0 4px 12px color-mix(in srgb,var(--pri) 35%,transparent)}
 .gs-ic{font-size:1.6em;line-height:1}
 .gs-nm{font-weight:800;font-size:.6em;line-height:1.1;text-align:center;max-width:62px}
 .gs-cell small{font-size:.66em;color:var(--muted)}
@@ -239,7 +239,7 @@
   /* ---------------- 首頁：選等級 → 選地點 ---------------- */
   function renderHome(el) {
     const S = App.state, lv = App.level, lo = App.LEVELS[lv - 1], hi = App.LEVELS[lv] || lo + 1000;
-    if (!UI.lv) { const firstOpen = LEVELS.find(L => L.worlds.some(w => { const s = stageStars(w); return s.got < s.max; })); UI.lv = (firstOpen || LEVELS[0]).id; }
+    if (!UI.lv) UI.lv = ({ zero: 'L1', n5: 'L2', n4: 'L3' })[App.profile().lv] || 'L4';   // 預設分頁依單一程度 App.profile()
     const L = LEVELS.find(x => x.id === UI.lv);
     // 下一關：目前等級第一個還沒拿星的節點
     let nextW = null, nextN = null;
@@ -263,7 +263,7 @@
         return `<button data-lv="${x.id}" class="${x.id === UI.lv ? 'on' : ''}"><b>${x.name}</b><small>${x.sub}</small><i>⭐${st[0]}/${st[1]}</i></button>`; }).join('')}</div>
       <div class="sec-t">② 選地點</div>
       <div class="h-worlds">${L.worlds.map(w => { const info = worldInfo(w); if (!info) return ''; const st = stageStars(w), pct = st.max ? st.got / st.max * 100 : 0;
-        return `<button class="h-w" data-w="${w}" style="--tc:${esc(/^#/.test(info.color || '') ? info.color : '#24365c')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
+        return `<button class="h-w" data-w="${w}" style="--tc:${esc(info.color || 'var(--n4)')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
           <span class="pg"><i style="width:${pct}%"></i></span><small>⭐ ${st.got}/${st.max}・${st.n} 關</small></button>`; }).join('')}</div>
       <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">📖 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／分享／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
     el.querySelector('#avBtn').onclick = () => window.Game && Game.pickAvatar(() => App.render());
@@ -331,14 +331,14 @@
     const cur = nodes.find(n => sitStars(n.key) === 0) || null;
     const X = [50, 76, 70, 42, 22, 30, 58, 78, 50];
     const H = 126;
-    el.innerHTML = `<div class="p-stage" style="--tc:${esc(s.color || '#c73e2e')}">
+    el.innerHTML = `<div class="p-stage" style="--tc:${esc(s.color || 'var(--pri)')}">
         <div class="p-sbig">${esc(s.icon)}</div>
         <div class="p-stt"><small>現在去</small><h2>${esc(s.name)}</h2><div class="p-sdesc">${esc(s.desc || '')}</div></div>
         <div class="p-sbar"><div class="bar"><div style="width:${st.max ? st.got / st.max * 100 : 0}%"></div></div><span>⭐ ${st.got}/${st.max}</span></div>
         <div class="p-sbtn"><button class="btn sm" id="sBack">↩ 選地點</button>${chapOf(id) ? '' : '<button class="btn sm" id="sLearn">📖 單字・小知識</button>'}${cur ? '<button class="btn sm primary" id="sGo">▶ 下一關</button>' : '<span class="pill">🏅 全制霸</span>'}</div>
       </div>
       <div class="q-path" style="height:${nodes.length * H + 30}px">
-        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" stroke="#e2e2e2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" style="stroke:var(--line2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
         ${nodes.map((n, i) => {
           const k = sitStars(n.key), isCur = cur && cur.key === n.key;
           return `<div class="q-nd ${k ? 'cl' : isCur ? 'open' : 'todo'}${n.boss ? ' boss' : ''}${isCur ? ' cur' : ''}" data-i="${i}" style="left:${X[i % X.length]}%;top:${i * H + (n.boss ? 0 : 8)}px">
@@ -391,7 +391,7 @@
             ${c.kana && c.kana !== c.jp ? `<div class="jp" style="font-size:1.4em">${esc(c.kana)}</div>` : ''}
             <div class="muted">${esc(c.romaji || '')}</div>
             <div style="font-size:1.3em;font-weight:900;margin:4px 0">${esc(c.zh)}</div>
-            ${c.hint ? `<div style="font-size:.85em;color:#7a4a1a">${esc(c.hint)}</div>` : ''}
+            ${c.hint ? `<div style="font-size:.85em;color:var(--warn)">${esc(c.hint)}</div>` : ''}
             ${c.ex ? `<div class="c-ex"><span class="jp">${esc(c.ex)}</span>${c.exzh ? `<br><small class="muted">${esc(c.exzh)}</small>` : ''}</div>` : ''}
           </div></div></div>
         <div class="c-rate">${[[3, '😵', '困難'], [2, '🤔', '普通'], [1, '😊', '簡單']].map(([v, e, n]) => `<button class="btn${diffOf(c.id) === v ? ' on' : ''}" data-rate="${v}"><span style="font-size:1.4em">${e}</span>${n}</button>`).join('')}</div>
@@ -563,7 +563,7 @@
     if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice-map'); return; }
     const LV = params.lv || '', TRIP = !!params.trip;
     // 依程度調整：耐心秒數、中文看板、讀音提示、小意外次數
-    const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: true, inc: 1 };
+    const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: App.profile().assist !== 'none', inc: 1 };
     if (LV) GOPT.zh = DIFF.zh;
     const back = TRIP ? { label: '本站下一步 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
     const key = id + ':m' + mi + (LV ? '@' + LV : ''), G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };

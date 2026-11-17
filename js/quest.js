@@ -22,8 +22,8 @@
 .q-snd:hover{filter:brightness(.97)}
 .q-roma{font-size:3em;text-align:center;font-weight:bold;letter-spacing:2px;margin:10px 0}
 .q-fb{border-radius:14px;padding:12px;margin-top:6px;text-align:left}
-.q-fb.ok{background:#e4ecd4;border:2px solid var(--matcha)}
-.q-fb.ng{background:#f8e0d8;border:2px solid var(--shu)}
+.q-fb.ok{background:var(--ok-t);border:2px solid var(--ok)}
+.q-fb.ng{background:var(--err-t);border:2px solid var(--err)}
 .q-fb .q-fh{font-weight:bold;font-size:1.1em}
 .q-fb .q-fk{font-size:1.8em;margin-right:6px}
 .q-fb .q-fr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -70,10 +70,10 @@
 
   /* ---------------- 章節與關卡 ---------------- */
   const CHAPTERS = [
-    { n: 1, name: '平假名之森', icon: '🌲', color: '#4d6f31', desc: '從最基本的 46 個平假名開始，每一行都是一段森林小徑。' },
-    { n: 2, name: '片假名之城', icon: '🏯', color: '#24365c', desc: '片假名常用在外來語（咖啡、拉麵菜單上滿滿都是），和平假名一起記！' },
-    { n: 3, name: '濁音・拗音之谷', icon: '⛰️', color: '#8a5326', desc: '加兩點、加小圈、小字連讀，學會後幾乎所有日文都念得出來。' },
-    { n: 4, name: '日本街道任務', icon: '🗾', color: '#a8331f', desc: '走進日本真實場景，用學會的日文點餐、購物、問路、求助。' }
+    { n: 1, name: '平假名之森', icon: '🌲', color: 'var(--n5)', desc: '從最基本的 46 個平假名開始，每一行都是一段森林小徑。' },
+    { n: 2, name: '片假名之城', icon: '🏯', color: 'var(--n4)', desc: '片假名常用在外來語（咖啡、拉麵菜單上滿滿都是），和平假名一起記！' },
+    { n: 3, name: '濁音・拗音之谷', icon: '⛰️', color: 'var(--n2)', desc: '加兩點、加小圈、小字連讀，學會後幾乎所有日文都念得出來。' },
+    { n: 4, name: '日本街道任務', icon: '🗾', color: 'var(--n1)', desc: '走進日本真實場景，用學會的日文點餐、購物、問路、求助。' }
   ];
 
   const SCENE_META = {
@@ -150,15 +150,13 @@
   }
   function isUnlocked(id) {
     const q = byId(id); if (!q) return false;
-    return App.level >= needLevel(q) && q.requires.every(r => App.isCleared(r));
+    return q.requires.every(r => App.isCleared(r));
   }
   function nextQuest() {
     return Q.find(q => !App.isCleared(q.id) && isUnlocked(q.id)) || Q.find(q => !App.isCleared(q.id)) || null;
   }
   function lockReason(q) {
     const out = [];
-    const lv = needLevel(q);
-    if (App.level < lv) out.push(`需要等級 <b>Lv.${lv}</b>（你目前 Lv.${App.level}，多打幾關或重玩拿星星就能升級）`);
     q.requires.filter(r => !App.isCleared(r)).forEach(r => { const p = byId(r); out.push(`先通過「<b>${App.esc(p ? p.title : r)}</b>」`); });
     return out;
   }
@@ -217,12 +215,12 @@
     if (document.getElementById('css-quest-battle')) return;
     const st = document.createElement('style'); st.id = 'css-quest-battle';
     st.textContent = `
-.q-arena{position:relative;border-radius:20px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:var(--text);background:linear-gradient(180deg,var(--sky,#e9f8f4) 0 62%,var(--grd,#d6f2ea) 62% 100%)}
+.q-arena{position:relative;border-radius:20px;padding:14px 14px 10px;margin:10px 0;overflow:hidden;color:var(--text);background:linear-gradient(180deg,var(--sky,var(--sc-sky)) 0 62%,var(--grd,var(--sc-ground)) 62% 100%)}
 .q-fighters,.q-vs{position:relative;z-index:1}
-.q-arena.boss{--sky:#fff0ee;--grd:#ffdcd7}
-.q-arena.ch2{--sky:#eef4ff;--grd:#dde8ff}
-.q-arena.ch3{--sky:#fff6e0;--grd:#ffeab8}
-.q-arena.ch4{--sky:#fff0ee;--grd:#ffe1dc}
+.q-arena.boss{--sky:var(--pri-t);--grd:color-mix(in srgb,var(--pri) 24%,var(--card))}
+.q-arena.ch2{--sky:color-mix(in srgb,var(--n4) 10%,var(--card));--grd:color-mix(in srgb,var(--n4) 22%,var(--card))}
+.q-arena.ch3{--sky:color-mix(in srgb,var(--gold) 12%,var(--card));--grd:color-mix(in srgb,var(--gold) 30%,var(--card))}
+.q-arena.ch4{--sky:var(--pri-t);--grd:color-mix(in srgb,var(--pri) 20%,var(--card))}
 .q-fighters{display:flex;justify-content:space-between;align-items:flex-end;min-height:120px}
 .q-f{text-align:center;width:46%}
 .q-f .q-sp{font-size:4em;line-height:1;display:inline-block}
@@ -230,7 +228,7 @@
 .q-f.mon .q-sp{animation:qidle 1.6s ease-in-out infinite}
 .q-arena.boss .q-f.mon .q-sp{font-size:5.2em}
 .q-f .q-nm{font-weight:800;font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q-hp{height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden;margin:4px auto 0;max-width:150px}
+.q-hp{height:8px;background:var(--shade2);border-radius:4px;overflow:hidden;margin:4px auto 0;max-width:150px}
 .q-hp div{height:100%;background:var(--pri);border-radius:4px;transition:width .35s}
 .q-hpn{font-size:.72em;font-weight:700;color:var(--muted)}
 .q-hearts{font-size:1.2em;letter-spacing:1px}
@@ -243,17 +241,17 @@
 @keyframes qatk{0%{transform:none}40%{transform:translateX(-60%) scale(1.2)}100%{transform:none}}
 @keyframes qhurt{0%,100%{transform:none}30%{transform:translateX(-10px) rotate(-10deg)}60%{transform:translateX(6px)}}
 @keyframes qdead{0%{transform:none;opacity:1}100%{transform:translateY(20px) scale(.2) rotate(90deg);opacity:0}}
-.q-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-weight:800;font-size:1.2em;color:#bbb}
-.q-combo{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);background:var(--pri);color:#fff;font-weight:800;border-radius:999px;padding:0 12px;animation:pop .25s}
-.q-intro{position:absolute;z-index:3;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3em;font-weight:800;color:#fff;background:rgba(255,107,91,.88);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
+.q-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-weight:800;font-size:1.2em;color:var(--muted)}
+.q-combo{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);background:var(--pri);color:var(--on-pri);font-weight:800;border-radius:999px;padding:0 12px;animation:pop .25s}
+.q-intro{position:absolute;z-index:3;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.3em;font-weight:800;color:var(--on-pri);background:color-mix(in srgb,var(--pri) 88%,transparent);pointer-events:none;transition:opacity .4s;text-align:center;padding:10px}
 /* 地圖節點：圓形＋簡單連線；完成＝主色、目前＝白底主色框、未開放＝淺灰 */
 .q-path{position:relative;padding:10px 0 20px}
 .q-nd{position:absolute;top:0;width:110px;text-align:center;cursor:pointer;transform:translateX(-50%)}
-.q-circ{width:68px;height:68px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9em;background:#ededea;border:none;box-shadow:none;transition:transform .1s;position:relative}
+.q-circ{width:68px;height:68px;margin:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9em;background:var(--chip);border:none;box-shadow:none;transition:transform .1s;position:relative}
 .q-nd:active .q-circ{transform:scale(.92)}
-.q-nd.cl .q-circ{background:var(--pri);box-shadow:0 4px 12px rgba(255,107,91,.35)}
+.q-nd.cl .q-circ{background:var(--pri);box-shadow:0 4px 12px color-mix(in srgb,var(--pri) 35%,transparent)}
 .q-nd.open .q-circ{background:var(--card);box-shadow:0 0 0 3px var(--pri),var(--shadow)}
-.q-nd.lock .q-circ{background:#ededea;filter:grayscale(1);opacity:.7}
+.q-nd.lock .q-circ{background:var(--chip);filter:grayscale(1);opacity:.7}
 .q-nd.lock .q-circ::after{content:"🔒";position:absolute;right:-4px;bottom:-4px;font-size:.5em}
 .q-nd.boss .q-circ{width:84px;height:84px;font-size:2.5em}
 .q-nd.boss.open .q-circ{box-shadow:0 0 0 3px var(--gold),var(--shadow)}

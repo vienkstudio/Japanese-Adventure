@@ -14,6 +14,8 @@
 .dr-sub{margin:2px 0 8px;color:var(--muted);font-size:.92em}
 .dr-set{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 4px;font-size:.9em}
 .dr-set span{color:var(--muted);font-weight:700;margin-right:2px}
+.dr-g{display:flex;align-items:center;gap:6px}
+.dr-set .dr-tg{padding:7px 11px;min-width:44px}
 .dr-tg,.dr-chip{border:none;border-radius:999px;background:var(--chip);padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;color:var(--text)}
 .dr-tg.on{background:var(--acc-t);color:var(--acc-d)}
 .dr-card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin:12px 0}
@@ -21,7 +23,7 @@
 .dr-card h2 small{font-size:.75em;color:var(--gold);white-space:nowrap}
 .dr-card p{margin:4px 0 10px;color:var(--muted);font-size:.9em}
 .dr-chips{display:flex;flex-wrap:wrap;gap:6px}
-.dr-chip.go{background:var(--pri);color:#fff}
+.dr-chip.go{background:var(--pri);color:var(--on-pri)}
 .dr-chip:active,.dr-tg:active,.dr-next:active,.dr-pad button:active,.dr-sopt:active{transform:scale(.96)}
 .dr-top{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
 .dr-top b{font-size:.85em;color:var(--muted);white-space:nowrap}
@@ -30,7 +32,7 @@
 .dr-bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .3s}
 .dr-npc{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;text-align:center}
 .dr-tag{display:inline-block;background:var(--pri-t);color:var(--pri);border-radius:999px;padding:2px 12px;font-size:.8em;font-weight:800}
-.dr-play{display:block;margin:12px auto 8px;width:72px;height:72px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:1.8em;cursor:pointer;box-shadow:var(--shadow2)}
+.dr-play{display:block;margin:12px auto 8px;width:72px;height:72px;border-radius:50%;border:none;background:var(--pri);color:var(--on-pri);font-size:1.8em;cursor:pointer;box-shadow:var(--shadow2)}
 .dr-jp{font-size:1.25em;font-weight:700;margin:4px 0 0}
 .dr-kana{color:var(--muted);font-size:.85em;margin:0}
 .dr-reveal{border:none;background:var(--chip);border-radius:999px;padding:6px 14px;font:inherit;cursor:pointer;color:var(--text)}
@@ -39,35 +41,35 @@
 .dr .choice{font-size:1em;min-height:52px;line-height:1.35}
 .dr .choice small{display:block;font-weight:500;font-size:.78em;opacity:.8}
 .dr-fb{margin:12px 0 0;padding:12px 14px;border-radius:14px;font-size:.95em}
-.dr-fb.ok{background:var(--acc-t)}.dr-fb.ng{background:var(--pri-t)}
+.dr-fb.ok{background:var(--ok-t)}.dr-fb.ng{background:var(--err-t)}
 .dr-fb p{margin:2px 0}
 .dr-alt{list-style:none;padding:0;margin:6px 0 0}
 .dr-alt button{display:block;width:100%;text-align:left;border:none;background:var(--card);border-radius:10px;padding:6px 10px;margin:4px 0;font:inherit;cursor:pointer;color:var(--text)}
 .dr-alt small{color:var(--muted)}
-.dr-next{display:block;margin:16px auto 0;border:none;border-radius:999px;background:var(--pri);color:#fff;font:inherit;font-weight:800;padding:12px 44px;cursor:pointer}
+.dr-next{display:block;margin:16px auto 0;border:none;border-radius:999px;background:var(--pri);color:var(--on-pri);font:inherit;font-weight:800;padding:12px 44px;cursor:pointer}
 .dr-sign{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;padding:12px 16px;border-radius:10px;line-height:1.2;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",var(--font)}
 .dr-sign b{font-size:1.45em;letter-spacing:.04em}
 .dr-sign small{font-size:.72em;opacity:.85;margin-top:4px}
 .dr-big{margin:6px 0}.dr-big .dr-sign{min-width:200px;padding:18px 26px}.dr-big .dr-sign b{font-size:2.3em}
-.dr-s-y{background:#ffd23f;color:#222}.dr-s-g{background:#16a05d;color:#fff}.dr-s-b{background:#2a6fdb;color:#fff}
-.dr-s-r{background:#fff;color:#e03131;box-shadow:inset 0 0 0 3px #e03131}.dr-s-k{background:#2b2b2b;color:#fff}
-.dr-s-w{background:#fff;color:#222;box-shadow:inset 0 0 0 2px #222}.dr-s-o{background:#ff8a3d;color:#fff}.dr-s-p{background:#ff7aa8;color:#fff}
+.dr-s-y{background:var(--sg-y);color:var(--sg-ink)}.dr-s-g{background:var(--sg-g);color:var(--sg-w)}.dr-s-b{background:var(--sg-b);color:var(--sg-w)}
+.dr-s-r{background:var(--sg-w);color:var(--sg-r);box-shadow:inset 0 0 0 3px var(--sg-r)}.dr-s-k{background:var(--sg-k);color:var(--sg-w)}
+.dr-s-w{background:var(--sg-w);color:var(--sg-ink);box-shadow:inset 0 0 0 2px var(--sg-ink)}.dr-s-o{background:var(--sg-o);color:var(--sg-w)}.dr-s-p{background:var(--sg-p);color:var(--sg-w)}
 .dr-need{font-size:1.1em;font-weight:800;margin:6px 0 0}
 .dr-sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 .dr-sopt{border:3px solid transparent;border-radius:16px;background:var(--chip);padding:10px;cursor:pointer;font:inherit}
 .dr-sopt .dr-sign{width:100%}
-.dr-sopt.ok{border-color:var(--acc);background:var(--acc-t)}.dr-sopt.ng{border-color:var(--pri);background:var(--pri-t)}
+.dr-sopt.ok{border-color:var(--ok);background:var(--ok-t)}.dr-sopt.ng{border-color:var(--err);background:var(--err-t)}
 .dr-sopt:disabled{cursor:default}
 .dr-input{display:flex;align-items:baseline;justify-content:center;gap:6px;font-size:2em;font-weight:800;margin:14px 0 10px;min-height:1.6em}
 .dr-val{min-width:4ch;border-bottom:3px solid var(--line2);text-align:center}
-.dr-val.ok{color:var(--acc-d);border-color:var(--acc)}.dr-val.ng{color:var(--pri);border-color:var(--pri)}
+.dr-val.ok{color:var(--ok);border-color:var(--ok)}.dr-val.ng{color:var(--err);border-color:var(--err)}
 .dr-unit{font-size:.5em;color:var(--muted)}
 .dr-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;margin:0 auto}
 .dr-pad button{border:none;border-radius:16px;background:var(--card);box-shadow:var(--shadow);font:inherit;font-size:1.35em;font-weight:800;padding:12px 0;cursor:pointer;color:var(--text)}
-.dr-pad .go{background:var(--pri);color:#fff}
+.dr-pad .go{background:var(--pri);color:var(--on-pri)}
 .dr-pad button:disabled{opacity:.45;cursor:default}
 .dr-line{display:flex;flex-wrap:wrap;gap:6px;min-height:58px;align-items:center;justify-content:center;margin:14px 0 8px;padding:10px;border-radius:16px;border:2px dashed var(--line2);background:var(--card)}
-.dr-line.ok{border-style:solid;border-color:var(--acc)}.dr-line.ng{border-style:solid;border-color:var(--pri)}
+.dr-line.ok{border-style:solid;border-color:var(--ok)}.dr-line.ng{border-style:solid;border-color:var(--err)}
 .dr-tiles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0}
 .dr-tile{border:none;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font:inherit;font-size:1.1em;font-weight:700;padding:10px 14px;min-height:44px;cursor:pointer;color:var(--text);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",var(--font)}
 .dr-tile.on{background:var(--pri-t);color:var(--pri)}
@@ -79,7 +81,7 @@
   /* ---------- 小工具 ---------- */
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const pick = a => a[Math.floor(Math.random() * a.length)];
-  const OPT = () => { const o = App.state.drillOpt || (App.state.drillOpt = {}); if (!o.rate) o.rate = 0.85; if (o.hint == null) o.hint = true; return o; };
+  const OPT = () => { const o = App.state.drillOpt || (App.state.drillOpt = {}); if (!o.rate) o.rate = 0.85; if (o.hint == null) o.hint = App.profile().assist !== 'none'; return o; };
   const speak = t => App.speak(t, OPT().rate);
   const hintOn = () => OPT().hint || (App.voiceOK && App.voiceOK() === false);   // 沒有日文語音：一律顯示文字
   const starsOf = r => r >= 0.9 ? 3 : r >= 0.7 ? 2 : r >= 0.4 ? 1 : 0;
@@ -222,8 +224,8 @@
     el.innerHTML = `<section class="dr">
       <h1 class="dr-h">🎧 實戰特訓</h1>
       <p class="dr-sub">旅行時最難的是：聽懂店員、看懂看板、抓住數字</p>${App.voiceHTML ? App.voiceHTML() : ""}
-      <div class="dr-set"><span>提示</span><button type="button" class="dr-tg${o.hint ? ' on' : ''}" id="dr-hint">${o.hint ? '👀 顯示文字' : '🙈 只聽聲音'}</button>
-        <span style="margin-left:8px">語速</span>${rates.map(([r, n]) => `<button type="button" class="dr-tg${o.rate === r ? ' on' : ''}" data-rate="${r}">${n}</button>`).join('')}</div>
+      <div class="dr-set"><div class="dr-g"><span>提示</span><button type="button" class="dr-tg${o.hint ? ' on' : ''}" id="dr-hint">${o.hint ? '👀 顯示文字' : '🙈 只聽聲音'}</button>
+        </div><div class="dr-g"><span>語速</span>${rates.map(([r, n]) => `<button type="button" class="dr-tg${o.rate === r ? ' on' : ''}" data-rate="${r}">${n}</button>`).join('')}</div></div>
       ${Object.keys(MODES).map(k => { const M = MODES[k]; const b = best[k] || 0; return `<div class="dr-card">
         <h2>${M.icon} ${esc(M.name)}<small>${b ? '★'.repeat(b) + '☆'.repeat(3 - b) : ''}</small></h2>
         <p>${esc(M.desc)}<br><small>${esc(M.size())}</small></p>
@@ -493,7 +495,7 @@
     });
   }
 
-  App.register('boot', { title: '特訓', icon: '🎧', nav: true, navOrder: 3, render: renderHub });
-  App.register('boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'boot', render: renderPlay });
+  App.register('boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'home', render: renderHub });
+  App.register('boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'home', render: renderPlay });
   window.DrillAPI = { numKana, hourK, dayK, monthK, floorK, MODES, NUM };
 })();

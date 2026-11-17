@@ -1,0 +1,84 @@
+/* =========================================================
+   設計 token（主題、字級、間距）— 最先載入，所有 CSS／JS 內 HTML 只用這裡的變數
+   <html data-theme="light|dark"（未設＝跟隨系統） data-palette="coral|sakura|matcha|ocean|lavender|mono" data-fs="m|l|xl">
+   每套主題提供 --pri-l/--acc-l（淺色用）與 --pri-k/--acc-k（深色用）；--pri/--acc 依淺深自動取用。
+   ========================================================= */
+:root{
+  /* --- 主題色（預設：珊瑚） --- */
+  --pri-l:#cf4033;--acc-l:#127a67;--bg-l:#fafaf7;
+  --pri-k:#ff8a7d;--acc-k:#45d1b3;--bg-k:#15171a;--card-k:#202327;--chip-k:#2b2f34;
+
+  /* --- 淺色基礎 --- */
+  --bg:var(--bg-l);--card:#fff;--chip:color-mix(in srgb,var(--text) 6%,var(--bg));
+  --text:#222;--muted:#5c5c5c;--line:color-mix(in srgb,var(--text) 9%,var(--card));--line2:color-mix(in srgb,var(--text) 14%,var(--card));
+  --pri:var(--pri-l);--acc:var(--acc-l);--on-pri:#fff;
+  --ok:#16806b;--warn:#a35f00;--err:#cc3338;
+  --shade:rgb(0 0 0 / .07);--shade2:rgb(0 0 0 / .1);--scrim:rgb(20 20 20 / .45);
+  --toast-bg:#222;--toast-fg:#fff;
+  --sc-sky:#e9f8f4;--sc-ground:#d6f2ea;--sc-water:#a3dbe0;--sc-water2:#b9eaf0;--sc-grass:#dcead6;--sc-tree:#b9d6ab;--sc-road:#f4e8cc;
+  --sc-edge:#b8d4bc;--sc-bld:#fffefa;--sc-bld-hi:#fff3d7;--sc-bld-ink:#222;--sc-bld-edge:#a9c4b3;--sc-bld-shadow:#9cbe9b;--sc-player:#ffcf66;--sc-player-edge:#164b41;
+
+  /* --- 推導（主題、淺深共用） --- */
+  --pri-d:color-mix(in srgb,var(--pri) 84%,var(--text));
+  --pri-t:color-mix(in srgb,var(--pri) 12%,var(--card));
+  --acc-d:color-mix(in srgb,var(--acc) 84%,var(--text));
+  --acc-t:color-mix(in srgb,var(--acc) 13%,var(--card));
+  --on-acc:var(--on-pri);
+  --on-pri-2:color-mix(in srgb,var(--on-pri) 88%,transparent);
+  --ok-t:color-mix(in srgb,var(--ok) 14%,var(--card));--err-t:color-mix(in srgb,var(--err) 12%,var(--card));--warn-t:color-mix(in srgb,var(--warn) 14%,var(--card));
+  --gold:#ffb703;--on-gold:#2a1f00;--on-n:#1a1a1a;
+  --paper:var(--chip);--paper2:color-mix(in srgb,var(--text) 9%,var(--bg));
+  --shadow:0 2px 10px var(--shade);--shadow2:0 6px 20px var(--shade2);
+  --r:18px;--r-s:10px;--r-m:14px;--r-l:20px;--r-pill:999px;
+  --font:"Noto Sans TC","Noto Sans JP","PingFang TC","Hiragino Sans","Microsoft JhengHei",sans-serif;
+
+  /* JLPT 分級色（固定） */
+  --n5:#1fa88d;--n4:#3b7be0;--n3:#d99a00;--n2:#e5702a;--n1:#d9473a;--nx:#9a9a9a;
+
+  /* 看板插畫色（固定，模擬真實日本看板） */
+  --sg-y:#ffd23f;--sg-g:#16a05d;--sg-b:#2a6fdb;--sg-r:#e03131;--sg-k:#2b2b2b;--sg-w:#fff;--sg-o:#ff8a3d;--sg-p:#ff7aa8;--sg-ink:#222;
+  /* 彩帶特效色 */
+  --fx1:#ffd54f;--fx2:#22b573;--fx3:#3a86ff;--fx4:#ff5a8a;--fx5:#8b5cf6;--fx6:#ff9a3c;
+
+  /* --- 字級（rem，跟著 data-fs 縮放）與間距 --- */
+  --fs-xs:.8125rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.125rem;--fs-xl:1.375rem;--fs-2xl:1.75rem;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
+  --navH:64px;--safeB:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+
+/* --- 6 套主題（.st-dot 是設定頁的預覽圓點） --- */
+.st-dot[data-pal=coral]{--pri-l:#cf4033;--acc-l:#127a67}
+:root[data-palette=sakura],.st-dot[data-pal=sakura]{--pri-l:#c2416c;--acc-l:#3f7d2a;--bg-l:#fff8fa;--pri-k:#f592b3;--acc-k:#9bd283;--bg-k:#1c1619;--card-k:#271f23;--chip-k:#33292e}
+:root[data-palette=matcha],.st-dot[data-pal=matcha]{--pri-l:#4d7a2e;--acc-l:#b0552a;--bg-l:#f7f8f2;--pri-k:#9cc97a;--acc-k:#e59a6f;--bg-k:#141811;--card-k:#1e231a;--chip-k:#293023}
+:root[data-palette=ocean],.st-dot[data-pal=ocean]{--pri-l:#1f62a8;--acc-l:#0d7780;--bg-l:#f5f8fb;--pri-k:#7cb6f0;--acc-k:#5fd0d6;--bg-k:#10151d;--card-k:#1a212c;--chip-k:#252e3b}
+:root[data-palette=lavender],.st-dot[data-pal=lavender]{--pri-l:#7048b8;--acc-l:#b0457a;--bg-l:#f8f6fc;--pri-k:#b9a0ee;--acc-k:#ef9cc3;--bg-k:#17151d;--card-k:#221f2a;--chip-k:#2d2937}
+:root[data-palette=mono],.st-dot[data-pal=mono]{--pri-l:#222;--acc-l:#c62f28;--bg-l:#fff;--pri-k:#eee;--acc-k:#ff7b73;--bg-k:#0c0c0c;--card-k:#1a1a1a;--chip-k:#262626}
+
+/* --- 字級大小 --- */
+:root[data-fs=l]{font-size:112.5%}
+:root[data-fs=xl]{font-size:125%}
+
+/* --- 深色：手動 data-theme=dark，或未指定淺色時跟隨系統 --- */
+:root[data-theme=dark]{
+  --bg:var(--bg-k);--card:var(--card-k);--chip:var(--chip-k);--text:#ececec;--muted:#a8a8a8;
+  --pri:var(--pri-k);--acc:var(--acc-k);--on-pri:#16181b;
+  --ok:#4fd6b6;--warn:#f5b14a;--err:#ff7b7b;
+  --shade:rgb(0 0 0 / .35);--shade2:rgb(0 0 0 / .45);--scrim:rgb(0 0 0 / .6);
+  --toast-bg:#3a3f45;--toast-fg:#f2f2f2;
+  --sc-sky:#1d2b2a;--sc-ground:#1a2622;--sc-water:#1f4a52;--sc-water2:#26575f;--sc-grass:#24332a;--sc-tree:#2f4a30;--sc-road:#4a4433;
+  --sc-edge:#3a5040;--sc-bld:#e9e6dc;--sc-bld-hi:#fff0cc;--sc-bld-edge:#7d9384;--sc-bld-shadow:#2e3d31;--sc-player:#ffcf66;--sc-player-edge:#0d2b25;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --bg:var(--bg-k);--card:var(--card-k);--chip:var(--chip-k);--text:#ececec;--muted:#a8a8a8;
+    --pri:var(--pri-k);--acc:var(--acc-k);--on-pri:#16181b;
+    --ok:#4fd6b6;--warn:#f5b14a;--err:#ff7b7b;
+    --shade:rgb(0 0 0 / .35);--shade2:rgb(0 0 0 / .45);--scrim:rgb(0 0 0 / .6);
+    --toast-bg:#3a3f45;--toast-fg:#f2f2f2;
+    --sc-sky:#1d2b2a;--sc-ground:#1a2622;--sc-water:#1f4a52;--sc-water2:#26575f;--sc-grass:#24332a;--sc-tree:#2f4a30;--sc-road:#4a4433;
+    --sc-edge:#3a5040;--sc-bld:#e9e6dc;--sc-bld-hi:#fff0cc;--sc-bld-edge:#7d9384;--sc-bld-shadow:#2e3d31;--sc-player:#ffcf66;--sc-player-edge:#0d2b25;
+    color-scheme:dark;
+  }
+}

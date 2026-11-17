@@ -1,4 +1,4 @@
-// 3D 心智圖（路由 mind）：N5–N1 詞彙・文法・時態變化・學習順序，可依等級／人事時地物／場景篩選
+// 3D 心智圖（路由 mind3d，實驗功能；主介面為 js/kb.js 知識庫）：N5–N1 詞彙・文法・時態變化・學習順序，可依等級／人事時地物／場景篩選
 // 依賴：vendor/3d-force-graph.min.js、data/mind/{taxonomy,conj,grammar}.js；詞彙 data/mind/lex-n*.js 需要時才載入
 (function () {
   'use strict';
@@ -22,10 +22,13 @@
 
   /* ---------------- 狀態 ---------------- */
   const KEY = 'jpq.mind.v1';
-  let ST; try { ST = JSON.parse(App.store.get(KEY) || '{}'); } catch (e) { ST = {}; }
+  // 與知識庫（js/kb.js）共用同一份狀態物件，避免兩邊各自寫回互相覆蓋
+  const ST = M.ST || (M.ST = (() => { try { return JSON.parse(App.store.get(KEY) || '{}'); } catch (e) { return {}; } })());
   ST.learned = ST.learned || {};
   const saveST = () => App.store.set(KEY, JSON.stringify(ST));
-  const F = { mode: 'map', lv: new Set(LV), wh: new Set(), sc: '', types: { word: true, gram: true }, color: 'wh', open: false };
+  // 預設只顯示使用者目前等級（App.profile().lv；zero→N5）
+  function profLv() { let p = null; try { p = App.profile && App.profile(); } catch (e) { } const l = String((p && p.lv) || 'zero').toUpperCase(); return LV.includes(l) ? l : 'N5'; }
+  const F = { mode: 'map', lv: new Set([profLv()]), wh: new Set(), sc: '', types: { word: true, gram: true }, color: 'wh', open: false };
   let FOCUS = 'cj:te', VERB = { jp: '書く', grp: '1', zh: '寫' }, EXP = null, SEL = null, NEXT = null;
   const HL = new Map(); let INTERCEPT = null;
   let G = null, GEL = null, NODES = [], MAP = null, ROOT = null, STAGE = null, PANEL = null, LAB = null, V = null, raf = 0, frame = 0, fitT = 0, noGL = false;
@@ -88,7 +91,7 @@
   const lvOK = g => F.lv.has(g.lv);
 
   /* ---------------- 圖 1：總覽（等級分層 × 人事時地物扇區 × 場景群） ---------------- */
-  const LAYER = 240;
+  const LAYER = 380;
   function buildMap() {
     if (!MAP) {
       const b = GB(), SEC = Math.PI * 2 / WH.length, HALF = SEC * 0.42;
@@ -232,19 +235,22 @@
   const hex = c => { c = c.replace('#', ''); if (c.length === 3) c = c.replace(/./g, '$&$&'); return [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16)); };
   function mix(a, b, t) { try { const x = hex(a), y = hex(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); } catch (e) { return a; } }
   let BG = '#fafaf7';
+  const TK = {};
+  const tk = (v, d) => TK[v] || (TK[v] = css(v) || d);
+  const lvC = lv => tk('--' + String(lv).toLowerCase(), M.LV_COLOR[lv]);
   function colorOf(n) {
-    const hl = HL.get(n.id); if (hl) return hl === 'ok' ? '#2ec4a6' : hl === 'bad' ? '#ff4d4f' : '#ffd23f';
-    if (n.type === 'lv') return M.LV_COLOR[n.lv];
+    const hl = HL.get(n.id); if (hl) return hl === 'ok' ? tk('--ok', '#2ec4a6') : hl === 'bad' ? tk('--err', '#ff4d4f') : tk('--gold', '#ffd23f');
+    if (n.type === 'lv') return lvC(n.lv);
     if (n.type === 'wh') return WHc[n.wh].color;
     if (n.type === 'sc' || n.type === 'sub') return '#d9a441';
     if (n.type === 'conj') return KIND_COLOR[n.ref.kind];
     if (n.type === 'cat') return '#8a94a6';
     if (n.type === 'verb') return '#ff6b5b';
     if (F.mode === 'path' && n.type === 'gram') {
-      if (n.id === NEXT) return '#ffb703';
-      return ST.learned[n.id] ? M.LV_COLOR[n.lv] : mix(M.LV_COLOR[n.lv], BG, .62);
+      if (n.id === NEXT) return tk('--gold', '#ffb703');
+      return ST.learned[n.id] ? lvC(n.lv) : mix(lvC(n.lv), BG, .62);
     }
-    return F.color === 'lv' ? M.LV_COLOR[n.lv] : WHc[n.wh].color;
+    return F.color === 'lv' ? lvC(n.lv) : WHc[n.wh].color;
   }
   const valOf = n => n.val * (n === SEL && !n.center ? (n.type === 'word' || n.type === 'gram' ? 3 : 1.5) : 1) * (F.mode === 'path' && n.id === NEXT ? 2.5 : 1) * (HL.has(n.id) ? 2.2 : 1);
   function vis(n) {
@@ -257,9 +263,10 @@
     if (n.type === 'gram') return (F.mode === 'path' || F.types.gram) && (!F.sc || n.ref.sc.includes(F.sc));
     return true;
   }
+  let NMAP = new Map();
   function lvis(l) {
-    const s = l.source, t = l.target;
-    if (typeof s !== 'object' || typeof t !== 'object') return !l.hid;
+    const s = typeof l.source === 'object' ? l.source : NMAP.get(l.source), t = typeof l.target === 'object' ? l.target : NMAP.get(l.target);
+    if (!s || !t) return !l.hid;
     if (!vis(s) || !vis(t)) return false;
     return !l.hid || s === SEL || t === SEL;
   }
@@ -295,17 +302,18 @@
   }
   function apply(data, o) {
     o = o || {};
-    NODES = data.nodes;
+    NODES = data.nodes; NMAP = new Map(NODES.map(n => [n.id, n]));
     if (SEL) SEL = NODES.find(n => n.id === SEL.id) || null;
     if (!G) { renderList(); return; }
-    BG = css('--bg') || '#fafaf7'; G.backgroundColor(BG);
+    BG = css('--bg') || '#fafaf7'; G.backgroundColor(BG); for (const k in TK) delete TK[k];
     G.warmupTicks(o.fixed ? 0 : 90).cooldownTicks(o.fixed ? 1 : 60).cooldownTime(o.fixed ? 200 : 3000);
     G.graphData(data);
     if (!o.fixed) { G.d3Force('charge').strength(-260); G.d3Force('link').distance(l => l.t === 'conj' ? 80 : l.t === 'in' || l.t === 'use' || l.t === 'sib' ? 46 : 64); }
     if (o.dir) {
       const t = Math.tan((G.camera().fov || 50) * Math.PI / 360), asp = Math.max(.3, GEL.clientWidth / Math.max(1, GEL.clientHeight));
       const dist = Math.max(o.ext[1] / t, o.ext[0] / (t * asp)) * 1.08, l = Math.hypot(o.dir[0], o.dir[1], o.dir[2]);
-      G.cameraPosition({ x: o.dir[0] / l * dist, y: o.dir[1] / l * dist, z: o.dir[2] / l * dist }, { x: 0, y: 0, z: 0 }, 0);
+      const cy = o.cy || 0;
+      G.cameraPosition({ x: o.dir[0] / l * dist, y: cy + o.dir[1] / l * dist, z: o.dir[2] / l * dist }, { x: 0, y: cy, z: 0 }, 0);
     }
     else if (o.fit !== false && !o.keep) { fitT = 1; setTimeout(() => G && fitT && G.zoomToFit(400, 60, vis), 250); }
     if (!raf) raf = requestAnimationFrame(tick);
@@ -329,21 +337,23 @@
     for (const n of NODES) {
       if (n.x === undefined || !vis(n)) continue;
       const dx = n.x - cp.x, dy = n.y - cp.y, dz = n.z - cp.z;
-      n._s = n === SEL || HL.has(n.id) || n.top ? 0 : (dx * dx + dy * dy + dz * dz) / (1 + n.pri * n.pri * 3);
+      n._s = n === SEL || HL.has(n.id) || n.top ? 0 : (dx * dx + dy * dy + dz * dz) / (1 + n.pri * n.pri * 3) * (shown.has(n.id) ? .55 : 1);
       cand.push(n);
     }
     cand.sort((a, b) => a._s - b._s);
-    const MAX = w < 720 ? 55 : 110, cell = new Set(), now = new Set();
+    const MAX = w < 720 ? 32 : 90, rects = [], now = new Set();
     let placed = 0;
     for (let i = 0; i < cand.length && placed < MAX && i < 700; i++) {
       const n = cand[i];
       V.set(n.x, n.y, n.z).project(cam);
       if (V.z > 1 || V.x < -1.05 || V.x > 1.05 || V.y < -1.05 || V.y > 1.05) continue;
       const sx = (V.x + 1) / 2 * w, sy = (1 - V.y) / 2 * h;
-      const hw = Math.min(110, n.lab.length * 6 + 8), row = Math.round(sy / 20), c0 = Math.floor((sx - hw) / 24), c1 = Math.floor((sx + hw) / 24);
-      let hit = false; for (let c = c0; c <= c1; c++) if (cell.has(c + ':' + row)) { hit = true; break; }
+      // 標籤框：以 translate(-50%,-135%) 置中於節點上方；全形字寬≈字級、半形≈0.6 字級
+      const big = n === SEL || n.center || HL.has(n.id), fs = big ? 14 : LFS[n.type] || 11, lw = Math.min(big ? 320 : 220, labW(n.lab, fs) + (big || LPAD[n.type] ? 20 : 10)), lh = fs * 1.25 + 4;
+      const x0 = sx - lw / 2 - 2, x1 = sx + lw / 2 + 2, y1 = sy - lh * .35 + 2, y0 = y1 - lh - 4;
+      let hit = false; for (const r of rects) if (x0 < r[2] && x1 > r[0] && y0 < r[3] && y1 > r[1]) { hit = true; break; }
       if (hit && n !== SEL && !n.center && !HL.has(n.id) && !n.top) continue;
-      for (let c = c0; c <= c1; c++) cell.add(c + ':' + row);
+      rects.push([x0, y0, x1, y1]);
       let el = shown.get(n.id);
       if (!el) { el = free.pop() || LAB.appendChild(document.createElement('div')); el.textContent = n.lab; el.style.display = ''; shown.set(n.id, el); }
       const cls = 'mm-l mm-l-' + n.type + (n === SEL ? ' sel' : '') + (n.center ? ' ctr' : '') + (HL.has(n.id) ? ' hl-' + HL.get(n.id) : '') + (n.cls ? ' ' + n.cls : '') + (F.mode === 'path' && n.type === 'gram' ? (n.id === NEXT ? ' next' : ST.learned[n.id] ? ' done' : '') : '');
@@ -355,6 +365,8 @@
     }
     for (const [id, el] of shown) if (!now.has(id)) { el.style.display = 'none'; el._t = el._c = null; shown.delete(id); free.push(el); }
   }
+  const LFS = { lv: 17, wh: 15, sc: 12.5, sub: 12.5, cat: 12.5, conj: 12.5, verb: 12.5, gram: 11.5, grp: 11.5, star: 15 }, LPAD = { lv: 1, conj: 1, verb: 1 };
+  function labW(t, fs) { let w = 0; for (const ch of t) w += /[\u0000-\u00ff]/.test(ch) ? fs * .6 : fs; return w; }
   function resetLabels() { shown.clear(); free.length = 0; if (LAB) LAB.innerHTML = ''; }
 
   /* ---------------- 無 WebGL：清單檢視 ---------------- */
@@ -364,7 +376,7 @@
     if (!box) { box = document.createElement('div'); box.className = 'mm-list'; STAGE.insertBefore(box, STAGE.firstChild); }
     const by = {}; NODES.filter(vis).forEach(n => (by[n.type] = by[n.type] || []).push(n));
     const NAME = { lv: '等級', wh: '人事時地物', sc: '場景', sub: '旅遊場景', grp: '詞彙群', gram: '文法', conj: '變化形／時態', cat: '文法類別', word: '詞彙', verb: '動詞' };
-    box.innerHTML = '<p class="muted">此裝置無法使用 3D（WebGL），改用清單顯示。</p>' + Object.keys(NAME).filter(t => by[t]).map(t =>
+    box.innerHTML = '<p class="muted">此裝置無法使用 3D（WebGL）。建議改用 <button type="button" class="mm-chip on" data-act="kb">📚 知識庫</button>，以下為簡易清單。</p>' + Object.keys(NAME).filter(t => by[t]).map(t =>
       `<div class="mm-ph">${NAME[t]}（${by[t].length}）</div><div class="mm-chips">${by[t].slice(0, 300).map(n => `<button class="mm-chip" data-sel="${esc(n.id)}">${esc(n.lab)}</button>`).join('')}</div>`).join('');
   }
 
@@ -372,7 +384,12 @@
   function show(keep) {
     const m = F.mode; let p = Promise.resolve();
     NEXT = (nextOf() || {}).id || null;
-    if (m === 'map') apply(buildMap(), { fixed: true, keep, dir: keep ? null : [0, .45, 1], ext: [470, 640] });
+    if (m === 'map') {
+      // 鏡頭只框住目前勾選的等級層
+      const ys = LV.map((l, i) => F.lv.has(l) ? (i - (LV.length - 1) / 2) * LAYER : null).filter(y => y !== null);
+      const cy = ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0, hy = ys.length ? (Math.max(...ys) - Math.min(...ys)) / 2 : 0;
+      apply(buildMap(), { fixed: true, keep, dir: keep ? null : [0, .32, 1], ext: [440, hy + 260], cy });
+    }
     else if (m === 'focus') {
       const id = FOCUS;
       p = need(id).then(() => { if (F.mode !== 'focus' || FOCUS !== id) return; const d = buildFocus(id); if (!d) return; apply(d); if (!INTERCEPT) SEL = NODES.find(n => n.center) || null; restyle(); renderPanel(); });
@@ -413,7 +430,7 @@
     Q('.mm').classList.toggle('gaming', !!INTERCEPT);
     Q('.mm-modes').innerHTML = MODES.map(m => `<button type="button" class="mm-mode${F.mode === m[0] ? ' on' : ''}" data-mode="${m[0]}" title="${m[2]}"><span>${m[1]}</span><em>${m[2]}</em></button>`).join('');
     const nF = (F.lv.size < LV.length ? 1 : 0) + (F.wh.size ? 1 : 0) + (F.sc ? 1 : 0) + (F.types.word && F.types.gram ? 0 : 1);
-    Q('.mm-tools').innerHTML = `<button type="button" class="mm-tool" data-act="search" aria-label="搜尋">🔍</button><button type="button" class="mm-tool${nF ? ' on' : ''}" data-act="ftog" aria-label="篩選">🎛${nF ? `<sup>${nF}</sup>` : ''}</button><button type="button" class="mm-tool mm-play" data-act="board">🎮<em>任務</em></button>`;
+    Q('.mm-tools').innerHTML = `<button type="button" class="mm-tool" data-act="kb" aria-label="回知識庫" title="回知識庫">📚</button><button type="button" class="mm-tool" data-act="search" aria-label="搜尋">🔍</button><button type="button" class="mm-tool${nF ? ' on' : ''}" data-act="ftog" aria-label="篩選">🎛${nF ? `<sup>${nF}</sup>` : ''}</button><button type="button" class="mm-tool mm-play" data-act="board">🎮<em>任務</em></button>`;
     const subs = F.sc ? Object.values(SUBS).filter(s => s.parent === F.sc) : [];
     const dr = Q('.mm-drawer'); dr.classList.toggle('open', F.open);
     dr.innerHTML = `<div class="mm-dh"><b>篩選</b><button type="button" class="mm-chip" data-act="fclear">重設</button><button type="button" class="mm-x" data-act="ftog" aria-label="關閉">✕</button></div>
@@ -425,7 +442,7 @@
       ${subs.length ? `<div class="mm-ph">旅遊場景（點擊前往）</div><div class="mm-row">${subs.map(s => chip('go', 'sub:' + s.id, false, s.icon + s.name)).join('')}</div>` : ''}`;
     let sub = '';
     if (INTERCEPT) sub = '';
-    else if (F.mode === 'map') sub = `<span class="muted">由下往上 N5→N1・每層依人事時地物分區・點「場景群」展開詞彙</span>`;
+    else if (F.mode === 'map') sub = `<span class="muted">目前顯示 ${[...F.lv].join('、')}（🎛 可加其他等級）・點「場景群」展開詞彙</span>`;
     else if (F.mode === 'focus') { const c = mk(FOCUS); sub = `<span class="muted">中心</span><b>${esc(c ? c.lab : '')}</b><span class="muted">再點一次任一節點＝改以它為中心</span>`; }
     else if (F.mode === 'tense') sub = VERBS.map(v => `<button type="button" class="mm-chip${VERB.jp === v[0] ? ' on' : ''}" data-verb="${v.join('|')}">${v[0]}${v[1] === 's' ? 'する' : ''}</button>`).join('');
     else if (F.mode === 'path') {
@@ -433,7 +450,7 @@
       sub = `<b>已學 ${done}／${list.length}</b>${nx ? `<span class="muted">下一步</span><button type="button" class="mm-chip on" data-sel="${esc(nx.id)}" data-fly="1">${esc(nx.pat)} ▶</button>` : '🎉 全部完成'}`;
     }
     Q('.mm-sub').innerHTML = sub;
-    const lg = F.mode === 'tense' ? Object.keys(KIND_NAME).map(k => [KIND_COLOR[k], KIND_NAME[k]]) : (F.color === 'lv' || F.mode === 'path') ? LV.map(l => [M.LV_COLOR[l], l]) : WH.map(w => [w.color, w.name]);
+    const lg = F.mode === 'tense' ? Object.keys(KIND_NAME).map(k => [KIND_COLOR[k], KIND_NAME[k]]) : (F.color === 'lv' || F.mode === 'path') ? LV.map(l => [`var(--${l.toLowerCase()})`, l]) : WH.map(w => [w.color, w.name]);
     Q('.mm-legend').innerHTML = lg.map(x => `<span><i style="background:${x[0]}"></i>${x[1]}</span>`).join('');
     if (M.game) M.game.hud();
   }
@@ -505,7 +522,8 @@
       h = `<div class="mm-ph1"><span class="mm-jp">${esc(f.dict || VERB.jp)}</span>${say(f.dict || VERB.jp)}</div><div class="mm-zh">${esc(VERB.zh || '')}</div><div class="mm-kana">${M.GRP[VERB.grp] || ''}</div>${formTable(f)}`;
     }
     const canFocus = n.type !== 'verb' && !(F.mode === 'focus' && n.center);
-    PANEL.innerHTML = `<button type="button" class="mm-x" data-act="close" aria-label="關閉">✕</button>${h}<div class="mm-btns">${btn}${canFocus ? `<button type="button" class="btn sm primary" data-go="${esc(n.id)}">🎯 以此為中心</button>` : ''}</div>`;
+    const kbId = /^(w|gram|cj):/.test(n.id) && M.kb ? n.id : '';
+    PANEL.innerHTML = `<button type="button" class="mm-x" data-act="close" aria-label="關閉">✕</button>${h}<div class="mm-btns">${kbId ? `<button type="button" class="btn sm" data-act="kbpage" data-id="${esc(kbId)}">📖 開成頁面</button>` : ''}${btn}${canFocus ? `<button type="button" class="btn sm primary" data-go="${esc(n.id)}">🎯 以此為中心</button>` : ''}</div>`;
     PANEL.classList.add('open'); PANEL.scrollTop = 0;
   }
 
@@ -550,6 +568,8 @@
     if (a === 'fclear') { LV.forEach(l => F.lv.add(l)); F.wh.clear(); F.sc = ''; F.types.word = F.types.gram = true; if (F.mode === 'map') restyle(); else show(F.mode === 'path'); return renderBar(); }
     if (a === 'search') { const sb = ROOT.querySelector('.mm-search'); sb.classList.toggle('open'); if (sb.classList.contains('open')) sb.querySelector('input').focus(); else closeResults(); return; }
     if (a === 'board') { if (M.game) M.game.board(); return; }
+    if (a === 'kb') return App.go('kb');
+    if (a === 'kbpage') return App.go('kb-page', { id: d.id });
     if (a === 'close') return select(null);
     if (a === 'learn' && SEL && SEL.type === 'gram') { if (ST.learned[SEL.id]) delete ST.learned[SEL.id]; else ST.learned[SEL.id] = 1; saveST(); NEXT = (nextOf() || {}).id || null; restyle(); renderBar(); return renderPanel(); }
     if (a === 'verb' && SEL && SEL.type === 'word') { const w = SEL.ref; VERB = { jp: jp0(w), grp: w.grp, zh: w.zh }; return setMode('tense'); }
@@ -566,7 +586,7 @@
       <div class="mm-sub"></div>
       <div class="mm-drawer"></div>
       <div class="mm-legend"></div>
-      <div class="mm-hint">拖曳旋轉・滾輪或雙指縮放・點節點看詳情</div>
+      <div class="mm-hint">點節點看詳情・拖曳可旋轉</div>
       <aside class="mm-panel"></aside>
       <div class="mm-dock"></div>
       <div class="mm-board"></div>
@@ -604,5 +624,5 @@
     enter(mode) { F.mode = mode || 'game'; SEL = null; HL.clear(); resetLabels(); renderPanel(); },
     learn(id, on) { if (on === false) delete ST.learned[id]; else ST.learned[id] = 1; saveST(); NEXT = (nextOf() || {}).id || null; restyle(); }
   };
-  App.register('mind', { title: '心智圖', icon: '🧠', nav: true, navOrder: 5, render });
+  App.register('mind3d', { title: '3D 心智圖', icon: '🌐', nav: false, navParent: 'kb', render });
 })();

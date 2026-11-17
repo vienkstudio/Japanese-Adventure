@@ -51,7 +51,7 @@
     fx().appendChild(d); setTimeout(() => d.remove(), 950);
   }
   function burst(el, n) {
-    const c = center(el), cols = ['#ffd54f', '#22b573', '#3a86ff', '#ff5a8a', '#8b5cf6'];
+    const c = center(el), cols = [1, 2, 3, 4, 5].map(i => 'var(--fx' + i + ')');
     for (let i = 0; i < (n || 14); i++) {
       const s = document.createElement('div'); s.className = 'fx-spark';
       const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 60;
@@ -61,7 +61,7 @@
     }
   }
   function confetti(n) {
-    const cols = ['#ffd54f', '#22b573', '#3a86ff', '#ff5a8a', '#8b5cf6', '#ff9a3c'];
+    const cols = [1, 2, 3, 4, 5, 6].map(i => 'var(--fx' + i + ')');
     for (let i = 0; i < (n || 60); i++) {
       const s = document.createElement('div'); s.className = 'fx-conf';
       s.style.left = Math.random() * 100 + 'vw'; s.style.background = cols[i % cols.length];
@@ -78,7 +78,7 @@
   // 飛行物（戰鬥用）：from 元素飛到 to 元素
   function fly(from, to, text, cb) {
     const a = center(from), b = center(to), d = document.createElement('div');
-    d.style.cssText = `position:absolute;left:${a.x}px;top:${a.y}px;font-size:2em;font-weight:900;transform:translate(-50%,-50%);transition:left .35s ease-in,top .35s ease-in,transform .35s;z-index:2;text-shadow:0 0 8px #fff`;
+    d.style.cssText = `position:absolute;left:${a.x}px;top:${a.y}px;font-size:2em;font-weight:900;transform:translate(-50%,-50%);transition:left .35s ease-in,top .35s ease-in,transform .35s;z-index:2;text-shadow:0 0 8px var(--card)`;
     d.textContent = text; fx().appendChild(d);
     requestAnimationFrame(() => requestAnimationFrame(() => { d.style.left = b.x + 'px'; d.style.top = b.y + 'px'; d.style.transform = 'translate(-50%,-50%) scale(1.5) rotate(360deg)'; }));
     setTimeout(() => { d.remove(); cb && cb(); }, 380);

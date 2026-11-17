@@ -8,6 +8,34 @@
   const SCHEMA = 2;
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, tracked: [], log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
   const fresh = () => JSON.parse(JSON.stringify(DEF));
+  /* ---- 單一程度 profile（取代 world.lv、trip.level、L1–L4）與外觀 ui ---- */
+  const LV_IDS = ['zero', 'n5', 'n4', 'n3', 'n2', 'n1'];
+  const LV_NAMES = { zero: '完全沒學過', n5: '會五十音', n4: '會簡單句', n3: '日常會話', n2: '工作程度', n1: '接近母語' };
+  const LV_DESC = { zero: '從五十音開始，每個字都有讀音和中文', n5: '看得懂假名，想學旅行常用句', n4: '會說簡單的句子，想更自然', n3: '能日常對話，想聽懂店員的各種說法', n2: '能用敬語，想練交涉與正式場合', n1: '幾乎沒問題，想挑戰言外之意' };
+  const ASSIST_DEF = { zero: 'full', n5: 'full', n4: 'some', n3: 'none', n2: 'none', n1: 'none' };
+  const OLD2LV = { K0: 'zero', N5: 'n5', N4: 'n4', N3: 'n3', N2: 'n2', N1: 'n1' };
+  const PALETTES = ['coral', 'sakura', 'matcha', 'ocean', 'lavender', 'mono'];
+  const UI_KEY = 'jpQuest.ui';
+  function normProfile(p) {
+    p = p && typeof p === 'object' ? p : {};
+    if (!LV_IDS.includes(p.lv)) p.lv = 'zero';
+    if (!Array.isArray(p.goals) || !p.goals.length) p.goals = ['travel'];
+    if (!['full', 'some', 'none'].includes(p.assist)) p.assist = ASSIST_DEF[p.lv];
+    return p;
+  }
+  // 舊存檔：冒險世界有進度就用 world.lv，否則用舊旅程 trip.level；都沒有＝新玩家（要做首次定位）
+  function profileFromOld(st) {
+    const wl = st.world && OLD2LV[st.world.lv], tl = st.trip && OLD2LV[st.trip.level];
+    const worldUsed = st.world && (st.world.at || Object.keys(st.world.stamps || {}).length);
+    const lv = (worldUsed && wl) || tl || wl || null;
+    return normProfile({ lv: lv || 'zero', placed: !!lv });
+  }
+  // 舊模組暫時還讀 world.lv／trip.level：一律由 profile 同步過去（程度不再分開存）
+  function syncOld(st) {
+    const p = st.profile, up = p.lv === 'zero' ? 'N5' : p.lv.toUpperCase();
+    if (st.world && typeof st.world === 'object') st.world.lv = up;
+    if (st.trip && typeof st.trip === 'object' && st.trip.level) st.trip.level = p.lv === 'zero' ? 'K0' : up;
+  }
   // 存檔升級：舊版缺欄位補齊、型別修正
   function migrate(o) {
     const st = Object.assign(fresh(), o && typeof o === 'object' ? o : {});
@@ -15,7 +43,14 @@
     if (!Array.isArray(st.log)) st.log = [];
     ['cleared', 'sceneDone'].forEach(k => { if (!st[k] || typeof st[k] !== 'object') st[k] = {}; });
     if (!st.streak || typeof st.streak !== 'object') st.streak = fresh().streak;
+    if (typeof st.streak.days !== 'number') st.streak.days = 0;
     if ((st.v || 1) < 2) st.tracked.forEach(t => { if (t.due == null) t.due = 0; });   // v1 → v2：不會清單加複習排程
+    if (!st.profile || typeof st.profile !== 'object') st.profile = profileFromOld(st); else normProfile(st.profile);
+    syncOld(st);
+    st.ui = Object.assign({ theme: 'system', palette: 'coral', fs: 'm' }, st.ui && typeof st.ui === 'object' ? st.ui : {});
+    if (!['system', 'light', 'dark'].includes(st.ui.theme)) st.ui.theme = 'system';
+    if (!PALETTES.includes(st.ui.palette)) st.ui.palette = 'coral';
+    if (!['m', 'l', 'xl'].includes(st.ui.fs)) st.ui.fs = 'm';
     st.v = SCHEMA;
     return st;
   }
@@ -73,7 +108,7 @@
       CL.ref = ref;
       const d = snap.exists ? snap.data() : null;
       if (d && d.s && (d.t || 0) > (S._t || 0)) {
-        try { S = migrate(JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
+        try { S = migrate(JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; applyTheme(); render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
       } else if (S.xp || S.tracked.length || Object.keys(S.cleared).length) cloudPush();
       else CL.status = 'cloud';
       renderNav();
@@ -329,14 +364,22 @@
     try { r.render(main, params); }
     catch (e) { console.error(e); main.innerHTML = `<div class="panel"><h2>😵 頁面發生錯誤</h2><pre>${esc(e.stack || e)}</pre></div>`; }
   }
+  // 導覽圖示：線條 SVG（stroke=currentColor，跟主題變色）；沒列在這裡的路由用 emoji
+  const NAV_SVG = {
+    home: 'M3 11l9-8 9 8M5 9.5V20h5v-6h4v6h5V9.5',
+    play: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
+    read: 'M4 5h11v14H6.5A2.5 2.5 0 0 1 4 16.5V5zM15 9h5v8a2 2 0 0 1-2 2h-3M7 9h5M7 12.5h5M7 16h3',
+    kb: 'M12 3l9 5-9 5-9-5 9-5zM3 12.5l9 5 9-5M3 17l9 5 9-5',
+    review: 'M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7'
+  };
   function renderNav() {
     const nav = document.getElementById('nav');
     if (!nav) return;
-    const cur0 = parseHash().name, cur = (routes[cur0] && routes[cur0].navParent) || cur0;
+    const cur0 = parseHash().name, r0 = routes[cur0], cur = (r0 && r0.navParent) || (r0 && r0.nav ? cur0 : 'home');   // 沒指定 navParent 的子頁點亮首頁
     nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
       const badge = n === 'review' && Tracker.count() ? `<span class="badge">${Tracker.count()}</span>` : '';
-      return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"><span class="ni">${r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
+      return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"${cur === n ? ' aria-current="page"' : ''}><span class="ni">${NAV_SVG[n] ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${NAV_SVG[n]}"/></svg>` : r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
     }).join('');
     nav.querySelectorAll('a[data-route]').forEach(a => a.onclick = e => { e.preventDefault(); go(a.dataset.route); });
     const logo = document.querySelector('#top .logo'); if (logo) logo.onclick = e => { e.preventDefault(); go('home'); };
@@ -346,11 +389,10 @@
       const lo = LEVELS[lv - 1], hi = LEVELS[lv] || LEVELS[lv - 1] + 1000;
       const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
       const sk = streakInfo();
-      pc.innerHTML = `<button class="pc-lv" id="lvBtn" type="button" title="${S.xp} XP"><b>Lv.${lv}</b><span class="pc-xp"><i style="width:${Math.max(4, Math.min(100, (S.xp - lo) / (hi - lo) * 100))}%"></i></span></button>
-        <span class="pc-fire${sk.done ? ' on' : ''}" title="${sk.risk ? '今天還沒練，練一題就能保住連勝' : '連續學習天數'}">🔥${sk.days}</span>
-        <button class="icon-btn" id="setBtn" type="button" title="設定">⚙️</button>`;
-      document.getElementById('lvBtn').onclick = () => modal(`<h2>Lv.${lv} ${esc(TITLES[lv - 1] || '')}</h2><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
-      document.getElementById('setBtn').onclick = () => window.Travel && Travel.openSettings();
+      pc.innerHTML = `<button class="pc-lv" id="lvBtn" type="button" title="${S.xp} XP・連續 ${sk.days} 天"><span class="pc-st${sk.done ? ' on' : ''}">🔥${sk.days}</span><b>Lv.${lv}</b><span class="pc-xp"><i style="width:${Math.max(4, Math.min(100, (S.xp - lo) / (hi - lo) * 100))}%"></i></span></button>
+        <button class="icon-btn" id="setBtn" type="button" title="設定" aria-label="設定">⚙️</button>`;
+      document.getElementById('lvBtn').onclick = () => modal(`<h2>冒險者 Lv.${lv} ${esc(TITLES[lv - 1] || '')}</h2><p class="muted">程度：${esc(LV_NAMES[S.profile.lv])}（在 ⚙️ 設定可改）</p><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
+      document.getElementById('setBtn').onclick = () => go('settings');
       const sv = pc.querySelector('.sv'); if (sv) { sv.title += '（點我備份）'; sv.onclick = () => window.PracticeAPI && PracticeAPI.backup(); }
       const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
       let bk = document.getElementById('backBtn');
@@ -358,13 +400,44 @@
       bk.style.visibility = cur0 === 'home' ? 'hidden' : 'visible';
     }
   }
-  function start() { started = true; CUR = { name: 'home', params: {} }; initHistory(); onChange(renderNav); render(); cloudInit(); idbRestore(); }
+  /* ---------------- 外觀：主題色、淺深色、字級 ---------------- */
+  function applyTheme() {
+    const u = S.ui || {}, h = document.documentElement;
+    if (u.theme === 'light' || u.theme === 'dark') h.dataset.theme = u.theme; else delete h.dataset.theme;
+    h.dataset.palette = u.palette || 'coral';
+    if (u.fs && u.fs !== 'm') h.dataset.fs = u.fs; else delete h.dataset.fs;
+    LS.set(UI_KEY, JSON.stringify({ theme: u.theme, palette: u.palette, fs: u.fs }));
+    const m = document.querySelector('meta[name=theme-color]');
+    if (m) try { m.content = getComputedStyle(h).getPropertyValue('--bg').trim() || m.content; } catch (e) { }
+  }
+  function setTheme(theme, palette, fs) {
+    const u = S.ui;
+    if (theme && ['system', 'light', 'dark'].includes(theme)) u.theme = theme;
+    if (palette && PALETTES.includes(palette)) u.palette = palette;
+    if (fs && ['m', 'l', 'xl'].includes(fs)) u.fs = fs;
+    save(); applyTheme();
+    document.dispatchEvent(new CustomEvent('themechange', { detail: Object.assign({}, u) }));
+  }
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (S.ui.theme === 'system') { applyTheme(); document.dispatchEvent(new CustomEvent('themechange', { detail: Object.assign({}, S.ui) })); } }); } catch (e) { }
+  /* ---------------- 單一程度 ---------------- */
+  function profile() { const p = normProfile(S.profile || (S.profile = {})); return { lv: p.lv, goals: p.goals.slice(), assist: p.assist, placed: !!p.placed }; }
+  function setProfile(patch) {
+    patch = patch || {};
+    const p = S.profile || (S.profile = {}), was = p.lv;
+    Object.assign(p, patch);
+    if (patch.lv && !patch.assist && patch.lv !== was) p.assist = ASSIST_DEF[patch.lv] || p.assist;
+    if (patch.lv) p.placed = true;
+    normProfile(p); syncOld(S); save();
+    document.dispatchEvent(new CustomEvent('profilechange', { detail: profile() }));
+    return profile();
+  }
+  function start() { started = true; applyTheme(); CUR = { name: 'home', params: {} }; initHistory(); onChange(renderNav); render(); cloudInit(); idbRestore(); }
   // localStorage 沒資料（被清除、私密模式切換）但 IndexedDB 有較新的存檔 → 還原
   function idbRestore() {
     IDB.get('save').then(v => {
       if (!v) { if (S._t) IDB.set('save', JSON.stringify(S)); return; }
       let o; try { o = migrate(JSON.parse(v)); } catch (e) { return; }
-      if ((o._t || 0) > (S._t || 0) && (o.xp || (o.tracked || []).length)) { S = o; LS.set(KEY, JSON.stringify(S)); render(); toast('💾 已從備援存檔還原進度', 'ok'); }
+      if ((o._t || 0) > (S._t || 0) && (o.xp || (o.tracked || []).length)) { S = o; LS.set(KEY, JSON.stringify(S)); applyTheme(); render(); toast('💾 已從備援存檔還原進度', 'ok'); }
     });
   }
   // 延遲載入：先登記路由外殼，第一次進入時才依序載入 scripts，載完自動重畫
@@ -400,7 +473,7 @@
       const ex = this.get(item.id);
       if (ex) { if (ex.mastered) { ex.mastered = false; ex.streak = 0; save(); } return false; }
       S.tracked.unshift(Object.assign({ source: '其他' }, item, { added: Date.now(), right: 0, wrong: 0, streak: 0, mastered: false, due: 0 }));
-      if (!S.trackHelp) { S.trackHelp = 1; setTimeout(() => toast('📌 答錯或不熟的字會收進「不會清單」，回首頁按「📌 今日複習」就能複習', 'ok'), 1500); }
+      if (!S.trackHelp) { S.trackHelp = 1; setTimeout(() => toast('📌 答錯或不熟的字會收進「不會清單」，按底部「複習」就能複習', 'ok'), 1500); }
       save();
       if (!silent) toast(`📌 已加入不會清單：${esc(item.jp)}`);
       return true;
@@ -541,10 +614,11 @@
     speak: speakJP, voiceOK, voiceHTML, layer, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
     back,
-    resetAll() { LS.del(KEY); IDB.del('save'); S = fresh(); save(); if (CL.ref) cloudPush(); go('home'); },
+    resetAll() { LS.del(KEY); IDB.del('save'); S = migrate({}); save(); if (CL.ref) cloudPush(); go('home'); },
     get saveStatus() { return CL.status; },
     noteClear,
-    loadState(o) { S = migrate(JSON.parse(JSON.stringify(o))); save(); if (CL.ref) cloudPush(); render(); },
+    loadState(o) { S = migrate(JSON.parse(JSON.stringify(o))); save(); if (CL.ref) cloudPush(); applyTheme(); render(); },
+    profile, setProfile, setTheme, applyTheme, LV_IDS, LV_NAMES, LV_DESC, PALETTES,
     trackBtn, streakInfo, today: dayKey, backup, lazy, loadScript, idb: IDB,
     addUnlock(fn) { unlockFns.push(fn); },
     store: LS
