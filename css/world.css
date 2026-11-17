@@ -5,6 +5,11 @@
   --wd-road:color-mix(in srgb,var(--line2) 80%,var(--bg));--wd-walk:var(--sc-ground);--wd-green:var(--sc-grass);--wd-water:var(--sc-water);--wd-bld:color-mix(in srgb,var(--sc-bld) 60%,var(--line));
   --wd-shelf:color-mix(in srgb,var(--gold) 28%,var(--card));--wd-cnt:var(--pri-t);--wd-seat:var(--acc-t);--wd-fac:color-mix(in srgb,var(--n4) 22%,var(--card));
   --wd-sign:color-mix(in srgb,var(--sg-y) 35%,var(--card));--wd-mach:color-mix(in srgb,var(--n2) 22%,var(--card));--wd-sea:var(--sc-water2);--wd-land:var(--sc-grass);
+  /* 店內插畫的大面積底色（world.js 的 SVG 用 var() 引用）：跟著淺深色，深色時不會是大片亮白 */
+  --wd-art-wall:color-mix(in srgb,var(--sc-sky) 45%,var(--card));--wd-art-warm:color-mix(in srgb,var(--sc-road) 55%,var(--card));
+  --wd-art-floor:color-mix(in srgb,var(--sc-road) 60%,var(--line2));--wd-art-line:color-mix(in srgb,var(--text) 14%,var(--wd-art-floor));
+  --wd-art-paper:color-mix(in srgb,var(--sc-bld-hi) 35%,var(--card));--wd-art-tatami:color-mix(in srgb,var(--sc-tree) 55%,var(--sc-road));
+  --wd-art-sky1:var(--sc-water2);--wd-art-sky2:var(--sc-sky);
 }
 .result-note{font-weight:700;margin:.4em 0}
 
@@ -30,7 +35,7 @@
 .jp-map .land{fill:var(--wd-land);stroke:var(--acc-d);stroke-width:.4}
 .jp-map .rail{fill:none;stroke:var(--pri);stroke-width:.7;stroke-dasharray:1.6 1.4;opacity:.7}
 .jp-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:0;border:2px solid var(--pri);border-radius:16px;background:var(--card);color:var(--text);font:inherit;min-width:64px;min-height:64px;padding:4px 8px;cursor:pointer;box-shadow:var(--shadow2);line-height:1.2}
-.jp-node span{font-size:1.5em}.jp-node b{font-size:.9em}.jp-node small{font-size:.72em;color:var(--muted)}
+.jp-node span{font-size:1.5em}.jp-node b{font-size:.9em;white-space:nowrap}.jp-node small{font-size:max(13px,.72em);color:var(--muted);white-space:nowrap}
 .jp-node.lock{border-color:var(--line2);opacity:.75;box-shadow:none}
 .jp-node.here{background:var(--pri);color:var(--on-pri)}.jp-node.here small{color:var(--on-pri)}
 .jp-node.here::after{content:'📍';position:absolute;top:-14px;right:-8px;font-size:1.1em}
@@ -99,7 +104,7 @@
 .wd-tx b{font-size:1.05em}
 .wd-k,.wd-z,.wd-it i,.wd-tile i,.wd-qn i{font-style:normal;font-size:13px;color:var(--muted)}
 .wd-z{color:var(--acc-d)}
-.wd-peek{border:none;background:var(--chip);color:var(--muted);border-radius:999px;font:inherit;font-size:12px;padding:2px 8px;margin-top:2px;cursor:pointer;min-height:28px}
+.wd-peek{border:none;background:var(--chip);color:var(--muted);border-radius:999px;font:inherit;font-size:13px;padding:2px 10px;margin-top:2px;cursor:pointer;min-height:44px}
 .wd-spk{flex:none;width:44px;height:44px;border:none;border-radius:50%;background:var(--chip);font-size:1.1em;cursor:pointer}
 .wd-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center;margin-top:12px}
 .wd-acts .btn{margin:0;min-height:44px}
@@ -108,7 +113,7 @@
 .wd-npc,.wd-msg{display:flex;align-items:flex-start;gap:8px;margin:0 36px 8px 0}
 .wd-face{flex:none;width:48px;height:48px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:1.7em}
 .wd-bub{position:relative;flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--chip);border-radius:4px 16px 16px 16px;padding:8px 10px}
-.wd-bub small{flex-basis:100%;font-size:12px;color:var(--muted);line-height:1}
+.wd-bub small{flex-basis:100%;font-size:13px;color:var(--muted);line-height:1}
 .wd-bub .wd-tx{flex:1}
 .wd-goal{margin:8px 0;font-size:.95em}
 .wd-need{margin:6px 0;background:var(--acc-t);color:var(--acc-d);border-radius:10px;padding:6px 10px;font-size:.9em}
@@ -132,7 +137,7 @@
 
 /* 組句 */
 .wd-model{background:var(--acc-t);border-radius:12px;padding:6px 10px;margin:6px 0}
-.wd-model small{display:block;font-size:12px;color:var(--acc-d)}
+.wd-model small{display:block;font-size:13px;color:var(--acc-d)}
 .wd-line{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:60px;border:2px dashed var(--line2);border-radius:14px;padding:6px;margin:8px 0}
 .wd-bank{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .wd-ph{color:var(--muted);font-size:.9em;margin:auto}
@@ -152,7 +157,7 @@
 .wd-it .e{font-size:1.6em}.wd-it b{font-size:.9em}.wd-it .z{color:var(--acc-d)}
 .wd-it .p,.wd-br .p{font-size:13px;font-weight:800;color:var(--pri)}
 .wd-it.on{border-color:var(--pri);background:var(--pri-t)}
-.wd-it em{position:absolute;top:-6px;right:-4px;background:var(--pri);color:var(--on-pri);border-radius:999px;font-style:normal;font-size:12px;font-weight:800;padding:0 6px}
+.wd-it em{position:absolute;top:-6px;right:-4px;background:var(--pri);color:var(--on-pri);border-radius:999px;font-style:normal;font-size:13px;font-weight:800;padding:0 6px}
 .wd-it em[hidden]{display:none}
 .wd-sel{position:sticky;bottom:-14px;margin:8px -14px -14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line2);box-shadow:0 -4px 12px rgba(0,0,0,.08)}
 .wd-sel[hidden]{display:none}
@@ -178,7 +183,7 @@
 .wd-main{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:8px 0}
 .wd-mb,.wd-ints button{display:flex;flex-direction:column;align-items:center;gap:1px;border:none;border-radius:14px;background:var(--pri-t);color:var(--text);font:inherit;min-height:64px;padding:8px 6px;cursor:pointer;text-align:center;line-height:1.25}
 .wd-mb>span,.wd-ints button>span{font-size:1.4em}
-.wd-mb small,.wd-ints small{font-size:12px;color:var(--muted)}
+.wd-mb small,.wd-ints small{font-size:13px;color:var(--muted)}
 .wd-mb.quest{background:var(--gold);color:var(--on-gold)}.wd-mb.quest small{color:var(--on-gold);opacity:.8}
 .wd-ints{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
 .wd-ints button{background:var(--chip)}
@@ -279,7 +284,7 @@
 .wd-styles{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
 .wd-styles[hidden]{display:none}
 .wd-styles small{color:var(--muted)}
-.wd-styles button{border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--text);font:inherit;font-size:.85em;min-height:40px;padding:0 12px;cursor:pointer}
+.wd-styles button{border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--text);font:inherit;font-size:max(13px,.85em);min-height:44px;padding:0 14px;cursor:pointer}
 .wd-styles button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
 .wd-shown[hidden],.wd-hid[hidden]{display:none}
 /* 句卡 */
@@ -303,3 +308,62 @@
   .wd-bg{height:clamp(110px,22vh,170px)}
   .wd-clerk{bottom:56px}
 }
+
+/* ===== v4 修正（冒險世界組） ===== */
+/* 日本地圖：琉球插圖框、引線、地名點 */
+.jp-map .inset{fill:color-mix(in srgb,var(--wd-sea) 70%,var(--card));stroke:var(--line2);stroke-width:.4;stroke-dasharray:1.2 .8}
+.jp-map .lead{stroke:var(--pri);stroke-width:.4;opacity:.75}
+.jp-map .pin{fill:var(--pri);stroke:var(--card);stroke-width:.4}
+.jp-node .no{font-style:normal;font-size:13px;color:var(--muted);line-height:1}
+/* 店員表情：預設微笑；開心時瞇眼張嘴；疑惑時嘴型改變（不再是怒眉） */
+.wd-pt .ck-e1,.wd-pt .ck-m1,.wd-pt .ck-m2{display:none}
+.mood-happy .wd-pt .ck-e0,.mood-happy .wd-pt .ck-m0{display:none}
+.mood-happy .wd-pt .ck-e1,.mood-happy .wd-pt .ck-m1{display:inline}
+.mood-puzzled .wd-pt .ck-m0{display:none}.mood-puzzled .wd-pt .ck-m2{display:inline}
+/* 深色：插畫降亮度 */
+:root[data-theme=dark] .wd-bg{filter:brightness(.8) saturate(.85)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .wd-bg{filter:brightness(.8) saturate(.85)}}
+/* 零基礎：羅馬字、詞塊中文 */
+.wd-r,.wd-tile i.wd-r{overflow-wrap:anywhere;font-style:normal;font-size:13px;color:var(--muted);letter-spacing:.02em}
+.wd-tile i.wd-tz{font-style:normal;font-size:13px;color:var(--acc-d)}
+.wd-quick i{display:block;font-style:normal;font-size:13px;color:var(--muted)}
+/* 日文不要斷在字中間 */
+.wd-pick .jp,.wd-items3 .jp,.wd-legend .jp,.wd-it .jp,.wd-tile .jp,.wd-card b,.wd-quick b{word-break:keep-all;line-break:strict;overflow-wrap:anywhere}
+.wd-pick[hidden]{display:none}
+.wd-more{justify-content:center}
+/* 店內：面板展開時插畫縮到約 90px */
+.wd-shop.compact .wd-bg{height:90px}
+.wd-shop.compact .wd-clerk{display:none}
+.wd-shop.compact .wd-spots{padding:4px 8px}
+/* 組句時收起底部導覽與頂列 Lv（只在窄螢幕） */
+@media (max-width:480px){
+  body.wd-focus:has(#main.route-play) #nav,body.wd-focus:has(#main.route-play) #playerChip{display:none}
+}
+/* 店內首頁：今日推薦店、離開 */
+.wd-day{font-size:13px;font-weight:700;color:var(--acc-d);background:var(--acc-t);border-radius:999px;padding:1px 8px;margin-left:4px}
+.wd-nextshop{display:flex;align-items:center;gap:10px;width:100%;border:none;border-radius:14px;background:var(--pri-t);color:var(--text);font:inherit;min-height:52px;padding:6px 12px;margin-top:8px;cursor:pointer;text-align:left}
+.wd-nextshop>span:first-child{color:var(--pri);font-weight:900}
+.wd-nextshop small{display:block;font-size:13px;color:var(--muted)}
+.wd-leave{justify-content:center}
+/* 御朱印帳：還沒蓋的店是灰色剪影 */
+.gs-ghost span{filter:grayscale(1) brightness(.6);opacity:.4}
+.gs-ghost small{color:var(--muted)}
+/* 全螢幕蓋印 */
+.modal-bg.wd-seal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
+.wd-seal-in{width:100%;max-width:360px;background:var(--card);color:var(--text);border-radius:24px;padding:22px 18px 18px;text-align:center;box-shadow:var(--shadow2);animation:wd-pop .25s ease-out}
+.wd-seal-in h2{margin:8px 0 4px}.wd-seal-in p{margin:.35em 0}
+.wd-seal-st{width:168px;height:168px;margin:0 auto 6px;border-radius:50%;border:6px double var(--err);background:var(--err-t);color:var(--err);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:rotate(-8deg);animation:wd-stamp .75s cubic-bezier(.2,1.5,.4,1) .1s both}
+.wd-seal-st .ic{font-size:2.4em;line-height:1}
+.wd-seal-st b{font-size:1.15em;writing-mode:horizontal-tb;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wd-seal-st i{font-style:normal;font-weight:900;letter-spacing:.3em}
+.wd-seal-st small{font-size:13px}
+.wd-seal-av{font-size:1.6em;vertical-align:middle}
+.wd-seal-xp{font-weight:900;color:var(--pri)}
+.wd-seal-b{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.wd-seal-b .btn{margin:0;min-height:48px;width:100%}
+@keyframes wd-stamp{0%{transform:scale(2.6) rotate(-30deg);opacity:0}55%{transform:scale(.9) rotate(-6deg);opacity:1}75%{transform:scale(1.04) rotate(-9deg)}100%{transform:scale(1) rotate(-8deg)}}
+@keyframes wd-pop{from{transform:scale(.9);opacity:0}}
+@media (prefers-reduced-motion: reduce){.wd-seal-st,.wd-seal-in{animation:none}}
+.tg-grid.gs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.gs-grid .tg-cell{width:auto;min-width:0;height:auto;aspect-ratio:1;font-size:13px}
+.gs-grid .tg-cell small{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

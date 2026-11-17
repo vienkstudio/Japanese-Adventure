@@ -23,7 +23,12 @@
   const kanaLearned = () => (((App.state.kanaL || {}).h) || []).length;
   const KANA_N = window.KANA ? KANA.length : 46;
   const goKana = () => App.go('trip', { kana: 1 });
-  const readDone = () => safe(() => (window.Reader && has(Reader, 'todayDone') ? !!Reader.todayDone() : false), false);
+  // 今日短文：不依賴延遲載入的 reader.js——直接讀存檔（讀完每日短文時 reader 寫入 read.lastDay）；READING 已載入時再比對今天的篇目
+  function readDone() {
+    const r = App.state.read || {}, today = App.today();
+    if (r.lastDay === today) return true;
+    return safe(() => { if (!window.READING || !has(READING, 'pick')) return false; const t = READING.pick(App.profile().lv, today); return !!(t && r.done && r.done[t.id]); }, false);
+  }
 
   /* ---------- 首頁 ---------- */
   function render(el) {
@@ -31,17 +36,24 @@
     if (!p.placed) return onboard(el);
     const due = Tracker.dueCount(), total = Tracker.count(), sk = App.streakInfo();
     const d = window.Game && has(Game, 'daily') ? safe(() => Game.daily(), null) : null;
-    const nx = worldNext(), kl = kanaLearned();
+    const nx = Object.assign({}, worldNext()), kl = kanaLearned();
+    if (!nx.sub && /^繼續冒險/.test(nx.label || '')) nx.sub = '從上次的位置繼續';   // 副標不和主按鈕標題重複
     const kanaFirst = p.lv === 'zero' && kl < KANA_N;
     const main = kanaFirst
       ? { ic: '🔰', b: kl ? '繼續學五十音' : '從五十音開始', s: `平假名 ${kl}／${KANA_N}・每次 5 個字，先教再考`, go: goKana }
-      : { ic: '▶', b: '繼續冒險', s: nx.label, go: () => App.go(nx.route, nx.params) };
+      : { ic: '▶', b: '繼續冒險', s: nx.sub || nx.label, go: () => App.go(nx.route, nx.params) };
+    // 今天練過任何題目（答對、複習、店內完成、其他過關）
+    const practiced = !!(d && ((d.ok || 0) + (d.review || 0) + (d.quests || 0) + (d.clear || 0) > 0));
+    const kanaToday = App.state.kanaDay === App.today();
+    const rd = readDone();
     const tasks = [
-      { id: 'rev', n: 1, done: !due && !!total, b: due ? `複習 ${due} 個字` : '今日複習', s: due ? '答錯或不熟的字，到期了' : total ? '今天的都複習完了 👍' : '答錯的字會自動收進來', go: () => App.go('review') },
-      { id: 'read', n: 2, done: readDone(), b: '今日短文', s: '一則簡單日文，附讀音與中文', go: () => App.go('read') },
+      total
+        ? { id: 'rev', n: 1, done: !due, b: due ? `複習 ${due} 個字` : '今日複習', s: due ? '答錯或不熟的字，到期了' : '今天的都複習完了 👍', go: () => App.go('review') }
+        : { id: 'rev', n: 1, done: practiced, b: '練習任一題', s: practiced ? '今天練過了 👍' : '今天答對任何一題就打勾', go: () => kanaFirst ? goKana() : App.go(nx.route, nx.params) },
+      { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read') },
       kanaFirst
-        ? { id: 'play', n: 3, done: false, b: '冒險一關', s: nx.label, go: () => App.go(nx.route, nx.params) }
-        : { id: 'play', n: 3, done: !!(d && d.quests), b: '冒險一關', s: '完成任一個委託就打勾', go: () => App.go(nx.route, nx.params) }
+        ? { id: 'kana', n: 3, done: kanaToday, b: '五十音一組', s: kanaToday ? '今天學過了 👍 想多學也可以' : `學 5 個新字＋小考（已學 ${kl}／${KANA_N}）`, go: goKana }
+        : { id: 'play', n: 3, done: !!(d && d.quests), b: '在任一間店完成 1 件事', s: nx.sub || nx.label, go: () => App.go(nx.route, nx.params) }
     ];
     const doneN = tasks.filter(t => t.done).length;
     el.innerHTML = `<section class="hm">
@@ -82,6 +94,8 @@
   ];
   const FAIL_AT = ['zero', 'n5', 'n4'];   // 第 i 題答錯 → 程度
   function onboard(el, retake) {
+    // 首次選程度：隱藏底部導覽與頂列按鈕，必須先選（core.render 換頁時自動解除）
+    if (!App.profile().placed) document.body.classList.add('ob-mode');
     el.innerHTML = `<section class="ob">
       <h1>${retake ? '重新選程度' : 'ようこそ！歡迎 👋'}</h1>
       <p class="lead">你的日文大概到哪裡？選一個最接近的（之後隨時能在 ⚙️ 設定改，進度不會歸零）</p>

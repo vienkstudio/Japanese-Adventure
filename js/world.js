@@ -36,6 +36,11 @@
   }
   const lv = () => prof().lv, li = () => LVS.indexOf(lv()), assist = () => prof().assist;
   const showKana = () => assist() !== 'none', showZh = () => assist() === 'full';
+  // 零基礎：日文一律附讀音＋羅馬字＋中文
+  const zero = () => lv() === 'zero' || assist() === 'full';
+  const roma = k => (window.Phrase && Phrase.romaji ? Phrase.romaji(k) : '');
+  const KANA_ONLY = /^[぀-ヿー、。？！!?・\s〜]+$/;
+  const romaOf = o => { const src = o && (o.kana && KANA_ONLY.test(o.kana) ? o.kana : KANA_ONLY.test(o.jp || '') ? o.jp : ''); return src ? roma(src) : ''; };
   document.addEventListener('profilechange', () => { if (STAGE && STAGE.isConnected && !pending) App.render(); });
 
   /* ---------------- 載入 ---------------- */
@@ -55,6 +60,7 @@
     let h = `<b class="jp" lang="ja">${esc(o.jp)}</b>`;
     const sk = full || showKana(), sz = full || showZh();
     if (k && sk) h += `<i class="wd-k" lang="ja">${esc(o.kana)}</i>`;
+    if (zero()) { const r = romaOf(o); if (r) h += `<i class="wd-r">${esc(r)}</i>`; }
     if (o.zh && sz) h += `<i class="wd-z">${esc(o.zh)}</i>`;
     if ((k && !sk) || (o.zh && !sz)) h += `<button type="button" class="wd-peek" data-k="${k && !sk ? esc(o.kana) : ''}" data-z="${!sz ? esc(o.zh || '') : ''}">💡 提示</button>`;
     return `<span class="wd-tx">${h}</span>`;
@@ -85,11 +91,16 @@
   const SCENE_BG = { konbini: 'konbini', ramen: 'izakaya', cafe: 'restaurant', drugstore: 'shop', izakaya: 'izakaya', clothes: 'shop', directions: 'office', station: 'station', hotel: 'hotel', shrine: 'shrine', airport: 'airport', emergency: 'office', yakiniku: 'izakaya' };
   const bgOf = s => SHOP_BG[s.id] || SCENE_BG[s.scene] || (s.kind === 'eat' ? 'restaurant' : s.kind === 'service' ? 'office' : 'shop');
   const PROD = ['#e95a4f', '#f2b33d', '#4caf50', '#3d8bd9', '#f07fb0', '#8e6bd9', '#ffd84a', '#ff8a3d'];
-  const rect = (x, y, w, h, f, more) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"${more ? ' ' + more : ''}/>`;
+  // 大面積的牆、地板用 token（--wd-art-*，見 world.css），跟著深淺色切換；小物件維持插畫固定色
+  const T = { wall: 'var(--wd-art-wall)', warm: 'var(--wd-art-warm)', floor: 'var(--wd-art-floor)', line: 'var(--wd-art-line)', paper: 'var(--wd-art-paper)', sky: 'var(--sc-sky)', sky2: 'var(--sc-water2)' };
+  const fillA = f => /^var\(/.test(f) ? `style="fill:${f}"` : `fill="${f}"`;
+  const strokeA = f => /^var\(/.test(f) ? `style="stroke:${f}"` : `stroke="${f}"`;
+  const rect = (x, y, w, h, f, more) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${fillA(f)}${more ? ' ' + more : ''}/>`;
   function floorP(y0, base, line, rows) {   // 透視地板
+    base = T.floor; line = T.line;
     let s = rect(0, y0, 600, 240 - y0, base);
-    for (let i = 0; i < 15; i++) { const xb = -400 + i * 100, xt = 300 + (xb - 300) * 0.42; s += `<path d="M${xt} ${y0}L${xb} 240" stroke="${line}" stroke-width="1.2"/>`; }
-    (rows || [0.14, 0.34, 0.6, 0.9]).forEach(f => { s += `<path d="M0 ${y0 + (240 - y0) * f}H600" stroke="${line}" stroke-width="1"/>`; });
+    for (let i = 0; i < 15; i++) { const xb = -400 + i * 100, xt = 300 + (xb - 300) * 0.42; s += `<path d="M${xt} ${y0}L${xb} 240" ${strokeA(line)} stroke-width="1.2"/>`; }
+    (rows || [0.14, 0.34, 0.6, 0.9]).forEach(f => { s += `<path d="M0 ${y0 + (240 - y0) * f}H600" ${strokeA(line)} stroke-width="1"/>`; });
     return s;
   }
   function goods(x0, y, w, n, seed, h) {   // 一排商品
@@ -97,20 +108,20 @@
     for (let i = 0; i < n; i++) { const c = PROD[(i * 3 + seed) % PROD.length], hh = (h || 20) - ((i + seed) % 3) * 3; s += rect(x0 + i * w, y - hh, w - 4, hh, c, 'rx="2"'); }
     return s;
   }
-  const sky = id => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd3f2"/><stop offset="1" stop-color="#eaf6ff"/></linearGradient></defs>`;
+  const sky = id => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--wd-art-sky1)"/><stop offset="1" style="stop-color:var(--wd-art-sky2)"/></linearGradient></defs>`;
   const lantern = (x, y) => `<g>${rect(x - 3, y - 36, 6, 8, '#2b2b2b')}<ellipse cx="${x}" cy="${y}" rx="22" ry="28" fill="#d9473c"/><path d="M${x - 21} ${y - 8}H${x + 21}M${x - 21} ${y + 8}H${x + 21}" stroke="#a83228" stroke-width="2"/>${rect(x - 12, y - 30, 24, 5, '#2b2b2b')}${rect(x - 12, y + 25, 24, 5, '#2b2b2b')}${rect(x - 4, y - 10, 8, 20, '#2b2b2b', 'opacity=".55"')}</g>`;
   const ART = {
     konbini() {
-      let s = rect(0, 0, 600, 170, '#f5f7f9') + rect(0, 0, 600, 14, '#2a6fd0') + rect(0, 14, 600, 6, '#33a852');
+      let s = rect(0, 0, 600, 170, T.wall) + rect(0, 0, 600, 14, '#2a6fd0') + rect(0, 14, 600, 6, '#33a852');
       for (let x = 70; x < 560; x += 110) s += rect(x, 28, 70, 5, '#fffbe6', 'stroke="#d9dde2"');
-      s += rect(40, 52, 320, 118, '#dfe3e8', 'rx="4"');
+      s += rect(40, 52, 320, 118, T.line, 'rx="4"');
       [86, 122, 158].forEach((y, r) => { s += rect(44, y, 312, 4, '#b8c0c8') + goods(50, y, 20, 15, r * 2, 26); });
       s += rect(380, 40, 190, 130, '#c9d3dc', 'rx="4"');
       for (let i = 0; i < 3; i++) { const x = 386 + i * 61; s += rect(x, 46, 56, 118, '#d9eef9', 'stroke="#9fb0bd"'); [80, 115, 150].forEach((y, r) => { s += goods(x + 4, y, 10, 5, i + r, 24); }); s += rect(x + 48, 90, 3, 30, '#7f8c97'); }
       return s + floorP(170, '#e9ecef', '#d3d8dd');
     },
     restaurant() {
-      let s = rect(0, 0, 600, 170, '#f2e3c9') + rect(0, 118, 600, 52, '#a8723f');
+      let s = rect(0, 0, 600, 170, T.warm) + rect(0, 118, 600, 52, '#a8723f');
       for (let x = 0; x < 600; x += 24) s += `<path d="M${x} 118V170" stroke="#8d5c30" stroke-width="2"/>`;
       [120, 250, 380].forEach(x => { s += rect(x, 40, 100, 58, '#3d2e22', 'rx="4"'); for (let i = 0; i < 4; i++) s += rect(x + 10, 52 + i * 11, 60 + (i * 7) % 20, 4, '#f4ead2', 'rx="2"'); });
       [80, 300, 520].forEach(x => { s += `<path d="M${x} 0V24" stroke="#555" stroke-width="2"/><path d="M${x - 20} 38 Q${x} 14 ${x + 20} 38Z" fill="#e4b34a"/>`; });
@@ -127,7 +138,7 @@
       return s + rect(0, 168, 600, 72, '#8b5a2b') + rect(0, 164, 600, 10, '#b07a42');
     },
     station() {
-      let s = rect(0, 0, 600, 175, '#e7ebee');
+      let s = rect(0, 0, 600, 175, T.wall);
       for (let x = 0; x < 600; x += 30) s += `<path d="M${x} 0V175" stroke="#d6dce1"/>`;
       for (let y = 30; y < 175; y += 30) s += `<path d="M0 ${y}H600" stroke="#d6dce1"/>`;
       s += rect(170, 22, 260, 62, '#1d1f24', 'rx="4"');
@@ -138,7 +149,7 @@
       return s + rect(0, 206, 600, 8, '#f2c200');
     },
     airport() {
-      let s = sky('wd-sky') + rect(0, 0, 600, 165, '#e9eef2') + rect(0, 16, 600, 112, 'url(#wd-sky)');
+      let s = sky('wd-sky') + rect(0, 0, 600, 165, T.wall) + rect(0, 16, 600, 112, 'url(#wd-sky)');
       s += `<path d="M330 84 L470 70 L486 60 L494 62 L486 74 L520 72 L524 78 L486 82 L470 98 L460 98 L466 84 L360 92Z" fill="#fff" opacity=".95"/>`;
       for (let x = 0; x <= 600; x += 75) s += rect(x - 3, 16, 6, 112, '#9fb0bd');
       s += rect(0, 10, 600, 8, '#9fb0bd') + rect(0, 126, 600, 6, '#9fb0bd');
@@ -146,7 +157,7 @@
       return s + rect(180, 140, 240, 46, '#6e8ca6', 'rx="4"') + rect(176, 134, 248, 10, '#a9c0d3', 'rx="3"') + rect(270, 150, 60, 12, '#fff', 'rx="2" opacity=".85"');
     },
     hotel() {
-      let s = rect(0, 0, 600, 168, '#efe4d2');
+      let s = rect(0, 0, 600, 168, T.warm);
       for (let x = 30; x < 600; x += 60) s += `<path d="M${x} 0V168" stroke="#e0d1b8" stroke-width="2"/>`;
       s += `<path d="M300 0V20" stroke="#b08d3a" stroke-width="2"/><ellipse cx="300" cy="30" rx="34" ry="10" fill="#f6d36b"/>`;
       [270, 290, 310, 330].forEach(x => { s += `<circle cx="${x}" cy="42" r="4" fill="#ffe9a8"/>`; });
@@ -156,31 +167,31 @@
     },
     ryokan() {
       let s = rect(0, 0, 600, 175, '#a77b4f');
-      for (let x = 10; x < 600; x += 120) { s += rect(x, 18, 110, 150, '#fbf7ec'); for (let i = 1; i < 3; i++) s += `<path d="M${x + i * 36.7} 18V168" stroke="#a77b4f" stroke-width="2"/>`; for (let y = 48; y < 168; y += 30) s += `<path d="M${x} ${y}H${x + 110}" stroke="#a77b4f" stroke-width="2"/>`; }
+      for (let x = 10; x < 600; x += 120) { s += rect(x, 18, 110, 150, T.paper); for (let i = 1; i < 3; i++) s += `<path d="M${x + i * 36.7} 18V168" stroke="#a77b4f" stroke-width="2"/>`; for (let y = 48; y < 168; y += 30) s += `<path d="M${x} ${y}H${x + 110}" stroke="#a77b4f" stroke-width="2"/>`; }
       s += rect(0, 0, 600, 16, '#7a5230') + rect(430, 30, 46, 110, '#f4ead2') + `<path d="M446 50V110M458 60V100" stroke="#333" stroke-width="3"/>` + rect(428, 26, 50, 6, '#5a3c22') + rect(428, 138, 50, 6, '#5a3c22');
-      s += rect(0, 175, 600, 65, '#d6cd8a');
+      s += rect(0, 175, 600, 65, 'var(--wd-art-tatami)');
       [0, 150, 300, 450].forEach(x => { s += rect(x, 175, 150, 65, 'none', 'stroke="#6b7d3b" stroke-width="3"'); });
       return s;
     },
     shrine() {
       let s = sky('wd-sky2') + rect(0, 0, 600, 240, 'url(#wd-sky2)');
       s += `<path d="M0 150 Q80 110 160 140 Q240 100 320 135 Q420 96 520 132 Q570 120 600 128V240H0Z" fill="#6aa86b"/>`;
-      s += `<path d="M260 240 L285 172 H315 L340 240Z" fill="#cfc8bb"/>` + rect(0, 172, 600, 68, '#b9b29f', 'opacity=".55"');
+      s += `<path d="M260 240 L285 172 H315 L340 240Z" fill="#cfc8bb"/>` + rect(0, 172, 600, 68, T.floor, 'opacity=".55"');
       s += rect(214, 46, 14, 140, '#d23a2c') + rect(372, 46, 14, 140, '#d23a2c') + rect(200, 66, 200, 10, '#d23a2c');
       s += `<path d="M184 40 Q300 26 416 40 L412 50 Q300 38 188 50Z" fill="#2b2b2b"/>` + rect(292, 50, 16, 18, '#2b2b2b');
       [110, 490].forEach(x => { s += rect(x - 6, 150, 12, 36, '#a9a59c') + rect(x - 16, 136, 32, 16, '#bdb9b0', 'rx="3"') + rect(x - 20, 128, 40, 8, '#97938a', 'rx="2"') + rect(x - 14, 186, 28, 6, '#97938a'); });
       return s;
     },
     shop() {
-      let s = rect(0, 0, 600, 170, '#fbf6f8') + rect(0, 0, 600, 12, '#f28fb0');
+      let s = rect(0, 0, 600, 170, T.wall) + rect(0, 0, 600, 12, '#f28fb0');
       [100, 300, 500].forEach(x => { s += `<circle cx="${x}" cy="22" r="6" fill="#fff3c4" stroke="#e8d9a0"/>`; });
-      [[30, 2], [420, 5]].forEach(([x, sd]) => { s += rect(x, 40, 150, 130, '#fff', 'stroke="#e5d9e0" stroke-width="2" rx="4"'); [78, 114, 150].forEach((y, r) => { s += rect(x + 4, y, 142, 3, '#e5d9e0') + goods(x + 10, y, 18, 7, sd + r, 22); }); });
+      [[30, 2], [420, 5]].forEach(([x, sd]) => { s += rect(x, 40, 150, 130, T.paper, 'stroke="#e5d9e0" stroke-width="2" rx="4"'); [78, 114, 150].forEach((y, r) => { s += rect(x + 4, y, 142, 3, '#e5d9e0') + goods(x + 10, y, 18, 7, sd + r, 22); }); });
       s += rect(240, 60, 120, 70, '#e7f3f6', 'stroke="#c9dde2" stroke-width="3" rx="6"');
       s += floorP(170, '#ead8c2', '#dcc6ab', [0.3, 0.75]);
       return s + rect(220, 150, 160, 40, '#e9dfe6', 'rx="6"') + goods(232, 150, 22, 6, 4, 14);
     },
     market() {
-      let s = rect(0, 0, 600, 240, '#e9e1d3') + rect(0, 0, 600, 28, '#9fb7c6');
+      let s = rect(0, 0, 600, 240, T.warm) + rect(0, 0, 600, 28, '#9fb7c6');
       for (let x = 0; x < 600; x += 50) s += `<path d="M${x} 28 Q${x + 25} 4 ${x + 50} 28" stroke="#7f98a8" fill="none" stroke-width="2"/>`;
       [[10, '#d9473c'], [205, '#2a6fd0'], [400, '#33a852']].forEach(([x, c], k) => {
         for (let i = 0; i < 6; i++) s += rect(x + i * 31.6, 52, 31.6, 26, i % 2 ? '#fff' : c);
@@ -191,7 +202,7 @@
       return s + floorP(180, '#cfc6b8', '#bfb5a5', [0.4]);
     },
     office() {
-      let s = rect(0, 0, 600, 168, '#e8eef3');
+      let s = rect(0, 0, 600, 168, T.wall);
       [[40, 30], [110, 40], [470, 32]].forEach(([x, y]) => { s += rect(x, y, 56, 72, '#fff', 'stroke="#c9d3dc" stroke-width="2"') + rect(x + 8, y + 10, 40, 22, '#9fc6e6') + rect(x + 8, y + 40, 34, 4, '#c9d3dc') + rect(x + 8, y + 50, 26, 4, '#c9d3dc'); });
       s += rect(250, 22, 100, 40, '#1d1f24', 'rx="4"') + rect(268, 34, 18, 16, '#ff5b4a') + rect(292, 34, 18, 16, '#ff5b4a') + rect(316, 34, 18, 16, '#ff5b4a');
       s += floorP(168, '#dcd8d0', '#cbc6bc');
@@ -201,7 +212,7 @@
       let s = sky('wd-sky3') + rect(0, 0, 600, 240, 'url(#wd-sky3)');
       s += rect(0, 60, 90, 120, '#c9d3dc') + rect(80, 40, 80, 140, '#b7c3cc') + rect(440, 50, 90, 130, '#b7c3cc') + rect(520, 76, 80, 104, '#c9d3dc');
       for (let y = 70; y < 170; y += 22) s += rect(16, y, 14, 10, '#eaf6ff') + rect(46, y, 14, 10, '#eaf6ff') + rect(456, y, 14, 10, '#eaf6ff') + rect(490, y, 14, 10, '#eaf6ff');
-      s += rect(0, 180, 600, 60, '#d8d2c6');
+      s += rect(0, 180, 600, 60, T.floor);
       s += rect(200, 70, 200, 116, '#f4efe6', 'rx="4"') + `<path d="M190 74 L300 36 L410 74Z" fill="#e4572e"/>` + rect(226, 100, 64, 44, '#bfe3f7', 'stroke="#8aa3b5" stroke-width="3"') + rect(310, 100, 64, 44, '#bfe3f7', 'stroke="#8aa3b5" stroke-width="3"');
       return s + `<path d="M170 60V186M430 60V186" stroke="#777" stroke-width="3"/><path d="M170 62L196 70L170 78Z" fill="#f6c400"/><path d="M430 62L456 70L430 78Z" fill="#33a852"/>`;
     }
@@ -218,7 +229,7 @@
   const HAIR = ['#2b2118', '#3b2a1e', '#1c1c1c', '#5a3d2b', '#7a7a7a'], SKIN = ['#f6d3b3', '#efc39d', '#f9dcc4'];
   const hash = s => [...String(s)].reduce((a, c) => (a * 31 + c.codePointAt(0)) >>> 0, 7);
   function clerkSVG(bg, seed, npc, face) {
-    const c = CLERK[bg] || CLERK.shop, h = hash(seed), hair = HAIR[h % HAIR.length], skin = SKIN[(h >> 3) % SKIN.length];
+    const c = CLERK[bg] || CLERK.shop, h = hash(seed), hair = HAIR[h % HAIR.length], skin = SKIN[(h >>> 3) % SKIN.length];
     const fem = /👩|💁|女|阿姨|仲居|巫女/.test((npc && (npc.emoji + npc.who)) || '') || (!/👨|🧓|👴|大將|師傅/.test((npc && (npc.emoji + npc.who)) || '') && h % 2 === 1);
     const old = /🧓|👴|🧑‍🦳|職人|大將/.test((npc && (npc.emoji + npc.who)) || '');
     const hc = old ? '#9a9a9a' : hair;
@@ -243,7 +254,7 @@
       <path d="M31 64 Q30 34 60 34 Q90 34 89 64 Q84 47 60 46 Q40 47 31 64Z" fill="${hc}"/>${hat}
       <g class="ck-e0"><circle cx="49" cy="68" r="3.4" fill="#2b2b2b"/><circle cx="71" cy="68" r="3.4" fill="#2b2b2b"/></g>
       <path class="ck-e1" d="M44 69 Q49 63 54 69M66 69 Q71 63 76 69" stroke="#2b2b2b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      <path class="ck-e2" d="M43 58 L54 61M66 60 L77 55" stroke="#2b2b2b" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="ck-br" d="M43 58 Q48.5 55 54 57.5M66 57.5 Q71.5 55 77 58" stroke="#2b2b2b" stroke-width="2" fill="none" stroke-linecap="round"/>
       <circle cx="42" cy="78" r="5" fill="#f4a3a3" opacity=".5"/><circle cx="78" cy="78" r="5" fill="#f4a3a3" opacity=".5"/>
       <path class="ck-m0" d="M53 80 Q60 86 67 80" stroke="#7a3b2e" stroke-width="2.4" fill="none" stroke-linecap="round"/>
       <path class="ck-m1" d="M51 78 Q60 92 69 78Z" fill="#7a3b2e"/>
@@ -348,7 +359,7 @@
   let pending = null;
   const Q = {   // 由 world-quest.js 覆寫
     pref() { return null; }, mistake() { }, on() { }, bar() { return ''; }, async checkBasket() { return true; }, swap() { }, active() { return false; },
-    clerkExtra() { return []; }, npcExtra() { return []; }, enter() { }, leave() { }, board() { }, shopBadge() { return ''; }, barTap() { }, goals() { return ''; }
+    clerkExtra() { return []; }, npcExtra() { return []; }, enter() { }, leave() { }, board() { }, shopBadge() { return ''; }, barTap() { }, goals() { return ''; }, bindGoals() { }
   };
   function stage(el, hud, cls) {
     el.innerHTML = `<section class="wd ${cls || ''}" id="wd">
@@ -373,16 +384,27 @@
     if (pending) { const r = pending; pending = null; r(ABORT); }
     const sh = STAGE.querySelector('#wd-sheet'), inn = sh.querySelector('.wd-in');
     inn.innerHTML = html; sh.hidden = false;
-    sh.classList.toggle('home', !!(opt && opt.home));
+    const home = !!(opt && opt.home);
+    sh.classList.toggle('home', home);
+    STAGE.classList.toggle('compact', !home);   // 面板展開（非店內首頁）時插畫縮小
+    focusMode(!!(opt && opt.focus));
     inn.scrollTop = 0;
     return inn;
   }
+  // 組句時收起底部導覽與頂列 Lv（只在窄螢幕，CSS 決定）
+  function focusMode(on) {
+    const b = document.body, was = b.classList.contains('wd-focus');
+    b.classList.toggle('wd-focus', !!on);
+    if (was !== !!on && STAGE && STAGE._fit) STAGE._fit();
+  }
   function closeSheet() {
+    focusMode(false);
     if (!STAGE || !STAGE.isConnected) return;
     if (window.speechSynthesis) speechSynthesis.cancel();
     if (pending) { const r = pending; pending = null; r(ABORT); }
     if (S) return shopHome();
     const sh = STAGE.querySelector('#wd-sheet'); if (sh) sh.hidden = true;
+    STAGE.classList.remove('compact');
   }
   // 一個需要玩家回應的步驟；面板被關掉或換成別的就中止整段流程
   function step(html, bind, opt) {
@@ -421,9 +443,14 @@
   function note(html, btn) {
     return step(`<div class="wd-note">${html}</div><div class="wd-acts"><button type="button" class="btn primary" id="wd-ok">${btn || '知道了'}</button></div>`, (el, done) => { el.querySelector('#wd-ok').onclick = () => done(); });
   }
-  function pick(title, list, render, cls) {
-    return step(`<h3 class="wd-h">${title}</h3><div class="wd-pick ${cls || ''}">${list.map((x, i) => `<button type="button" data-i="${i}">${render(x)}</button>`).join('')}</div>`, (el, done) => {
-      el.querySelectorAll('[data-i]').forEach(b => b.onclick = e => { if (e.target.closest('.wd-peek')) return; done(list[+b.dataset.i]); });
+  // more：{label, list} 先只列 list，按「更多」再展開 more.list
+  function pick(title, list, render, cls, more) {
+    const all = list.concat(more && more.list ? more.list : []);
+    const btn = (x, i) => `<button type="button" data-i="${i}">${render(x)}</button>`;
+    return step(`<h3 class="wd-h">${title}</h3><div class="wd-pick ${cls || ''}">${list.map(btn).join('')}</div>
+      ${more && more.list && more.list.length ? `<div class="wd-acts wd-more"><button type="button" class="btn" id="wd-more">${esc(more.label)}（${more.list.length}）</button></div><div class="wd-pick ${cls || ''}" id="wd-morebox" hidden>${more.list.map((x, j) => btn(x, list.length + j)).join('')}</div>` : ''}`, (el, done) => {
+      el.querySelectorAll('[data-i]').forEach(b => b.onclick = e => { if (e.target.closest('.wd-peek')) return; done(all[+b.dataset.i]); });
+      const mb = el.querySelector('#wd-more'); if (mb) mb.onclick = () => { el.querySelector('#wd-morebox').hidden = false; mb.parentNode.hidden = true; };
     });
   }
 
@@ -433,6 +460,8 @@
     w.cards[m.jp] = { jp: m.jp, kana: m.kana || '', zh: m.zh || '', r: S ? S.region : D ? D.region : '', s: S ? S.id : '', t: App.today() };
     App.save(); paintHud();
     App.toast(`🃏 新句卡：<span lang="ja">${esc(m.jp)}</span>`, 'ok');
+    App.addXP(2, '說對一句・新句卡');   // 第一次收集到這張句卡才給（同一句不重複給）
+    if (S) Q.on('card', {});
     return true;
   }
   const cardCount = r => Object.values(st().cards).filter(c => !r || c.r === r).length;
@@ -451,7 +480,10 @@
     let model = make(st().style);
     const nX = li() <= 1 ? 1 : li() <= 3 ? 2 : 3;
     let tiles = [], seq = [], miss = 0;
-    const tileH = (t, i, where) => `<button type="button" class="wd-tile" data-${where}="${i}"><b class="jp" lang="ja">${esc(t.jp)}</b>${showKana() && t.kana && t.kana !== t.jp ? `<i lang="ja">${esc(t.kana)}</i>` : ''}</button>`;
+    const tileH = (t, i, where) => {
+      const z0 = zero(), r = z0 ? romaOf(t) : '';
+      return `<button type="button" class="wd-tile" data-${where}="${i}"><b class="jp" lang="ja">${esc(t.jp)}</b>${(showKana() || z0) && t.kana && t.kana !== t.jp ? `<i lang="ja">${esc(t.kana)}</i>` : ''}${r ? `<i class="wd-r">${esc(r)}</i>` : ''}${z0 && t.zh ? `<i class="wd-tz">${esc(t.zh)}</i>` : ''}</button>`;
+    };
     return step(`<div class="wd-build">
         <p class="wd-goal">🗣️ ${esc(opt.title || '用日文說')}：<b class="wd-zhg"></b></p>
         <div class="wd-styles" role="group" aria-label="說法"></div>
@@ -461,6 +493,8 @@
         <p class="wd-fb" role="status"></p>
         <div class="wd-acts"><button type="button" class="btn" id="wd-hint" hidden>💡 提示</button><button type="button" class="btn" id="wd-clr">↺ 重排</button><button type="button" class="btn primary" id="wd-say">🗣️ 說出來</button></div>
       </div>`, (el, done) => {
+      focusMode(true);
+      const fin = v => { focusMode(false); done(v); };
       const line = el.querySelector('.wd-line'), bank = el.querySelector('.wd-bank'), fb = el.querySelector('.wd-fb'), hint = el.querySelector('#wd-hint'), mdl = el.querySelector('.wd-model');
       const paint = () => {
         line.innerHTML = seq.length ? seq.map((t, i) => tileH(t, i, 's')).join('') : '<span class="wd-ph">點下面的詞塊，排成句子</span>';
@@ -476,7 +510,8 @@
       };
       const reset = () => {
         model = make(st().style);
-        tiles = App.shuffle(model.parts.map(p => ({ jp: p.jp, kana: p.kana })).concat((model.extra || []).slice(0, nX).map(e => ({ jp: e.jp, kana: e.kana }))));
+        const gl = j => (window.Phrase && Phrase.GLOSS && Phrase.GLOSS[j]) || '';
+        tiles = App.shuffle(model.parts.map(p => ({ jp: p.jp, kana: p.kana, zh: p.zh || gl(p.jp) })).concat((model.extra || []).slice(0, nX).map(e => ({ jp: e.jp, kana: e.kana, zh: gl(e.jp) }))));
         seq = []; fb.textContent = ''; fb.className = 'wd-fb';
         el.querySelector('.wd-zhg').textContent = model.zh;
         mdl.hidden = true; mdl.innerHTML = `<small>參考答案</small>${tx({ jp: model.jp, kana: model.kana }, true)}`;
@@ -492,7 +527,9 @@
           fb.className = 'wd-fb ok'; fb.textContent = '✓ ' + model.jp;
           el.querySelectorAll('button').forEach(b => { b.disabled = true; });
           addCard(model); Q.on('spoke', { model });
-          setTimeout(() => done(miss), 700);
+          setTimeout(() => fin(miss), 700);
+        } else if (r.short) {   // 還沒排完：只提示，不算失誤、不收進不會清單
+          fb.className = 'wd-fb'; fb.textContent = '👉 ' + r.fb;
         } else {
           miss++; Q.mistake(); G.sfx('ng'); G.shake(); mood('puzzled', 'え？');
           Tracker.add(item({ jp: model.jp, kana: model.kana, zh: model.zh }, S ? S.name : '冒險', 'phrase'), true);
@@ -606,6 +643,36 @@
     }
   };
 
+  /* ---- 店員開場語：依店的類型（車站、寺社、診所、飯店…） ---- */
+  const isDestItem = it => (it.tags || []).includes('dest');
+  const GREET = {
+    station: { jp: 'どうされましたか。', kana: 'どうされましたか', zh: '請問有什麼需要嗎？' },
+    shrine: { jp: 'こんにちは。', kana: 'こんにちは', zh: '你好。' },
+    clinic: { jp: 'こんにちは。受付です。', kana: 'こんにちは。うけつけです', zh: '你好，這裡是掛號櫃台。' },
+    hotel: { jp: 'いらっしゃいませ。チェックインでしょうか。', kana: 'いらっしゃいませ。チェックインでしょうか', zh: '歡迎光臨。請問是要辦入住嗎？' },
+    ryokan: { jp: 'ようこそお越しくださいました。', kana: 'ようこそおこしくださいました', zh: '歡迎您的到來。' },
+    airport: { jp: 'こんにちは。どうなさいましたか。', kana: 'こんにちは。どうなさいましたか', zh: '你好，請問需要什麼協助？' },
+    info: { jp: 'こんにちは。観光案内所です。', kana: 'こんにちは。かんこうあんないじょです', zh: '你好，這裡是觀光服務處。' },
+    ticket: { jp: 'こんにちは。チケットですか。', kana: 'こんにちは。チケットですか', zh: '你好，要買票嗎？' },
+    shop: { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' }
+  };
+  function greetKind(s) {
+    const bg = bgOf(s), id = s.id;
+    if (s.scene === 'directions' || /kanko/.test(id)) return 'info';
+    if (bg === 'station' || (s.items.some(isDestItem) && s.kind === 'service')) return 'station';
+    if (bg === 'shrine' || /kiyomizu|sensoji/.test(id)) return 'shrine';
+    if (s.scene === 'emergency' || /clinic/.test(id)) return 'clinic';
+    if (bg === 'hotel') return 'hotel';
+    if (bg === 'ryokan' && /ryokan/.test(id)) return 'ryokan';
+    if (bg === 'airport') return 'airport';
+    if (s.scene === 'directions' || /kanko/.test(id)) return 'info';
+    if (s.kind === 'service' && /castle|aquarium|cosmo/.test(id)) return 'ticket';
+    return 'shop';
+  }
+  const greetLine = () => GREET[greetKind(S)];
+  // 「問店員」按鈕：依櫃台的人換稱呼（問站員、問櫃台、問寺務員…）
+  const askWho = () => { const w = staff().who || '店員'; return w === '櫃台人員' ? '櫃台' : w; };
+
   /* ---- 店內首頁面板：店員開場＋3 個大按鈕＋馬上說一句＋今天想做的事 ---- */
   function primary() {
     if (S.kind === 'eat') { const sk = keysOf('seat')[0]; return sk ? ['🍽️', '入座點餐', RUN.toPay ? '吃飽了，去結帳' : '坐下來翻菜單', () => (RUN.toPay ? bill(counters()[0]) : sit(sk))] : null; }
@@ -615,25 +682,31 @@
     }
     const sh = keysOf('shelf').concat(keysOf('machine')); return sh.length ? ['🛒', '買東西', '逛貨架，放進籃子', () => itemsSheet(sh[0], sh)] : null;
   }
-  function quickLine() {   // 新手第一句：問廁所／設施在哪裡
-    const fk = keysOf('facility').find(k => /トイレ|お手洗い/.test(S.zones[k].jp)) || keysOf('facility')[0] || keysOf('shelf')[0];
-    return fk ? { zone: fk, x: S.zones[fk] } : null;
+  // 「⚡馬上說一句」：依店輪替（設施、貨架、商品的位置），每天換、說過一次也換
+  function quickLine() {
+    const pool = locTargets().filter(t => !(t.it && isDestItem(t.it)));
+    if (!pool.length) return null;
+    const zs = pool.filter(t => !t.it), list = zs.length >= 2 ? zs : pool;
+    const w = st(), qn = (w.qn || (w.qn = {}))[S.id] || 0;
+    return list[(hash(App.today() + S.id) + qn) % list.length];
   }
   function shopHome() {
     if (!S || !STAGE || !STAGE.isConnected) return;
-    const npc = staff(), p = primary(), q = quickLine(), greet = !RUN.greeted;
-    const line = { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' };
-    const big = [p, ['💬', '問店員', '自己組句子開口問', () => clerkSheet(counters()[0])], ['👀', '看看店裡', '規矩、區域、看板', infoSheet]].filter(Boolean);
-    const qq = q ? Phrase.make('where', { x: q.x }, { style: st().style, lv: lv() }) : null;
+    const npc = staff(), p = primary(), q = quickLine(), greet = !RUN.greeted, z0 = zero();
+    const line = greetLine();
+    const big = [p, ['💬', '問' + askWho(), '自己組句子開口問', () => clerkSheet(counters()[0])], ['👀', '看看店裡', '規矩、區域、看板', infoSheet]].filter(Boolean);
+    const qq = q ? Phrase.make('where', { x: q.it || q.x }, { style: st().style, lv: lv() }) : null;
     const el = sheet(`${bubble(npc, line)}
-      ${qq ? `<button type="button" class="wd-quick" id="wd-quick"><span>⚡</span><span><small>馬上說一句</small><b lang="ja">${esc(qq.jp)}</b></span></button>` : ''}
+      ${qq ? `<button type="button" class="wd-quick" id="wd-quick"><span>⚡</span><span><small>馬上說一句${z0 ? `：${esc(qq.zh)}` : ''}</small><b lang="ja">${esc(qq.jp)}</b>${z0 ? `<i class="wd-k" lang="ja">${esc(qq.kana)}</i><i class="wd-r">${esc(qq.parts.map(x => romaOf(x)).filter(Boolean).join(' '))}</i>` : ''}</span></button>` : ''}
       <div class="wd-big">${big.map((b, i) => `<button type="button" data-b="${i}"><span>${b[0]}</span><b>${esc(b[1])}</b><small>${esc(b[2])}</small></button>`).join('')}</div>
-      ${Q.goals(S)}`, { home: 1 });
+      ${Q.goals(S)}
+      <div class="wd-acts wd-leave"><button type="button" class="btn" id="wd-leave">🚪 離開</button></div>`, { home: 1 });
     bindSpk(el, line);
     if (greet) { RUN.greeted = true; App.speak(line.jp); }
     el.querySelectorAll('[data-b]').forEach(b => b.onclick = () => big[+b.dataset.b][3]());
-    const qb = el.querySelector('#wd-quick'); if (qb) qb.onclick = () => talk('where', counters()[0], { id: 'z:' + q.zone, zone: q.zone, x: q.x });
-    const bd = el.querySelector('#wd-board'); if (bd) bd.onclick = () => Q.board();
+    const qb = el.querySelector('#wd-quick'); if (qb) qb.onclick = () => { const w = st(); w.qn[S.id] = (w.qn[S.id] || 0) + 1; App.save(); talk('where', counters()[0], q); };
+    Q.bindGoals(el);
+    el.querySelector('#wd-leave').onclick = leaveShop;
   }
 
   /* ---- 商品面板：貨架／券売機／菜單／櫃台商品 ---- */
@@ -758,11 +831,15 @@
     if (!RUN.basket.length) return clerkSheet(key);
     await Q.checkBasket();
     const sayL = RUN.basket.filter(b => b.toSay && !b.paid);
-    await npcSay(npc, { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' });
+    await npcSay(npc, greetLine());
     if (sayL.length) {
       await say('want', { items: sayL }, { title: '跟店員說你要的' });
       await incident(sayL, npc);
       await npcSay(npc, orderLine(RUN.basket.filter(b => b.toSay && !b.paid)));
+    } else if (RUN.basket.some(b => !b.paid)) {
+      // 貨架拿的東西：把籃子放上櫃台，也要開口說一句
+      await say('this', {}, { title: '把籃子放上櫃台，跟店員說' });
+      await npcSay(npc, { jp: 'はい、お預かりします。', kana: 'はい、おあずかりします', zh: '好的，我來幫您結帳。' });
     }
     if (total() > 0) { await runAsks('pay', npc); await payTotal(npc); }
     else await npcSay(npc, { jp: 'はい、どうぞ。', kana: 'はい、どうぞ', zh: '好的，請用。' });
@@ -819,9 +896,18 @@
   });
   const checkin = flow(async key => {
     const npc = staff(key);
-    await npcSay(npc, { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' });
+    await npcSay(npc, greetLine());
     for (const a of S.asks.filter(a => a.phase === 'checkin')) RUN.vals[a.id] = await askQ(a, Q.pref(a.id), npc);
-    await npcSay(npc, { jp: 'かしこまりました。ありがとうございます。', kana: 'かしこまりました。ありがとうございます', zh: '好的，謝謝您。' });
+    // 車站類：問過目的地 → 最後報票價、付款
+    const dest = RUN.vals.dest && S.items.find(i => i.id === RUN.vals.dest);
+    if (dest && dest.price > 0) {
+      const ppl = { 1: 1, 2: 2, 3: 2.5 }[RUN.vals.people] || 1, trip = RUN.vals.oneway === 'round' ? 2 : 1;
+      const fare = Math.round(dest.price * ppl * trip / 10) * 10;
+      const keep = RUN.basket; RUN.basket = [{ it: Object.assign({}, dest, { price: fare }), n: 1 }];
+      const vals0 = RUN.vals; await runAsks('pay', npc); await payTotal(npc);
+      RUN.basket = keep; RUN.vals = vals0;
+      addDex(dest);
+    } else await npcSay(npc, { jp: 'かしこまりました。ありがとうございます。', kana: 'かしこまりました。ありがとうございます', zh: '好的，謝謝您。' });
     const vals = RUN.vals; RUN.vals = {};
     closeSheet(); Q.on('checkin', { vals }); paintBar();
   });
@@ -833,6 +919,9 @@
     S.items.forEach(it => { const z = S.zones[it.zone]; if (z && z.loc) out.push({ id: 'i:' + it.id, zone: it.zone, x: it, emoji: it.emoji, it }); });
     return out;
   };
+  // 問「有沒有／多少錢」只列實體物品（目的地、加值這類不列）
+  const askItems = intent => S.items.filter(it => !isDestItem(it) && !(it.tags || []).includes('charge') && (intent !== 'price' || it.price > 0));
+  const goItems = () => S.items.filter(it => isDestItem(it) && it.price > 0);
   const locLine = t => {
     const z = S.zones[t.zone], sp = t.it ? Phrase.spoken(t.it) : { jp: t.x.jp, kana: t.x.kana };
     return { jp: `${sp.jp}は、${z.loc.jp}`, kana: `${sp.kana}は、${z.loc.kana}`, zh: `${t.x.zh}${z.loc.zh}。` };
@@ -842,12 +931,21 @@
     const pickIt = async (title, list) => preset || await pick(title, list, t => `<span class="e">${esc(t.emoji || '')}</span>${tx(t.x || t)}`, 'wd-items3');
     let id = '';
     if (intent === 'where') {
-      const t = await pickIt('想問什麼在哪裡？', locTargets()); id = t.id;
+      // 先只列區域（≤8 個），商品收在「更多商品」
+      const all = locTargets().filter(t => !(t.it && isDestItem(t.it))), zs = all.filter(t => !t.it);
+      const first = zs.slice(0, 8), rest = zs.slice(8).concat(all.filter(t => t.it));
+      const t = preset || await pick('想問什麼在哪裡？', first.length ? first : rest, t => `<span class="e">${esc(t.emoji || '')}</span>${tx(t.x || t)}`, 'wd-items3', first.length ? { label: '更多商品', list: rest } : null); id = t.id;
       await say('where', { x: t.it || t.x });
       await npcSay(npc, locLine(t));
       SCN.pulse(t.zone);
+    } else if (intent === 'go') {
+      const t = await pickIt('想去哪裡？', goItems().map(it => ({ id: 'i:' + it.id, x: it, it, emoji: it.emoji, zone: it.zone }))); id = t.id;
+      await say('go', { x: t.it });
+      const z = S.zones[t.zone] || {}, sp = Phrase.spoken(t.it), y = Phrase.yen(t.it.price);
+      await npcSay(npc, { jp: `${sp.jp}までは${y.jp}です。${z.jp}でお求めください。`, kana: `${sp.kana}までは${y.kana}です。${z.kana || z.jp}でおもとめください`, zh: `到${t.it.zh}是 ${y.zh}，請在${z.zh || '那邊'}購買。` });
+      SCN.pulse(t.zone); addDex(t.it);
     } else if (intent === 'have' || intent === 'price') {
-      const t = await pickIt(intent === 'have' ? '想問有沒有什麼？' : '想問什麼的價錢？', S.items.map(it => ({ id: 'i:' + it.id, x: it, it, emoji: it.emoji, zone: it.zone }))); id = t.id;
+      const t = await pickIt(intent === 'have' ? '想問有沒有什麼？' : '想問什麼的價錢？', askItems(intent).map(it => ({ id: 'i:' + it.id, x: it, it, emoji: it.emoji, zone: it.zone }))); id = t.id;
       await say(intent, { x: t.it });
       if (intent === 'have') {
         const z = S.zones[t.zone];
@@ -881,8 +979,9 @@
     Q.clerkExtra(key).forEach(x => acts.push(x));
     const el = sheet(`<div class="wd-zh">${faceHTML(npc)}${tx({ jp: z.jp || npc.who, kana: z.kana, zh: z.zh || npc.who })}</div>
       ${acts.length ? `<div class="wd-main">${acts.map(([id, ic, t, s]) => `<button type="button" class="wd-mb${id[0] === '!' ? ' quest' : ''}" data-a="${esc(id)}"><span>${ic}</span><b>${esc(t)}</b><small>${esc(s || '')}</small></button>`).join('')}</div>` : ''}
-      <p class="wd-sub">💬 開口問店員（自己組句子）</p>
-      <div class="wd-ints">${Phrase.INTENTS.filter(i => i.id !== 'want' && (i.id !== 'act' || (S.acts || []).length) && (i.id !== 'may' || (S.may || []).length) && (i.id !== 'info' || (S.info || []).length)).map(i => `<button type="button" data-t="${i.id}"><span>${i.icon}</span><b>${esc(i.zh)}</b><small lang="ja">${esc(i.hint)}</small></button>`).join('')}</div>`);
+      <p class="wd-sub">💬 開口問${esc(npc.who || '店員')}（自己組句子）</p>
+      <div class="wd-ints">${Phrase.INTENTS.filter(i => i.id !== 'want' && (i.id !== 'act' || (S.acts || []).length) && (i.id !== 'may' || (S.may || []).length) && (i.id !== 'info' || (S.info || []).length)
+        && (i.id !== 'go' || goItems().length) && (!['have', 'price'].includes(i.id) || askItems(i.id).length)).map(i => `<button type="button" data-t="${i.id}"><span>${i.icon}</span><b>${esc(i.zh)}</b>${zero() ? `<small>${esc(i.hz || i.hint)}</small>` : `<small lang="ja">${esc(i.hint)}</small>`}</button>`).join('')}</div>`);
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => talk(b.dataset.t, key));
     el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
@@ -920,13 +1019,12 @@
   function renderShop(el, shop, d) {
     S = shop; D = d;
     RUN = { basket: [], vals: {}, entered: false, served: false, toPay: false, incident: false, greeted: false };
-    stage(el, `<button type="button" class="wd-hb" id="wd-back" aria-label="回街區">←</button>
-      <div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name)}</small></div>
-      <button type="button" class="wd-hb" id="wd-bk" hidden></button><button type="button" class="wd-hb" id="wd-cards" aria-label="我的句卡"></button>`, 'wd-shop');
+    stage(el, `<div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name)}</small></div>
+      <button type="button" class="wd-hb" id="wd-pb" aria-label="會話手冊快查">📖</button><button type="button" class="wd-hb" id="wd-bk" hidden></button><button type="button" class="wd-hb" id="wd-cards" aria-label="我的句卡"></button>`, 'wd-shop');
+    STAGE.querySelector('#wd-pb').onclick = () => App.go('phrasebook', S.scene ? { cat: S.scene } : { q: S.name });
     STAGE.querySelector('.wd-box').innerHTML = sceneHTML(S);
     STAGE.querySelectorAll('.wd-card').forEach(b => b.onclick = () => openZone(b.dataset.z));
     STAGE.querySelector('#wd-clerk').onclick = () => clerkSheet(counters()[0]);
-    STAGE.querySelector('#wd-back').onclick = leaveShop;
     STAGE.querySelector('#wd-bk').onclick = basketSheet;
     STAGE.querySelector('#wd-cards').onclick = cardsSheet;
     MAP = { pulse: SCN.pulse, pos: () => [0, 0], comps: [], goObj: openZone, fit() { }, stop() { } };
@@ -1034,28 +1132,31 @@
   /* ---------------- 路由 ---------------- */
   function render(el, params) {
     params = params || {};
-    const w = st(), at = w.at || {};
+    const w = st();
     if (pending) { pending = null; }
     S = null; D = null; RUN = null; MAP = null;
-    if (params.map || (!params.r && !at.r)) return World.mapPage(el);
-    const r = params.r || at.r;
+    focusMode(false);
+    const fd = fromDistrict; fromDistrict = false;   // 只有剛從街區點進店才算「從街區來」
+    // 不帶地區參數一律顯示日本地圖（不自動跳回上次位置；首頁「繼續冒險」才帶 {r,d,s}）
+    if (params.map || !params.r) return World.mapPage(el);
+    const r = params.r;
     el.innerHTML = '<p class="center muted wd-wait">🚃 移動中…</p>';
     loadRegion(r).then(() => {
       if (!el.isConnected) return;
       const R = regionOf(r);
-      const d = W.districts[params.r ? params.d : at.d] || W.districts[w.last[r]] || W.districts[R.order.find(id => W.districts[id])];
+      const d = W.districts[params.d] || W.districts[w.last[r]] || W.districts[R.order.find(id => W.districts[id])];
       if (!d) { el.innerHTML = '<div class="panel center"><h2>🚧 這個地區還在準備中</h2><button class="btn primary" id="wb">回日本地圖</button></div>'; el.querySelector('#wb').onclick = () => App.go('play', { map: 1 }); return; }
-      const sid = params.r ? params.s : at.s;
+      const sid = params.s;
       const s = sid ? W.shops[sid] : null;
       PARAMS = { r, d: d.id, s: s ? s.id : null };
       w.at = Object.assign({ label: `${d.icon} ${d.name}${s ? '・' + s.icon + ' ' + s.name : ''}` }, PARAMS); App.save();
-      if (s) renderShop(el, s, d); else renderDistrict(el, d);
+      if (s) { fromDistrict = fd; renderShop(el, s, d); } else renderDistrict(el, d);
     }).catch(e => { console.error(e); el.innerHTML = '<p class="center wd-wait">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
   App.register('play', { title: '冒險', icon: '🗾', nav: true, navOrder: 2, render });
 
   window.World = {
-    st, lv, li, assist, prof, showKana, showZh, loadRegion, loadEvents, regionOf, Q, tx, item, REC, cardCount, bgOf, clerkSVG, signHTML,
+    st, lv, li, assist, prof, showKana, showZh, zero, romaOf, loadRegion, loadEvents, regionOf, Q, tx, item, REC, cardCount, bgOf, clerkSVG, signHTML,
     X: {
       get S() { return S; }, get D() { return D; }, get RUN() { return RUN; }, get MAP() { return MAP; }, get PARAMS() { return PARAMS; }, get STAGE() { return STAGE; },
       sheet, closeSheet, step, flow, note, pick, build, say, mk, askQ, hear, npcSay, bubble, bindSpk, paintBar, paintHud, staff, zone, itemsIn, counters, locTargets, locLine, talk, clerkSheet, signHTML, mood, shopHome, enterShop, districtInfo, cardsSheet, addCard, ABORT, G

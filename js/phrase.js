@@ -57,7 +57,48 @@
     const style = STYLES.some(s => s.id === opt.style) ? opt.style : 'polite';
     return { L: style === 'keigo' ? 2 : 0, plain: style === 'plain', easy: !opt.lv || opt.lv === 'zero' || opt.lv === 'n5', style };
   }
-  const P = (jp, kana) => ({ jp, kana: kana == null ? jp : kana });
+  // 詞塊：jp、kana、zh（零基礎時顯示在詞塊下的中文）
+  const GLOSS = {
+    'すみません、': '不好意思', 'すみません！': '不好意思！', '恐れ入りますが、': '不好意思（很客氣）', 'じゃあ、': '那麼', 'では、': '那麼', 'と、': '和',
+    'ください': '請給我', 'もらえますか': '可以給我嗎', 'いただけますか': '可以給我嗎（客氣）', 'いただけますでしょうか': '可以給我嗎（很客氣）',
+    'お願いします': '麻煩了', 'お願いできますか': '可以麻煩嗎', 'お願いできますでしょうか': '可以麻煩嗎（很客氣）', 'お願い': '拜託',
+    'どこですか': '在哪裡', 'どこにありますか': '在哪裡', 'どちらでしょうか': '在哪裡（客氣）', 'どちらにございますか': '在哪裡（很客氣）', 'どこ？': '在哪？',
+    'ありますか': '有嗎', 'ございますか': '有嗎（客氣）', 'ございますでしょうか': '有嗎（很客氣）', 'ある？': '有嗎？',
+    'いくらですか': '多少錢', 'おいくらでしょうか': '多少錢（客氣）', 'いくら？': '多少？',
+    'いいですか': '可以嗎', 'よろしいですか': '可以嗎（客氣）', 'よろしいでしょうか': '可以嗎（很客氣）', 'いい？': '可以嗎？', 'くれる？': '幫我好嗎？',
+    'も': '也（〜ても＝就算…也）', 'は': '（主題）', 'を': '（受詞）', 'まで': '到', 'から': '從', 'くれ': '給我（命令）', 'あげます': '給你',
+    '行きたいです': '想去', '行きたいのですが': '想去（客氣）', '行きたい': '想去', 'これを': '這個', 'これ': '這個', 'お会計': '結帳', 'お会計を': '結帳', '注文': '點餐'
+  };
+  const P = (jp, kana, zh) => ({ jp, kana: kana == null ? jp : kana, zh: zh != null ? zh : (GLOSS[jp] || '') });
+
+  /* ---- 假名 → 羅馬字（零基礎提示用；平假名、片假名都可） ---- */
+  const RO = {
+    あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o', か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko', さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so',
+    た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to', な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no', は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho',
+    ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo', ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', ゐ: 'i', ゑ: 'e', を: 'wo', ん: 'n',
+    が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go', ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo', だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do',
+    ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo', ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po', ゔ: 'vu',
+    ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o', ゃ: 'ya', ゅ: 'yu', ょ: 'yo', ゎ: 'wa'
+  };
+  const PUNC = { '、': ', ', '。': '. ', '？': '? ', '！': '! ', '・': ' ', '「': '"', '」': '"', '〜': '~', '　': ' ', ' ': ' ' };
+  function romaji(s) {
+    s = String(s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+    let out = '', geminate = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i], nx = s[i + 1] || '';
+      if (c === 'っ') { geminate = true; continue; }
+      if (c === 'ー') { const v = out.match(/[aiueo]$/); if (v) out += v[0]; continue; }
+      let r = RO[c];
+      if (r == null) { out += PUNC[c] != null ? PUNC[c] : c; geminate = false; continue; }
+      if (nx && 'ゃゅょ'.includes(nx) && /[きぎしじちぢにひびぴみり]/.test(c)) { r = (/[しじち]/.test(c) ? r.slice(0, -1) : r.slice(0, -1)) + ({ ゃ: 'ya', ゅ: 'yu', ょ: 'yo' })[nx]; if (/^(sh|ch|j)y/.test(r)) r = r.replace('y', ''); i++; }
+      else if (nx && 'ぁぃぅぇぉ'.includes(nx) && /[ふゔてでうし]/.test(c)) { r = r.replace(/[aiueo]$/, '') + RO[nx]; i++; }
+      if (geminate) { r = (r.startsWith('ch') ? 't' : r[0]) + r; geminate = false; }
+      if (c === 'ん' && /^[aiueoy]/.test(RO[nx] || '')) r = "n'";
+      if ((c === 'は' || c === 'へ') && (i === s.length - 1 || /[、。？！\s]/.test(nx)) && i > 0 && /[ぁ-ゖ]/.test(s[i - 1])) r = c === 'は' ? 'wa' : 'e';
+      out += r;
+    }
+    return out.replace(/\s+/g, ' ').trim();
+  }
   // 普通體（對朋友說的口氣）
   const PL = { req: P('お願い', 'おねがい'), where: P('どこ？'), have: P('ある？'), price: P('いくら？'), act: P('くれる？'), may: P('いい？') };
   const REQ = [P('ください'), P('もらえますか'), P('いただけますか'), P('いただけますでしょうか')];
@@ -97,15 +138,20 @@
   }
 
   /* ---- 意圖 → 句子 ---- */
+  // hint：句型（給有基礎的人）；hz：白話說明（零基礎顯示這個）
   const INTENTS = [
-    { id: 'want', icon: '🛒', zh: '我要…', hint: '〜を〇つください' },
-    { id: 'where', icon: '📍', zh: '…在哪裡？', hint: '〜はどこですか' },
-    { id: 'have', icon: '📦', zh: '有沒有…？', hint: '〜はありますか' },
-    { id: 'price', icon: '💴', zh: '…多少錢？', hint: '〜はいくらですか' },
-    { id: 'act', icon: '🙏', zh: '請幫我…', hint: '〜てください' },
-    { id: 'may', icon: '✋', zh: '可以…嗎？', hint: '〜てもいいですか' },
-    { id: 'info', icon: 'ℹ️', zh: '想問…', hint: '營業時間、Wi-Fi、推薦…' }
+    { id: 'want', icon: '🛒', zh: '我要…', hint: '〜を〇つください', hz: '跟店員要東西' },
+    { id: 'go', icon: '🚉', zh: '想去…', hint: '〜まで行きたいです', hz: '問怎麼去、票價多少' },
+    { id: 'where', icon: '📍', zh: '…在哪裡？', hint: '〜はどこですか', hz: '問東西、設施的位置' },
+    { id: 'have', icon: '📦', zh: '有沒有…？', hint: '〜はありますか', hz: '問有沒有賣' },
+    { id: 'price', icon: '💴', zh: '…多少錢？', hint: '〜はいくらですか', hz: '問價錢' },
+    { id: 'act', icon: '🙏', zh: '請幫我…', hint: '〜てください', hz: '請店員幫忙做一件事' },
+    { id: 'may', icon: '✋', zh: '可以…嗎？', hint: '〜てもいいですか', hz: '問「我可以…嗎」' },
+    { id: 'info', icon: 'ℹ️', zh: '想問…', hint: '營業時間、Wi-Fi、推薦…', hz: '營業時間、Wi-Fi、推薦…' }
   ];
+  const GO = [P('行きたいです', 'いきたいです'), P('行きたいです', 'いきたいです'), P('行きたいのですが', 'いきたいのですが'), P('行きたいのですが', 'いきたいのですが')];
+  // 句首「すみません、」可以省略：把它拿掉的排法也算對
+  const dropSumi = list => list.concat(list.filter(a => a[0] === SUMI.jp).map(a => a.slice(1)));
   function make(intent, s, opt) {
     s = s || {};
     const R = regOf(opt), L = R.L, easy = R.easy, pl = R.plain;
@@ -113,24 +159,39 @@
     if (intent === 'want' || intent === 'instead') {
       const items = s.items || [], ticket = items.some(x => isDest(x.it));
       const groups = items.map(({ it, n }) => {
-        const sp = spoken(it), q = count(it.c, n), pa = P(ticket ? 'まで' : 'を');
-        return easy ? [P(sp.jp + pa.jp, sp.kana + pa.kana), q] : [sp, pa, q];
+        const sp = Object.assign(spoken(it), { zh: it.zh }), q = count(it.c, n), pa = P(ticket ? 'まで' : 'を');
+        return easy ? [P(sp.jp + pa.jp, sp.kana + pa.kana, (ticket ? '到' : '') + it.zh), q] : [sp, pa, q];
       });
       const tail = pl ? PL.req : ticket ? ONEGAI[L] : intent === 'instead' && L ? ONEGAI[Math.max(0, L - 1)] : REQ[L];
       const head = intent === 'instead' ? [P(L ? 'では、' : 'じゃあ、')] : L >= 3 ? [PRE[3]] : [];
       const join = gs => gs.reduce((a, g, i) => a.concat(i ? [P('と、')] : [], g), []);
       parts = head.concat(join(groups), [tail]);
-      accept = perms(groups).map(gs => head.concat(join(gs), [tail]).map(p => p.jp));
+      // 可接受的詞序：品項順序任意；數量可放在品名前（二枚、軽井沢まで、お願いします）
+      const qFirst = g => [g[g.length - 1]].concat(g.slice(0, -1));
+      const seen = new Set();
+      accept = [];
+      perms(groups).forEach(gs => [gs, gs.map(qFirst)].forEach(v => { const a = head.concat(join(v), [tail]).map(p => p.jp), k = a.join('\u0001'); if (!seen.has(k)) { seen.add(k); accept.push(a); } }));
       zh = (intent === 'instead' ? '那改成' : ticket ? '到' : '請給我') + items.map(({ it, n }) => ticket ? `${it.zh} ${count(it.c, n).zh}` : `${count(it.c, n).zh}${it.zh}`).join('、') + (ticket ? '，麻煩了' : '');
       extra = [X.ageru]; if (!easy) extra.push(X.wa);
     } else if (intent === 'where' || intent === 'have' || intent === 'price') {
       const x = s.x, sp = x.say ? P(x.say.jp, x.say.kana) : P(x.jp, x.kana);
       const tail = pl ? PL[intent] : (intent === 'where' ? WHERE : intent === 'have' ? HAVE : PRICE)[L];
-      parts = (pl ? [] : [PRE[L]]).concat(easy ? [P(sp.jp + 'は', sp.kana + 'は')] : [sp, P('は')], [tail]);
+      sp.zh = x.zh;
+      parts = (pl ? [] : [PRE[L]]).concat(easy ? [P(sp.jp + 'は', sp.kana + 'は', x.zh)] : [sp, P('は')], [tail]);
       zh = (pl ? '' : '不好意思，') +({ where: `${x.zh}在哪裡？`, have: `有${x.zh}嗎？`, price: `${x.zh}多少錢？` })[intent];
       const others = { where: PRICE[0], have: WHERE[0], price: WHERE[0] }[intent];
       extra = [{ jp: others.jp, kana: others.kana, fb: intent === 'where' ? '「いくらですか」是問價錢' : '「どこですか」是問位置' }];
       if (!easy) extra.push(X.wo);
+    } else if (intent === 'go') {   // 目的地：〜まで行きたいです
+      const x = s.x, sp = x.say ? P(x.say.jp, x.say.kana, x.zh) : P(x.jp, x.kana, x.zh);
+      parts = (pl ? [] : [PRE[L]]).concat(easy ? [P(sp.jp + 'まで', sp.kana + 'まで', '到' + x.zh)] : [sp, P('まで')], [pl ? P('行きたい', 'いきたい') : GO[L]]);
+      zh = (pl ? '' : '不好意思，') + `我想去${x.zh}`;
+      extra = [{ jp: 'ありますか', kana: 'ありますか', fb: '「ありますか」是問有沒有；想去某地說「〜まで行きたいです」' }];
+      if (!easy) extra.push({ jp: 'から', kana: 'から', fb: '「から」是「從」；目的地用「まで」' });
+    } else if (intent === 'this') {   // 結帳：把籃子放上櫃台說一句
+      parts = pl ? [P('これ'), PL.req] : L ? [SUMI, P('これを'), ONEGAI[L]] : easy ? [P('これを'), P('お願いします', 'おねがいします')] : [P('これ'), P('を'), P('お願いします', 'おねがいします')];
+      zh = '這些麻煩你（結帳）';
+      extra = [X.ageru];
     } else if (intent === 'bill') {
       parts = pl ? [P('お会計', 'おかいけい'), PL.req] : L ? [SUMI, P('お会計を', 'おかいけいを'), ONEGAI[L]] : [SUMI, P('お会計', 'おかいけい'), ONEGAI[0]];
       zh = '不好意思，麻煩結帳';
@@ -158,6 +219,7 @@
     }
     if (L >= 2 && ['want', 'act', 'instead'].includes(intent)) extra.push(RUDE);
     if (!accept) accept = [parts.map(p => p.jp)];
+    accept = dropSumi(accept);
     const strip = t => t.replace(/[、！]$/, '');
     let jp = parts.map(p => p.jp).join(''); const kana = parts.map(p => p.kana).join('');
     if (!/[？?！!]$/.test(jp)) jp += '。';
@@ -169,10 +231,11 @@
     if (model.accept.some(a => key(a) === key(seq))) return { ok: true };
     const bad = (model.extra || []).find(e => seq.includes(e.jp));
     if (bad) return { ok: false, fb: bad.fb };
-    const base = model.accept[0];
-    if (seq.length < base.length) return { ok: false, fb: '句子還沒排完' };
+    const min = Math.min(...model.accept.map(a => a.length));
+    // 還沒排完：只是提示，不算失誤
+    if (seq.length < min) return { ok: false, short: true, fb: '句子還沒排完，把詞塊排完再說' };
     return { ok: false, fb: '順序不對，再看一次句型' };
   }
 
-  window.Phrase = { CNT, count, yen, yenKana, REG, STYLES, make, check, chunk, INTENTS, spoken };
+  window.Phrase = { CNT, count, yen, yenKana, REG, STYLES, make, check, chunk, INTENTS, spoken, romaji, GLOSS };
 })();

@@ -28,7 +28,8 @@
     const wl = st.world && OLD2LV[st.world.lv], tl = st.trip && OLD2LV[st.trip.level];
     const worldUsed = st.world && (st.world.at || Object.keys(st.world.stamps || {}).length);
     const lv = (worldUsed && wl) || tl || wl || null;
-    return normProfile({ lv: lv || 'zero', placed: !!lv });
+    // 舊玩家已有 XP（玩過舊版其他模組）也視為已定位，不再要求重選程度
+    return normProfile({ lv: lv || 'zero', placed: !!lv || (Number(st.xp) > 0) });
   }
   // 舊模組暫時還讀 world.lv／trip.level：一律由 profile 同步過去（程度不再分開存）
   function syncOld(st) {
@@ -39,6 +40,8 @@
   // 存檔升級：舊版缺欄位補齊、型別修正
   function migrate(o) {
     const st = Object.assign(fresh(), o && typeof o === 'object' ? o : {});
+    st.xp = Number.isFinite(+st.xp) ? Math.max(0, Math.round(+st.xp)) : 0;   // 字串、NaN、負數 → 修正，避免 S.xp += n 變成字串相加
+    if (Array.isArray(st.cleared)) st.cleared = {};
     if (!Array.isArray(st.tracked)) st.tracked = [];
     if (!Array.isArray(st.log)) st.log = [];
     ['cleared', 'sceneDone'].forEach(k => { if (!st[k] || typeof st[k] !== 'object') st[k] = {}; });
@@ -46,6 +49,7 @@
     if (typeof st.streak.days !== 'number') st.streak.days = 0;
     if ((st.v || 1) < 2) st.tracked.forEach(t => { if (t.due == null) t.due = 0; });   // v1 → v2：不會清單加複習排程
     if (!st.profile || typeof st.profile !== 'object') st.profile = profileFromOld(st); else normProfile(st.profile);
+    if (!st.profile.placed && st.xp > 0) st.profile.placed = true;
     syncOld(st);
     st.ui = Object.assign({ theme: 'system', palette: 'coral', fs: 'm' }, st.ui && typeof st.ui === 'object' ? st.ui : {});
     if (!['system', 'light', 'dark'].includes(st.ui.theme)) st.ui.theme = 'system';
@@ -359,6 +363,7 @@
     const main = document.getElementById('main');
     main.innerHTML = '';
     main.className = 'route-' + (routes[name] ? name : 'home');
+    document.body.classList.remove('ob-mode');   // 首次程度選擇模式（home.js 設定）：換頁就解除
     window.scrollTo(0, 0);
     renderNav();
     try { r.render(main, params); }
@@ -393,11 +398,9 @@
         <button class="icon-btn" id="setBtn" type="button" title="設定" aria-label="設定">⚙️</button>`;
       document.getElementById('lvBtn').onclick = () => modal(`<h2>冒險者 Lv.${lv} ${esc(TITLES[lv - 1] || '')}</h2><p class="muted">程度：${esc(LV_NAMES[S.profile.lv])}（在 ⚙️ 設定可改）</p><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
       document.getElementById('setBtn').onclick = () => go('settings');
-      const sv = pc.querySelector('.sv'); if (sv) { sv.title += '（點我備份）'; sv.onclick = () => window.PracticeAPI && PracticeAPI.backup(); }
-      const sb = document.getElementById('sfxBtn'); if (sb) sb.onclick = () => { Game.toggleSfx(); renderNav(); };
       let bk = document.getElementById('backBtn');
       if (!bk) { bk = document.createElement('button'); bk.id = 'backBtn'; bk.className = 'icon-btn'; bk.title = '回上一頁'; bk.textContent = '←'; const top = document.querySelector('#top .in'); top.insertBefore(bk, top.firstChild); bk.onclick = back; }
-      bk.style.visibility = cur0 === 'home' ? 'hidden' : 'visible';
+      bk.hidden = cur0 === 'home';   // 首頁不顯示（不留空位，logo 貼齊左緣）；#backBtn 是全站唯一返回鍵，頁內不再放 ←
     }
   }
   /* ---------------- 外觀：主題色、淺深色、字級 ---------------- */

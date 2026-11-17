@@ -297,6 +297,7 @@
       const kl = App.state.kanaL || (App.state.kanaL = {});
       kl[KUI.set] = [...new Set(learned(KUI.set).concat(newItems.map(x => x.g)))];
       const stars = R.ok >= 9 ? 3 : R.ok >= 7 ? 2 : R.ok >= 4 ? 1 : 0;
+      if (stars) App.state.kanaDay = App.today();   // 首頁「今日 3 件事：五十音一組」用
       App.save();
       const gained = stars ? stars * 4 + (newItems.length ? 5 : 0) : 0;
       if (gained) App.addXP(gained, newItems.length ? `學會 ${newItems.length} 個新字` : '五十音複習');

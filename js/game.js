@@ -91,17 +91,21 @@
     { id: 'quests', name: '完成 1 個關卡或任務', icon: '⚔️', goal: 1, xp: 25 },
     { id: 'review', name: '複習不會清單 5 次', icon: '📌', goal: 5, xp: 15 }
   ];
-  DAILY.forEach(m => Object.defineProperty(m, 'label', { enumerable: true, get() { let v = 0; try { v = Math.min(m.goal, daily()[m.id] || 0); } catch (e) { } return m.name + '（' + v + '/' + m.goal + '）'; } }));
+  DAILY.forEach(m => Object.defineProperty(m, 'label', { enumerable: true, get() { let v = 0; try { v = Math.min(m.goal, prog(m.id)); } catch (e) { } return m.name + '（' + v + '/' + m.goal + '）'; } }));
+  // quests＝冒險世界在店內完成目標（world 組呼叫 bump('quests')）；clear＝其他模組過關（閱讀、五十音、特訓…）
+  // 每日任務「完成 1 個關卡或任務」兩者合計；首頁「在任一間店完成 1 件事」只看 quests
+  const prog = id => { const d = daily(); return id === 'quests' ? (d.quests || 0) + (d.clear || 0) : (d[id] || 0); };
   function daily() {
     const S = App.state, today = App.today();
-    if (!S.daily || S.daily.date !== today) S.daily = { date: today, ok: 0, quests: 0, review: 0, claimed: {} };
+    if (!S.daily || S.daily.date !== today) S.daily = { date: today, ok: 0, quests: 0, clear: 0, review: 0, claimed: {} };
+    if (!S.daily.claimed) S.daily.claimed = {};
     return S.daily;
   }
   function bump(key, n) {
     const d = daily(); d[key] = (d[key] || 0) + (n || 1);
-    const m = DAILY.find(x => x.id === key);
-    if (m && d[key] >= m.goal && !d.claimed[key]) {
-      d.claimed[key] = true; App.save();
+    const m = DAILY.find(x => x.id === (key === 'clear' ? 'quests' : key));
+    if (m && prog(m.id) >= m.goal && !d.claimed[m.id]) {
+      d.claimed[m.id] = true; App.save();
       setTimeout(() => { App.toast(`🎯 每日任務完成：${m.name}`, 'ok'); App.addXP(m.xp, '每日任務'); }, 900);
       if (DAILY.every(x => d.claimed[x.id])) setTimeout(() => { App.toast('🏆 今日任務全部完成！+30 XP', 'xp'); App.addXP(30, '全勤獎勵'); confetti(80); }, 2200);
     } else App.save();
@@ -136,7 +140,7 @@
     if (r) {
       const st = (r.querySelector('.stars') || {}).textContent || '';
       const n = (st.match(/⭐/g) || []).length;
-      if (n > 0) { bump('quests'); setTimeout(() => sfx('win'), 100); vibrate([30, 50, 30]); confetti(30 + n * 20); }
+      if (n > 0) { bump('clear'); setTimeout(() => sfx('win'), 100); vibrate([30, 50, 30]); confetti(30 + n * 20); }
       else { sfx('lose'); vibrate(200); }
     }
   }
@@ -177,9 +181,9 @@
 
   // 包裝：關卡完成、複習計數
   const _cq = App.completeQuest;
-  App.completeQuest = function (id, stars, xp) { const r = _cq.apply(this, arguments); if (stars > 0) bump('quests'); return r; };
+  App.completeQuest = function (id, stars, xp) { const r = _cq.apply(this, arguments); if (stars > 0) bump('clear'); return r; };
   const _rw = App.reward;
-  App.reward = function (id, stars) { const r = _rw.apply(this, arguments); if (stars > 0) bump('quests'); return r; };
+  App.reward = function (id, stars) { const r = _rw.apply(this, arguments); if (stars > 0) bump('clear'); return r; };
   const _mark =Tracker.mark.bind(Tracker);
   Tracker.mark = function (id, ok) { const r = _mark(id, ok); bump('review'); return r; };
 
@@ -187,6 +191,6 @@
     sfx, vibrate, floatText, burst, confetti, shake, fly,
     sfxOn: () => sfxOn,
     toggleSfx() { sfxOn = !sfxOn; App.store.set(SFX_KEY, sfxOn ? '1' : '0'); if (sfxOn) sfx('coin'); },
-    DAILY, daily, bump, avatar, pickAvatar, AVATARS
+    DAILY, daily, bump, prog, avatar, pickAvatar, AVATARS
   };
 })();

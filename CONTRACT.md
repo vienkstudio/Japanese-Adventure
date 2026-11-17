@@ -78,29 +78,34 @@ Tracker.dueList() / dueCount()   // 今日該複習
 | 欄位 | 擁有者 |
 |---|---|
 | `xp`、`cleared`、`tracked`、`log`、`streak`、`trackHelp`、`clearN`、`v` | core.js |
-| `daily`、`avatar` | game.js |
+| `daily`（`date ok quests clear review claimed`；`quests`＝冒險世界店內完成目標，由 world 組呼叫 `Game.bump('quests')`；`clear`＝其他模組過關，game.js 自動計；每日任務「完成 1 個關卡或任務」＝兩者合計，見 `Game.prog(id)`）、`avatar` | game.js |
 | `avatarsOwned` | travel.js 寫入（掉落）、game.js 讀取 |
-| `trip`（`level`、`runs[難度]`、`stamps`）、`kanaL` | travel.js |
+| `trip`（`level`、`runs[難度]`、`stamps`）、`kanaL`、`kanaDay`（最後完成一組五十音的日期，首頁用） | travel.js |
+| `read`（`done{id:星}`、`pref`、`lastDay`＝最後讀完每日短文的日期，首頁「今日短文」直接讀這裡，不依賴延遲載入的 reader.js） | reader.js |
 | `world`（`lv`、`stamps`、`dex`、`zones`、`pos`、`spots`、`last`、`at`） | world.js／world-quest.js（`lv` 由 core 從 profile 同步，請改讀 `App.profile()`） |
-| `profile`（`lv`、`goals`、`assist`、`placed`） | core.js（`App.setProfile`）；舊檔 migrate：冒險世界有進度用 `world.lv`，否則 `trip.level`（K0→zero） |
+| `profile`（`lv`、`goals`、`assist`、`placed`） | core.js（`App.setProfile`）；舊檔 migrate：冒險世界有進度用 `world.lv`，否則 `trip.level`（K0→zero）；`xp>0` 的舊玩家一律 `placed:true` |
 | `ui`（`theme`、`palette`、`fs`） | core.js（`App.setTheme`） |
 | `sit`、`sceneDone`、`cardDiff`、`guide` | practice.js（town.js 也寫 `sceneDone`） |
 | `drill`、`drillOpt` | drill.js |
 
 `trip.level` 也由 profile 同步（zero→K0）；舊旅程不再有「新開始／切換難度」。
+migrate 也會修正型別：`xp` 非有限數字→0（負數→0）、`cleared` 是陣列→`{}`。
+
+## 返回鍵
+頂列 `#backBtn` 是全站**唯一**返回鍵（首頁不顯示、不佔位）；各頁內容區不要再放 ← 按鈕。
 
 ## 路由一覽
 底部導覽 5 鈕：`home`(1) 首頁、`play`(2) 冒險、`read`(3) 閱讀、`kb`(4) 知識庫、`review`(5) 複習；其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。
 | 路由 | 模組 | 說明 |
 |---|---|---|
-| `home`（nav 1） | home.js | 首頁：主按鈕「繼續」（lv=zero 時改去五十音）＋今日 3 件事（複習到期、今日短文、冒險一關）＋手冊／特訓／歌曲／五十音＋可展開日本地圖；可點元素 ≤10。未定位（`profile.placed` false）先顯示程度選擇／3 題定位 |
+| `home`（nav 1） | home.js | 首頁：主按鈕「繼續」（lv=zero 時改去五十音）＋今日 3 件事（① 複習到期；清單空時＝今天練過任一題 ② 今日短文（`read.lastDay`）③ 零基礎且五十音未學完＝五十音一組（`kanaDay`），否則「在任一間店完成 1 件事」（`Game.daily().quests>0`））＋手冊／特訓／歌曲／五十音＋可展開日本地圖；可點元素 ≤10。未定位（`profile.placed` false）先顯示程度選擇／3 題定位，此時 body 加 `.ob-mode`：隱藏底部導覽、頂列按鈕，不能跳過（core.render 換頁自動移除）。主按鈕副標用 `World.next()` 的 `sub || label` |
 | `settings` | home.js | 設定頁：外觀（主題色、淺／深／跟隨系統、字級）、程度與提示、音效、頭像御朱印、備份、清除 |
 | `play`（nav 2，B 設定） | world.js | 冒險世界：params `{r 地區, d 街區, s 店}`；首頁用 `World.next()`、`World.japan(el)`（皆防呆） |
 | `event` | world-quest.js | 店家狀況題 |
-| `read`（nav 3）、`read-article`、`songs`、`song` | D：reader.js、songs.js | 閱讀、歌曲（延遲載入） |
+| `read`（nav 3）、`read-article`、`songs`、`song` | D：reader.js、songs.js | 閱讀、歌曲（延遲載入；`songs`/`song` 的 navParent＝`read`） |
 | `kb`（nav 4）、`kb-page`、`mind3d` | C：kb.js、mind3d.js | 知識庫；`mind3d`＝舊 3D 心智圖（實驗功能）；舊 `mind` 路由由 C 處理 |
 | `review`（nav 5） | review.js | 複習（不會清單）：主按鈕「開始複習」，題型／範圍收在展開區 |
-| `phrasebook` | phrasebook.js | 旅遊會話手冊（首頁進入） |
+| `phrasebook` | phrasebook.js | 旅遊會話手冊（首頁、店內 📖 進入）。params `{q:'關鍵字'}` 直接搜尋，或 `{cat:'must|emer|move|eat|shop|stay|see'}`（也接受場景 id 如 `konbini`）。搜尋含 ⭐ 必備句、SCENES、冒險世界各店（asks 回答、acts＋ください、may＋もいいですか、info 問句、items＋をください／はありますか；搜尋時才 `World.loadRegion` 全部地區）與同義詞表；零基礎或 `assist:'full'` 顯示羅馬字；kana 欄保留片假名 |
 | `boot`、`boot-play` | drill.js | 實戰特訓（首頁進入） |
 | `trip` | travel.js | 旅程：params `{kana:1}`＝五十音入門（首頁「五十音」）；否則依 profile 顯示舊東京 13 站（zero＝五十音） |
 | `trip-stop`（transient）、`trip-event`、`trip-next`（transient） | travel.js | 站內流程、狀況題、下一站 |
@@ -126,7 +131,8 @@ N5／N4：〜ください・〜お願いします；N3：請求（〜お願い�
 - 舊別名（`--ink --shu --ai --matcha --paper`…）在 app.css 指向新變數，新程式請直接用上面的名稱。
 - 需要 JS 取色：`getComputedStyle(document.documentElement).getPropertyValue('--pri')`，並監聽 `themechange` 重繪。
 - class 前綴：`hm-`（首頁）、`st-`（設定）、`ob-`（程度選擇）、`trip-`、`kn-`、`tg-`、`dr-`、`pb-`、`pc-`、`rv-`、`q-`、`t-`、`m-`、`g-`、`h-`。
-- 觸控目標 ≥44px；讀音／中文字 ≥13px（`--fs-xs`）。
+- 觸控目標 ≥44px（pill、切換鈕、分頁鈕 min-height 44px）；最小字級 13px（`--fs-xs`，含底部導覽標籤、頂列 🔥/Lv、`.lv-b`、`.track-btn`）。
+- 開關型按鈕（`aria-pressed`）：開＝實心主色 `--pri`＋「✓」，關＝外框（虛線），兩者要一眼分得出。
 
 ## sw.js 快取規則
 網路優先（4 秒逾時）、失敗才用快取；只快取同網域且 `r.ok` 的回應；只刪 `jpq-v` 開頭的舊快取；安裝時個別檔案失敗不影響整體。改版請把 `VERSION` 加 1，並把新檔加進 `FILES`。

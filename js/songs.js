@@ -64,7 +64,7 @@
 
   /* ---------------- 歌曲清單 ---------------- */
   App.register('songs', {
-    title: '歌曲', icon: '🎵', nav: false, navParent: 'home',
+    title: '歌曲', icon: '🎵', nav: false, navParent: 'read',
     render(el, params) {
       params = params || {};
       if (params.mode === 'new' || params.edit) return editView(el, params.edit || null);
@@ -74,7 +74,7 @@
 
   function listView(el) {
     el.innerHTML = `<div class="sg-home">
-      <div class="sg-head"><button type="button" class="btn ghost rd-back" aria-label="返回">←</button><h2 class="rd-h2">🎵 歌曲跟唱</h2></div>
+      <div class="sg-head"><h2 class="rd-h2">🎵 歌曲跟唱</h2></div>
       <p class="muted rd-tip">貼上你喜歡的日文歌詞，搭配 YouTube 或手機裡的音檔：逐句高亮、點詞查意思、填空聽寫、慢速、A-B 循環、錄音跟唱。</p>
       <button type="button" class="btn primary block" id="sgNew">＋ 新增歌曲</button>
       <h3 class="rd-h3">示範曲</h3>
@@ -83,7 +83,6 @@
       <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
       <p class="muted rd-tip">歌詞與音檔只存在這台裝置，不會上傳。請只使用你有權使用的內容；本站不提供任何歌詞。</p>
     </div>`;
-    el.querySelector('.rd-back').onclick = () => App.back();
     el.querySelector('#sgNew').onclick = () => App.go('songs', { mode: 'new' });
     el.querySelectorAll('[data-song]').forEach(b => b.onclick = () => App.go('song', { id: b.dataset.song }));
     songIndex().then(idx => {
@@ -103,7 +102,7 @@
     const s = old || { id: 's' + Date.now().toString(36), title: '', src: { type: 'yt' }, lines: [] };
     let type = s.src.type, file = null;
     el.innerHTML = `<div class="sg-home">
-      <div class="sg-head"><button type="button" class="btn ghost rd-back" aria-label="返回">←</button><h2 class="rd-h2">${old ? '✏️ 編輯歌曲' : '＋ 新增歌曲'}</h2></div>
+      <div class="sg-head"><h2 class="rd-h2">${old ? '✏️ 編輯歌曲' : '＋ 新增歌曲'}</h2></div>
       <label class="rd-lbl">歌名<input id="sgT" class="rd-in" maxlength="60" value="${esc(s.title)}" placeholder="例：我最喜歡的歌"></label>
       <div class="rd-lbl">音源</div>
       <div class="rd-tg sg-srcs" role="group" aria-label="音源">${['yt', 'file', 'tts'].map(k => `<button type="button" data-src="${k}" class="${k === type ? 'on' : ''}" aria-pressed="${k === type}">${SRC_NAME[k]}</button>`).join('')}</div>
@@ -122,7 +121,6 @@
     };
     showSrc();
     el.querySelectorAll('[data-src]').forEach(b => b.onclick = () => { type = b.dataset.src; showSrc(); });
-    $('.rd-back').onclick = () => App.back();
     $('#sgCancel').onclick = () => App.back();
     $('#sgF').onchange = e => {
       const f = e.target.files && e.target.files[0];
@@ -253,7 +251,7 @@
 
   /* ---------------- 跟唱頁 ---------------- */
   App.register('song', {
-    title: '歌曲', icon: '🎵', nav: false, navParent: 'home',
+    title: '歌曲', icon: '🎵', nav: false, navParent: 'read',
     render(el, params) { songView(el, (params || {}).id || 'demo'); }
   });
 
@@ -272,7 +270,7 @@
     }
     const hasRec = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     el.innerHTML = `<div class="sg-page">
-      <div class="sg-head"><button type="button" class="btn ghost rd-back" aria-label="返回">←</button><h2 class="rd-h2" lang="ja">${esc(s.title)}</h2>${s.demo ? '' : '<button type="button" class="btn ghost sg-edit" aria-label="編輯">✏️</button>'}</div>
+      <div class="sg-head"><h2 class="rd-h2" lang="ja">${esc(s.title)}</h2>${s.demo ? '' : '<button type="button" class="btn ghost sg-edit" aria-label="編輯">✏️</button>'}</div>
       <div class="sg-media"></div>
       <div class="tabs sg-modes" role="tablist">
         <button type="button" data-mode="sing" class="on" role="tab">🎤 跟唱</button>
@@ -325,7 +323,6 @@
     if (V.P2.kind === 'file') { const a = media.querySelector('audio'); a.addEventListener('play', () => syncPlay(V)); a.addEventListener('pause', () => syncPlay(V)); }
 
     // 綁定
-    $('.rd-back').onclick = () => App.back();
     if ($('.sg-edit')) $('.sg-edit').onclick = () => App.go('songs', { edit: s.id });
     V.root.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       const k = b.dataset.t, v = !b.classList.contains('on');

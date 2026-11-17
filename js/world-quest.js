@@ -14,48 +14,80 @@
   const yen = n => '¥' + n.toLocaleString('en-US');
 
   /* =========================================================
-     今天想做的事：3 條，自動從玩家行為勾選；完成任一條就蓋本店御朱印
+     今天想做的事：每天（App.today()）從這間店的目標池抽 3 條，自動從玩家行為勾選
+     完成一條 +5 XP（每天每條一次）；這間店累計完成 2 種目標就蓋御朱印（+10 XP、全螢幕蓋印）
+     存檔：world.daily={d:日期, g:{店id:[今天完成的目標]}}；world.goals[店id]=[曾經完成過的目標]（累計，蓋印用）
      ========================================================= */
-  function goalsOf(s) {
-    const g = [];
-    if (s.kind === 'eat') g.push({ id: 'order', t: '點一份餐', ev: ['served'] }, { id: 'pay', t: '吃完結帳', ev: ['bought'] });
-    else if (s.kind === 'service' && s.asks.some(a => a.phase === 'checkin')) g.push({ id: 'checkin', t: '辦好櫃台手續', ev: ['checkin'] });
-    else g.push({ id: 'buy', t: '買一樣東西', ev: ['bought', 'vend'] });
+  const hashS = s => [...String(s)].reduce((a, c) => (a * 31 + c.codePointAt(0)) >>> 0, 7);
+  function goalPool(s) {
+    const g = [], ck = s.asks.some(a => a.phase === 'checkin'), dest = it => (it.tags || []).includes('dest');
+    if (s.kind === 'eat') g.push({ id: 'order', t: '點一份餐', ev: ['served'], main: 1 }, { id: 'pay', t: '吃完結帳', ev: ['bought'] });
+    else if (s.kind === 'service' && ck) g.push({ id: 'checkin', t: '辦好櫃台手續', ev: ['checkin'], main: 1 });
+    else g.push({ id: 'buy', t: '買一樣東西', ev: ['bought', 'vend'], main: 1 });
+    if (s.kind === 'service' && ck && s.items.some(i => i.price > 0 && !dest(i))) g.push({ id: 'buy', t: '用說的買一樣東西', ev: ['bought', 'vend'] });
     g.push({ id: 'ask', t: '開口問店員一件事', ev: ['said'] });
-    if (g.length < 3) g.push({ id: 'look', t: '看懂 2 個區域或標示', ev: ['visit'], n: 2 });
+    g.push({ id: 'where', t: '問一個東西在哪裡', ev: ['said'], intent: 'where' });
+    if (s.items.some(i => i.price > 0 && !dest(i))) g.push({ id: 'price', t: '問一樣東西多少錢', ev: ['said'], intent: 'price' });
+    if (s.items.some(dest)) g.push({ id: 'go', t: '問怎麼去、票價', ev: ['said'], intent: 'go' });
+    if ((s.may || []).length) g.push({ id: 'may', t: '問「我可以…嗎？」', ev: ['said'], intent: 'may' });
+    if ((s.acts || []).length) g.push({ id: 'act', t: '請店員幫一個忙', ev: ['said'], intent: 'act' });
+    if ((s.info || []).length) g.push({ id: 'info', t: '打聽一個消息', ev: ['said'], intent: 'info' });
+    g.push({ id: 'look', t: '看懂 3 個區域或標示', ev: ['visit'], n: 3 });
+    g.push({ id: 'card', t: '收集一張新句卡', ev: ['card'] });
+    g.push({ id: 'mission', t: '完成一個挑戰', ev: ['mission'] });
     return g;
   }
-  const gotOf = s => st().goals[s.id] || [];
+  // 今天的 3 條：主要目標（買／點餐／辦手續）＋依日期抽 2 條
+  function goalsOf(s) {
+    const pool = goalPool(s), main = pool.filter(g => g.main), rest = pool.filter(g => !g.main && !main.some(m => m.id === g.id));
+    const seed = hashS(App.today() + ':' + s.id), out = main.slice(0, 1);
+    const r = rest.map((g, i) => [hashS(seed + ':' + g.id + i), g]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    r.forEach(g => { if (out.length < 3 && !out.some(o => o.id === g.id)) out.push(g); });
+    return out;
+  }
+  function daily() {
+    const w = st(), t = App.today();
+    if (!w.daily || w.daily.d !== t || typeof w.daily.g !== 'object') w.daily = { d: t, g: {} };
+    return w.daily;
+  }
+  const gotOf = s => daily().g[s.id] || [];          // 今天完成的
+  const everOf = s => st().goals[s.id] || [];        // 累計完成過的（蓋印用）
+  const STAMP_NEED = 2;
   let SEEN = new Set();
-  function track(e, d) {
-    const s = X.S; if (!s) return;
+  function track(e, d, shop) {
+    const s = shop || X.S; if (!s) return;
     if (e === 'visit') SEEN.add(d.zone);
-    const w = st(), got = w.goals[s.id] || (w.goals[s.id] = []), gs = goalsOf(s);
+    const w = st(), dy = daily(), got = dy.g[s.id] || (dy.g[s.id] = []), ever = w.goals[s.id] || (w.goals[s.id] = []), gs = goalsOf(s);
     let n = 0;
     gs.forEach(g => {
-      if (got.includes(g.id) || !g.ev.includes(e) || (g.n && SEEN.size < g.n)) return;
-      got.push(g.id); n++;
-      setTimeout(() => App.toast(`✅ ${esc(g.t)}`, 'ok'), 300);
+      if (got.includes(g.id) || !g.ev.includes(e) || (g.intent && d.intent !== g.intent) || (g.n && SEEN.size < g.n)) return;
+      got.push(g.id); if (!ever.includes(g.id)) ever.push(g.id); n++;
+      setTimeout(() => { App.toast(`✅ ${esc(g.t)}`, 'ok'); App.addXP(5, `${s.name}・${g.t}`); }, 300);
     });
     if (!n) return;
     App.save();
-    const sm = stamp(s);
-    if (sm) setTimeout(() => App.toast(sm, 'ok'), 1500);
+    if (window.Game && Game.bump) Game.bump('quests');   // 首頁「冒險一關」
+    if (!w.stamps[s.id] && ever.length >= STAMP_NEED) setTimeout(() => stamp(s), 1300);
     if (gs.every(g => got.includes(g.id)) && !w.goals[s.id + ':all']) {
       w.goals[s.id + ':all'] = 1; App.save();
-      setTimeout(() => { App.toast(`🎉 成為「${esc(s.name)}」的常客！`, 'ok'); App.addXP(10, `${s.name}・常客`); }, 2800);
+      setTimeout(() => { App.toast(`🎉 成為「${esc(s.name)}」的常客！`, 'ok'); App.addXP(10, `${s.name}・常客`); }, 3200);
     }
-    const box = X.STAGE && X.STAGE.querySelector('#wd-goals'); if (box) box.outerHTML = Q.goals(s);
-    const bd = X.STAGE && X.STAGE.querySelector('#wd-board'); if (bd) bd.onclick = () => Q.board();
+    if (shop && shop !== X.S) return;
+    const box = X.STAGE && X.STAGE.querySelector('#wd-goals'); if (box) { box.outerHTML = Q.goals(s); Q.bindGoals(X.STAGE); }
   }
   Q.goals = s => {
-    const got = gotOf(s), stp = st().stamps[s.id];
-    return `<div class="wd-goals" id="wd-goals"><p><b>今天想做的事</b><small>做什麼都算數，完成任一件就蓋御朱印</small></p>
+    const got = gotOf(s), stp = st().stamps[s.id], ev = everOf(s).length, n = stp ? next() : null;
+    return `<div class="wd-goals" id="wd-goals"><p><b>今天想做的事 <small class="wd-day">每天更新</small></b><small>${stp ? '這間店已蓋御朱印；今天的目標一樣有 XP' : `累計完成 ${STAMP_NEED} 件就蓋御朱印（目前 ${Math.min(ev, STAMP_NEED)}/${STAMP_NEED}）`}・每件 +5 XP</small></p>
       <div class="wd-chips">${goalsOf(s).map(g => chip(esc(g.t), got.includes(g.id))).join('')}</div>
-      <div class="wd-acts"><span class="wd-stp${stp ? ' ok' : ''}">${stp ? '⛩️ 已蓋御朱印' : '⛩️ 還沒蓋印'}</span><button type="button" class="btn" id="wd-board">🎯 挑戰（選做）</button></div></div>`;
+      <div class="wd-acts"><span class="wd-stp${stp ? ' ok' : ''}">${stp ? '⛩️ 已蓋御朱印' : '⛩️ 還沒蓋印'}</span><button type="button" class="btn" id="wd-board">🎯 挑戰（選做）</button></div>
+      ${n && n.params && n.params.s !== s.id ? `<button type="button" class="wd-nextshop" id="wd-nextshop"><span>▶</span><span><small>下一站（今日推薦）</small><b>${esc(n.sub)}</b></span></button>` : ''}</div>`;
+  };
+  Q.bindGoals = el => {
+    const bd = el.querySelector('#wd-board'); if (bd) bd.onclick = () => Q.board();
+    const nx = el.querySelector('#wd-nextshop'); if (nx) nx.onclick = () => { const n = next(); App.go(n.route, n.params); };
   };
 
-  /* ---------------- 御朱印：純收藏 ---------------- */
+  /* ---------------- 御朱印：累計 2 件目標才蓋；全螢幕蓋印動畫 ---------------- */
   const DROPS = ['🍣', '🍙', '🍡', '🎎', '🗻', '🦝', '🐸', '🎏', '🍵', '🐟', '🌸', '🎐', '🍜', '🦌', '🐙', '🦀', '🐬', '🌺', '⛄', '🏯'];
   function stamp(s) {
     const w = st(); if (w.stamps[s.id]) return '';
@@ -63,8 +95,29 @@
     const own = App.state.avatarsOwned || (App.state.avatarsOwned = []);
     const left = DROPS.filter(e => !own.includes(e)), got = left.length ? left[Math.random() * left.length | 0] : '';
     if (got) own.push(got);
-    App.save(); G.sfx('combo');
+    setNext(s);
+    App.save();
+    sealFX(s, got);
+    App.addXP(10, `${s.name}・御朱印`);
     return `⛩️ 蓋上「${esc(s.name)}」御朱印${got ? `・🎁 頭像 ${got}` : ''}`;
+  }
+  function sealFX(s, drop) {
+    const R = W.regions.find(r => r.id === s.region) || {}, tot = (R.shops || []).length, has = regionStamps(s.region), n = next();
+    const el = document.createElement('div');
+    el.className = 'modal-bg wd-seal'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '蓋上御朱印');
+    el.innerHTML = `<div class="wd-seal-in">
+      <div class="wd-seal-st" aria-hidden="true"><span class="ic">${esc(s.icon)}</span><b lang="ja">${esc(s.jp)}</b><i lang="ja">奉拝</i><small>${esc(App.today())}</small></div>
+      <h2>⛩️ 蓋上御朱印！</h2>
+      <p><b>${esc(s.name)}</b>・${esc(R.name || '')} ${has}／${tot || '?'}</p>
+      ${drop ? `<p>🎁 獲得限定頭像 <span class="wd-seal-av">${drop}</span></p>` : ''}
+      <p class="wd-seal-xp">+10 XP</p>
+      <div class="wd-seal-b">${n && n.params && n.params.s && n.params.s !== s.id ? `<button type="button" class="btn primary" data-go>▶ 下一站：${esc(n.sub)}</button>` : ''}<button type="button" class="btn" data-x>留在這裡</button></div></div>`;
+    document.body.appendChild(el);
+    G.sfx('win'); if (G.confetti) G.confetti(70); if (G.vibrate) G.vibrate([30, 60, 30]);
+    const close = () => el.remove();
+    el.querySelector('[data-x]').onclick = close;
+    el.onclick = e => { if (e.target === el) close(); };
+    const go = el.querySelector('[data-go]'); if (go) go.onclick = () => { close(); App.go(n.route, n.params); };
   }
 
   /* =========================================================
@@ -122,9 +175,9 @@
     M = null;
     const stars = m.mistakes === 0 ? 3 : m.mistakes <= 2 ? 2 : 1;
     const r = App.reward(key(m.shop, m.def.id), stars, `${m.shop.name}・${m.def.title}`);
-    const sm = stamp(m.shop);
     X.closeSheet(); X.paintBar(); X.paintHud();
-    App.showResult({ title: `${m.def.icon} ${m.def.title}　完成！`, stars, gained: r.gained, note: (m.mistakes ? `失誤 ${m.mistakes} 次（不影響進度）` : '零失誤！') + (sm ? `<br>${sm}` : ''), retry: () => start(m.def), ok: '繼續 ➜' });
+    App.showResult({ title: `${m.def.icon} ${m.def.title}　完成！`, stars, gained: r.gained, note: m.mistakes ? `失誤 ${m.mistakes} 次（不影響進度）` : '零失誤！', retry: () => start(m.def), ok: '繼續 ➜' });
+    setTimeout(() => track('mission', {}, m.shop), 400);
   }
 
   /* ---------------- 各類挑戰 ---------------- */
@@ -379,9 +432,9 @@
       const finishEv = () => {
         const n = events.length, stars = hearts <= 0 ? 0 : correct === n ? 3 : correct >= n - 1 ? 2 : correct * 2 >= n ? 1 : 0;
         const r = stars ? App.reward(key(shop, 'ev'), stars, `${shop.name}・狀況題`) : { gained: 0 };
-        const sm = stars ? stamp(shop) : '';
         el.innerHTML = `<section class="ev"><div class="panel center"><h2>${stars ? '狀況題通過！' : hearts <= 0 ? '💔 愛心用完了' : '再挑戰一次'}</h2><p>${correct}／${n} 題答對</p></div></section>`;
-        App.showResult({ title: stars ? `⚡ ${shop.name}・狀況題 通過！` : hearts <= 0 ? '💔 愛心用完了' : '再試一次', stars, correct, total: n, gained: r.gained, wrong, note: sm, retry: () => renderEvent(el, params), back: { label: '回店裡 ➜' } });
+        App.showResult({ title: stars ? `⚡ ${shop.name}・狀況題 通過！` : hearts <= 0 ? '💔 愛心用完了' : '再試一次', stars, correct, total: n, gained: r.gained, wrong, retry: () => renderEvent(el, params), back: { label: '回店裡 ➜' } });
+        if (stars) setTimeout(() => track('mission', {}, shop), 400);
       };
       const show = () => {
         const q = evObj(events[at]), choices = App.shuffle(q.answers);
@@ -419,7 +472,8 @@
      ========================================================= */
   const stampCount = () => Object.keys(st().stamps).length;
   const regionStamps = id => Object.values(st().stamps).filter(s => s.r === id).length;
-  const OFF = { tokyo: [11, 8], kyoto: [0, -14], osaka: [-8, 13], hokkaido: [12, 14], okinawa: [15, -6] };
+  // 卡片位置：index.js 的 nx,ny（已排開不重疊）；沒有就放在地名點下方
+  const nodeOf = r => [r.nx != null ? r.nx : r.x, r.ny != null ? r.ny : r.y + 10];
   const LAND = [
     'M68.6 25.5L71.7 26.1L72.0 31.1L75.1 36.7L72.6 41.8L69.2 44.0L69.2 50.7L67.0 54.6L68.4 58.0L65.8 60.8L62.8 62.5L62.5 59.7L61.4 60.2L58.8 60.8L57.2 64.2L55.8 61.6L53.5 64.2L48.5 63.9L46.0 63.3L46.2 65.8L42.9 67.5L40.1 70.6L36.2 68.4L36.4 65.8L38.1 63.6L33.9 63.3L28.9 64.7L24.4 65.8L20.5 66.4L16.6 67.8L12.6 67.8L12.9 65.3L16.0 63.6L21.0 60.2L26.1 58.8L32.2 58.6L37.3 58.0L40.6 57.7L41.8 55.2L45.1 51.6L45.4 48.5L48.8 47.9L46.8 51.3L49.0 51.8L53.5 50.2L56.9 46.2L60.2 44.0L62.2 39.5L63.9 35.0L62.8 30.6L65.3 27.2Z',
     'M63.9 25.8L65.0 21.9L62.5 19.4L65.8 16.0L71.2 16.0L72.8 9.8L73.1 3.7L75.9 3.4L81.5 8.2L88.8 11.5L93.3 9.6L93.3 13.8L96.1 15.2L91.6 17.1L85.2 18.0L82.1 22.7L77.6 21.0L73.1 19.4L69.2 20.8L66.4 19.9L67.8 24.1L67.0 25.8Z',
@@ -435,9 +489,9 @@
         <rect x="21" y="78" width="22" height="21" rx="2" class="inset"/>
         ${LAND.map(d => `<path class="land" d="${d}"/>`).join('')}
         <path class="rail" d="M26 95.4 L38.4 63.7 L39.9 61.9 L61.9 58.1 L71.2 16.8"/>
-        ${W.regions.map(r => { const o = OFF[r.id] || [0, 10]; return `<line class="lead" x1="${r.x}" y1="${r.y}" x2="${r.x + o[0]}" y2="${r.y + o[1]}"/><circle class="pin" cx="${r.x}" cy="${r.y}" r="1.6"/>`; }).join('')}
+        ${W.regions.map(r => { const o = nodeOf(r); return `<line class="lead" x1="${r.x}" y1="${r.y}" x2="${o[0]}" y2="${o[1]}"/><circle class="pin" cx="${r.x}" cy="${r.y}" r="1.4"/>`; }).join('')}
       </svg>
-      ${W.regions.map((r, i) => { const o = OFF[r.id] || [0, 10], n = World.cardCount(r.id), g = regionStamps(r.id); return `<button type="button" class="jp-node${here === r.id ? ' here' : ''}" style="left:${r.x + o[0]}%;top:${r.y + o[1]}%" data-r="${r.id}" aria-label="${esc(r.name)}"><i class="no">${'①②③④⑤⑥'[i] || ''}</i><span>${r.icon}</span><b>${esc(r.name)}</b><small lang="ja">${esc(r.jp)}</small>${n || g ? `<em>${n ? '🃏' + n : ''}${g ? ' ⛩️' + g : ''}</em>` : ''}</button>`; }).join('')}</div>`;
+      ${W.regions.map((r, i) => { const o = nodeOf(r), g = regionStamps(r.id), tot = (r.shops || []).length; return `<button type="button" class="jp-node${here === r.id ? ' here' : ''}" style="left:${o[0]}%;top:${o[1]}%" data-r="${r.id}" aria-label="${esc(r.name)}"><i class="no">${'①②③④⑤⑥'[i] || ''}</i><span>${r.icon}</span><b>${esc(r.name)}</b><small>⛩️${g}/${tot}</small></button>`; }).join('')}</div>`;
     el.querySelectorAll('[data-r]').forEach(b => b.onclick = () => App.go('play', { r: b.dataset.r }));
   }
   function mapPage(el) {
@@ -447,7 +501,7 @@
       <button type="button" class="jp-cont" id="jp-next"><span>▶</span><span>${esc(n.label)}<small>${esc(n.sub || '')}</small></span></button>
       <div id="jp-mapbox"></div>
       <div class="jp-list">${W.regions.map((r, i) => `<button type="button" class="jp-reg" data-r="${r.id}"><span class="ic">${r.icon}</span><span class="t"><b>${'①②③④⑤⑥'[i] || ''} ${esc(r.name)} <small lang="ja">${esc(r.jp)}</small></b><small>${esc(r.desc)}</small></span><em>${World.cardCount(r.id) ? '🃏' + World.cardCount(r.id) : ''}${regionStamps(r.id) ? ' ⛩️' + regionStamps(r.id) : ''}</em></button>`).join('')}</div>
-      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-cards">🃏 我的句卡<small>${World.cardCount()} 張・說對就收集</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()} 個・收藏用</small></button></div>
+      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-cards">🃏 我的句卡<small>${World.cardCount()} 張・說對就收集</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
     </section>`;
     japan(el.querySelector('#jp-mapbox'));
     el.querySelector('#jp-next').onclick = () => App.go(n.route, n.params);
@@ -461,26 +515,43 @@
       <div class="wd-cards">${list.map((c, i) => `<button type="button" class="wd-cd" data-ci="${i}">${tx(c, true)}</button>`).join('') || '<p class="muted center">還沒有句卡，去店裡說第一句吧！</p>'}</div>`, [{ label: '關閉', cls: 'primary' }]);
     document.querySelectorAll('.modal [data-ci]').forEach(b => b.onclick = () => App.speak(list[+b.dataset.ci].jp));
   }
+  // 全部店家（index.js 的推薦清單，不必載入地區資料）
+  const allShops = () => W.regions.flatMap(r => (r.shops || []).map(([d, s, label]) => ({ r: r.id, d, s, label })));
+  const iconOf = label => (String(label).split('・').slice(1).join('・').split(' ')[0]) || '⛩️';
   function goshuin() {
-    const w = st(), n = stampCount();
-    App.modal(`<h2>⛩️ 御朱印帳</h2><p class="muted">收藏用：在一間店做完任何一件事（買東西、問問題、辦手續…）就蓋印，還會掉落頭像。</p>
-      ${W.regions.map(r => { const list = Object.values(w.stamps).filter(s => s.r === r.id); return `<p class="gs-r"><b>${r.icon} ${esc(r.name)}</b>　${list.length} 個</p><div class="tg-grid">${list.map(s => `<div class="tg-cell ok"><span>${esc(s.i)}</span><small>${esc(s.n)}</small></div>`).join('') || '<div class="tg-cell"><span>？</span><small>還沒有</small></div>'}</div>`; }).join('')}
-      <p class="center">共 <b>${n}</b> 個</p>`, [{ label: '🎭 換頭像', onClick: () => window.Game && Game.pickAvatar(() => App.render()) }, { label: '關閉', cls: 'primary' }]);
+    const w = st(), n = stampCount(), all = allShops();
+    App.modal(`<h2>⛩️ 御朱印帳</h2><p class="muted">在一間店累計完成 ${STAMP_NEED} 件「今天想做的事」就蓋印，還會掉落頭像。灰色的是還沒去過的店。</p>
+      ${W.regions.map(r => {
+        const list = (r.shops || []), got = list.filter(x => w.stamps[x[1]]).length;
+        const extra = Object.keys(w.stamps).filter(id => w.stamps[id].r === r.id && !list.some(x => x[1] === id));
+        return `<p class="gs-r"><b>${r.icon} ${esc(r.name)}</b>　${got + extra.length}／${list.length}</p><div class="tg-grid gs-grid">${list.map(([d, id, label]) => { const sp = w.stamps[id]; return sp ? `<div class="tg-cell ok"><span>${esc(sp.i)}</span><small>${esc(sp.n)}</small></div>` : `<div class="tg-cell gs-ghost" title="${esc(label)}"><span>${esc(iconOf(label))}</span><small>？？？</small></div>`; }).join('')}${extra.map(id => `<div class="tg-cell ok"><span>${esc(w.stamps[id].i)}</span><small>${esc(w.stamps[id].n)}</small></div>`).join('')}</div>`;
+      }).join('')}
+      <p class="center">共 <b>${n}</b>／${all.length} 間店</p>`, [{ label: '🎭 換頭像', onClick: () => window.Game && Game.pickAvatar(() => App.render()) }, { label: '關閉', cls: 'primary' }]);
   }
-  // 下一步建議（給首頁用）：{label, sub, route, params}
-  function next() {
-    const w = st(), at = w.at;
-    if (at && at.d) {
-      const s = at.s && W.shops[at.s], d = W.districts[at.d];
-      if (s && d && goalsOf(s).every(g => gotOf(s).includes(g.id))) {
-        const nx = Object.values(d.places).filter(p => p.type === 'shop').map(p => W.shops[p.shop]).find(x => x && x.id !== s.id && !w.stamps[x.id]);
-        if (nx) return { label: '下一間店', sub: `${nx.icon} ${d.name}・${nx.name}`, route: 'play', params: { r: at.r, d: at.d, s: nx.id } };
-      }
-      const params = { r: at.r, d: at.d }; if (at.s) params.s = at.s;
-      return { label: '繼續冒險', sub: at.label || '', route: 'play', params };
+  // 推薦清單：依程度從推薦起點開始，往後找第一間還沒蓋印的店
+  function nextOpen(exclude) {
+    const w = st(), C = allShops(), R = World.REC[lv()] || World.REC.zero;
+    const i = Math.max(0, C.findIndex(c => c.s === R.s)), order = C.slice(i).concat(C.slice(0, i));
+    return order.find(c => !w.stamps[c.s] && c.s !== exclude) || null;
+  }
+  // 蓋印後記下「下一間推薦店」：同街區還沒蓋印的店優先，否則照推薦清單
+  function setNext(s) {
+    const w = st(), D = X.D;
+    let nx = null;
+    if (D && D.region === s.region) {
+      const sh = Object.values(D.places).filter(p => p.type === 'shop').map(p => W.shops[p.shop]).find(x => x && x.id !== s.id && !w.stamps[x.id]);
+      if (sh) nx = { r: s.region, d: D.id, s: sh.id, label: `${D.icon} ${D.name}・${sh.icon} ${sh.name}` };
     }
-    const R = World.REC[lv()] || World.REC.zero;
-    return { label: '開始冒險', sub: R.sub, route: 'play', params: { r: R.r, d: R.d, s: R.s } };
+    w.nextShop = nx || nextOpen(s.id);
+  }
+  // 下一步建議（給首頁用）：{label, sub, route, params}；sub 一定是目的地（例「🐼 上野・🏪 便利商店」）
+  function next() {
+    const w = st(), at = w.at || {}, go = c => ({ r: c.r, d: c.d, s: c.s });
+    if (at.s && at.d && !w.stamps[at.s]) return { label: '繼續冒險', sub: at.label || '', route: 'play', params: go(at) };
+    if (w.nextShop && w.nextShop.s && !w.stamps[w.nextShop.s]) return { label: '下一間店', sub: w.nextShop.label, route: 'play', params: go(w.nextShop) };
+    const c = nextOpen();
+    if (c) return { label: stampCount() ? '下一間店' : '開始冒險', sub: c.label, route: 'play', params: go(c) };
+    return { label: '自由逛', sub: '🗾 日本地圖（全部店都蓋過印了！）', route: 'play', params: { map: 1 } };
   }
   // 舊首頁相容（A 的 js/home.js 上線後就不會用到）
   function home(el) {

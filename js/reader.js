@@ -1,7 +1,7 @@
 // 閱讀模組（D 組）：路由 read（閱讀首頁）、read-article（閱讀器）
 // 依賴：App、Tracker、JPText（js/jp-text.js）、READING（data/reading/daily.js）
 // 使用者貼的文章存 App.idb：'docs:index'＝[{id,title,at,len,url}]（最近 50 篇）、'doc:<id>'＝{id,title,text,url,src,at}；不進 App.state、不上雲
-// App.state.read ＝ { done:{文章id:星數}, pref:{y,r,z} }
+// App.state.read ＝ { done:{文章id:星數}, pref:{y,r,z}, lastDay:'YYYY-MM-DD'（最後讀完每日短文的日期，首頁今日 3 件事用） }
 (function () {
   'use strict';
   const esc = App.esc;
@@ -115,7 +115,6 @@
 
   function pasteView(el, sh) {
     el.innerHTML = `<div class="rd-home">
-      <button type="button" class="btn ghost rd-back">← 閱讀</button>
       <h2 class="rd-h2">📋 貼上文章</h2>
       <p class="muted rd-tip">新聞、網誌、歌詞、菜單都可以。貼上後每個詞都能點，看讀音和中文。</p>
       <label class="rd-lbl">標題（可不填）<input id="rdT" class="rd-in" maxlength="80" value="${esc(sh.title || '')}"></label>
@@ -125,7 +124,6 @@
       <div class="rd-row"><button type="button" class="btn" id="rdClip">📥 從剪貼簿貼上</button><button type="button" class="btn primary" id="rdGo">開始閱讀 ➜</button></div>
       <p class="muted rd-tip">全文只存在這台裝置（最多 ${MAXLEN.toLocaleString()} 字），不會上傳。</p>
     </div>`;
-    el.querySelector('.rd-back').onclick = () => App.back();
     const ta = el.querySelector('#rdX');
     const clip = el.querySelector('#rdClip');
     if (!(navigator.clipboard && navigator.clipboard.readText)) clip.remove();
@@ -146,7 +144,6 @@
   function urlView(el) {
     const bm = bookmarklet(), httpOK = /^https?:/.test(location.protocol);
     el.innerHTML = `<div class="rd-home">
-      <button type="button" class="btn ghost rd-back">← 閱讀</button>
       <h2 class="rd-h2">🔗 貼網址</h2>
       <label class="rd-lbl">文章網址<input id="rdU" class="rd-in" type="url" inputmode="url" placeholder="https://…"></label>
       <div class="rd-row"><button type="button" class="btn" id="rdOpen">開啟原網頁</button><button type="button" class="btn primary" id="rdPaste">我複製好了，貼上 ➜</button></div>
@@ -162,7 +159,6 @@
       </div>
       <p class="muted rd-tip">想每天讀新聞？<a href="${NHK}" target="_blank" rel="noopener">NHK NEWS WEB EASY</a> 是給初學者的簡單新聞，讀完把全文貼回來就能查詞、加字卡。</p>
     </div>`;
-    el.querySelector('.rd-back').onclick = () => App.back();
     const u = el.querySelector('#rdU');
     const val = () => { const v = u.value.trim(); return /^https?:\/\/\S+$/i.test(v) ? v : ''; };
     el.querySelector('#rdOpen').onclick = () => { const v = val(); if (!v) { toast('請輸入 http 開頭的網址'); u.focus(); return; } window.open(v, '_blank', 'noopener'); };
@@ -276,7 +272,6 @@
     const len = A.paras.reduce((n, p) => n + p.jp.length, 0);
     el.innerHTML = `<article class="rd-art">
       <div class="rd-bar">
-        <button type="button" class="btn ghost rd-back" aria-label="回閱讀">←</button>
         <div class="rd-tg" role="group" aria-label="顯示">
           <button type="button" data-t="y" aria-pressed="${!!P.y}" class="${P.y ? 'on' : ''}">讀音</button>
           <button type="button" data-t="r" aria-pressed="${!!P.r}" class="${P.r ? 'on' : ''}">羅馬字</button>
@@ -297,7 +292,6 @@
     drawBody(el, S);
     drawEnd(el, S);
     const doc = el.querySelector('.rd-doc');
-    el.querySelector('.rd-back').onclick = () => App.back();
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       const k = b.dataset.t, v = !b.classList.contains('on');
       b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); doc.classList.toggle(k, v); setPref(k, v);
@@ -393,7 +387,7 @@
     if (A.q && S.quiz == null) { toast('先回答上面的問題吧'); const q = document.querySelector('.rd-quiz'); if (q) q.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     const stars = Math.max(1, Math.min(3, 1 + (S.tapped > 0 ? 1 : 0) + (A.q ? (S.quiz ? 1 : 0) : (S.tapped > 2 ? 1 : 0))));
     const r = App.reward('read:' + A.id, stars, '閱讀');
-    const st = ST(); st.done[A.id] = Math.max(st.done[A.id] || 0, stars); App.save();
+    const st = ST(); st.done[A.id] = Math.max(st.done[A.id] || 0, stars); if (A.daily) st.lastDay = App.today(); App.save();
     try { document.dispatchEvent(new CustomEvent('readdone', { detail: { id: A.id, stars } })); } catch (e) { }
     let next = null;
     if (A.daily) {

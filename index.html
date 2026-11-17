@@ -59,7 +59,7 @@
 <script>
 // 延遲載入：第一次進入才下載。導覽 5 鈕：home 1、play 2（B 在 world.js 設定）、read 3、kb 4、review 5
 App.lazy([['boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }]], ['data/drills.js', 'js/drill.js']);
-App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home' }]], ['js/phrasebook.js']);
+App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home' }]], ['js/phrasebook.js']);   // App.go('phrasebook', {q:'關鍵字'} 或 {cat:'eat'})
 // 知識庫（C）：kb、kb-page；mind3d＝舊 3D 心智圖（實驗功能）
 const MIND_DATA = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js'];
 App.lazy([['kb', { title: '知識庫', icon: '📚', nav: true, navOrder: 4 }], ['kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }], ['mind', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js']));
@@ -67,7 +67,7 @@ App.lazy([['mind3d', { title: '3D 心智圖', icon: '🧠', nav: false, navParen
 // 閱讀與歌曲（D）
 const READ_JS = ['data/reading/daily.js', 'js/jp-text.js', 'js/reader.js', 'js/songs.js'];
 App.lazy([['read', { title: '閱讀', icon: '📰', nav: true, navOrder: 3 }], ['read-article', { title: '閱讀', icon: '📰', nav: false, navParent: 'read' }],
-  ['songs', { title: '歌曲', icon: '🎵', nav: false, navParent: 'home' }], ['song', { title: '歌曲', icon: '🎵', nav: false, navParent: 'home' }]], READ_JS);
+  ['songs', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }], ['song', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }]], READ_JS);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>

@@ -309,5 +309,25 @@ input,textarea,select{background:var(--card);color:var(--text);border:1px solid 
 .st-lv .ob-opt{min-height:52px;padding:var(--sp-2) var(--sp-3)}
 .st-note{color:var(--muted);font-size:var(--fs-sm);margin:var(--sp-2) 2px}
 .st-ver{text-align:center;color:var(--muted);font-size:var(--fs-xs);margin:var(--sp-4) 0}
+/* ===== 觸控 ≥44px、最小字級 13px（--fs-xs） ===== */
+#top .logo{min-height:44px;min-width:44px;border-radius:var(--r-s)}
+#backBtn[hidden]{display:none}
+#playerChip{font-size:max(var(--fs-xs),.82em)}
+.pc-lv b,.pc-lv .pc-st{font-size:max(var(--fs-xs),.95em)}
+.badge{font-size:var(--fs-xs)}
+.lv-b{font-size:var(--fs-xs)}
+.track-btn{font-size:max(var(--fs-xs),.85em)}
+.chip,.pill,.bubble .who,.lv-legend{font-size:max(var(--fs-xs),.85em)}
+.tabs button{min-height:44px}
+@media(max-width:768px){#nav a{font-size:var(--fs-xs)}}
+/* 開關型按鈕（aria-pressed）：開＝實心主色＋✓；關＝外框 */
+.st-seg button.on{background:var(--pri);color:var(--on-pri)}
+.st-seg button.on::before{content:"✓ "}
+
+/* ===== 首次程度選擇：隱藏導覽與頂列按鈕，不能跳過 ===== */
+body.ob-mode #nav,body.ob-mode #playerChip,body.ob-mode #backBtn{display:none!important}
+body.ob-mode #top .logo{pointer-events:none}
+body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
+
 /* 彈窗在手機上不被底部導覽或瀏海遮住 */
 @media(max-width:768px){.modal{max-height:calc(100dvh - 24px);padding-bottom:calc(20px + var(--safeB))}}
