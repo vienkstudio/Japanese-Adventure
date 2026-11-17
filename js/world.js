@@ -62,6 +62,7 @@
     if (k && sk) h += `<i class="wd-k" lang="ja">${esc(o.kana)}</i>`;
     if (zero()) { const r = romaOf(o); if (r) h += `<i class="wd-r">${esc(r)}</i>`; }
     if (o.zh && sz) h += `<i class="wd-z">${esc(o.zh)}</i>`;
+    if (sz && window.Loan) { const og = Loan.textHTML(o.jp, 'wd-og'); if (og) h += og; }
     if ((k && !sk) || (o.zh && !sz)) h += `<button type="button" class="wd-peek" data-k="${k && !sk ? esc(o.kana) : ''}" data-z="${!sz ? esc(o.zh || '') : ''}">💡 提示</button>`;
     return `<span class="wd-tx">${h}</span>`;
   }

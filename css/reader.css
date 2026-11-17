@@ -244,3 +244,8 @@ input[type=file].rd-in{padding:8px}
 .rd-nitem[disabled]{opacity:.7}
 .rd-support{margin-top:var(--sp-2)}
 .rd-sup{margin:var(--sp-2) 0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+
+/* 外來語語源 */
+.rd-og{display:none;font-size:var(--fs-xs);line-height:1.25;color:var(--acc-d);white-space:nowrap;font-style:italic}
+.rd-doc.z .rd-og,.rd-doc.r .rd-og{display:block}
+.rd-loan{margin-top:4px;color:var(--acc-d);font-weight:700}

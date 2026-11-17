@@ -234,10 +234,10 @@
     const k = key(w), kn = kanaOf(w), rm = showRom() ? romOf(w) : '';
     const it = App.wordItem({ jp: w.jp, kana: kn || w.kana, romaji: romOf(w), zh: w.zh, hint: w.hint }, srcName || w.src || '手冊', 'phrase');
     return `<div class="pb-row"><button type="button" class="pb-say" data-say="${k}" aria-label="播放">🔊</button>
-      <div class="pb-t"><p class="jp" lang="ja">${esc(w.jp)}</p>${kn ? `<p class="k" lang="ja">${esc(kn)}</p>` : ''}${rm ? `<p class="rm">${esc(rm)}</p>` : ''}<p class="zh">${esc(w.zh)}</p>${w.use ? `<p class="use">🕒 ${esc(w.use)}</p>` : ''}${w.src && !srcName ? `<p class="src">${esc(w.src)}</p>` : ''}</div>
+      <div class="pb-t"><p class="jp" lang="ja">${esc(w.jp)}</p>${kn ? `<p class="k" lang="ja">${esc(kn)}</p>` : ''}${rm ? `<p class="rm">${esc(rm)}</p>` : ''}<p class="zh">${esc(w.zh)}</p>${window.Loan ? Loan.textHTML(w.jp, 'pb-og') : ''}${w.use ? `<p class="use">🕒 ${esc(w.use)}</p>` : ''}${w.src && !srcName ? `<p class="src">${esc(w.src)}</p>` : ''}</div>
       <div class="pb-act"><button type="button" class="pb-show" data-show="${k}" aria-label="放大給店員看">📢</button>${App.trackBtn(it, true)}</div></div>`;
   }
-  const vocab = w => { const k = key(w), kn = kanaOf(w), rm = showRom() ? romOf(w) : ''; return `<button type="button" data-say="${k}"><b lang="ja">${esc(w.jp)}</b><small>${esc([kn, rm].filter(Boolean).join('・'))}</small><small>${esc(w.zh)}</small></button>`; };
+  const vocab = w => { const k = key(w), kn = kanaOf(w), rm = showRom() ? romOf(w) : ''; return `<button type="button" data-say="${k}"><b lang="ja">${esc(w.jp)}</b><small>${esc([kn, rm].filter(Boolean).join('・'))}</small><small>${esc(w.zh)}</small>${window.Loan ? Loan.textHTML(w.jp, 'pb-og') : ''}</button>`; };
 
   function search(q) {
     const T = terms(q);

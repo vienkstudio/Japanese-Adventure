@@ -401,7 +401,7 @@
     const k = 'gallery', lim = LIM[k] || 24;
     return `<p class="muted kb-tip">點卡片翻面看讀音與中文，當閃卡用。</p><div class="kb-gal">${list.slice(0, lim).map(it => `<div class="kb-gcard" data-flip="1" role="button" tabindex="0">
       <div class="kb-gf"><b class="jp">${esc(it.jp)}</b>${lvB(it.lv)}</div>
-      <div class="kb-gb"><span class="kb-kana jp">${esc(it.kana || '')}</span><span class="kb-ro">${esc(romaji(it.kana))}</span><span>${esc(it.zh)}</span>
+      <div class="kb-gb"><span class="kb-kana jp">${esc(it.kana || '')}</span><span class="kb-ro">${esc(romaji(it.kana))}</span><span>${esc(it.zh)}</span>${window.Loan ? Loan.html(it.jp, 'kb-og') : ''}
         <span class="kb-gbt">${sayB(it.jp, 1)}<button type="button" class="kb-qc" data-open="${esc(it.id)}">開啟</button></span></div></div>`).join('')}</div>
       ${list.length > lim ? `<button type="button" class="kb-more" data-more="${k}" data-step="24">顯示更多（還有 ${list.length - lim}）</button>` : ''}`;
   }
@@ -425,7 +425,8 @@
     if (it.kind === 'word') {
       props += `<span class="kb-pp">${esc(scName(it.sc[0]))}</span>${it.sc.slice(1).filter(x => SCc[x]).map(x => `<span class="kb-pp">${esc(scName(x))}</span>`).join('')}<span class="kb-pp">${esc(M.POS[it.pos] || '')}${it.grp ? '・' + esc(M.GRP[it.grp] || '') : ''}</span>${it.core ? '<span class="kb-pp core">核心常用</span>' : ''}`;
       const ro = romaji(it.kana);
-      main = `<dl class="kb-dl"><dt>讀音</dt><dd class="jp kb-kana">${esc(it.kana)}</dd>${ro ? `<dt>羅馬字</dt><dd>${esc(ro)}</dd>` : ''}<dt>中文</dt><dd>${esc(it.zh)}</dd>${it.raw !== it.jp ? `<dt>寫法</dt><dd class="jp">${esc(it.raw)}</dd>` : ''}</dl>`;
+      const og = window.Loan ? Loan.get(it.jp) : null;
+      main = `<dl class="kb-dl"><dt>讀音</dt><dd class="jp kb-kana">${esc(it.kana)}</dd>${ro ? `<dt>羅馬字</dt><dd>${esc(ro)}</dd>` : ''}<dt>中文</dt><dd>${esc(it.zh)}</dd>${og && og.src ? `<dt>語源</dt><dd>🌐 ${esc(og.name)}：<b lang="en">${esc(og.src)}</b>${og.note ? `<small class="muted">（${esc(og.note)}）</small>` : ''}</dd>` : ''}${it.raw !== it.jp ? `<dt>寫法</dt><dd class="jp">${esc(it.raw)}</dd>` : ''}</dl>`;
       const ex = it.jp.length >= 2 ? M.gram.find(g => g.ex && g.ex[0] && g.ex[0].includes(it.jp)) : null;
       if (ex) main += `<div class="kb-ex"><div class="kb-exj jp">${esc(ex.ex[0])}${sayB(ex.ex[0], 1)}</div><div class="muted">${esc(ex.ex[1] || '')}</div><button type="button" class="kb-lnk" data-open="${esc(ex.id)}">出自文法 ${esc(ex.pat)}</button></div>`;
       if (isVerb(it) && M.conjugate) { const f = M.conjugate(it.jp, it.grp); if (f) more += tog('conj', '🔁 動詞變化表', formTable(f), false); }

@@ -296,7 +296,8 @@
       const lv = t.lv ? ' l-' + t.lv.toLowerCase() : '';
       const tracked = Tracker.has('word:' + t.base) ? ' tk' : '';
       const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${esc(String(t.zh).split(/[；;，,（(]/)[0].slice(0, 8))}</span>` : '';
-      return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}</span>`;
+      const og = window.Loan && Loan.isKata(t.s) ? Loan.label(t.s) : '';
+      return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}${og ? `<span class="rd-og" lang="en">${esc(og)}</span>` : ''}</span>`;
     });
   }
   function sentenceOf(text, i) {
@@ -307,7 +308,7 @@
   function wordCard(t, ctx) {
     ctx = ctx || {};
     const base = t.base || t.s, bk = t.bkana || t.kana || '';
-    const item = App.wordItem({ jp: base, kana: bk, romaji: JPText.romaji(bk), zh: t.zh || '（自填）', hint: ctx.title ? `出自《${ctx.title}》：${ctx.sentence || ''}` : (ctx.sentence || '') }, ctx.source || '📖 閱讀', 'word');
+    const item = App.wordItem({ jp: base, kana: bk, romaji: JPText.romaji(bk), zh: (t.zh || '（自填）') + (window.Loan && Loan.label(base) ? '（' + Loan.label(base) + '）' : ''), hint: ctx.title ? `出自《${ctx.title}》：${ctx.sentence || ''}` : (ctx.sentence || '') }, ctx.source || '📖 閱讀', 'word');
     const sent = ctx.sentence && ctx.sentence.length <= 60 ? App.wordItem({ jp: ctx.sentence, kana: '', zh: ctx.zh || '（整句）', hint: ctx.title ? `出自《${ctx.title}》` : '' }, ctx.source || '📖 閱讀', 'phrase') : null;
     const form = t.form && JPText.FORM_ZH[t.form] ? `・${JPText.FORM_ZH[t.form]}` : '';
     const html = `<div class="rd-card">
@@ -315,6 +316,7 @@
       <div class="rd-kana" lang="ja">${esc(t.kana || '')}${t.romaji ? ' ・ ' + esc(t.romaji) : ''}</div>
       ${base !== t.s ? `<div class="rd-base">原形：<b lang="ja">${esc(base)}</b>${bk && bk !== base ? `（${esc(bk)}）` : ''}${esc(form)}</div>` : ''}
       <div class="rd-mean">${t.zh ? esc(t.zh) : '<span class="muted">字典沒有這個詞</span>'}</div>
+      ${window.Loan && Loan.label(t.s, 1) ? `<div class="rd-loan">${esc(Loan.label(t.s, 1))}</div>` : window.Loan && Loan.isKata(t.s) && t.s.length > 2 && !(window.LOAN[t.s] && LOAN[t.s][0] === 'ja') ? `<div class="rd-loan muted">🌐 外來語（字典尚未收錄原文，讀音：${esc(t.romaji || '')}）</div>` : ''}
       <div class="chips rd-chips">${t.lv ? lvBadge(t.lv) : ''}${t.pos && JPText.POS_ZH[t.pos] ? `<span class="chip">${esc(JPText.POS_ZH[t.pos])}</span>` : ''}</div>
       ${t.alts && t.alts.length ? `<div class="rd-alts muted">也可能是：${t.alts.map(a => `${esc(a.jp)}（${esc(String(a.zh).split(/[；;]/)[0])}）`).join('、')}</div>` : ''}
       ${!t.known || t.user ? `<div class="rd-user"><input class="rd-in" id="rdUz" placeholder="自己填中文意思" value="${esc(t.user ? t.zh : '')}"><button type="button" class="btn sm" id="rdUs">存</button></div>` : ''}
@@ -461,6 +463,7 @@
           <div class="rd-lih"><b lang="ja">${JPText.ruby(v.base, v.kana)}</b>${lvBadge(v.lv)}${v.n > 1 ? `<small class="muted">出現 ${v.n} 次</small>` : ''}<button type="button" class="rd-say" data-sp="${esc(v.base)}" aria-label="朗讀">🔊</button></div>
           <div class="rd-lik" lang="ja">${esc(v.kana)}${v.romaji ? ' ・ ' + esc(v.romaji) : ''}</div>
           <div>${esc(v.zh || '（字典沒有，加入後可自填）')}</div>
+          ${window.Loan && Loan.label(v.base, 1) ? `<div class="rd-loan">${esc(Loan.label(v.base, 1))}</div>` : ''}
           ${App.trackBtn(items[k], true)}</div>`).join('') : '<p class="muted rd-tip">沒有找到可列出的單字。</p>'}
       </section>`;
   }

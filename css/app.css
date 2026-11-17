@@ -340,3 +340,6 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 
 /* 彈窗在手機上不被底部導覽或瀏海遮住 */
 @media(max-width:768px){.modal{max-height:calc(100dvh - 24px);padding-bottom:calc(20px + var(--safeB))}}
+
+/* 外來語語源（手冊、知識庫等共用） */
+.pb-og,.kb-og,.loan{display:block;font-size:var(--fs-xs);color:var(--acc-d);font-style:italic;line-height:1.35}
