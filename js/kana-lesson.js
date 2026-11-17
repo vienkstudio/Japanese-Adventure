@@ -237,7 +237,7 @@
   }
   function draw(root) {
     const kl = (((App.state.kanaL || {}).h) || []).length;
-    root.innerHTML = `<div class="kn-course"><button type="button" class="btn primary block" data-kcourse="1">🔰 五十音課程：每次 5 個字，先教再考（已學 ${kl}／46）</button><div class="kn-orig"><a href="日文講義.html" target="_blank" rel="noopener">📘 原版講義全文 ↗</a><a href="50音訓練表.html" target="_blank" rel="noopener">🎯 原版 50音訓練表 ↗</a></div></div>
+    root.innerHTML = `<div class="kn-course"><button type="button" class="btn primary block" data-kcourse="1">🔰 五十音課程：每次 5 個字，先教再考（已學 ${kl}／46）</button><button type="button" class="btn block" data-kcards="1">🎴 五十音字卡（平假名・片假名・濁音拗音）</button><div class="kn-orig"><a href="日文講義.html" target="_blank" rel="noopener">📘 原版講義全文 ↗</a><a href="50音訓練表.html" target="_blank" rel="noopener">🎯 原版 50音訓練表 ↗</a></div></div>
       <div class="kn-subs">${SUBS.map(([id, n]) => `<button type="button" data-ksub="${id}" class="${id === ST.sub ? 'on' : ''}" aria-pressed="${id === ST.sub}">${n}</button>`).join('')}</div>
       <div class="kn-bar kn-scbar"><span class="kn-lb">文字</span>${seg('ksc', [['h', '平假名'], ['k', '片假名'], ['m', '平片混合']], ST.sc)}</div>
       <div class="kn-main">${body()}</div>`;
@@ -247,6 +247,7 @@
     const t = e.target.closest('button,input'); if (!t || !root.contains(t)) return;
     const d = t.dataset;
     if (d.kcourse) { App.go('trip', { kana: 1 }); return; }
+    if (d.kcards) { App.go('cards', { deck: ST.sc === 'k' ? 'kata' : 'hira' }); return; }
     if (d.ksub) { ST.sub = d.ksub; draw(root); return; }
     if (d.ksc) { ST.sc = d.ksc; if (ST.sub === 'quiz' && ST.qt !== 'flash' && Q && !Q.done) Q = null; draw(root); return; }
     if (d.kview) { ST.view = d.kview; draw(root); return; }

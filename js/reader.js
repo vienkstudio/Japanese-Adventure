@@ -137,7 +137,6 @@
       <div class="rd-acts">
         <button type="button" class="rd-act" data-act="paste"><span>📋</span>貼上文章</button>
         <button type="button" class="rd-act" data-act="url"><span>🔗</span>匯入文章網址</button>
-        <button type="button" class="rd-act" data-act="nhk"><span>🗞️</span>一鍵匯入簡單日文新聞</button>
         <button type="button" class="rd-act" data-act="songs"><span>🎵</span>歌曲跟唱</button>
       </div>
       <h3 class="rd-h3">📚 文章庫</h3>
@@ -153,7 +152,7 @@
     el.querySelectorAll('[data-ncat]').forEach(b => b.onclick = () => {
       newsCat = b.dataset.ncat;
       el.querySelectorAll('[data-ncat]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
-      drawNews(el, newsCat);
+      delete el.querySelector('#rdNews').dataset.more; drawNews(el, newsCat);
     });
     el.querySelector('#rdNewsRe').onclick = () => { try { sessionStorage.removeItem('jpq.news.' + (newsCat || nc)); } catch (e) { } drawNews(el, newsCat || nc); };
     drawNews(el, nc);
@@ -186,7 +185,9 @@
     if (!items.length) { box.innerHTML = '<p class="muted rd-tip">這個分類近三天沒有新聞。</p>'; return; }
     const idx = await docIndex();
     const have = new Map(idx.filter(d => d.url).map(d => [d.url, d.id]));
-    box.innerHTML = items.map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + ago(n.t) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('');
+    const lim = box.dataset.more ? items.length : 8;
+    box.innerHTML = items.slice(0, lim).map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + ago(n.t) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('') + (items.length > lim ? `<button type="button" class="btn block ghost rd-nmore">顯示更多（還有 ${items.length - lim} 則）</button>` : '');
+    const more = box.querySelector('.rd-nmore'); if (more) more.onclick = () => { box.dataset.more = '1'; drawNews(el, id); };
     box.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
       const n = items[+b.dataset.n];
       if (have.has(n.link)) { App.go('read-article', { doc: have.get(n.link) }); return; }

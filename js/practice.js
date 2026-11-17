@@ -211,7 +211,7 @@
     { id: 'L3', name: '中級', sub: '生活場景', worlds: ['konbini', 'ramen', 'yakiniku', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] },
     { id: 'L4', name: '高級', sub: '旅遊進階', worlds: ['izakaya', 'clothes', 'shrine', 'airport', 'emergency'] }
   ];
-  const UI = { lv: '', deck: 'word', lvF: 'all', dF: 'all', ci: 0 };
+  const UI = { lv: '', deck: (() => { try { return App.profile && App.profile().lv === 'zero' ? 'hira' : 'word'; } catch (e) { return 'word'; } })(), lvF: 'all', dF: 'all', ci: 0 };
   const chapOf = id => /^ch\d$/.test(id) ? (window.QUEST_CHAPTERS || []).find(c => 'ch' + c.n === id) || null : null;
   function worldInfo(id) {
     const c = chapOf(id);
@@ -361,8 +361,33 @@
   App.register('stage', { title: '場景關卡', icon: '🗺️', nav: false, render: renderStage });
 
   /* ---- 🎴 分級字卡 ---- */
-  const DECKS = [['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
+  const DECKS = [['hira', 'あ', '平假名'], ['kata', 'ア', '片假名'], ['daku', '゛', '濁音・拗音'], ['mine', '📌', '不會清單'], ['jlpt', '📗', 'N5–N1 單字'], ['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
+  const KANA_DECK = { hira: 1, kata: 1, daku: 1 };
+  // 五十音字卡：正面假名，背面讀音、諧音、聯想、字源
+  function kanaCards(k) {
+    const K = typeof KANA !== 'undefined' ? KANA : [], D = typeof DAKU !== 'undefined' ? DAKU : [], Y = typeof YOON !== 'undefined' ? YOON : [];
+    if (k === 'hira' || k === 'kata') return K.filter(x => x && x[0]).map(x => {
+      const h = k === 'hira';
+      return { id: 'kana:' + x[0], kind: 'kana', jp: h ? x[0] : x[1], kana: h ? x[1] : x[0], romaji: x[2], zh: '讀音 ' + x[2] + '・諧音「' + x[3] + '」', hint: (h ? x[5] : x[6]) || '', ex: (h ? x[7] : x[8]) ? '字源：' + (h ? x[7] : x[8]) : '', exzh: '', emoji: x[4] || '', lv: 'x', source: h ? '平假名' : '片假名' };
+    });
+    return D.concat(Y).filter(x => x && x[0]).map(x => ({ id: 'kana:' + x[0], kind: 'kana', jp: x[0], kana: x[1], romaji: x[2], zh: '讀音 ' + x[2] + (x[3] ? '・諧音「' + x[3] + '」' : ''), hint: '', ex: '', exzh: '', emoji: '', lv: 'x', source: x[0].length > 1 ? '拗音' : '濁音・半濁音' }));
+  }
+  // N5–N1 單字：知識庫詞庫（第一次用時載入）
+  let jlptLoading = null;
+  function jlptCards() {
+    const L = window.MIND && MIND.lex;
+    if (!L || !L.N1) {
+      if (!jlptLoading) jlptLoading = Promise.all(['N5', 'N4', 'N3', 'N2', 'N1'].map(l => App.loadScript('data/mind/lex-' + l.toLowerCase() + '.js'))).then(() => { const b = document.querySelector('#pBody'); if (b && UI.deck === 'jlpt') cardsView(b); }).catch(() => { jlptLoading = null; });
+      return [];
+    }
+    const out = [];
+    ['N5', 'N4', 'N3', 'N2', 'N1'].forEach(lv => (L[lv] || []).forEach(e => out.push({ id: 'word:' + e[0], kind: 'word', jp: e[0], kana: e[1] || '', romaji: '', zh: e[2], hint: window.Loan && Loan.label(e[0], 1) ? Loan.label(e[0], 1) : '', ex: '', exzh: '', emoji: '', lv, source: 'JLPT ' + lv })));
+    return out;
+  }
   function deckCards(k) {
+    if (KANA_DECK[k]) return kanaCards(k);
+    if (k === 'mine') return Tracker.list().map(t => ({ id: t.id, kind: 'mine', jp: t.jp, kana: t.kana || '', romaji: t.romaji || '', zh: t.zh || '', hint: t.hint || '', ex: '', exzh: '', emoji: t.emoji || '', lv: (window.CARDS && CARDS.levelOf ? CARDS.levelOf(t.jp, 'word') : 'x') || 'x', source: t.source || '不會清單' }));
+    if (k === 'jlpt') return jlptCards();
     if (window.CARDS && CARDS.decks[k]) return CARDS.decks[k].cards;
     const seen = new Set(), out = [];
     scenes().forEach(s => arr(k === 'word' ? s.vocab : s.phrases).forEach(w => {
@@ -380,14 +405,14 @@
     const c = list[UI.ci];
     const LVS = ['N5', 'N4', 'N3', 'N2', 'N1', 'x'];
     body.innerHTML = `<div class="tabs">${DECKS.map(([k, i, n]) => `<button data-dk="${k}" class="${UI.deck === k ? 'on' : ''}">${i} ${n}</button>`).join('')}</div>
-      <div class="tabs" style="margin-top:0"><button data-lf="all" class="${UI.lvF === 'all' ? 'on' : ''}">全部級 ${all.length}</button>${LVS.filter(cnt).map(l => `<button data-lf="${l}" class="${UI.lvF === l ? 'on' : ''}">${CARDS.LV_NAME[l]} ${cnt(l)}</button>`).join('')}</div>
+      ${KANA_DECK[UI.deck] || UI.deck === 'mine' ? '' : `<div class="tabs" style="margin-top:0"><button data-lf="all" class="${UI.lvF === 'all' ? 'on' : ''}">全部級 ${all.length}</button>${LVS.filter(cnt).map(l => `<button data-lf="${l}" class="${UI.lvF === l ? 'on' : ''}">${CARDS.LV_NAME[l]} ${cnt(l)}</button>`).join('')}</div>`}
       <div class="tabs" style="margin-top:0">${[['all', '全部'], ['3', '😵 困難'], ['2', '🤔 普通'], ['1', '😊 簡單'], ['0', '未評']].map(([k, n]) => `<button data-df="${k}" class="${UI.dF === k ? 'on' : ''}">${n} ${k === 'all' ? '' : all.filter(x => diffOf(x.id) === +k).length}</button>`).join('')}</div>
       ${c ? `<div class="c-card" id="cCard"><div class="c-in">
-          <div class="c-face"><div class="c-top"><span>${UI.ci + 1} / ${list.length}</span>${lvBadge(c.lv)}</div>
+          <div class="c-face"><div class="c-top"><span>${UI.ci + 1} / ${list.length}</span>${c.kind === 'kana' ? '' : lvBadge(c.lv)}</div>
             ${c.emoji ? `<div style="font-size:2em">${esc(c.emoji)}</div>` : ''}
             <div class="c-jp jp"><span class="lv-u ${lvCls(c.lv)}">${esc(c.jp)}</span></div>
             <div class="muted" style="margin-top:12px;font-size:.85em">👆 點卡片翻面・🔊 自動發音</div></div>
-          <div class="c-face c-back"><div class="c-top"><span>${esc(c.source || '')}</span>${lvBadge(c.lv)}</div>
+          <div class="c-face c-back"><div class="c-top"><span>${esc(c.source || '')}</span>${c.kind === 'kana' ? '' : lvBadge(c.lv)}</div>
             ${c.kana && c.kana !== c.jp ? `<div class="jp" style="font-size:1.4em">${esc(c.kana)}</div>` : ''}
             <div class="muted">${esc(c.romaji || '')}</div>
             <div style="font-size:1.3em;font-weight:900;margin:4px 0">${esc(c.zh)}</div>
@@ -398,15 +423,15 @@
         <div class="c-nav"><button class="btn sm" id="cPrev">◀ 上一張</button>
           <span><button class="btn sm ghost" id="cSay">🔊</button><button class="track-btn${Tracker.has(c.id) ? ' on' : ''}" id="cTrack">${Tracker.has(c.id) ? '✓ 已在清單' : '＋ 不會清單'}</button></span>
           <button class="btn sm" id="cNext">下一張 ▶</button></div>`
-        : `<div class="panel center muted">這個條件下沒有字卡，換個篩選吧！</div>`}
-      <div class="panel" style="font-size:.82em"><div class="lv-legend">底線顏色：${LVS.map(lvBadge).join('')}</div><div class="muted" style="margin-top:6px">${esc(window.CARDS ? CARDS.NOTE : '')}</div>
-        <div class="muted">自評難度會自動儲存在本機，可用上方「困難」篩選集中複習。</div></div>`;
+        : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}
+      ${KANA_DECK[UI.deck] ? '' : `<div class="panel" style="font-size:.82em"><div class="lv-legend">底線顏色：${LVS.map(lvBadge).join('')}</div><div class="muted" style="margin-top:6px">${esc(window.CARDS ? CARDS.NOTE : '')}</div>
+        <div class="muted">自評難度會自動儲存在本機，可用上方「困難」篩選集中複習。</div></div>`}`;
     const re = () => cardsView(body);
     body.querySelectorAll('[data-dk]').forEach(b => b.onclick = () => { UI.deck = b.dataset.dk; UI.lvF = 'all'; UI.ci = 0; re(); });
     body.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => { UI.lvF = b.dataset.lf; UI.ci = 0; re(); });
     body.querySelectorAll('[data-df]').forEach(b => b.onclick = () => { UI.dF = b.dataset.df; UI.ci = 0; re(); });
     if (!c) return;
-    const say = () => App.speak(c.kana || c.jp);
+    const say = () => App.speak(c.kind === 'kana' ? c.jp : (c.kana || c.jp));
     body.querySelector('#cCard').onclick = () => { const cc = body.querySelector('#cCard'); cc.classList.toggle('flip'); if (cc.classList.contains('flip')) say(); };
     body.querySelector('#cSay').onclick = say;
     body.querySelector('#cPrev').onclick = () => { UI.ci = (UI.ci - 1 + list.length) % list.length; re(); };
@@ -426,7 +451,7 @@
     });
   }
 
-  App.register('cards', { title: '字卡', icon: '🎴', nav: false, render(el) { el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 分級字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
+  App.register('cards', { title: '字卡', icon: '🎴', nav: false, navParent: 'review', render(el, p) { if (p && p.deck && DECKS.some(d => d[0] === p.deck)) { UI.deck = p.deck; UI.lvF = 'all'; UI.ci = 0; } el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
   App.register('practice', { title: '練習', icon: '🎯', nav: false, transient: true, render() { setTimeout(() => App.go('practice-map'), 0); } });
 
   /* =========================================================

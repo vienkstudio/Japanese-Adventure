@@ -187,7 +187,7 @@
         <h2>不會清單還是空的</h2>
         <p>闖關時答錯的字會<b>自動</b>加進來；看到不熟的字，也可以按「＋ 加入不會清單」。</p>
         <p class="muted">連續答對 3 次就算「已掌握」🎓</p>
-        <div><button class="btn primary" data-go="home">🗾 去冒險</button></div>
+        <div class="rv-row2"><button class="btn primary" data-go="cards">🎴 翻字卡（含五十音）</button><button class="btn" data-go="home">🗾 去冒險</button></div>
         <div class="rv-opt rv-center"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
       </div>`;
       bindCommon(el);
@@ -198,6 +198,7 @@
       <div class="panel noprint">
         <h2 class="rv-h">📌 複習</h2>
         <button class="btn primary block rv-go" data-mode="flash">▶ 開始複習<small id="rvGoSub"></small></button>
+        <button class="btn block rv-cards" data-go="cards">🎴 字卡：五十音、不會清單、N5–N1 單字</button>
         <details class="rv-more"><summary>換題型、範圍、題數</summary>
         <div class="rv-opt"><b>範圍：</b><div class="tabs" id="rvScope">
           <button data-v="due">⏰ 今日到期</button><button data-v="all">提前複習全部</button><button data-v="filter">目前篩選結果</button></div></div>

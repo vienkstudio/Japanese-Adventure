@@ -343,3 +343,5 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 
 /* 外來語語源（手冊、知識庫等共用） */
 .pb-og,.kb-og,.loan{display:block;font-size:var(--fs-xs);color:var(--acc-d);font-style:italic;line-height:1.35}
+.rv-row2{display:flex;gap:var(--sp-2);justify-content:center;flex-wrap:wrap}
+.rv-cards{margin-top:var(--sp-2)}

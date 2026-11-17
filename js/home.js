@@ -62,20 +62,18 @@
       <p class="hm-sec">今日 3 件事<small>${doneN}／3 完成</small></p>
       <div class="hm-today">${tasks.map(t => `<button type="button" class="hm-task${t.done ? ' done' : ''}" data-t="${t.id}"><span class="n">${t.done ? '✓' : t.n}</span><span class="t"><b>${esc(t.b)}</b><small>${esc(t.s)}</small></span><span class="go" aria-hidden="true">›</span></button>`).join('')}</div>
       <div class="hm-more">
-        <button type="button" data-go="phrasebook"><span aria-hidden="true">📖</span>手冊</button>
-        <button type="button" data-go="boot"><span aria-hidden="true">🎧</span>特訓</button>
-        <button type="button" data-go="songs"><span aria-hidden="true">🎵</span>歌曲</button>
         <button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>
-        <button type="button" data-go="mind3d"><span aria-hidden="true">🌐</span>3D 心智圖</button>
+        <button type="button" data-go="phrasebook"><span aria-hidden="true">📖</span>手冊</button>
+        <button type="button" data-go="cards"><span aria-hidden="true">🎴</span>字卡</button>
         <button type="button" data-go="challenge"><span aria-hidden="true">🏆</span>N5–N1 挑戰</button>
+        <button type="button" data-go="boot"><span aria-hidden="true">🎧</span>特訓</button>
       </div>
-      <details class="hm-map" id="hm-map"><summary>🗾 日本地圖</summary><div class="mapbox"></div></details>
     </section>`;
     el.querySelector('#hm-main').onclick = main.go;
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => tasks.find(t => t.id === b.dataset.t).go());
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : App.go(b.dataset.go));
     const det = el.querySelector('#hm-map');
-    det.addEventListener('toggle', () => {
+    if (det) det.addEventListener('toggle', () => {
       const box = det.querySelector('.mapbox');
       if (!det.open || box.childElementCount) return;
       if (has(window.World, 'japan')) safe(() => World.japan(box), null);
@@ -175,17 +173,17 @@
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${n}</button>`).join('')}</div>`;
     el.innerHTML = `<section class="st">
       <h1>⚙️ 設定</h1>
-      <div class="st-box"><h2>🎨 外觀</h2>
-        <p class="st-lbl">主題色</p>
-        <div class="st-dots">${App.PALETTES.map(k => `<button type="button" class="st-dot${u.palette === k ? ' on' : ''}" data-pal="${k}" aria-pressed="${u.palette === k}"><i></i>${PAL_NAMES[k]}</button>`).join('')}</div>
-        <p class="st-lbl">淺色／深色</p>${seg('theme', u.theme, [['system', '跟隨系統'], ['light', '☀️ 淺色'], ['dark', '🌙 深色']])}
-        <p class="st-lbl">字級</p>${seg('fs', u.fs, [['m', '標準'], ['l', '大'], ['xl', '特大']])}
-      </div>
       <div class="st-box st-lv"><h2>📶 我的程度</h2>
         <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt${p.lv === id ? ' on' : ''}" data-lv="${id}" aria-pressed="${p.lv === id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
         <p class="st-lbl">提示（讀音、中文、答案提示）</p>${seg('assist', p.assist, [['full', '全部顯示'], ['some', '只給讀音'], ['none', '不要提示']])}
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做 3 題定位</button>
+      </div>
+      <div class="st-box"><h2>🎨 外觀</h2>
+        <p class="st-lbl">主題色</p>
+        <div class="st-dots">${App.PALETTES.map(k => `<button type="button" class="st-dot${u.palette === k ? ' on' : ''}" data-pal="${k}" aria-pressed="${u.palette === k}"><i></i>${PAL_NAMES[k]}</button>`).join('')}</div>
+        <p class="st-lbl">淺色／深色</p>${seg('theme', u.theme, [['system', '跟隨系統'], ['light', '☀️ 淺色'], ['dark', '🌙 深色']])}
+        <p class="st-lbl">字級</p>${seg('fs', u.fs, [['m', '標準'], ['l', '大'], ['xl', '特大']])}
       </div>
       ${voiceBox()}
       <div class="st-box"><h2>🧰 其他</h2><div class="st-rows">
