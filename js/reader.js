@@ -110,7 +110,25 @@
     const tab = params.lv || lv;
     const list = READING.daily.filter(a => a.lv === tab);
     const doneMark = id => st.done[id] ? `<span class="rd-done" title="已讀">✔</span>` : '';
+    const nc = params.news || newsCat || 'domestic';
     el.innerHTML = `<div class="rd-home">
+      <section class="rd-news">
+        <div class="rd-sech"><h3 class="rd-h3">🗞️ 近三天新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
+        <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
+        <p class="muted rd-tip rd-nnote"></p>
+        <div class="rd-list" id="rdNews"><p class="muted rd-tip">讀取新聞中…</p></div>
+        <details class="rd-box rd-det rd-support"><summary>ℹ️ 哪些來源可以匯入？</summary>
+          <ul class="rd-sup">
+            <li>✅ <b>Yahoo!ニュース</b>：國內、國際、經濟、娛樂、運動、科技、科學、生活、地方，列近三天，點標題自動匯入全文。</li>
+            <li>✅ <b>MATCHA 簡單日文</b>：原文振假名會自動帶入（標題和內文都有讀音）。</li>
+            <li>✅ <b>提供 RSS 的網站</b>：貼 RSS 網址，會匯入最新一篇。</li>
+            <li>✅ <b>公開的單篇文章網址</b>：部落格、新聞、觀光介紹等，經 Jina Reader 代讀擷取正文。</li>
+            <li>⚠️ <b>NHK 新聞</b>：全文要登入 NHK ONE，只能抓到摘要，請用「貼上文章」。</li>
+            <li>❌ 需要登入或付費的文章（日經、朝日會員限定等）、PDF、圖片裡的文字、影片。</li>
+          </ul>
+          <p class="muted rd-tip">匯入後一律自動標讀音、羅馬字、中文，文末列出本文單字、片語、文法，都能加入不會清單。</p>
+        </details>
+      </section>
       <button type="button" class="rd-today" data-go="${t.id}">
         <span class="rd-today-ic" aria-hidden="true">${t.icon}</span>
         <span class="rd-today-tx"><small>今日短文・${esc(READING.LV_DESC[t.lv])}</small><b>${esc(t.title)}</b><span class="muted">${esc(t.zh)}</span></span>
@@ -131,7 +149,14 @@
       <p class="muted rd-tip">貼上的文章只存在這台裝置，不會上傳。</p>
     </div>`;
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go('read-article', { daily: b.dataset.go }));
-    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv }));
+    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv, news: nc }));
+    el.querySelectorAll('[data-ncat]').forEach(b => b.onclick = () => {
+      newsCat = b.dataset.ncat;
+      el.querySelectorAll('[data-ncat]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+      drawNews(el, newsCat);
+    });
+    el.querySelector('#rdNewsRe').onclick = () => { try { sessionStorage.removeItem('jpq.news.' + (newsCat || nc)); } catch (e) { } drawNews(el, newsCat || nc); };
+    drawNews(el, nc);
     el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
       const a = b.dataset.act;
       if (a === 'songs') App.go('songs');
@@ -144,6 +169,36 @@
       box.innerHTML = idx.map(d => `<div class="rd-item rd-mine"><button type="button" class="rd-open" data-doc="${esc(d.id)}"><span class="rd-ic" aria-hidden="true">📄</span><span class="rd-it"><b>${esc(d.title)}</b><small class="muted">${d.len} 字・${esc(new Date(d.at).toLocaleDateString())}</small></span>${st.done['doc:' + d.id] ? '<span class="rd-done">✔</span>' : ''}</button><button type="button" class="rd-del" data-del="${esc(d.id)}" aria-label="刪除">✕</button></div>`).join('');
       box.querySelectorAll('[data-doc]').forEach(b => b.onclick = () => App.go('read-article', { doc: b.dataset.doc }));
       box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => App.modal('<h2>刪除這篇文章？</h2><p class="muted">只會刪掉這台裝置上的全文，不會影響不會清單。</p>', [{ label: '取消' }, { label: '刪除', cls: 'primary', onClick: () => delDoc(b.dataset.del).then(() => homeView(el, { lv: tab })) }]));
+    });
+  }
+
+  let newsCat = '';
+  const ago = t => { if (!t) return ''; const m = Math.max(1, Math.round((Date.now() - t) / 60000)); return m < 60 ? m + ' 分鐘前' : m < 1440 ? Math.round(m / 60) + ' 小時前' : Math.round(m / 1440) + ' 天前'; };
+  async function drawNews(el, id) {
+    const box = el.querySelector('#rdNews'); if (!box) return;
+    const cat = LinkImport.NEWS_CATS.find(c => c.id === id) || LinkImport.NEWS_CATS[0];
+    el.querySelector('.rd-nnote').textContent = cat.note || 'Yahoo!ニュース・點標題自動匯入全文，標好讀音與中文';
+    box.innerHTML = '<p class="muted rd-tip">讀取新聞中…</p>';
+    let items;
+    try { items = await LinkImport.newsList(cat.id, 3); }
+    catch (e) { if (box.isConnected) box.innerHTML = '<p class="rd-warn">新聞來源暫時讀不到，請按 🔄 重試，或改用「貼上文章」。</p>'; return; }
+    if (!box.isConnected || (newsCat && newsCat !== cat.id)) return;
+    if (!items.length) { box.innerHTML = '<p class="muted rd-tip">這個分類近三天沒有新聞。</p>'; return; }
+    const idx = await docIndex();
+    const have = new Map(idx.filter(d => d.url).map(d => [d.url, d.id]));
+    box.innerHTML = items.map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + ago(n.t) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('');
+    box.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
+      const n = items[+b.dataset.n];
+      if (have.has(n.link)) { App.go('read-article', { doc: have.get(n.link) }); return; }
+      if (b.disabled) return;
+      b.disabled = true; const sm = b.querySelector('small'), old = sm.textContent; sm.textContent = '匯入中，正在擷取全文…';
+      try {
+        const d = await LinkImport.article(n.link);
+        const id = await saveDoc({ ...d, title: d.title || n.title, src: 'news' });
+        if (b.isConnected) App.go('read-article', { doc: id });
+      } catch (e) {
+        if (b.isConnected) { sm.textContent = '這篇讀不到全文（可能需要登入），可開原網頁複製後用「貼上文章」'; b.disabled = false; setTimeout(() => { if (sm.isConnected) sm.textContent = old; }, 5000); }
+      }
     });
   }
 

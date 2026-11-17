@@ -233,3 +233,14 @@ input[type=file].rd-in{padding:8px}
 .sg-auto .rd-lbl{flex:1;min-width:0}
 .sg-vdet>summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
 .sg-vdet .rd-sec{margin-top:var(--sp-2)}
+
+/* 近三天新聞 */
+.rd-news{margin-bottom:var(--sp-4)}
+.rd-news .rd-sech{display:flex;align-items:center;justify-content:space-between}
+.rd-ncat{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.rd-ncat::-webkit-scrollbar{display:none}
+.rd-ncat button{flex:none;min-height:44px}
+.rd-nitem .rd-go{color:var(--muted);flex:none}
+.rd-nitem[disabled]{opacity:.7}
+.rd-support{margin-top:var(--sp-2)}
+.rd-sup{margin:var(--sp-2) 0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}

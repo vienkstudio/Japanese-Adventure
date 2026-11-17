@@ -73,7 +73,7 @@
     </section>`;
     el.querySelector('#hm-main').onclick = main.go;
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => tasks.find(t => t.id === b.dataset.t).go());
-    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? goKana() : App.go(b.dataset.go));
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : App.go(b.dataset.go));
     const det = el.querySelector('#hm-map');
     det.addEventListener('toggle', () => {
       const box = det.querySelector('.mapbox');

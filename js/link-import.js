@@ -22,7 +22,7 @@
   }
 
   // 已知不開放 CORS 的網站：直接走代讀，避免 console 出現 CORS 錯誤
-  const NO_CORS = /(^|.)(?:news.web.nhk|nhk.or.jp|matcha-jp.com)$/;
+  const NO_CORS = /(^|\.)(?:news\.web\.nhk|nhk\.or\.jp|matcha-jp\.com|news\.yahoo\.co\.jp)$/;
   async function request(url, accept, ms, extraHeaders) {
     try { if (NO_CORS.test(new URL(url).hostname)) throw new Error('no-cors'); } catch (e) { if (e.message === 'no-cors') throw e; }
     const abort = new AbortController();
@@ -126,6 +126,16 @@
       try { found = getContent(await reader(url.href, 'html')); }
       catch { throw new Error('無法讀取這個網址，請確認文章公開且可在瀏覽器開啟'); }
     }
+    if (!found?.text || !hasJapanese(found.text, 80)) {
+      // Yahoo!ニュース「pickup」摘要頁：改讀「記事全文を読む」連結的原文
+      if (/(^|\.)news\.yahoo\.co\.jp$/.test(url.hostname) && /^\/pickup\//.test(url.pathname) && followFeed !== 'pickup') {
+        try {
+          const doc = new DOMParser().parseFromString(await reader(url.href, 'html'), 'text/html');
+          const a = [...doc.querySelectorAll('a[href*="/articles/"]')].map(x => x.getAttribute('href')).find(Boolean);
+          if (a) return article(new URL(a, url.href).href, 'pickup');
+        } catch { }
+      }
+    }
     if (found?.link) return article(found.link.href, false);
     if (followFeed && found?.feed && !hasJapanese(found.text, 8)) {
       let link;
@@ -184,10 +194,22 @@
     return /^[\w-]{11}$/.test(id || '') ? id : '';
   }
 
+  const COVER = /歌ってみた|歌わせていただきました|弾いてみた|叩いてみた|カバー|カラオケ|\b(?:covers?|covered|karaoke)\b|翻唱/i;
+  function coverClean(title) {
+    return String(title || '')
+      .replace(/[【\[（(〔『]([^】\]）)〕』]*)[】\]）)〕』]/g, (m, x) => COVER.test(x) || /mv|pv|official|full|lyrics|歌詞|字幕/i.test(x) ? ' ' : m)
+      .replace(/\s*(?:covered|cover|sung)\s+by\s+.*$/i, '')
+      .replace(/(?:を)?(?:歌ってみた|歌わせていただきました|弾いてみた|カバー|カラオケ|翻唱|\bcovers?\b|\bkaraoke\b)/gi, ' ')
+      .replace(/[\s　]*[|｜#].*$/, '')
+      .replace(/[【\[]([^】\]]{1,20})[】\]]/g, ' ／ $1 ')
+      .replace(/\s{2,}/g, ' ').replace(/^[\s\-–—\/／:：]+|[\s\-–—\/／:：]+$/g, '').trim();
+  }
   function songTitle(title, author) {
     let name = String(title || '').replace(/\s*[（(【\[]?(?:Official\s+(?:Music\s+)?Video|Music Video|Official Audio|公式MV)[）)】\]]?\s*$/i, '').trim();
     const quoted = name.match(/^(.*?)\s*[「『](.+?)[」』]$/);
     const separated = name.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+    const slash = !quoted && !separated && name.match(/^(.+?)\s*[\/／]\s*(.+)$/);
+    if (slash) return { track: slash[1].trim(), artist: slash[2].trim() || author };
     const pair = quoted || separated;
     if (pair) return { track: pair[2].trim(), artist: pair[1].trim() || author };
     return { track: name, artist: author };
@@ -199,9 +221,18 @@
     const meta = await request(endpoint, 'application/json', 5000).catch(() => null);
     const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
     const result = { title, lines: [] };
-    if (!meta || /カラオケ|歌ってみた|カバー|\b(?:cover|karaoke|reaction|shorts)\b/i.test(title)) return result;
-    const { track, artist } = songTitle(title, meta.author_name || '');
-    const found = await lyrics(track, artist);
+    if (!meta || /\b(?:reaction|shorts)\b/i.test(title)) return result;
+    // 翻唱／歌ってみた／カラオケ：去掉標記後用原曲名查歌詞（歌手可能是翻唱者，查不到時只用歌名）
+    const cover = COVER.test(title);
+    const { track, artist } = songTitle(cover ? coverClean(title) : title, cover ? '' : meta.author_name || '');
+    const tries = [[track, artist]];
+    if (artist) tries.push([artist, track], [track, '']);
+    let found = null;
+    for (const [t, ar] of tries) {
+      const r = await lyrics(t, ar).catch(() => null);
+      if (r && (!found || r.score > found.score)) found = r;
+      if (found && found.score >= 14) break;
+    }
     if (found) Object.assign(result, found);
     return result;
   }
@@ -247,8 +278,43 @@
     const r = best[1];
     const timed = r.syncedLyrics ? parseLRC(r.syncedLyrics) : [];
     const lines = timed.length >= 4 ? timed : tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
-    return { title: `${r.trackName}（${r.artistName}）`, artist: r.artistName, lines, timed: timed.length >= 4 };
+    return { title: `${r.trackName}（${r.artistName}）`, artist: r.artistName, lines, timed: timed.length >= 4, score: best[0] };
   }
 
-  window.LinkImport = { NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
+  // 近三天新聞：Yahoo!ニュース各分類 RSS（經代讀取得）＋ MATCHA 簡單日文（附振假名）
+  const YN = 'https://news.yahoo.co.jp/rss/';
+  const NEWS_CATS = [
+    { id: 'domestic', name: '國內', icon: '🏠', url: YN + 'categories/domestic.xml' },
+    { id: 'world', name: '國際', icon: '🌏', url: YN + 'categories/world.xml' },
+    { id: 'business', name: '經濟', icon: '💴', url: YN + 'categories/business.xml' },
+    { id: 'entertainment', name: '娛樂', icon: '🎬', url: YN + 'categories/entertainment.xml' },
+    { id: 'sports', name: '運動', icon: '⚾', url: YN + 'categories/sports.xml' },
+    { id: 'it', name: '科技', icon: '💻', url: YN + 'categories/it.xml' },
+    { id: 'science', name: '科學', icon: '🔬', url: YN + 'categories/science.xml' },
+    { id: 'life', name: '生活', icon: '🍙', url: YN + 'categories/life.xml' },
+    { id: 'local', name: '地方', icon: '🗾', url: YN + 'categories/local.xml' },
+    { id: 'easy', name: '簡單日文', icon: '🔰', url: 'https://matcha-jp.com/easy/feed', easy: true, note: 'MATCHA 簡單日文：附原文振假名・更新較慢、不限日期（來源偶爾會擋代讀，讀不到請稍後再試）' }
+  ];
+  async function newsList(id, days) {
+    const cat = NEWS_CATS.find(c => c.id === id) || NEWS_CATS[0];
+    const ck = 'jpq.news.' + cat.id;
+    try { const c = JSON.parse(sessionStorage.getItem(ck) || 'null'); if (c && Date.now() - c.at < 20 * 60e3) return c.items; } catch { }
+    let xml;
+    try { xml = await request(cat.url, null, 4200); } catch { xml = await reader(cat.url, 'html'); }
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    if (doc.querySelector('parsererror')) throw new Error('新聞來源暫時無法讀取');
+    const since = Date.now() - (days || 3) * 864e5;
+    const pick = (el, n) => { const x = [...el.children].find(c => c.localName === n); return x ? x.textContent.trim() : ''; };
+    let items = [...doc.getElementsByTagNameNS('*', 'item')].map(it => {
+      let title = pick(it, 'title'), src = '';
+      const m = title.match(/^(.*?)\s*[（(]([^（）()]{1,20})[）)]$/); if (m) { title = m[1].trim(); src = m[2]; }
+      const t = Date.parse(pick(it, 'pubDate') || pick(it, 'date')) || 0;
+      return { title, link: pick(it, 'link'), t, src: src || (cat.easy ? 'MATCHA' : 'Yahoo!ニュース') };
+    }).filter(x => x.title && publicURL(x.link));
+    items = cat.easy ? items.slice(0, 15) : items.filter(x => !x.t || x.t >= since).slice(0, 30);
+    try { sessionStorage.setItem(ck, JSON.stringify({ at: Date.now(), items })); } catch { }
+    return items;
+  }
+
+  window.LinkImport = { NEWS_CATS, newsList, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
 })();
