@@ -41,9 +41,10 @@
 .pb-voc b{display:block}.pb-voc small{color:var(--muted);font-size:.82em}
 .pb-empty{color:var(--muted);text-align:center;margin:30px 0}
 .pb-full{position:fixed;inset:0;z-index:300;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:pointer}
-.pb-full .big{font-size:clamp(2rem,9vw,4.2rem);font-weight:800;line-height:1.3;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",sans-serif}
-.pb-full .kk{font-size:1.2rem;color:#555;margin-top:10px}
-.pb-full .zz{font-size:1.1rem;color:#555;margin-top:18px}
+.pb-full .big{font-size:var(--pbz,clamp(2.8rem,15vw,7rem));font-weight:800;line-height:1.25;word-break:break-all;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",sans-serif}
+.pb-full .kk{font-size:1.5rem;color:#444;margin-top:12px}
+.pb-full .zz{font-size:1.3rem;color:#444;margin-top:18px}
+.pb-full .x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:48px;height:48px;border-radius:50%;border:1px solid #ccc;background:#fff;color:#111;font-size:1.3em;cursor:pointer}
 .pb-full .tip{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.9rem;color:#888}`;
     document.head.appendChild(s);
   })();
@@ -66,8 +67,9 @@
     const q = norm(UI.q).trim();
     if (q) {
       const hit = w => [w.jp, w.kana, w.romaji, w.zh, w.use].some(x => norm(x).includes(q));
-      const ph = [], vo = [];
-      scenes().forEach(sc => { (sc.phrases || []).filter(hit).forEach(w => ph.push([w, sc])); (sc.vocab || []).filter(hit).forEach(w => vo.push([w, sc])); });
+      const ph = [], vo = [], seen = new Set();   // 同一句出現在多個場景只列一次
+      const add = (arr, w, sc, k) => { const id = k + (w.jp || '').replace(/[。！？!?\s]/g, ''); if (seen.has(id)) return; seen.add(id); arr.push([w, sc]); };
+      scenes().forEach(sc => { (sc.phrases || []).filter(hit).forEach(w => add(ph, w, sc, 'p:')); (sc.vocab || []).filter(hit).forEach(w => add(vo, w, sc, 'v:')); });
       if (!ph.length && !vo.length) return `<p class="pb-empty">找不到「${esc(UI.q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
       return (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(([w, sc]) => row(w, sc)).join('') : '') +
         (vo.length ? `<h2>📚 單字（${vo.length}）</h2><div class="pb-voc">${vo.slice(0, 60).map(([w, sc]) => vocab(w, sc)).join('')}</div>` : '');
@@ -81,15 +83,18 @@
   function showBig(w) {
     const d = document.createElement('div');
     d.className = 'pb-full';
-    d.innerHTML = `<div class="big" lang="ja">${esc(w.jp)}</div>${w.kana && w.kana !== w.jp ? `<div class="kk" lang="ja">${esc(w.kana)}</div>` : ''}<div class="zz">${esc(w.zh)}</div><div class="tip">點一下關閉・🔊 已播放</div>`;
-    d.onclick = () => d.remove();
-    document.body.appendChild(d);
+    // 字數少就放到最大：依字數算字級（手機橫寬約可放 6～7 字一行）
+    const len = String(w.jp).length;
+    d.style.setProperty('--pbz', `min(${len <= 4 ? 22 : len <= 8 ? 15 : len <= 14 ? 11 : 8.5}vw, ${len <= 4 ? 9 : 6}rem)`);
+    d.innerHTML = `<button type="button" class="x" aria-label="關閉">✕</button><div class="big" lang="ja">${esc(w.jp)}</div>${w.kana && w.kana !== w.jp ? `<div class="kk" lang="ja">${esc(w.kana)}</div>` : ''}<div class="zz">${esc(w.zh)}</div><div class="tip">點一下或按返回鍵關閉${App.voiceOK && App.voiceOK() === false ? '' : '・🔊 已播放'}</div>`;
+    const close = App.layer ? App.layer(d) : (document.body.appendChild(d), () => d.remove());
+    d.onclick = () => close();
     App.speak(w.kana || w.jp);
   }
 
   function render(el) {
     el.innerHTML = `<section class="pb">
-      <h1>📖 旅遊會話手冊</h1>
+      <h1>📖 旅遊會話手冊</h1>${App.voiceHTML ? App.voiceHTML() : ''}
       <input class="pb-search" type="search" placeholder="搜尋：廁所、多少錢、いくら、toire…" value="${esc(UI.q)}" aria-label="搜尋會話">
       <div class="pb-cats">${CATS.map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div id="pb-list"></div></section>`;

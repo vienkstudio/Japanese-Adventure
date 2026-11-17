@@ -50,7 +50,8 @@
 .t-mic{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0}
 .t-micbtn{width:64px;height:64px;border-radius:50%;font-size:1.8em;border:1px solid var(--line);background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(255,107,91,.35)}
 .t-micbtn.on{animation:tmic 1s infinite}
-.t-micbtn:disabled{background:#ddd;cursor:not-allowed}
+.t-micbtn:disabled{background:var(--chip);cursor:not-allowed}
+.t-showopt{display:block;margin:6px auto}
 .t-heard{font-size:.9em;min-height:1.3em;text-align:center}
 @keyframes tmic{0%{box-shadow:0 0 0 0 rgba(255,107,91,.6)}100%{box-shadow:0 0 0 16px rgba(255,107,91,0)}}
 .t-fb-ok{color:var(--acc-d);font-weight:bold}
@@ -226,8 +227,10 @@
       const box = document.createElement('div');
       box.className = 't-sum';
       const pct = res.total ? Math.round(res.first / res.total * 100) : 100;
+      const rw = App.reward('scene-dlg:' + sc.id + ':' + di, starsOf(pct / 100), '場景練習');
       box.innerHTML = `<div class="t-big">${pct >= 90 ? '🎉' : pct >= 60 ? '👍' : '💪'}</div><h3>對話完成！</h3>
         <p>一次就選對 <b>${res.first}</b> / ${res.total} 步（${pct}%）</p>
+        ${rw.gained ? `<p class="xpgain">+${rw.gained} XP${rw.prevStars && rw.gained <= 3 ? '<br><small class="muted">重玩沒刷新星數，只給 3 XP</small>' : ''}</p>` : ''}
         ${res.wrong.length ? `<div class="muted">選錯的句子已加入 📌不會清單：</div><div class="chips" style="justify-content:center">${res.wrong.map(w => `<span class="chip red jp">${esc(w.jp)} <small>${esc(w.zh)}</small></span>`).join('')}</div>` : ''}
         <button class="btn" id="tAgain">🔄 再練一次</button><button class="btn primary" id="tOther">選其他對話 ➜</button>`;
       pane.querySelector('#tRun').appendChild(box);
@@ -236,7 +239,6 @@
       if (!App.state.sceneDone) App.state.sceneDone = {};
       App.state.sceneDone[sc.id] = true;
       App.save();
-      App.addXP(10, '場景練習');
       box.scrollIntoView && box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }
@@ -294,7 +296,10 @@
       const isOK = c => hasCorrect ? !!c.correct : true;
       const nextBtn = () => {
         nx.innerHTML = `<button class="btn primary">${i + 1 >= steps.length ? '完成 🎉' : '繼續 ➜'}</button>`;
-        nx.querySelector('button').onclick = () => step(i + 1);
+        const nb = nx.querySelector('button');
+        nb.onclick = () => step(i + 1);
+        // 捲到畫面中間，不要停在底部導覽列後面（點到導覽會跳回首頁）
+        setTimeout(() => { if (nb.isConnected && nb.scrollIntoView) nb.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60);
       };
       if (!cs.length) { res.first++; opts.onStep && opts.onStep(true); nextBtn(); return; }
       let missed = false, finished = false;
@@ -342,7 +347,12 @@
         }
         if (!micOn || !srOK()) { micBox.innerHTML = ''; opBox.style.display = ''; return; }
         micBox.innerHTML = `<div class="t-mic"><button class="t-micbtn" title="按下後用日文說出回答">🎤</button>
-          <div style="text-align:left;font-size:.88em">按 🎤 用日文回答<br><span class="muted">說出下方任一句；也可直接點選</span></div></div><div class="t-heard muted"></div>`;
+          <div style="text-align:left;font-size:.88em">按 🎤 用日文回答<br><span class="muted">先自己想、自己說；想不出來再看選項</span></div></div><div class="t-heard muted"></div>
+          <button type="button" class="btn sm t-showopt">🙋 想不出來，看選項</button>`;
+        // 口說：答案（選項）先藏起來，避免還沒開口就看到答案
+        opBox.style.display = 'none';
+        const showOpt = () => { opBox.style.display = ''; const so = micBox.querySelector('.t-showopt'); if (so) so.remove(); };
+        micBox.querySelector('.t-showopt').onclick = showOpt;
         const mb = micBox.querySelector('.t-micbtn'), heard = micBox.querySelector('.t-heard');
         mb.onclick = () => {
           if (finished || mb.classList.contains('on')) return;
@@ -352,9 +362,9 @@
             const live = cs.filter(c => !c._btn.disabled);
             const { best, score } = bestMatch(alts, live);
             heard.innerHTML = `聽到：「<span class="jp">${esc(alts[0] || '')}</span>」${best ? `（相似度 ${Math.round(score * 100)}%）` : ''}`;
-            if (best && score >= 0.5) best._btn.click();
-            else heard.innerHTML += '<br><b style="color:var(--shu)">沒對上選項，再說一次或直接點選</b>';
-          }, code => { mb.classList.remove('on'); if (!srOK()) { hideMic(); App.toast(micErr(code)); } else heard.textContent = micErr(code); });
+            if (best && score >= 0.5) { showOpt(); best._btn.click(); }
+            else { showOpt(); heard.innerHTML += '<br><b style="color:var(--shu)">沒對上選項，再說一次或直接點選</b>'; }
+          }, code => { mb.classList.remove('on'); showOpt(); if (!srOK()) { hideMic(); App.toast(micErr(code)); } else heard.textContent = micErr(code); });
         };
       };
       curMic = drawMic; drawMic();
@@ -429,13 +439,13 @@
     pane.querySelector('#tGo').onclick = () => quiz(pane, sc);
   }
   function quiz(pane, sc) {
-    quizRun(pane, pool(sc), { count: 10, reason: '場景小測驗', onEnd: () => quizIntro(pane, sc), retry: () => quiz(pane, sc) });
+    quizRun(pane, pool(sc), { count: 10, reason: '場景小測驗', id: 'scene-quiz:' + sc.id, onEnd: () => quizIntro(pane, sc), retry: () => quiz(pane, sc) });
   }
   // 通用測驗：P 題庫、opts {count, reason, onEnd, retry, back}
   function quizRun(pane, P, opts) {
     opts = opts || {};
     const qs = App.sample(P, Math.min(opts.count || 10, P.length)).map(p => {
-      const type = App.sample(['j2z', 'z2j', 'listen'], 1)[0];
+      const type = App.sample(App.voiceOK && App.voiceOK() === false ? ['j2z', 'z2j'] : ['j2z', 'z2j', 'listen'], 1)[0];   // 沒有日文語音就不出聽音題
       const key = type === 'j2z' ? 'zh' : 'jp';
       const near = P.filter(o => o.kind === p.kind && o.s === p.s), far = P.filter(o => o.kind === p.kind);
       const uniq = [];
@@ -485,7 +495,8 @@
     };
     const end = () => {
       const stars = starsOf(correct / qs.length);
-      const r = correct ? App.addXP(Math.max(1, Math.round(correct / 2)), opts.reason || '小測驗') : { gained: 0 };
+      // 依全站規則：首次依星數給、重玩只補差額或 3 XP
+      const r = App.reward(opts.id || 'quiz:' + (opts.reason || ''), stars, opts.reason || '小測驗');
       opts.onStars && opts.onStars(stars);
       opts.onEnd && opts.onEnd();
       App.showResult({
@@ -522,7 +533,7 @@
     next(0);
   }
   App.register('drill', {
-    title: '自由練習', icon: '🎯', nav: false, navParent: 'home',
+    title: '練習', icon: '🎯', nav: false, navParent: 'home',
     render(el, params) {
       params = params || {};
       const list = arr(params.scenes).map(findScene).filter(Boolean);
@@ -541,7 +552,7 @@
       const saveSit = st => { if (params.sit && window.PracticeAPI) PracticeAPI.setSit(params.sit, st); };
       el.querySelector('#tBack').textContent = params.trip ? '🗺️ 回地圖' : params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
       if (params.trip) home.back = 1;
-      el.querySelector('#tBack').onclick = () => params.trip ? App.go('play') : App.go(home.route, home.params);
+      el.querySelector('#tBack').onclick = () => params.trip ? App.go('trip') : App.go(home.route, home.params);
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
       if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {
@@ -552,7 +563,7 @@
           saveSit(stars);
           list.forEach(sc => { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[sc.id] = true; });
           App.save();
-          const r = App.addXP(10 * pick.length, '對話練習');
+          const r = App.reward('drill:' + kind + ':' + list.map(s => s.id).join(',') + ':' + (params.dialog != null ? params.dialog : 'r'), stars, KN[kind].replace(/^\S+\s/, ''));
           pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>練習完成</h3><p>一次答對 ${res.first} / ${res.total}</p>
             <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`;
           pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params);
@@ -563,7 +574,7 @@
       const P = poolOf(list, kind === 'word' ? ['word'] : kind === 'phrase' ? ['phrase'] : ['word', 'phrase']);
       if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
       quizRun(pane, P, {
-        count: params.count || 10, reason: '自由練習', onStars: saveSit,
+        count: params.count || 10, reason: (KN[kind] || '⚡ 測驗').replace(/^\S+\s/, ''), id: 'drill:' + kind + ':' + list.map(s => s.id).join(','), onStars: saveSit,
         onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params); },
         retry: again, back: home
       });

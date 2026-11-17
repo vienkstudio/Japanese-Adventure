@@ -14,20 +14,24 @@
 .rv-stat{flex:1;min-width:110px;text-align:center;background:var(--soft);border-radius:12px;padding:8px}
 .rv-stat b{display:block;font-size:1.8em;color:var(--red);line-height:1.2}
 .rv-chip{cursor:pointer;font-family:inherit}
-.rv-chip.rv-on{background:var(--ink);color:#fff;border-color:var(--line)}
+.rv-chip{min-height:44px;color:var(--text)}
+.rv-chip.rv-on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.rv-due{display:inline-block;font-size:.82em;border-radius:999px;padding:0 8px;background:var(--chip);color:var(--muted);margin-top:2px}
+.rv-due.now{background:var(--pri-t);color:var(--pri-d);font-weight:700}
+.rv-next{background:var(--acc-t);border-radius:14px;padding:10px 12px;margin:8px 0}
 .rv-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:20px;font-family:inherit;font-size:1em;background:var(--card)}
 .rv-tools input[type=search]{flex:1;min-width:180px}
 .rv-list{display:flex;flex-direction:column;gap:8px}
 .rv-item{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;flex-wrap:wrap}
-.rv-item.rv-done{opacity:.6;background:#f4fbf6}
+.rv-item.rv-done{opacity:.6;background:var(--acc-t)}
 .rv-emo{font-size:1.9em;width:1.6em;text-align:center}
 .rv-main{flex:1;min-width:180px}
 .rv-jp{font-size:1.45em;cursor:pointer;font-weight:bold}
 .rv-jp:hover{color:var(--blue)}
 .rv-sub{color:var(--muted);font-size:.9em}
 .rv-zh{font-size:1.05em}
-.rv-hint{font-size:.85em;color:#a0662a}
+.rv-hint{font-size:.85em;color:var(--pri-d)}
 .rv-meta{text-align:right;font-size:.85em;min-width:110px}
 .rv-dots{color:var(--green);letter-spacing:2px;font-size:1.05em}
 .rv-ops{display:flex;gap:4px}
@@ -45,9 +49,11 @@
 .rv-q{text-align:center;margin:10px 0}
 .rv-q .rv-qjp{font-size:2.6em;line-height:1.3;word-break:break-all}
 .rv-listen{font-size:3em;border:none;background:var(--soft);border-radius:50%;width:110px;height:110px;cursor:pointer}
-.rv-input{display:block;width:100%;max-width:420px;margin:10px auto;padding:12px 16px;font-size:1.3em;border:2px solid var(--line);border-radius:14px;text-align:center;font-family:inherit}
-.rv-input.rv-ok{border-color:var(--green);background:#e8f7ec}
-.rv-input.rv-ng{border-color:var(--red);background:#ffecea}
+.rv-input{display:block;width:100%;max-width:420px;margin:10px auto;padding:12px 16px;font-size:1.3em;border:2px solid var(--line);border-radius:14px;text-align:center;font-family:inherit;background:var(--card);color:var(--text)}
+.rv-input.rv-ok{border-color:var(--green);background:var(--acc-t)}
+.rv-input.rv-ng{border-color:var(--red);background:var(--pri-t)}
+.rv-tools input[type=search],.rv-tools select{color:var(--text);min-height:44px}
+.rv-tools label{min-height:44px;display:inline-flex;align-items:center;gap:4px}
 .rv-empty{text-align:center;padding:30px 16px}
 .rv-empty .rv-big{font-size:4em}
 .rv-result{text-align:center}
@@ -100,10 +106,12 @@
 
   // 假名 → 羅馬拼音（item 沒有 romaji 時的備援）
   let K2R = null;
+  // 「o (wo)」「hu／fu」這類註記只取第一個讀法，避免拼成「moufuo (wo)nimai」
+  const cleanRom = r => String(r || '').trim().split(/[\s(（/／]/)[0];
   function kanaToRomaji(str) {
     if (!K2R) {
       K2R = {};
-      [g('KANA'), g('DAKU'), g('YOON')].forEach(t => (t || []).forEach(r => { if (r && r[0]) { K2R[r[0]] = r[2]; if (r[1]) K2R[r[1]] = r[2]; } }));
+      [g('KANA'), g('DAKU'), g('YOON')].forEach(t => (t || []).forEach(r => { if (r && r[0]) { const v = cleanRom(r[2]); K2R[r[0]] = v; if (r[1]) K2R[r[1]] = v; } }));
     }
     let out = '', dbl = false;
     for (let i = 0; i < str.length; i++) {
@@ -120,10 +128,23 @@
     }
     return out.trim();
   }
-  const romajiOf = it => it.romaji || (it.kana ? kanaToRomaji(it.kana) : '') || (/^[぀-ヿ・ー\s]+$/.test(it.jp || '') ? kanaToRomaji(String(it.jp).split('・')[0]) : '');
+  const romajiOf = it => (isKana(it) && it.romaji ? cleanRom(it.romaji) : it.romaji) || (it.kana ? kanaToRomaji(it.kana) : '') || (/^[぀-ヿ・ー\s]+$/.test(it.jp || '') ? kanaToRomaji(String(it.jp).split('・')[0]) : '');
 
   /* ---------------- UI 狀態（換頁保留） ---------------- */
-  const ui = { src: '', q: '', sort: 'new', showMastered: false, scope: 'all', count: '10', cmode: 'mix' };
+  const ui = { src: '', q: '', sort: 'new', showMastered: false, scope: 'due', count: '10', cmode: 'mix' };
+  // 到期資訊：今天到期／N 天後
+  const DAY = 864e5;
+  function dueText(t) {
+    if (t.mastered) return '';
+    const d = (t.due || 0) - Date.now();
+    if (d <= 0) return '<span class="rv-due now">⏰ 今天要複習</span>';
+    const n = Math.ceil(d / DAY);
+    return `<span class="rv-due">📅 ${n <= 1 ? '明天' : n + ' 天後'}複習</span>`;
+  }
+  function nextDue() {
+    const fut = Tracker.list(false).filter(t => (t.due || 0) > Date.now()).sort((a, b) => a.due - b.due);
+    return fut[0] || null;
+  }
   let session = null;
 
   const isKana = it => String(it.id || '').startsWith('kana:');
@@ -173,7 +194,7 @@
       <div class="panel noprint">
         <h3 style="margin-top:0">🎯 開始複習</h3>
         <div class="rv-opt"><b>範圍：</b><div class="tabs" id="rvScope">
-          <button data-v="all">全部待複習</button><button data-v="filter">目前篩選結果</button></div></div>
+          <button data-v="due">⏰ 今日到期</button><button data-v="all">提前複習全部</button><button data-v="filter">目前篩選結果</button></div></div>
         <div class="rv-opt"><b>題數：</b><div class="tabs" id="rvCount">
           <button data-v="10">10 題</button><button data-v="20">20 題</button><button data-v="all">全部</button></div></div>
         <div class="rv-modes">
@@ -184,6 +205,7 @@
         <div class="rv-opt" style="margin-top:8px"><b>選擇題題型：</b><div class="tabs" id="rvCmode">
           <button data-v="mix">混合</button><button data-v="j2z">日→中</button><button data-v="z2j">中→日</button><button data-v="listen">🎧 聽音</button></div></div>
         <div class="muted" id="rvScopeInfo" style="font-size:.9em"></div>
+        ${App.voiceHTML ? App.voiceHTML() : ''}
       </div>
       <div class="panel rv-printarea">
         <div class="rv-printhead"><h2>📌 日語不會清單</h2><div class="muted" id="rvPrintInfo"></div></div>
@@ -244,7 +266,7 @@
     const all = Tracker.list(true);
     const pending = all.filter(t => !t.mastered).length, mastered = all.length - pending;
     el.querySelector('#rvStats').innerHTML =
-      `<div class="rv-stat"><b>${pending}</b>待複習</div><div class="rv-stat"><b>${mastered}</b>已掌握 🎓</div><div class="rv-stat"><b>${all.length}</b>總計</div>`;
+      `<div class="rv-stat"><b>${Tracker.dueCount()}</b>今天到期</div><div class="rv-stat"><b>${pending}</b>學習中</div><div class="rv-stat"><b>${mastered}</b>已掌握 🎓</div>`;
     // 來源分組
     const by = {};
     Tracker.list(ui.showMastered).forEach(t => { const s = t.source || '其他'; by[s] = (by[s] || 0) + 1; });
@@ -263,7 +285,13 @@
         [{ label: '取消' }, { label: '🗑 移除', cls: 'primary', onClick: () => { Tracker.remove(t.id); App.toast('已移除'); Tracker.list(true).length ? refresh(el) : render(el); } }]);
     });
     const info = el.querySelector('#rvScopeInfo');
-    if (info) info.textContent = `本次範圍共 ${scopeItems().length} 個項目`;
+    if (info) {
+      const n = scopeItems().length, nd = nextDue();
+      const when = nd ? (() => { const d = new Date(nd.due); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : '';
+      info.innerHTML = ui.scope === 'due' && !n
+        ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個到期：<b>${esc(nd.jp)}</b>（${when}）` : ''}<br><span class="muted">想多練可以選「提前複習全部」。</span></div>`
+        : `本次範圍共 ${n} 個項目${ui.scope === 'due' ? '（間隔排程：答對後 1→3→7 天再出現）' : ''}`;
+    }
     const pi = el.querySelector('#rvPrintInfo');
     if (pi) pi.textContent = `共 ${list.length} 項${ui.src ? '・來源：' + ui.src : ''}・${new Date().toLocaleDateString()}`;
   }
@@ -283,6 +311,7 @@
         <div><span class="chip">${esc(t.source || '其他')}</span></div>
         <div>✅ ${t.right || 0}・❌ ${t.wrong || 0}</div>
         <div class="rv-dots" title="連對 ${t.streak || 0}/3">${t.mastered ? '🎓 已掌握' : dots(t.streak)}</div>
+        <div>${dueText(t)}</div>
       </div>
       <div class="rv-ops"><button class="btn sm ghost" data-say="${esc(t.id)}" title="發音">🔊</button><button class="btn sm ghost" data-del="${esc(t.id)}" title="移除">🗑</button></div>
     </div>`;
@@ -327,6 +356,7 @@
 
   /* ---------------- 複習流程 ---------------- */
   function scopeItems() {
+    if (ui.scope === 'due') return Tracker.dueList();               // 只出到期的字
     let arr = ui.scope === 'filter' ? filtered() : Tracker.list(false);
     if (!arr.length && ui.scope === 'all') arr = Tracker.list(true);   // 全部掌握時仍可複習
     return arr;
@@ -342,7 +372,7 @@
   function startSession(el, mode, items) {
     let src = items || scopeItems();
     if (mode === 'type') src = src.filter(t => romajiOf(t));
-    if (!src.length) return App.toast(mode === 'type' ? '範圍內沒有可拼音的項目' : '範圍內沒有項目');
+    if (!src.length) return App.toast(mode === 'type' ? '範圍內沒有可拼音的項目' : ui.scope === 'due' && !items ? '🎉 今天沒有到期的字，可選「提前複習全部」' : '範圍內沒有項目');
     const list = items ? App.shuffle(src) : pickItems(src);
     session = { mode, list, i: 0, correct: 0, answered: 0, newly: [], wrongs: [], el, cmode: ui.cmode };
     el.innerHTML = `<div class="panel" id="rvSess"></div>`;
@@ -443,12 +473,15 @@
   }
   function qChoice(box, it) {
     let type = session.cmode;
-    if (type === 'mix') type = ['j2z', 'z2j', 'listen'][Math.random() * 3 | 0];
+    const noVoice = App.voiceOK && App.voiceOK() === false;
+    if (type === 'mix') type = (noVoice ? ['j2z', 'z2j'] : ['j2z', 'z2j', 'listen'])[Math.random() * (noVoice ? 2 : 3) | 0];
+    if (type === 'listen' && noVoice) type = 'kana';   // 沒有日文語音：聽音題改成「看讀音選字」
     const field = type === 'j2z' ? 'zh' : 'jp';
     const opts = buildOptions(it, field, 4);
     let q;
     if (type === 'j2z') q = `<div class="muted">這是什麼意思？</div><div class="rv-qjp jp" id="rvQjp" style="cursor:pointer">${esc(it.jp)}</div>`;
     else if (type === 'z2j') q = `<div class="muted">日文怎麼說？</div><div style="font-size:1.8em">${esc(it.emoji || '')} <b>${esc(it.zh)}</b></div>`;
+    else if (type === 'kana') q = `<div class="muted">🔇 沒有日文語音，改看讀音：是哪一個？</div><div style="font-size:1.8em">${esc(romajiOf(it) || it.kana || it.zh)}</div>`;
     else q = `<div class="muted">聽聽看，是哪一個？</div><button class="rv-listen" id="rvListen">🔊</button>`;
     box.innerHTML = header(session) + `<div class="rv-q">${q}</div>
       <div class="choices">${opts.map((o, k) => `<button class="choice ${field === 'jp' ? 'jp' : ''}" data-k="${k}">${esc(o[field])}</button>`).join('')}</div>

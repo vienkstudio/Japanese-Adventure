@@ -105,12 +105,29 @@
   const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const sample = (a, n) => shuffle(a).slice(0, n);
 
+  // 日文語音：voiceOK() → true 有／false 沒有／null 還不知道（語音清單尚未載入）
+  const jaVoice = () => { try { return speechSynthesis.getVoices().find(v => /^ja|jpn|japan/i.test(v.lang + ' ' + v.name)) || null; } catch (e) { return null; } };
+  function voiceOK() {
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return false;
+    let n = 0; try { n = speechSynthesis.getVoices().length; } catch (e) { }
+    return n ? !!jaVoice() : (Date.now() - T0 > 3000 ? false : null);
+  }
+  const T0 = Date.now();
+  let warned = false;
+  const VOICE_TIP = '🔇 這台裝置沒有<b>日文語音</b>，聽力題會改成看文字。安裝方法：Android「設定→語言→文字轉語音→Google 語音→安裝日文」；iPhone「設定→輔助使用→朗讀內容→聲音→日文」；Windows「設定→時間與語言→語音→新增日文」。';
+  function voiceWarn() {
+    if (warned || voiceOK() !== false) return;
+    warned = true;
+    toast('🔇 找不到日文語音：聽力題改成看文字（手冊、特訓、不會清單頁上方有安裝方法）');
+  }
+  function voiceHTML() { return voiceOK() === false ? `<div class="voice-warn">${VOICE_TIP}</div>` : ''; }
   function speakJP(text, rate) {
-    if (!window.speechSynthesis || !text) return;
+    if (!text) return;
+    if (voiceOK() === false) { voiceWarn(); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP'; u.rate = rate || 0.85;
-    const v = speechSynthesis.getVoices().find(v => /ja/i.test(v.lang));
+    const v = jaVoice();
     if (v) u.voice = v;
     speechSynthesis.speak(u);
   }
@@ -156,7 +173,9 @@
     const after = levelOf(S.xp);
     save();
     toast(`✨ +${n} XP ${reason ? '・' + esc(reason) : ''}`, 'xp');
-    if (after > before) setTimeout(() => modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p>${unlockHTML(after)}`, [{ label: '太棒了！', cls: 'primary' }]) && document.body.lastElementChild.classList.add('keep'), 400);
+    // 升級彈窗等其他彈窗（結果畫面）關掉後才出現，避免兩個主按鈕疊在一起
+    const lvModal = () => { if (document.querySelector('.modal-bg')) return setTimeout(lvModal, 400); modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p>${unlockHTML(after)}`, [{ label: '太棒了！', cls: 'primary' }]); };
+    if (after > before) setTimeout(lvModal, 600);
     if (after > before) remindBackup(`升到 Lv.${after} 了`);
     return { gained: n, levelUp: after > before };
   }
@@ -197,7 +216,24 @@
   }
 
   /**
-   * 標準結果畫面
+   * 全站統一獎勵：首次過關依星數 10／15／20，首次三星再 +10；刷新最佳星數只補差額；重玩沒進步給 3 XP
+   * 星數存 S.cleared[id]；回傳 {stars, prevStars, gained, levelUp, firstClear}
+   */
+  const XPS = [0, 10, 15, 20];
+  function reward(id, stars, reason) {
+    stars = Math.max(0, Math.min(3, stars | 0));
+    const prev = S.cleared[id] || 0;
+    if (!stars) return { stars, prevStars: prev, gained: 0, levelUp: false, firstClear: false };
+    let xp = 3;
+    if (stars > prev) { xp = XPS[stars] - XPS[prev] + (stars === 3 ? 10 : 0); S.cleared[id] = stars; }
+    save();
+    const r = addXP(xp, reason || '委託完成');
+    if (!prev) noteClear();
+    return { stars, prevStars: prev, gained: r.gained, levelUp: r.levelUp, firstClear: !prev };
+  }
+
+  /**
+   * 標準結果畫面（另支援 note：額外說明 HTML；ok：沒有 back/next 時的確定鈕文字）
    * opts: {title, stars, correct, total, gained, wrong:[trackerItem], retry:fn, next:{label, route, params}, back:{label, route, params}}
    */
   function showResult(opts) {
@@ -208,13 +244,14 @@
       <h2>${esc(opts.title || (opts.stars ? '過關！' : '再試一次'))}</h2>
       ${opts.total != null ? `<p>答對 <b>${opts.correct}</b> / ${opts.total}</p>` : ''}
       ${opts.gained ? `<p class="xpgain">+${opts.gained} XP</p>` : ''}
+      ${opts.note ? `<p class="result-note">${opts.note}</p>` : ''}
       ${wrong.length ? `<div class="muted">答錯的已自動加入 📌不會清單：</div><div class="chips">${wrong.map(w => `<span class="chip">${esc(w.jp)} <small>${esc(w.zh || w.romaji || '')}</small></span>`).join('')}</div>` : ''}
     </div>`;
     const btns = [];
     if (opts.retry) btns.push({ label: '🔄 再玩一次', onClick: opts.retry });
-    if (opts.back) btns.push({ label: opts.back.label || '返回', onClick: () => go(opts.back.route, opts.back.params) });
+    if (opts.back) btns.push({ label: opts.back.label || '返回', onClick: () => opts.back.route ? go(opts.back.route, opts.back.params) : back() });
     if (opts.next) btns.push({ label: opts.next.label || '下一站 ➜', cls: 'primary', onClick: () => go(opts.next.route, opts.next.params) });
-    if (!btns.length) btns.push({ label: '確定', cls: 'primary' });
+    if (opts.ok || !btns.length) btns.push({ label: opts.ok || '確定', cls: 'primary' });
     return modal(html, btns);
   }
 
@@ -250,17 +287,38 @@
       canHist = true;
       window.addEventListener('popstate', e => {
         const st = e.state;
+        // 浮層（大字畫面等）：返回鍵＝關掉浮層，留在原頁
+        if (skipPop) { skipPop = false; if (st && st.jpq) IDX = st.i || 0; return; }
+        const top = LAYERS[LAYERS.length - 1];
+        if (top) { LAYERS.pop(); top.remove(); if (st && st.jpq) IDX = st.i || 0; return; }
         if (!st || !st.jpq) { IDX = 0; CUR = { name: 'home', params: {} }; render(); return; }
+        // 轉址頁（transient）不重跑，順著方向再跳一格，避免返回時重開已完成的關卡
+        if (routes[st.name] && routes[st.name].transient && (st.i || 0) > 0) { const fwd = (st.i || 0) > IDX; IDX = st.i || 0; fwd ? history.forward() : history.back(); return; }
         IDX = st.i || 0;
         CUR = { name: st.name || 'home', params: st.params || {} };
         render();
       });
     } catch (e) { canHist = false; }
   }
+  // 浮層：layer(el) 放到畫面上並佔一筆歷史，手機返回鍵會先關掉它；回傳 close()
+  const LAYERS = [];
+  let skipPop = false;
+  function layer(el) {
+    document.body.appendChild(el);
+    let pushed = false;
+    if (canHist && CUR) try { history.pushState({ jpq: 1, i: IDX + 1, name: CUR.name, params: CUR.params, ov: 1 }, ''); IDX++; pushed = true; } catch (e) { }
+    if (pushed) LAYERS.push(el);
+    return () => {
+      const k = LAYERS.indexOf(el);
+      el.remove();
+      if (k >= 0) { LAYERS.splice(k, 1); skipPop = true; history.back(); }
+    };
+  }
   let started = false;
   function render() {
     if (window.speechSynthesis) speechSynthesis.cancel();
     document.querySelectorAll('.modal-bg:not(.keep)').forEach(m => m.remove());
+    LAYERS.splice(0).forEach(m => m.remove());
     const { name, params } = parseHash();
     const r = routes[name] || routes.home;
     const main = document.getElementById('main');
@@ -479,8 +537,8 @@
     LEVELS, TITLES, levelOf,
     get level() { return levelOf(S.xp); },
     save, onChange, register, go, start, render,
-    addXP, completeQuest, showResult, modal, toast,
-    speak: speakJP, esc, shuffle, sample, kanaItem, wordItem,
+    addXP, completeQuest, reward, showResult, modal, toast,
+    speak: speakJP, voiceOK, voiceHTML, layer, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
     back,
     resetAll() { LS.del(KEY); IDB.del('save'); S = fresh(); save(); if (CL.ref) cloudPush(); go('home'); },

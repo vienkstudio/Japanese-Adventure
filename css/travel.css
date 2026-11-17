@@ -97,7 +97,7 @@
   align-items:center;
   justify-content:center;
   gap:1px;
-  min-height:42px;
+  min-height:44px;
   max-width:110px;
   margin-inline:auto;
   width:96%;
@@ -118,7 +118,7 @@
 .trip-stop-drugstore{--trip-roof:#2e8b7a}
 .trip-stop-yakiniku{--trip-roof:#6b3a2a}
 .trip-stop>span{font-size:clamp(.95rem,3.5vw,1.75rem);line-height:1}
-.trip-stop strong{font-size:clamp(.75rem,2.9vw,.94rem);white-space:nowrap;line-height:1.15}
+.trip-stop strong{font-size:clamp(.8125rem,2.9vw,.94rem);white-space:nowrap;line-height:1.15}
 .trip-stop small{
   position:absolute;top:-5px;right:-4px;
   display:grid;place-items:center;width:18px;height:18px;border-radius:50%;
@@ -193,7 +193,7 @@
 @media(prefers-reduced-motion:reduce){.trip-player{transition:none}}
 
 /* 入門級：站名下顯示關卡；遊戲 HUD */
-.trip-stop small{width:auto!important;min-width:18px;padding:0 4px;border-radius:9px!important;font-size:.62rem!important}
+.trip-stop small{width:auto!important;min-width:18px;padding:0 4px;border-radius:9px!important;font-size:.8125rem!important}
 .trip-hud{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-weight:800}
 .trip-hearts{font-size:1.05em;letter-spacing:1px}
 .trip-combo{background:var(--pri,#ff6b5b);color:#fff;border-radius:999px;padding:0 8px;font-size:.8em;animation:pop .25s}
@@ -212,7 +212,7 @@
 .trip-si{font-size:1.5em;flex:none}
 .trip-st{flex:1;min-width:0;line-height:1.25}
 .trip-st b{display:block}
-.trip-st small{color:var(--muted);font-size:.75em}
+.trip-st small{color:var(--muted);font-size:.82em}
 .trip-ss{color:var(--gold,#ffb703);font-size:.85em;letter-spacing:1px;flex:none}
 .trip-hub-done{text-align:center;font-weight:800;font-size:1.1em}
 .trip-stop small.trip-prog{background:var(--pri,#ff6b5b)!important}
@@ -243,7 +243,7 @@
 .tt-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;border-radius:999px;background:var(--card);box-shadow:0 2px 10px rgba(0,0,0,.08);padding:14px;font:inherit;font-size:1.1em;font-weight:800;color:var(--text);cursor:pointer;transition:transform .1s}
 .tt-btn:active{transform:scale(.97)}
 .tt-btn.primary{background:var(--pri,#ff6b5b);color:#fff}
-.tt-btn small{font-size:.66em;font-weight:500;opacity:.9}
+.tt-btn small{font-size:.75em;font-weight:500;opacity:.9}
 .tt-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .tt-levels button{border:none;border-radius:16px;background:var(--chip);padding:10px 4px;font:inherit;cursor:pointer;color:var(--text);line-height:1.25}
 .tt-levels button b{display:block;font-size:1.1em}
@@ -277,7 +277,7 @@
 .kn-sets button[data-lock]{opacity:.55}
 .kn-teach{text-align:center}
 .kn-step{color:var(--muted);font-weight:700;margin:4px 0}
-.kn-big{font-size:6rem;line-height:1.1;border:none;background:var(--card);box-shadow:var(--shadow);border-radius:24px;width:160px;height:160px;cursor:pointer;color:var(--text)}
+.kn-big,.trip-shell .kn-big{font-size:6rem;line-height:1.1;border:none;background:var(--card);box-shadow:var(--shadow);border-radius:24px;width:160px;height:160px;cursor:pointer;color:var(--text)}
 .kn-rom{font-size:2em;font-weight:800;color:var(--pri);margin:8px 0 0}
 .kn-hint{font-size:1.05em;margin:6px 0 12px}
 .kn-hint small{color:var(--muted);font-size:.85em}
@@ -303,4 +303,9 @@
 .trip-fb-act{margin-top:8px}
 
 /* 地圖建築與方向鍵永遠是淺底，文字固定深色（深色模式也清楚） */
-.trip-stop,.trip-dpad button{color:#222}
+.trip-stop,.trip-dpad button,.trip-shell .trip-stop,.trip-shell .trip-dpad button{color:#222}
+.trip-shell .trip-stop small{color:#fff}
+@media (prefers-color-scheme: dark){
+  .trip-welcome{background:linear-gradient(122deg,#1f3328,#2a3020)}
+  .trip-stop:hover,.trip-stop[aria-current]{color:#222}
+}

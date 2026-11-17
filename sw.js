@@ -1,5 +1,5 @@
 // 離線快取：改版時請把 VERSION 加 1。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
-const VERSION = 'jpq-v21';
+const VERSION = 'jpq-v22';
 const FILES = ['./', './index.html', './css/app.css', './css/travel.css', './css/mind.css', './kana-data.js',
   './data/scenes-1.js', './data/scenes-2.js', './data/scene-ext.js', './data/cards.js', './data/menus.js',
   './data/travel.js', './data/travel-ext.js', './data/travel-stops.js', './data/drills.js',

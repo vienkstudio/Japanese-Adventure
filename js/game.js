@@ -85,11 +85,13 @@
   }
 
   /* ---------------- 每日任務 ---------------- */
+  // label 會帶進度數字（例：答對 20 題（5/20）），首頁進度條直接顯示
   const DAILY = [
-    { id: 'ok', label: '答對 20 題', icon: '✅', goal: 20, xp: 20 },
-    { id: 'quests', label: '完成 1 個關卡或任務', icon: '⚔️', goal: 1, xp: 25 },
-    { id: 'review', label: '複習不會清單 5 次', icon: '📌', goal: 5, xp: 15 }
+    { id: 'ok', name: '答對 20 題', icon: '✅', goal: 20, xp: 20 },
+    { id: 'quests', name: '完成 1 個關卡或任務', icon: '⚔️', goal: 1, xp: 25 },
+    { id: 'review', name: '複習不會清單 5 次', icon: '📌', goal: 5, xp: 15 }
   ];
+  DAILY.forEach(m => Object.defineProperty(m, 'label', { enumerable: true, get() { let v = 0; try { v = Math.min(m.goal, daily()[m.id] || 0); } catch (e) { } return m.name + '（' + v + '/' + m.goal + '）'; } }));
   function daily() {
     const S = App.state, today = App.today();
     if (!S.daily || S.daily.date !== today) S.daily = { date: today, ok: 0, quests: 0, review: 0, claimed: {} };
@@ -100,7 +102,7 @@
     const m = DAILY.find(x => x.id === key);
     if (m && d[key] >= m.goal && !d.claimed[key]) {
       d.claimed[key] = true; App.save();
-      setTimeout(() => { App.toast(`🎯 每日任務完成：${m.label}`, 'ok'); App.addXP(m.xp, '每日任務'); }, 900);
+      setTimeout(() => { App.toast(`🎯 每日任務完成：${m.name}`, 'ok'); App.addXP(m.xp, '每日任務'); }, 900);
       if (DAILY.every(x => d.claimed[x.id])) setTimeout(() => { App.toast('🏆 今日任務全部完成！+30 XP', 'xp'); App.addXP(30, '全勤獎勵'); confetti(80); }, 2200);
     } else App.save();
   }
@@ -134,17 +136,24 @@
     if (r) {
       const st = (r.querySelector('.stars') || {}).textContent || '';
       const n = (st.match(/⭐/g) || []).length;
-      if (n > 0) { setTimeout(() => sfx('win'), 100); vibrate([30, 50, 30]); confetti(30 + n * 20); }
+      if (n > 0) { bump('quests'); setTimeout(() => sfx('win'), 100); vibrate([30, 50, 30]); confetti(30 + n * 20); }
       else { sfx('lose'); vibrate(200); }
     }
   }
   const mo = new MutationObserver(list => {
     const ok = [], ng = [];
+    let tOk = 0, tNg = 0;   // 旅程狀況題：音效由 travel.js 自己處理，這裡只計數
     list.forEach(m => {
       if (m.type === 'attributes' && m.target.classList && m.target.classList.contains('choice')) {
         const was = m.oldValue || '';
         if (m.target.classList.contains('ng') && !/\bng\b/.test(was)) ng.push(m.target);
         else if (m.target.classList.contains('ok') && !/\bok\b/.test(was)) ok.push(m.target);
+      }
+      // 旅程狀況題（.trip-answer）也算進「答對 20 題」
+      if (m.type === 'attributes' && m.target.classList && m.target.classList.contains('trip-answer')) {
+        const was = m.oldValue || '';
+        if (m.target.classList.contains('trip-wrong') && !/trip-wrong/.test(was)) tNg++;
+        else if (m.target.classList.contains('trip-right') && !/trip-right/.test(was)) tOk++;
       }
       if (m.type === 'childList') m.addedNodes.forEach(n => {
         if (n.nodeType !== 1) return;
@@ -153,6 +162,7 @@
       });
     });
     if (ok.length || ng.length) onChoices(ok, ng);
+    if (tOk && !tNg) bump('ok');
   });
   function observe() {
     mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true, childList: true });
@@ -168,13 +178,15 @@
   // 包裝：關卡完成、複習計數
   const _cq = App.completeQuest;
   App.completeQuest = function (id, stars, xp) { const r = _cq.apply(this, arguments); if (stars > 0) bump('quests'); return r; };
-  const _mark = Tracker.mark.bind(Tracker);
+  const _rw = App.reward;
+  App.reward = function (id, stars) { const r = _rw.apply(this, arguments); if (stars > 0) bump('quests'); return r; };
+  const _mark =Tracker.mark.bind(Tracker);
   Tracker.mark = function (id, ok) { const r = _mark(id, ok); bump('review'); return r; };
 
   window.Game = {
     sfx, vibrate, floatText, burst, confetti, shake, fly,
     sfxOn: () => sfxOn,
     toggleSfx() { sfxOn = !sfxOn; App.store.set(SFX_KEY, sfxOn ? '1' : '0'); if (sfxOn) sfx('coin'); },
-    DAILY, daily, avatar, pickAvatar, AVATARS
+    DAILY, daily, bump, avatar, pickAvatar, AVATARS
   };
 })();

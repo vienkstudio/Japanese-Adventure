@@ -25,7 +25,8 @@
 .dr-chip:active,.dr-tg:active,.dr-next:active,.dr-pad button:active,.dr-sopt:active{transform:scale(.96)}
 .dr-top{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
 .dr-top b{font-size:.85em;color:var(--muted);white-space:nowrap}
-.dr-bar{flex:1;height:8px;background:#ececec;border-radius:99px;overflow:hidden}
+.dr-tg,.dr-chip,.dr-reveal{min-height:44px}
+.dr-bar{flex:1;height:8px;background:var(--line);border-radius:99px;overflow:hidden}
 .dr-bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .3s}
 .dr-npc{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;text-align:center}
 .dr-tag{display:inline-block;background:var(--pri-t);color:var(--pri);border-radius:999px;padding:2px 12px;font-size:.8em;font-weight:800}
@@ -80,6 +81,7 @@
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const OPT = () => { const o = App.state.drillOpt || (App.state.drillOpt = {}); if (!o.rate) o.rate = 0.85; if (o.hint == null) o.hint = true; return o; };
   const speak = t => App.speak(t, OPT().rate);
+  const hintOn = () => OPT().hint || (App.voiceOK && App.voiceOK() === false);   // 沒有日文語音：一律顯示文字
   const starsOf = r => r >= 0.9 ? 3 : r >= 0.7 ? 2 : r >= 0.4 ? 1 : 0;
   function queue(pool, n) {   // 抽 n 題，不夠就重複洗牌
     let out = [];
@@ -219,7 +221,7 @@
     const rates = [[0.7, '慢'], [0.85, '正常'], [1.05, '快']];
     el.innerHTML = `<section class="dr">
       <h1 class="dr-h">🎧 實戰特訓</h1>
-      <p class="dr-sub">旅行時最難的是：聽懂店員、看懂看板、抓住數字</p>
+      <p class="dr-sub">旅行時最難的是：聽懂店員、看懂看板、抓住數字</p>${App.voiceHTML ? App.voiceHTML() : ""}
       <div class="dr-set"><span>提示</span><button type="button" class="dr-tg${o.hint ? ' on' : ''}" id="dr-hint">${o.hint ? '👀 顯示文字' : '🙈 只聽聲音'}</button>
         <span style="margin-left:8px">語速</span>${rates.map(([r, n]) => `<button type="button" class="dr-tg${o.rate === r ? ' on' : ''}" data-rate="${r}">${n}</button>`).join('')}</div>
       ${Object.keys(MODES).map(k => { const M = MODES[k]; const b = best[k] || 0; return `<div class="dr-card">
@@ -262,8 +264,8 @@
       const best = App.state.drill || (App.state.drill = {});
       if (stars > (best[mode] || 0)) best[mode] = stars;
       App.save();
-      const gained = stars ? stars * 5 : 0;
-      if (gained) App.addXP(gained, '實戰特訓・' + M.name);
+      // 全站 XP 規則：首次依星數、刷新星數補差額、重玩沒進步只給 3 XP
+      const gained = App.reward('boot:' + mode + ':' + f, stars, '實戰特訓・' + M.name).gained;
       App.showResult({
         title: stars ? `${M.icon} ${M.name} 完成！` : '再練一次',
         stars, correct: R.pts, total: R.max, gained, wrong: R.wrong,
@@ -276,7 +278,7 @@
 
   /* ---------- 店員問句：先聽懂意思，再選回應 ---------- */
   function askClerk(body, it, report) {
-    const v = pick(it.v), hint = OPT().hint;
+    const v = pick(it.v), hint = hintOn();
     const same = D.CLERK.filter(x => x.s === it.s && x !== it);
     const zhOpts = App.shuffle([it.zh].concat(distinct(same, 3, x => x.zh, it.zh).map(x => x.zh)));
     const txt = `<p class="jp dr-jp" lang="ja">${esc(v[0])}</p><p class="dr-kana" lang="ja">${esc(v[1])}</p>`;
@@ -325,7 +327,7 @@
   /* ---------- 看板：找牌子／看牌子選意思 ---------- */
   const plate = (s, kana) => `<span class="dr-sign dr-s-${s[3]}"><b lang="ja">${esc(s[0])}</b>${kana ? `<small lang="ja">${esc(s[1])}</small>` : ''}</span>`;
   function askSign(body, s, report) {
-    const hint = OPT().hint;
+    const hint = hintOn();
     const pool = D.SIGNS.filter(x => x !== s && x[2] !== s[2] && x[4] !== s[4]);
     const same = pool.filter(x => x[5] === s[5]);
     let dis = distinct(same, 3, x => x[2], s[2]);
@@ -356,7 +358,7 @@
   function askNum(body, type, report) {
     const T = NUM[type] || NUM.price;
     if (T.counter) return askCounter(body, report);
-    const q = T.gen(), hint = OPT().hint;
+    const q = T.gen(), hint = hintOn();
     const masked = q.line.replace(q.mask, '＿＿');
     body.innerHTML = `<div class="dr-npc"><span class="dr-tag">${esc(T.lb)}</span>
         <button type="button" class="dr-play" aria-label="再聽一次">🔊</button>
@@ -435,7 +437,7 @@
   const buildScenes = () => (window.SCENES || []).filter(sc => sc && sc.id && (sc.phrases || []).some(p => { const n = chunk(p.jp).length; return n >= 3 && n <= 6; }));
   const buildPool = f => (window.SCENES || []).filter(sc => !f || sc.id === f).flatMap(sc => (sc.phrases || []).map(p => ({ p, sc, parts: chunk(p.jp) }))).filter(x => x.parts.length >= 3 && x.parts.length <= 6);
   function askBuild(body, q, report) {
-    const { p, sc, parts } = q, hint = OPT().hint;
+    const { p, sc, parts } = q, hint = hintOn();
     let tiles = App.shuffle(parts.map((t, i) => ({ t, i })));
     if (tiles.every((x, k) => x.i === k)) tiles = tiles.reverse();
     const picked = [];
