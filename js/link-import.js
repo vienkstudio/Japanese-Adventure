@@ -21,7 +21,10 @@
     } catch { return null; }
   }
 
+  // 已知不開放 CORS 的網站：直接走代讀，避免 console 出現 CORS 錯誤
+  const NO_CORS = /(^|.)(?:news.web.nhk|nhk.or.jp|matcha-jp.com)$/;
   async function request(url, accept, ms, extraHeaders) {
+    try { if (NO_CORS.test(new URL(url).hostname)) throw new Error('no-cors'); } catch (e) { if (e.message === 'no-cors') throw e; }
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(), ms);
     try {
@@ -32,6 +35,20 @@
       clearTimeout(timer);
     }
   }
+
+  // <ruby>漢字<rt>かんじ</rt></ruby> → ｜漢字《かんじ》（青空文庫格式；閱讀器據此對應原文讀音）
+  function rubyMark(node) {
+    const box = node.cloneNode(true);
+    box.querySelectorAll('ruby').forEach(r => {
+      const rt = [...r.querySelectorAll('rt')].map(x => x.textContent.trim()).join('');
+      r.querySelectorAll('rt, rp').forEach(x => x.remove());
+      const base = r.textContent.replace(/\s+/g, '');
+      r.replaceWith(base && rt && /[ぁ-ゖァ-ヺー]/.test(rt) && !/[｜《》]/.test(base + rt) ? `｜${base}《${rt}》` : base);
+    });
+    box.querySelectorAll('rt, rp').forEach(x => x.remove());
+    return box;
+  }
+  const plain = s => String(s || '').replace(/｜([^｜《》\n]+)《[^《》\n]+》/g, '$1');
 
   function nhkHome(url) {
     return NHK_HOSTS.includes(url.hostname) && /^\/news\/easy\/?$/.test(url.pathname);
@@ -56,15 +73,18 @@
       } catch { }
     }
     const article = structured.find(x => x && typeof x.articleBody === 'string' && hasJapanese(x.articleBody, 8));
-    const title = String((article && article.headline) || (meta && meta.content) || doc.querySelector('h1')?.textContent || doc.title || '');
+    const h1 = doc.querySelector('article h1, main h1, h1');
+    const rubyTitle = h1 && h1.querySelector('ruby') ? rubyMark(h1).textContent.replace(/\s+/g, ' ').trim() : '';
+    const title = String(rubyTitle || (article && article.headline) || (meta && meta.content) || (h1 && h1.textContent) || doc.title || '').trim();
     if (article) return { title, text: tidy(article.articleBody), feed };
-    const area = doc.querySelector('#js-article-body, #article-body, [itemprop="articleBody"], .article-body, .article_body') ||
+    let area = doc.querySelector('#js-article-body, #article-body, [itemprop="articleBody"], .article-body, .article_body') ||
       doc.querySelector('article') || (doc.querySelector('main h1') && doc.querySelector('main'));
     if (!area || (feed && (new URL(url).pathname === '/' || doc.querySelectorAll('main article').length > 1))) return { feed };
-    area.querySelectorAll('script, style, nav, aside, footer, rt, rp, noscript, figure, [hidden], [aria-hidden="true"]').forEach(x => x.remove());
+    area = rubyMark(area);
+    area.querySelectorAll('script, style, nav, aside, footer, noscript, figure, [hidden], [aria-hidden="true"], [class*="author"], [class*="profile"], [class*="related"], [class*="share"], [class*="breadcrumb"]').forEach(x => x.remove());
     area.querySelectorAll('br').forEach(x => x.replaceWith('\n'));
     const blocks = [...area.querySelectorAll('p, h2, h3, blockquote, li')]
-      .filter(x => !x.querySelector('p, blockquote, li') && x.textContent.trim() !== title?.trim() && hasJapanese(x.textContent, 1));
+      .filter(x => !x.querySelector('p, blockquote, li') && plain(x.textContent).trim() !== plain(title) && hasJapanese(x.textContent, 1));
     return { title, text: tidy(blocks.map(x => x.textContent).join('\n') || area.textContent), feed };
   }
 
@@ -116,7 +136,7 @@
       if (link) return article(link.href, false);
     }
     if (!found || !hasJapanese(found.text, 8)) throw new Error('沒有找到日文正文，請貼上單篇文章的網址');
-    return { title: String(found.title || '').trim().slice(0, 80), text: found.text.slice(0, MAX_TEXT), url: url.href };
+    return { title: String(found.title || '').trim().slice(0, 240), text: found.text.slice(0, MAX_TEXT).replace(/｜[^》\n]*$/, ''), url: url.href };
   }
 
   async function latestNHK() {
@@ -130,7 +150,17 @@
     const links = text.match(/https:\/\/news\.web\.nhk\/news\/easy\/ne\d{10,}\/ne\d{10,}\.html/g);
     if (!links?.length) throw new Error('NHK 索引沒有可匯入的文章');
     const [latest] = [...new Set(links)].sort().reverse();
-    return article(latest, false);
+    const d = await article(latest, false);
+    // NHK 改版後全文需登入 NHK ONE：只拿到摘要時視為失敗
+    if (/受信契約|NHK ONE/.test(d.text) || d.text.length < 300) throw new Error('NHK 新聞目前需登入才能看全文');
+    return d;
+  }
+
+  // 一鍵匯入簡單日文新聞：MATCHA 簡單日文（有完整振假名）→ 失敗再試 NHK
+  const EASY_FEEDS = ['https://matcha-jp.com/easy/feed'];
+  async function latestEasy() {
+    for (const feed of EASY_FEEDS) { try { return await article(feed); } catch { } }
+    return latestNHK();
   }
 
   function audio(value) {
@@ -169,22 +199,56 @@
     const meta = await request(endpoint, 'application/json', 5000).catch(() => null);
     const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
     const result = { title, lines: [] };
-    if (!meta || /カラオケ|歌ってみた|カバー|\b(?:cover|karaoke|live|remix|reaction|shorts)\b/i.test(title)) return result;
+    if (!meta || /カラオケ|歌ってみた|カバー|\b(?:cover|karaoke|reaction|shorts)\b/i.test(title)) return result;
     const { track, artist } = songTitle(title, meta.author_name || '');
-    if (!track || !artist) return result;
-    const key = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '');
-    const singer = key(artist).replace(/official(?:channel)?$/, '').replace(/topic$/, '');
-    if (singer.length < 2) return result;
-    const query = new URLSearchParams({ track_name: track });
-    const records = await request(LYRICS + '?' + query, 'application/json', 6000).catch(() => []);
-    if (!Array.isArray(records)) return result;
-    const match = records.find(r => {
-      const a = key(r.artistName);
-      return key(r.trackName) === key(track) && a.length >= 2 && (singer.includes(a) || a.includes(singer)) && hasJapanese(r.plainLyrics, 8);
-    });
-    if (match) result.lines = tidy(match.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
+    const found = await lyrics(track, artist);
+    if (found) Object.assign(result, found);
     return result;
   }
 
-  window.LinkImport = { NHK, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube };
+  // LRC：[mm:ss.xx] 歌詞 → [{jp, zh:'', t}]
+  function parseLRC(lrc) {
+    const out = [];
+    String(lrc || '').replace(/\r/g, '').split('\n').forEach(row => {
+      const tags = [...row.matchAll(/\[(\d{1,2}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)];
+      const jp = row.replace(/\[[^\]]*\]/g, '').trim();
+      if (!tags.length || !jp) return;
+      tags.forEach(m => out.push({ jp, zh: '', t: Math.round((+m[1] * 60 + parseFloat(m[2].replace(':', '.'))) * 10) / 10 }));
+    });
+    return out.sort((a, b) => a.t - b.t).slice(0, 300);
+  }
+
+  const key = value => String(value || '').normalize('NFKC').toLowerCase().replace(/\(.*?\)|（.*?）/g, '').replace(/[\s\p{P}\p{S}]/gu, '');
+  // 依歌名（＋歌手）在 LRCLIB 找歌詞；優先有時間軸的版本。回傳 {title, artist, lines, timed} 或 null
+  async function lyrics(track, artist, duration) {
+    track = String(track || '').trim(); artist = String(artist || '').trim();
+    if (!track) return null;
+    const singer = key(artist).replace(/official(?:channel)?$/, '').replace(/topic$/, '').replace(/vevo$/, '');
+    const queries = [{ track_name: track, ...(singer.length >= 2 && { artist_name: artist.replace(/\s*-\s*Topic$/i, '') }) }, { track_name: track }, { q: (track + ' ' + artist).trim() }];
+    const seen = new Map();
+    for (const q of queries) {
+      const rows = await request(LYRICS + '?' + new URLSearchParams(q), 'application/json', 7000).catch(() => []);
+      if (Array.isArray(rows)) rows.forEach(r => r && r.id != null && !seen.has(r.id) && seen.set(r.id, r));
+    }
+    const score = r => {
+      if (!hasJapanese(r.syncedLyrics || r.plainLyrics, 8) || r.instrumental) return -1;
+      const a = key(r.artistName), t = key(r.trackName), k = key(track);
+      let s = t === k ? 6 : (t.includes(k) || k.includes(t)) && Math.min(t.length, k.length) >= 2 ? 3 : 0;
+      if (!s) return -1;
+      if (singer.length >= 2 && a.length >= 2 && (singer.includes(a) || a.includes(singer))) s += 5;
+      else if (singer.length >= 2 && !key(track + artist).includes(a)) s -= 2;
+      if (/\b(?:live|remix|acoustic|instrumental|ver\.?|version)\b|ライブ|弾き語り/i.test(r.trackName + ' ' + (r.albumName || '')) && !/live|ver/i.test(track)) s -= 3;
+      if (r.syncedLyrics) s += 3;
+      if (duration && r.duration && Math.abs(r.duration - duration) < 4) s += 2;
+      return s;
+    };
+    const best = [...seen.values()].map(r => [score(r), r]).filter(x => x[0] >= 4).sort((a, b) => b[0] - a[0])[0];
+    if (!best) return null;
+    const r = best[1];
+    const timed = r.syncedLyrics ? parseLRC(r.syncedLyrics) : [];
+    const lines = timed.length >= 4 ? timed : tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
+    return { title: `${r.trackName}（${r.artistName}）`, artist: r.artistName, lines, timed: timed.length >= 4 };
+  }
+
+  window.LinkImport = { NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
 })();

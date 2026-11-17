@@ -39,6 +39,20 @@
     idx.unshift({ id: s.id, title: s.title, at: s.at, n: s.lines.length, src: s.src.type, timed: s.lines.filter(l => l.t != null).length });
     await App.idb.set('songs:index', idx);
   }
+  // 新抓到的歌詞併入舊歌：沒歌詞就整份套用；歌詞相同只補時間（保留手動校時與中文）；不同則保留舊的
+  const norm = s => String(s || '').normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu, '');
+  function mergeLyrics(s, lines) {
+    if (!s.lines.length) { s.lines = lines.map(l => ({ jp: l.jp, zh: l.zh || '', t: l.t })); return 'all'; }
+    if (s.lines.length !== lines.length || s.lines.some((l, i) => norm(l.jp) !== norm(lines[i].jp))) return '';
+    let n = 0; s.lines.forEach((l, i) => { if (l.t == null && lines[i].t != null) { l.t = lines[i].t; n++; } });
+    return n ? 'time' : '';
+  }
+  function guessTitle(s) {
+    const t = String(s.title || '').replace(/\s*・.*$/, '');
+    const m = t.match(/^(.+?)（(.+)）$/);
+    return m ? { track: m[1], artist: m[2] } : LinkImport.songTitle(t, '');
+  }
+
   async function delSong(id) {
     await App.idb.del('song:' + id);
     await App.idb.set('songs:index', (await songIndex()).filter(x => x.id !== id));
@@ -94,11 +108,13 @@
       status.textContent = yt ? '正在讀取歌曲資訊與搜尋歌詞…' : '正在匯入音訊…';
       try {
         const existing = await getSong(id);
-        if (!existing) {
-          const data = yt ? await LinkImport.youtube(yt) : { title: audio.title, lines: [] };
+        if (!existing || !existing.lines.length || existing.lines.every(l => l.t == null)) {
+          let data = yt ? await LinkImport.youtube(yt) : { title: audio.title, lines: [] };
+          if (!yt && audio) { const f = LinkImport.songTitle(audio.title, ''); const L = await LinkImport.lyrics(f.track, f.artist).catch(() => null); if (L) data = Object.assign({}, data, L); }
           if (!form.isConnected) return;
           const src = yt ? { type: 'yt', yt } : { type: 'url', url: audio.href };
-          await putSong({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines });
+          if (!existing) await putSong({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines });
+          else if (data.lines.length) { mergeLyrics(existing, data.lines); await putSong(existing); }
         }
         if (form.isConnected) App.go('song', { id });
       } catch {
@@ -254,7 +270,7 @@
   function ttsPlayer(s, hooks) {
     let idx = -1, on = false, r = 1, u = null;
     const ok = 'speechSynthesis' in window;
-    const voice = () => { try { return speechSynthesis.getVoices().find(v => /^ja/i.test(v.lang)) || null; } catch (e) { return null; } };
+    const voice = () => { try { const tv = App.ttsVoice && App.ttsVoice(); if (tv && tv.voice) return tv.voice; return speechSynthesis.getVoices().find(v => /^ja/i.test(v.lang)) || null; } catch (e) { return null; } };
     function say(i) {
       if (!ok) { App.speak(s.lines[i] && s.lines[i].jp); return; }
       if (i < 0 || i >= s.lines.length) { on = false; hooks.change(); return; }
@@ -298,7 +314,7 @@
     const prof = (App.profile && App.profile()) || {};
     V.lv = prof.lv || 'zero'; V.assist = prof.assist || 'full';
     if (s.lines.some(l => JPText.hasUnknown && JPText.hasUnknown(JPText.tokenize(l.jp)))) {
-      JPText.ready(true).then(() => { if (!V.root || !V.root.isConnected) return; V.tokens = s.lines.map(l => JPText.tokenize(l.jp)); drawLines(V); });
+      JPText.ready(true).then(() => { if (!V.root || !V.root.isConnected) return; V.tokens = s.lines.map(l => JPText.tokenize(l.jp)); drawLines(V); drawVocab(V); });
     }
     const hasRec = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     el.innerHTML = `<div class="sg-page">
@@ -317,6 +333,8 @@
       </div>
       <div class="sg-help muted rd-tip"></div>
       <div class="sg-lyr rd-doc mine ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''}" lang="ja"></div>
+      ${s.demo || s.src.type === 'tts' || (hasLyrics && s.lines.every(l => l.t != null)) ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary sg-find">🔍 自動找${hasLyrics ? '時間軸' : '歌詞與時間軸'}</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></div>`}
+      <div class="sg-vocab"></div>
       <div class="sg-recs"></div>
       <div class="sg-dictbar" hidden><button type="button" class="btn" id="sgReDict">🔀 換一組</button><button type="button" class="btn primary" id="sgCheck">對答案</button></div>
       <button type="button" class="btn primary block sg-finish" ${hasLyrics ? '' : 'hidden'}>✔ 練完這首</button>
@@ -374,6 +392,28 @@
     $('#sgCheck').onclick = () => checkDict(V);
     $('.sg-finish').onclick = () => finish(V);
     $('.sg-lyr').addEventListener('click', e => onLyrClick(V, e));
+    if ($('.sg-find')) $('.sg-find').onclick = async () => {
+      const b = $('.sg-find'), st = $('.sg-fst');
+      b.disabled = true; st.textContent = '搜尋歌詞中…';
+      try {
+        const dur = V.P2 && V.P2.dur ? Math.round(V.P2.dur() || 0) : 0;
+        const L = await LinkImport.lyrics($('.sg-q').value, $('.sg-a').value, dur);
+        if (!V.root.isConnected) return;
+        if (!L || !L.lines.length) { st.textContent = '找不到相符的日文歌詞。可修改歌名／歌手再試，或按 ✏️ 自己貼歌詞。'; return; }
+        let r = mergeLyrics(s, L.lines);
+        if (!r) {
+          const ok = await new Promise(res => App.modal(`<h2>用找到的歌詞取代？</h2><p class="muted">找到「${esc(L.title)}」${L.timed ? '（含時間軸）' : ''}，和目前歌詞不同。取代後原本的歌詞、中文與校時會被覆蓋。</p>`, [{ label: '保留原本', onClick: () => res(false) }, { label: '取代', cls: 'primary', onClick: () => res(true) }]));
+          if (!ok) { st.textContent = '已保留原本歌詞。'; return; }
+          s.lines = L.lines.map(l => ({ jp: l.jp, zh: '', t: l.t })); r = 'all';
+        }
+        if (/^YouTube・/.test(s.title) || s.src.type !== 'yt') s.title = L.title.slice(0, 60);
+        await putSong(s);
+        App.toast(L.timed ? '✅ 已套用歌詞與逐句時間' : '✅ 已套用歌詞（這版沒有時間軸，可用「⏱ 對時」手動標）', 'ok');
+        cleanup(V); songView(el, s.id);
+      } catch (e) { st.textContent = '搜尋失敗，請稍後再試。'; }
+      finally { if (b.isConnected) b.disabled = false; }
+    };
+    drawVocab(V);
 
     if (hasLyrics) setMode(V, 'sing');
     else $('.sg-help').textContent = '音源已匯入。點上方「編輯」即可加入日文歌詞。';
@@ -463,7 +503,7 @@
       return `<div class="sg-line${i === V.cur ? ' on' : ''}${V.mode === 'mark' && i === V.mark ? ' next' : ''}${l.zh ? '' : ' nozh'}" data-i="${i}">
         <button type="button" class="sg-no" data-jump="${i}" aria-label="第 ${i + 1} 句">${i + 1}</button>
         <div class="sg-tx"><div class="sg-jp">${body}</div>${l.zh ? `<div class="rd-zh sg-zh" lang="zh-Hant">${esc(l.zh)}</div>` : ''}${tm}</div>
-        <button type="button" class="rd-say sg-say" data-say="${i}" aria-label="朗讀這句">🔊</button>
+        <span class="sg-acts"><button type="button" class="rd-say sg-say" data-say="${i}" aria-label="朗讀這句">🔊</button>${V.mode === 'dict' ? '' : App.trackBtn(lineItem(V, i), true)}</span>
       </div>`;
     }).join('');
     if (V.mode === 'mark') updMarkBtn(V);
@@ -498,6 +538,24 @@
     w.classList.add('sel');
     const line = V.s.lines[li];
     Reader.wordCard(t, { title: V.s.title, sentence: line.jp, zh: line.zh, source: '🎵 歌曲', onClose: () => { w.classList.remove('sel'); markTracked(V); } });
+  }
+  function lineItem(V, i) {
+    const l = V.s.lines[i];
+    return App.wordItem({ jp: l.jp, kana: '', zh: l.zh || '（歌詞整句）', hint: `出自《${V.s.title}》第 ${i + 1} 句` }, '🎵 歌曲', 'phrase');
+  }
+  // 本曲單字（與閱讀共用 Reader.vocabList）
+  function drawVocab(V) {
+    const box = V.$('.sg-vocab'); if (!box || !V.s.lines.length || !Reader.vocabList) return;
+    const voc = Reader.vocabList(V.tokens, V.s.lines.map(l => l.jp), V.s.title, '🎵 歌曲', 50);
+    V.vItems = voc.items;
+    box.innerHTML = `<details class="rd-box sg-vdet"><summary>📚 本曲單字 ${voc.list.length} 個（可加入不會清單）</summary>${Reader.vocabHTML(voc)}</details>`;
+    box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => App.speak(b.dataset.sp, .85));
+    const all = box.querySelector('[data-all="v"]');
+    if (all) all.onclick = () => {
+      let n = 0; V.vItems.forEach(it => { if (!Tracker.has(it.id) && Tracker.add(it, true)) n++; });
+      Reader.syncTrackBtns(V.root); markTracked(V);
+      toast(n ? `📌 已加入 ${n} 筆到不會清單` : '都已在不會清單了', n ? 'ok' : '');
+    };
   }
   function markTracked(V) {
     if (!V.root.isConnected) return;

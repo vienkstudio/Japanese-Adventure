@@ -1,5 +1,6 @@
 /* 旅遊會話手冊：依情境分類、中日文／羅馬字搜尋（含同義詞）、每句語音、全螢幕「給店員看」。
    路由：phrasebook（nav:false，從首頁或店內 📖 進入）。參數：App.go('phrasebook', {q:'關鍵字'}) 或 {cat:'eat'}（cat 也可給場景 id，如 'konbini'）。
+   🔤 五十音分頁（js/kana-lesson.js，須先載入）：App.go('phrasebook', {tab:'kana'})，可加 sub:'table'|'daku'|'yoon'|'lesson'|'quiz'、ch:'s6'（講義章節）。
    資料：⭐ 必備句（本檔 MUST）＋ SCENES 的 phrases / vocab ＋ 冒險世界 WORLD 各店（搜尋時才載入全部地區）。
    零基礎或提示「全部顯示」時，每句加羅馬字；kana 欄保留片假名。 */
 (function () {
@@ -7,6 +8,7 @@
   const esc = App.esc;
   const CATS = [
     ['must', '⭐ 必備', []],
+    ['kana', '🔤 五十音', []],
     ['emer', '🆘 緊急', ['emergency']],
     ['move', '🚃 交通', ['airport', 'station', 'directions']],
     ['eat', '🍜 點餐', ['ramen', 'izakaya', 'yakiniku', 'cafe']],
@@ -15,6 +17,8 @@
     ['see', '⛩️ 觀光', ['shrine']]
   ];
   const UI = { cat: 'must', q: '' };
+  const hasKana = () => !!window.KanaLesson;
+  const cats = () => CATS.filter(c => c[0] !== 'kana' || hasKana());
 
   /* ---------- ⭐ 必備句（旅遊最常用；romaji 用長音符號） ---------- */
   const MUST = [
@@ -255,9 +259,10 @@
     const q = String(UI.q || '').trim();
     if (q) {
       const { ph, vo } = search(q);
+      const kh = hasKana() ? KanaLesson.search(q, norm) : { n: 0, html: '' };
       const loading = !wDone ? `<p class="pb-load">⏳ 正在載入冒險世界各店的句子…</p>` : '';
-      if (!ph.length && !vo.length) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
-      return (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(w => row(w)).join('') + (ph.length > 60 ? `<p class="pb-more">只列前 60 句，再多打幾個字縮小範圍</p>` : '') : '') +
+      if (!ph.length && !vo.length && !kh.n) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
+      return kh.html + (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(w => row(w)).join('') + (ph.length > 60 ? `<p class="pb-more">只列前 60 句，再多打幾個字縮小範圍</p>` : '') : '') +
         (vo.length ? `<h2>📚 單字（${vo.length}）</h2><div class="pb-voc">${vo.slice(0, 60).map(vocab).join('')}</div>` : '') + loading;
     }
     const cat = CATS.find(c => c[0] === UI.cat) || CATS[0];
@@ -283,7 +288,7 @@
   // 參數 cat 可以是分類 id，也可以是場景 id（如 konbini）
   function catOf(c) {
     if (!c) return null;
-    if (CATS.some(x => x[0] === c)) return c;
+    if (cats().some(x => x[0] === c)) return c;
     const hit = CATS.find(x => x[2].includes(c));
     return hit ? hit[0] : null;
   }
@@ -292,14 +297,17 @@
     params = params || {};
     if (params.q != null && String(params.q).trim()) { UI.q = String(params.q); }
     else if (params.cat) { const c = catOf(params.cat); if (c) { UI.cat = c; UI.q = ''; } }
+    if (params.tab === 'kana' && hasKana()) { UI.cat = 'kana'; UI.q = ''; KanaLesson.open(params.sub, params.ch); }
     el.innerHTML = `<section class="pb">
       <h1>📖 旅遊會話手冊</h1>
-      <input class="pb-search" type="search" placeholder="搜尋：多少錢、退稅、儲值、ikura、toire…" value="${esc(UI.q)}" aria-label="搜尋會話">
-      <div class="pb-cats">${CATS.map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}" aria-pressed="${!UI.q && UI.cat === id}">${n}</button>`).join('')}</div>
+      <input class="pb-search" type="search" placeholder="搜尋：多少錢、退稅、儲值、ikura、促音、か…" value="${esc(UI.q)}" aria-label="搜尋會話">
+      <div class="pb-cats">${cats().map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}" aria-pressed="${!UI.q && UI.cat === id}">${n}</button>`).join('')}</div>
       <div id="pb-list"></div>${App.voiceHTML ? App.voiceHTML() : ''}</section>`;
     const box = el.querySelector('#pb-list');
+    let kanaOpen = params.tab === 'kana' && params.ch ? { ch: params.ch } : null;
     const paint = () => {
-      box.innerHTML = list();
+      if (!String(UI.q || '').trim() && UI.cat === 'kana' && hasKana()) { KEYS = []; KanaLesson.render(box, kanaOpen); kanaOpen = null; }
+      else box.innerHTML = list();
       el.querySelectorAll('[data-cat]').forEach(b => { const on = !UI.q && b.dataset.cat === UI.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     };
     const ensureWorld = () => {
@@ -310,6 +318,10 @@
       const s = e.target.closest('[data-say]'), b = e.target.closest('[data-show]');
       if (s) { const w = KEYS[+s.dataset.say]; if (w) App.speak(String(w.kana || w.jp).replace(/〜/g, '')); }
       if (b) { const w = KEYS[+b.dataset.show]; if (w) showBig(w); }
+      if (e.target.closest('.kn')) return;   // 五十音分頁自己處理點擊
+      const ks = e.target.closest('[data-ks]'), kg = e.target.closest('[data-kgo]');
+      if (ks) App.speak(ks.dataset.ks);
+      if (kg && hasKana()) { const [sub, ch] = kg.dataset.kgo.split(':'); KanaLesson.open(sub, ch); kanaOpen = ch ? { ch } : null; UI.cat = 'kana'; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); }
     };
     const inp = el.querySelector('.pb-search');
     let t = null;

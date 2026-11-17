@@ -1,0 +1,57 @@
+/* N5–N1 挑戰（js/challenge.js）：class 前綴 ch- ；只用 tokens.css 變數 */
+.ch-h{font-size:var(--fs-xl);margin:var(--sp-3) 0 var(--sp-1)}
+.ch-h small{display:block;font-size:var(--fs-sm);font-weight:400;color:var(--muted);margin-top:2px}
+.ch-tabs button small{font-weight:400}
+.ch-lv .ch-lvh{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-2)}
+.ch-badge{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:2px 10px;border-radius:var(--r-pill);color:var(--on-n);font-weight:800;font-size:var(--fs-sm)}
+.ch-row{display:flex;align-items:baseline;gap:var(--sp-2);flex-wrap:wrap;margin:var(--sp-2) 0 var(--sp-1)}
+.ch-row small{margin-left:auto;font-size:var(--fs-xs)}
+.ch-list{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-3) 0}
+.ch-item{display:flex;align-items:center;gap:var(--sp-3);width:100%;min-height:64px;padding:var(--sp-3) var(--sp-4);border:1px solid var(--line2);border-radius:var(--r-m);background:var(--card);color:var(--text);font-family:inherit;text-align:left;cursor:pointer;box-shadow:var(--shadow)}
+.ch-item:hover{background:var(--chip)}
+.ch-item:active{transform:scale(.98)}
+.ch-item.mock{border-color:var(--pri);background:var(--pri-t)}
+.ch-item .ic{font-size:1.6em;flex:none;width:1.6em;text-align:center}
+.ch-item .tx{flex:1;min-width:0}
+.ch-item .tx b{display:block;font-size:var(--fs-md)}
+.ch-item .tx b small{font-weight:400;color:var(--muted);font-size:var(--fs-xs)}
+.ch-item .tx>small,.ch-item .rt small{display:block;color:var(--muted);font-size:var(--fs-xs)}
+.ch-item .rt{flex:none;text-align:right}
+.ch-item .st{letter-spacing:1px;white-space:nowrap}
+.ch-opt{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-5)}
+.ch-opt .btn[aria-pressed="true"]{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
+.ch-opt small{font-size:var(--fs-xs)}
+
+/* 作答 */
+.ch-top{display:flex;align-items:center;gap:var(--sp-2);margin:var(--sp-3) 0 var(--sp-2)}
+.ch-top .ch-n{font-weight:700}
+.ch-top .ch-ok{margin-left:auto;color:var(--ok);font-weight:700}
+.ch-time{height:6px;background:var(--line);border-radius:var(--r-pill);overflow:hidden;margin-top:var(--sp-1)}
+.ch-time i{display:block;height:100%;width:100%;background:var(--acc);transition:width .2s linear}
+.ch-time i.low{background:var(--err)}
+.ch-card{padding:var(--sp-4)}
+.ch-lab{margin:0;font-size:var(--fs-xs);color:var(--pri-d);font-weight:700;letter-spacing:.05em}
+.ch-ask{margin:var(--sp-1) 0 var(--sp-3);font-weight:700}
+.ch-big{font-size:var(--fs-2xl);text-align:center;margin:var(--sp-3) 0;font-weight:700;line-height:1.4;word-break:break-all}
+.ch-big u{text-decoration-thickness:2px;text-underline-offset:6px}
+.ch-sent{font-size:var(--fs-lg);line-height:1.9;margin:var(--sp-2) 0;padding:var(--sp-3);background:var(--chip);border-radius:var(--r-s)}
+.ch-blank{color:var(--pri-d);font-weight:700;white-space:nowrap}
+.ch-order .ch-slot{display:inline-block;min-width:3em;border-bottom:2px solid var(--muted);margin:0 3px;text-align:center;line-height:1.4;vertical-align:baseline}
+.ch-order .ch-slot.star{border-color:var(--pri);color:var(--pri-d);font-weight:800}
+.ch-ans{color:var(--pri-d);text-decoration:underline;text-underline-offset:4px}
+.ch-passage{background:var(--chip);border-radius:var(--r-s);padding:var(--sp-3);line-height:1.9;font-size:var(--fs-md)}
+.ch-passage p{margin:0 0 var(--sp-2)}
+.ch-passage p:last-child{margin:0}
+.ch-qq{font-weight:700;margin:var(--sp-3) 0 0}
+.ch-say{display:flex;justify-content:center;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin:var(--sp-2) 0}
+.ch-nov{text-align:center;font-size:var(--fs-sm)}
+.choices.ch-col{grid-template-columns:1fr}
+.choice.ch-long{font-size:var(--fs-md);text-align:left;padding:var(--sp-3) var(--sp-4);min-height:52px;line-height:1.5}
+.ch-card .feedback{text-align:left;min-height:0}
+.ch-exp{border-radius:var(--r-s);padding:var(--sp-3);margin:var(--sp-2) 0;line-height:1.7;font-size:var(--fs-sm)}
+.ch-exp.ok{background:var(--ok-t)}
+.ch-exp.ng{background:var(--err-t)}
+.ch-res{margin:0 0 var(--sp-1);font-size:var(--fs-md);font-weight:700}
+.ch-script{margin:var(--sp-2) 0 0;font-size:var(--fs-xs)}
+.ch-tb{margin-top:var(--sp-2)}
+.ch-low{color:var(--err);font-weight:700}

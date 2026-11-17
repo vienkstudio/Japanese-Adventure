@@ -225,3 +225,11 @@ input[type=file].rd-in{padding:8px}
   .sg-recb.rec{animation:none}
   .sg-line{transition:none}
 }
+/* 歌曲：每句加入不會清單、自動找歌詞、本曲單字 */
+.sg-acts{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.sg-acts .track-btn,.sg-acts [data-track]{min-width:44px;min-height:44px}
+.sg-auto{margin:var(--sp-2) 0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.sg-auto .rd-row{gap:var(--sp-2)}
+.sg-auto .rd-lbl{flex:1;min-width:0}
+.sg-vdet>summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.sg-vdet .rd-sec{margin-top:var(--sp-2)}

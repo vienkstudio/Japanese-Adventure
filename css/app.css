@@ -308,6 +308,15 @@ input,textarea,select{background:var(--card);color:var(--text);border:1px solid 
 .st-danger{border:1px solid var(--err);background:transparent;color:var(--err)}
 .st-lv .ob-opt{min-height:52px;padding:var(--sp-2) var(--sp-3)}
 .st-note{color:var(--muted);font-size:var(--fs-sm);margin:var(--sp-2) 2px}
+.st-voice .ob-opt{min-height:52px;padding:var(--sp-2) var(--sp-3)}
+.st-sim{font-style:normal;font-size:var(--fs-xs);font-weight:700;background:var(--chip);color:var(--muted);border-radius:var(--r-pill);padding:1px 8px;margin-left:6px}
+.st-sel{width:100%;min-height:48px;border:1px solid var(--line2);border-radius:var(--r-m);background:var(--chip);color:var(--text);font:inherit;padding:0 var(--sp-3)}
+.st-rng{display:block;margin:0 0 var(--sp-2)}
+.st-rng span{display:flex;justify-content:space-between;font-weight:700;font-size:var(--fs-sm)}
+.st-rng input{width:100%;min-height:44px;margin:0;accent-color:var(--pri)}
+.st-vbtns{display:flex;gap:var(--sp-2);margin-top:var(--sp-2)}
+.st-vbtns .btn{flex:1}
+.toast.tts-cap{font-size:var(--fs-xl);font-weight:700;border-radius:var(--r-m);max-width:92vw;white-space:normal}
 .st-ver{text-align:center;color:var(--muted);font-size:var(--fs-xs);margin:var(--sp-4) 0}
 /* ===== 觸控 ≥44px、最小字級 13px（--fs-xs） ===== */
 #top .logo{min-height:44px;min-width:44px;border-radius:var(--r-s)}

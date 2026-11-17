@@ -218,3 +218,7 @@
 .kb-ft td .kb-ib{vertical-align:middle}
 .kb-iact{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;align-items:center}
 .kb.full .kb-item{max-width:760px}
+.kb-next-pre{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;color:var(--muted)}
+.kb-next-pre b{color:var(--text)}
+.kb-left{margin-left:6px;font-weight:700;color:var(--warn)}
+.kb-rel.done{opacity:.75}

@@ -31,12 +31,41 @@
 
   /* ---------------- 我的文章（IndexedDB） ---------------- */
   async function docIndex() { const a = await App.idb.get('docs:index'); return Array.isArray(a) ? a : []; }
+  // 原文讀音：匯入時把 <ruby> 存成「｜漢字《かんじ》」，顯示前拆成 純文字＋讀音區段
+  const FURI = /｜([^｜《》\n]+)《([^《》\n]+)》/g;
+  const plain = s => String(s || '').replace(FURI, '$1');
+  function parseFuri(s) {
+    s = String(s || ''); let jp = '', last = 0; const furi = [];
+    s.replace(FURI, (m, b, r, off) => { jp += s.slice(last, off); furi.push([jp.length, jp.length + b.length, JPText.toHira(r)]); jp += b; last = off + m.length; return m; });
+    return { jp: jp + s.slice(last), furi };
+  }
+  // 斷詞結果套用原文讀音：讀音區段完整落在詞內才採用（優先於字典推測）
+  function applyFuri(tokens, furi) {
+    if (!furi || !furi.length) return tokens;
+    tokens.forEach(t => {
+      if (t.sym || !JPText.hasKanji(t.s)) return;
+      const a = t.i, b = t.i + t.s.length, rs = furi.filter(f => f[0] < b && f[1] > a);
+      if (!rs.length || rs.some(f => f[0] < a || f[1] > b)) return;
+      let out = '', p = a;
+      rs.forEach(f => { out += t.s.slice(p - a, f[0] - a) + f[2]; p = f[1]; });
+      out += t.s.slice(p - a);
+      if (JPText.hasKanji(out)) return;
+      out = JPText.toHira(out);
+      if (out === t.kana) { t.src = true; return; }
+      if (t.known && t.bkana && t.kana && t.bkana === t.kana) t.bkana = out;
+      if (!t.known) t.bkana = out;
+      t.kana = out; t.src = true; t.romaji = JPText.romaji(out);
+    });
+    return tokens;
+  }
+  function tokenizeFuri(p) { return applyFuri(JPText.tokenize(p.jp), p.furi); }
+
   async function saveDoc(d) {
     const id = hash(d.text);
-    const doc = { id, title: (d.title || '').trim().slice(0, 80) || d.text.trim().split('\n')[0].slice(0, 24), text: d.text, url: d.url || '', src: d.src || 'paste', at: Date.now() };
+    const doc = { id, title: (d.title || '').trim().slice(0, 240) || plain(d.text).trim().split('\n')[0].slice(0, 24), text: d.text, url: d.url || '', src: d.src || 'paste', at: Date.now() };
     await App.idb.set('doc:' + id, doc);
     let idx = (await docIndex()).filter(x => x.id !== id);
-    idx.unshift({ id, title: doc.title, at: doc.at, len: doc.text.length, url: doc.url });
+    idx.unshift({ id, title: plain(doc.title).slice(0, 80), at: doc.at, len: plain(doc.text).length, url: doc.url });
     const drop = idx.slice(50); idx = idx.slice(0, 50);
     drop.forEach(x => App.idb.del('doc:' + x.id));
     await App.idb.set('docs:index', idx);
@@ -90,7 +119,7 @@
       <div class="rd-acts">
         <button type="button" class="rd-act" data-act="paste"><span>📋</span>貼上文章</button>
         <button type="button" class="rd-act" data-act="url"><span>🔗</span>匯入文章網址</button>
-        <button type="button" class="rd-act" data-act="nhk"><span>🗞️</span>匯入 NHK 新聞</button>
+        <button type="button" class="rd-act" data-act="nhk"><span>🗞️</span>一鍵匯入簡單日文新聞</button>
         <button type="button" class="rd-act" data-act="songs"><span>🎵</span>歌曲跟唱</button>
       </div>
       <h3 class="rd-h3">📚 文章庫</h3>
@@ -155,7 +184,7 @@
         <div class="rd-row"><button type="submit" class="btn primary" id="rdFetch">匯入並開始讀</button><button type="button" class="btn" id="rdPaste">手動貼上全文</button></div>
         <p id="rdImportStatus" class="rd-tip" role="status" aria-live="polite"></p>
       </form>
-      <p class="muted rd-tip">支援單篇日文文章、NHK 簡單新聞首頁，以及提供 RSS 的公開新聞網站。需要代讀時，網址會交由 Jina Reader 擷取文字。</p>
+      <p class="muted rd-tip">支援單篇日文文章、RSS 網址、MATCHA 簡單日文（原文振假名會自動帶入）。NHK 新聞全文現需登入 NHK ONE，建議用「手動貼上全文」。需要代讀時，網址會交由 Jina Reader 擷取文字。</p>
       <details class="rd-box rd-det"><summary>開啟原文或使用書籤小工具</summary>
         <p><button type="button" class="btn" id="rdOpen">開啟原網頁</button></p>
         <p>可把按鈕拖到書籤列，在原網頁按一下就送出選取的文字。${httpOK ? '' : '（需透過網站開啟日語冒險。）'}</p>
@@ -174,9 +203,9 @@
       const url = val();
       if (!url) { status.textContent = '請輸入公開的文章網址'; u.focus(); return; }
       submit.disabled = true;
-      status.textContent = LinkImport.nhkHome(url) ? '正在找最新的 NHK 簡單新聞…' : '正在擷取文章正文…';
+      status.textContent = LinkImport.nhkHome(url) ? '正在找最新的簡單日文新聞…' : '正在擷取文章正文…';
       try {
-        const d = LinkImport.nhkHome(url) ? await LinkImport.latestNHK() : await LinkImport.article(url.href);
+        const d = LinkImport.nhkHome(url) ? await LinkImport.latestEasy() : await LinkImport.article(url.href);
         if (!form.isConnected) return;
         const id = await saveDoc({ ...d, src: 'url' });
         if (form.isConnected) App.go('read-article', { doc: id });
@@ -266,7 +295,8 @@
     }
     if (params.doc) {
       const d = await App.idb.get('doc:' + params.doc); if (!d) return null;
-      return { id: 'doc:' + d.id, title: d.title, url: d.url, paras: d.text.split(/\n+/).map(s => s.trim()).filter(Boolean).map(jp => ({ jp, zh: '' })), daily: false };
+      const T = parseFuri(d.title);
+      return { id: 'doc:' + d.id, title: T.jp, titleFuri: T.furi, url: d.url, paras: d.text.split(/\n+/).map(s => s.trim()).filter(Boolean).map(s => Object.assign(parseFuri(s), { zh: '' })), daily: false };
     }
     return null;
   }
@@ -287,8 +317,8 @@
     JPText.ensureGrammar().then(() => { if (el.isConnected) drawExtras(el, S); });
   }
   function tokenizeAll(S) {
-    S.tokens = S.A.paras.map(p => JPText.tokenize(p.jp));
-    S.titleTk = JPText.tokenize(S.A.title);
+    S.tokens = S.A.paras.map(tokenizeFuri);
+    S.titleTk = tokenizeFuri({ jp: S.A.title, furi: S.A.titleFuri });
   }
   function draw(el, S) {
     const A = S.A, P = pref();
@@ -348,6 +378,38 @@
     syncTrackBtns(el);
   }
 
+  // 本文單字：依等級排序的內容詞（去重），每個可加入不會清單；歌曲也共用
+  const VPOS = /^(n|v|i|na|adv|exp|pron|int|conj|pre|unk|suf)$/;
+  const LVR = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
+  function vocabList(tokenRows, texts, title, source, max) {
+    const seen = new Map();
+    tokenRows.forEach((row, r) => (row || []).forEach(t => {
+      if (t.sym || !VPOS.test(t.pos) || t.pos === 'num') return;
+      if (!t.known && !(t.src && t.kana)) return;
+      if (t.known && !t.zh) return;
+      if (t.s.length < 2 && !JPText.hasKanji(t.s)) return;
+      const base = t.base || t.s, k = base;
+      const o = seen.get(k);
+      if (o) { o.n++; return; }
+      const kana = t.bkana || t.kana || '';
+      seen.set(k, { base, kana, romaji: JPText.romaji(kana), zh: t.zh || '', lv: t.lv || '', n: 1, sent: sentenceOf(texts[r] || '', t.i) });
+    }));
+    const list = [...seen.values()].sort((a, b) => (LVR[a.lv] || 6) - (LVR[b.lv] || 6) || b.n - a.n).slice(0, max || 60);
+    const items = list.map(v => App.wordItem({ jp: v.base, kana: v.kana, romaji: v.romaji, zh: v.zh || '（自填）', hint: title ? `出自《${title}》：${v.sent}` : v.sent }, source, 'word'));
+    return { list, items };
+  }
+  function vocabHTML(voc) {
+    const { list, items } = voc;
+    return `<section class="rd-sec">
+        <div class="rd-sech"><h3>📚 本文單字 <small class="muted">${list.length}</small></h3>${list.length ? '<button type="button" class="btn sm" data-all="v">全部加入</button>' : ''}</div>
+        ${list.length ? list.map((v, k) => `<div class="rd-li">
+          <div class="rd-lih"><b lang="ja">${JPText.ruby(v.base, v.kana)}</b>${lvBadge(v.lv)}${v.n > 1 ? `<small class="muted">出現 ${v.n} 次</small>` : ''}<button type="button" class="rd-say" data-sp="${esc(v.base)}" aria-label="朗讀">🔊</button></div>
+          <div class="rd-lik" lang="ja">${esc(v.kana)}${v.romaji ? ' ・ ' + esc(v.romaji) : ''}</div>
+          <div>${esc(v.zh || '（字典沒有，加入後可自填）')}</div>
+          ${App.trackBtn(items[k], true)}</div>`).join('') : '<p class="muted rd-tip">沒有找到可列出的單字。</p>'}
+      </section>`;
+  }
+
   // 文末：本文片語、本文文法
   function drawExtras(el, S) {
     const box = el.querySelector('.rd-extras'); if (!box) return;
@@ -359,7 +421,9 @@
     const pItem = p => App.wordItem({ jp: p.jp, kana: p.kana, romaji: p.romaji, zh: p.zh, hint: `出自《${A.title}》：${p.sent}` }, '🧩 片語', 'phrase');
     const mark = (s, a, b) => esc(s.slice(0, a)) + '<mark>' + esc(s.slice(a, b)) + '</mark>' + esc(s.slice(b));
     S.gItems = gram.map(gItem); S.pItems = phr.map(pItem);
-    box.innerHTML = `
+    const voc = vocabList([S.titleTk].concat(S.tokens), [A.title].concat(A.paras.map(p => p.jp)), A.title, '📖 閱讀');
+    S.vItems = voc.items;
+    box.innerHTML = vocabHTML(voc) + `
       <section class="rd-sec">
         <div class="rd-sech"><h3>🧩 本文片語 <small class="muted">${phr.length}</small></h3>${phr.length ? '<button type="button" class="btn sm" data-all="p">全部加入</button>' : ''}</div>
         ${phr.length ? phr.map((p, k) => `<div class="rd-li">
@@ -381,7 +445,7 @@
       </section>`;
     box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => App.speak(b.dataset.sp, .85));
     box.querySelectorAll('[data-all]').forEach(b => b.onclick = () => {
-      const items = b.dataset.all === 'g' ? S.gItems : S.pItems;
+      const items = b.dataset.all === 'g' ? S.gItems : b.dataset.all === 'v' ? S.vItems : S.pItems;
       let n = 0; items.forEach(it => { if (!Tracker.has(it.id) && Tracker.add(it, true)) n++; });
       syncTrackBtns(el);
       toast(n ? `📌 已加入 ${n} 筆到不會清單` : '都已在不會清單了', n ? 'ok' : '');
@@ -435,5 +499,5 @@
     } catch (e) { return false; }
   }
 
-  window.Reader = { tokensHTML, wordCard, syncTrackBtns, lvBadge, pref, setPref, saveDoc, readShare, todayDone };
+  window.Reader = { tokensHTML, wordCard, syncTrackBtns, vocabList, vocabHTML, parseFuri, applyFuri, lvBadge, pref, setPref, saveDoc, readShare, todayDone };
 })();

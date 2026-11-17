@@ -35,7 +35,8 @@
     { id: 'desc', name: '顏色形容', icon: '🎨' },
     { id: 'act', name: '基本動作', icon: '✋' },
     { id: 'func', name: '指示功能詞', icon: '🧩' },
-    { id: 'abs', name: '其他', icon: '💭' }
+    { id: 'pos', name: '方位位置', icon: '🧭' },
+    { id: 'abs', name: '抽象概念', icon: '💭' }
   ];
   // 現有旅遊場景（data/scenes-*.js 的 id）→ 大場景
   M.SUB = {

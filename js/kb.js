@@ -15,6 +15,13 @@
   const ST = M.ST || (M.ST = (() => { try { return JSON.parse(App.store.get(MK) || '{}'); } catch (e) { return {}; } })());
   ST.learned = ST.learned || {}; ST.ing = ST.ing || {}; ST.fav = ST.fav || {}; ST.recent = ST.recent || [];
   const saveST = () => App.store.set(MK, JSON.stringify(ST));
+  // 文法重複條目已合併：舊 id 的狀態搬到保留的 id
+  (() => {
+    const A = M.GALIAS || {}; let ch = 0;
+    for (const a in A) ['learned', 'ing', 'fav'].forEach(k => { if (ST[k][a]) { ST[k][A[a]] = ST[k][a]; delete ST[k][a]; ch = 1; } });
+    if (ST.recent.some(id => A[id])) { ST.recent = [...new Set(ST.recent.map(id => A[id] || id))]; ch = 1; }
+    if (ch) saveST();
+  })();
   const stOf = id => ST.learned[id] ? 2 : ST.ing[id] ? 1 : 0;
   function setSt(id, s) { delete ST.learned[id]; delete ST.ing[id]; if (s === 2) ST.learned[id] = 1; else if (s === 1) ST.ing[id] = 1; saveST(); }
   function touch(id) { ST.recent = [id].concat(ST.recent.filter(x => x !== id)).slice(0, 40); saveST(); }
@@ -126,7 +133,7 @@
   const favB = id => `<button type="button" class="kb-ib kb-fav${ST.fav[id] ? ' on' : ''}" data-fav="${esc(id)}" aria-label="收藏">${ST.fav[id] ? '★' : '☆'}</button>`;
   const stB = id => { const s = stOf(id); return `<button type="button" class="kb-ib kb-st s${s}" data-st="${esc(id)}" aria-label="狀態：${ST_NAME[s]}" title="${ST_NAME[s]}（點擊切換）">${ST_ICON[s]}</button>`; };
   const bar = (n, t) => `<span class="kb-bar"><i style="width:${t ? Math.round(n / t * 100) : 0}%"></i></span>`;
-  const relChip = id => { const it = getItem(id); return it ? `<button type="button" class="kb-rel" data-open="${esc(id)}">${esc(it.jp)}${it.lv ? ` <small>${it.lv}</small>` : ''}</button>` : ''; };
+  const relChip = id => { const it = getItem(id); return it ? `<button type="button" class="kb-rel${ST.learned[id] ? ' done' : ''}" data-open="${esc(id)}">${ST.learned[id] ? '✓ ' : ''}${esc(it.jp)}${it.lv ? ` <small>${it.lv}</small>` : ''}</button>` : ''; };
   const scName = s => SCc[s] ? SCc[s].icon + ' ' + SCc[s].name : '';
   const subOf = it => it.kind === 'word' ? scName(it.sc[0]) : it.kind === 'gram' ? it.cat : '變化';
   function rowHTML(it) {
@@ -141,10 +148,27 @@
   }
   const total = (lv, kind) => (M.STATS[kind === 'gram' ? 'gram' : 'lex'] || {})[lv] || 0;
 
+  /* ---------------- 學習路線（等級→先修拓撲；grammar.js 的 ord 已是拓撲序） ---------------- */
+  // 推薦一律先補齊未學會（未標「已掌握」）的先修，再學目標條目
+  const RAW = new Map(M.gram.map(g => [g.id, g])), WHY = new Map();
+  function missingPre(g, out) { for (const p of g.pre) if (!ST.learned[p] && !out.has(p) && RAW.has(p)) { out.add(p); missingPre(RAW.get(p), out); } return out; }
+  function gramPath(lvs, n) {
+    const res = [], inRes = new Set();
+    for (const g of M.gram) {
+      if (res.length >= n) break;
+      if (ST.learned[g.id] || inRes.has(g.id) || (lvs && !lvs.includes(g.lv))) continue;
+      const chain = [...missingPre(g, new Set())].map(id => RAW.get(id)).filter(x => !inRes.has(x.id)).sort((a, b) => a.ord - b.ord);
+      chain.forEach(x => WHY.set(x.id, g.id)); WHY.delete(g.id);
+      for (const x of chain.concat(g)) { inRes.add(x.id); res.push(x); }
+    }
+    return res.slice(0, n);
+  }
+  const preLeft = g => (g.pre || []).filter(p => !ST.learned[p]).length;
   /* ---------------- 下一步 ---------------- */
   function nextGram() {
     const p = LVI[profLv()];
-    return GRAM.find(g => LVI[g.lv] >= p && !ST.learned[g.id]) || GRAM.find(g => !ST.learned[g.id]) || null;
+    const g = gramPath(LV.slice(p), 1)[0] || gramPath(null, 1)[0];
+    return g ? G_BY.get(g.id) : null;
   }
   function nextWords(n) {
     const lv = profLv(), ws = words(lv); if (!ws) return [];
@@ -156,9 +180,10 @@
     const g = nextGram(), ws = nextWords(compact ? 0 : 6);
     if (!g && !ws.length) return `<div class="kb-next done">🎉 這一級都學完了，可以挑戰下一級！</div>`;
     const idx = g ? GRAM.filter(x => x.lv === g.lv).indexOf(g) + 1 : 0;
+    const why = g && WHY.get(g.id), wt = why && G_BY.get(why), low = g && LVI[g.lv] < LVI[profLv()];
     return `<div class="kb-next${compact ? ' compact' : ''}">
       <div class="kb-next-h">▶ 下一步該學什麼</div>
-      ${g ? `<button type="button" class="kb-next-main" data-open="${esc(g.id)}"><span><b class="jp">${esc(g.jp)}</b><small>${esc(g.zh)}</small></span><em>${g.lv} 文法 #${idx}　開始 ›</em></button>` : ''}
+      ${g ? `<button type="button" class="kb-next-main" data-open="${esc(g.id)}"><span><b class="jp">${esc(g.jp)}</b><small>${esc(g.zh)}</small></span><em>${g.lv} 文法 #${idx}　開始 ›</em></button>${wt ? `<div class="kb-next-pre">要學「<b class="jp">${esc(wt.jp)}</b>」（${wt.lv}）得先會這條${low ? `<button type="button" class="kb-qc" data-a="lvknown" data-lv="${g.lv}">我已會 ${g.lv} 以下文法</button>` : ''}</div>` : ''}` : ''}
       ${ws.length ? `<div class="kb-next-w"><span class="muted">先學這幾個字：</span>${ws.map(w => `<button type="button" class="kb-rel" data-open="${w.id}">${esc(w.jp)} <small>${esc(w.zh.split(/[；;]/)[0])}</small></button>`).join('')}</div>` : ''}
     </div>`;
   }
@@ -417,11 +442,11 @@
       if (r.note) main += `<div class="kb-note">💡 ${esc(r.note)}</div>`;
       const post = POST.get(it.id) || [];
       main += `<div class="kb-steps">
-        <div class="kb-step"><div class="kb-relh">⬅ 先學</div><div class="kb-rels">${r.pre.length ? r.pre.map(relChip).join('') : '<span class="muted">無（可直接學）</span>'}</div></div>
+        <div class="kb-step"><div class="kb-relh">⬅ 先學${preLeft(r) ? `<small class="kb-left">還差 ${preLeft(r)} 條</small>` : ''}</div><div class="kb-rels">${r.pre.length ? r.pre.map(relChip).join('') : '<span class="muted">無（可直接學）</span>'}</div></div>
         <div class="kb-step"><div class="kb-relh">學完可接 ➡</div><div class="kb-rels">${post.length ? post.slice(0, 12).map(relChip).join('') : '<span class="muted">—</span>'}</div></div></div>`;
       more += tog('rel', '↔ 相近／對比', r.rel.length ? `<div class="kb-rels">${r.rel.map(relChip).join('')}</div>` : '', true);
       more += tog('cj', '🔁 用到的變化', (r.conj || []).length ? `<div class="kb-rels">${r.conj.map(c => relChip('cj:' + c)).join('')}</div>` : '', false);
-      more += `<p class="muted kb-tip">「先學」為建議順序，僅供參考。</p>`;
+      more += `<p class="muted kb-tip">「下一步」推薦會先補齊未標「已掌握」的先修；已會的可直接標記已掌握。</p>`;
     } else {
       const c = r, KN = { form: '變化形', tense: '時態', aspect: '體貌' };
       props += `<span class="kb-pp">${KN[c.kind] || ''}</span>`;
@@ -530,6 +555,7 @@
     if (a === 'fpanel') { const fp = ROOT.querySelector('.kb-fp'); fp.hidden = !fp.hidden; if (!fp.hidden) fpanel(fp); return; }
     if (a === 'freset') { const v = VS(DB.kind); v.f = { lv: [profLv()] }; savePR(); const q = ROOT.querySelector('.kb-q'); if (q) q.value = ''; LIM = {}; PAGE = 0; chips(); return body(); }
     if (a === 'to3d') return App.go('mind3d', { focus: d.id });
+    if (a === 'lvknown') { if (!confirm(`把 ${d.lv} 以下所有文法標記為「已掌握」？`)) return; GRAM.forEach(g => { if (LVI[g.lv] <= LVI[d.lv]) { delete ST.ing[g.id]; ST.learned[g.id] = 1; } }); saveST(); return rerender(); }
   }
   function closeDrawer() { if (ROOT) ROOT.classList.remove('drawer'); }
 
@@ -550,7 +576,7 @@
     render.bound = 1;
     document.addEventListener('profilechange', () => { const m = document.getElementById('main'); if (m && /route-kb/.test(m.className)) App.render(); });
   }
-  M.kb = { ST, saveST, stOf, setSt, getItem, words, loadLv, open: id => App.go('kb-page', { id }) };
+  M.kb = { ST, saveST, stOf, setSt, getItem, words, loadLv, gramPath, why: id => WHY.get(id) || null, open: id => App.go('kb-page', { id }) };
   App.register('kb', { title: '知識庫', icon: '📚', nav: true, navOrder: 4, render });
   App.register('kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb', render: renderPage });
   // 舊路由 mind：轉址（{focus}/{script} 進 3D，其餘進知識庫）

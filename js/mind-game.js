@@ -56,8 +56,11 @@
     if (sel.type === 'gram') {
       const lvs = arr(sel.lv);
       let pool = V.GRAM.filter(g => (!lvs || lvs.includes(g.lv)) && (!sel.cat || g.cat === sel.cat) && (!sel.conj || g.conj.includes(sel.conj)) && (!sel.unlearned || !ST.learned[g.id]));
+      // 依路線出題：先修未學會者排後面；不限類別時直接走學習路線（會補入較低級的先修）
+      const ready = g => g.pre.every(p => ST.learned[p]);
+      if (sel.order === 'ord' && sel.unlearned && !sel.cat && !sel.conj && M.kb && M.kb.gramPath) return M.kb.gramPath(lvs, n);
       if (sel.order !== 'ord') pool = shuffle(pool);
-      else if (!sel.unlearned) pool = pool.filter(g => !ST.learned[g.id]).concat(pool.filter(g => ST.learned[g.id]));
+      else { const un = pool.filter(g => !ST.learned[g.id]); pool = un.filter(ready).concat(un.filter(g => !ready(g)), pool.filter(g => ST.learned[g.id])); }
       return pool.slice(0, n);
     }
     if (sel.type === 'grp') {

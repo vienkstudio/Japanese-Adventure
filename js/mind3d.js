@@ -216,7 +216,12 @@
   }
 
   /* ---------------- 圖 4：學習路線（N5→N1 螺旋時間軸） ---------------- */
-  function nextOf() { return GRAM.find(g => lvOK(g) && !ST.learned[g.id]) || null; }
+  // 下一步：所選等級中第一條未學文法，但先修沒學會時改推最早的未學先修（可能在較低等級）
+  const preDone = g => g.pre.every(p => ST.learned[p]);
+  function nextOf() {
+    if (M.kb && M.kb.gramPath) return M.kb.gramPath(LV.filter(l => F.lv.has(l)), 1)[0] || null;
+    return GRAM.find(g => !ST.learned[g.id] && lvOK(g) && preDone(g)) || null;
+  }
   function buildPath() {
     const b = GB(), list = GRAM.filter(lvOK), R = 180, D = 0.105, RISE = 0.9, H0 = list.length * RISE / 2;
     let prev = null, plv = null;
@@ -447,11 +452,15 @@
     else if (F.mode === 'tense') sub = VERBS.map(v => `<button type="button" class="mm-chip${VERB.jp === v[0] ? ' on' : ''}" data-verb="${v.join('|')}">${v[0]}${v[1] === 's' ? 'する' : ''}</button>`).join('');
     else if (F.mode === 'path') {
       const list = GRAM.filter(lvOK), done = list.filter(g => ST.learned[g.id]).length, nx = nextOf();
-      sub = `<b>已學 ${done}／${list.length}</b>${nx ? `<span class="muted">下一步</span><button type="button" class="mm-chip on" data-sel="${esc(nx.id)}" data-fly="1">${esc(nx.pat)} ▶</button>` : '🎉 全部完成'}`;
+      const why = nx && M.kb && M.kb.why ? G_BY.get(M.kb.why(nx.id)) : null;
+      sub = `<b>已學 ${done}／${list.length}</b>${nx ? `<span class="muted">下一步</span><button type="button" class="mm-chip on" data-sel="${esc(nx.id)}" data-fly="1">${esc(nx.pat)}${lvOK(nx) ? '' : ' ' + nx.lv} ▶</button>${why ? `<span class="muted">（${esc(why.pat)} 的先修）</span>` : ''}` : '🎉 全部完成'}`;
     }
     Q('.mm-sub').innerHTML = sub;
-    const lg = F.mode === 'tense' ? Object.keys(KIND_NAME).map(k => [KIND_COLOR[k], KIND_NAME[k]]) : (F.color === 'lv' || F.mode === 'path') ? LV.map(l => [`var(--${l.toLowerCase()})`, l]) : WH.map(w => [w.color, w.name]);
-    Q('.mm-legend').innerHTML = lg.map(x => `<span><i style="background:${x[0]}"></i>${x[1]}</span>`).join('');
+    const lvL = LV.map(l => [lvC(l), l]), whL = WH.map(w => [w.color, w.name]);
+    let lg = F.mode === 'tense' ? Object.keys(KIND_NAME).map(k => [KIND_COLOR[k], KIND_NAME[k]]) : F.mode === 'path' ? lvL.concat([[tk('--gold', '#ffb703'), '下一步'], [mix(lvC('N5'), BG, .62), '未學（淡）']]) : F.color === 'lv' ? lvL : whL;
+    if (F.mode === 'focus') lg = lg.concat([['#d9a441', '場景'], ['#8a94a6', '文法類別'], [KIND_COLOR.form, '變化形']]);
+    const note = F.mode === 'map' ? '<span class="mm-lgn">層：下 N5 → 上 N1</span>' : F.mode === 'path' ? '<span class="mm-lgn">由下往上＝學習順序</span>' : '';
+    Q('.mm-legend').innerHTML = lg.map(x => `<span><i style="background:${x[0]}"></i>${x[1]}</span>`).join('') + note;
     if (M.game) M.game.hud();
   }
   function size() {

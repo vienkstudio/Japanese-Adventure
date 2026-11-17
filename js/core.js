@@ -160,16 +160,70 @@
     toast('🔇 找不到日文語音：聽力題改成看文字（手冊、特訓、不會清單頁上方有安裝方法）');
   }
   function voiceHTML() { return voiceOK() === false ? `<div class="voice-warn">${VOICE_TIP}</div>` : ''; }
+  /* ---- 語音包：S.voice = {pack, voiceURI, rate, pitch}（rate／pitch 是使用者微調倍率，預設 1） ---- */
+  const VOICE_PACKS = [
+    { id: 'std_f', icon: '👩', name: '標準女聲', desc: '清楚自然的女聲', g: 'f', rate: 1, pitch: 1 },
+    { id: 'std_m', icon: '👨', name: '標準男聲', desc: '沉穩的男聲', g: 'm', rate: 1, pitch: 1 },
+    { id: 'slow', icon: '🐢', name: '慢速教學', desc: '0.7 倍速，逐句停頓', g: 'f', rate: 0.7, pitch: 1, chunk: true },
+    { id: 'news', icon: '📺', name: '播音員', desc: '略快、音調平穩', g: '', rate: 1.15, pitch: 0.95 },
+    { id: 'kid', icon: '🧒', name: '可愛童聲', desc: '高音調、活潑', g: 'f', rate: 1.05, pitch: 1.6 },
+    { id: 'elder', icon: '👴', name: '長輩友善', desc: '慢速＋畫面大字提示', g: 'f', rate: 0.75, pitch: 0.95, chunk: true, cap: true }
+  ];
+  const V_F = /haruka|ayumi|nanami|kyoko|o-?ren|sayaka|mizuki|aoi|shiori|mayu|nanako|female|女/i;
+  const V_M = /ichiro|keita|otoya|hattori|takumi|daichi|naoki|kenji|male|男/i;
+  const vGender = v => V_F.test(v.name) ? 'f' : V_M.test(v.name) ? 'm' : /google/i.test(v.name) ? 'f' : '';
+  const clampN = (x, a, b, d) => { x = +x; return Number.isFinite(x) ? Math.min(b, Math.max(a, x)) : d; };
+  function vcfg() {
+    const v = S.voice && typeof S.voice === 'object' ? S.voice : (S.voice = {});
+    if (!VOICE_PACKS.some(p => p.id === v.pack)) v.pack = 'std_f';
+    if (typeof v.voiceURI !== 'string') v.voiceURI = '';
+    v.rate = clampN(v.rate, 0.5, 1.5, 1); v.pitch = clampN(v.pitch, 0.5, 1.5, 1);
+    return v;
+  }
+  const jaVoices = () => { try { return speechSynthesis.getVoices().filter(v => /^ja|jpn|japan/i.test(v.lang + ' ' + v.name)); } catch (e) { return []; } };
+  // 依語音包挑語音：指定語音 > 同性別 > 任何日文語音（性別不符時用音調模擬）
+  function pickVoice(pk, uri) {
+    const all = jaVoices();
+    if (uri) { const v = all.find(x => x.voiceURI === uri); if (v) return { voice: v, sim: false }; }
+    if (!pk.g) return { voice: all[0] || null, sim: false };
+    const m = all.find(x => vGender(x) === pk.g);
+    return m ? { voice: m, sim: false } : { voice: all[0] || null, sim: all.length > 0 };
+  }
+  function voicePacks() {
+    const c = vcfg();
+    return VOICE_PACKS.map(p => ({ id: p.id, icon: p.icon, name: p.name, desc: p.desc, gender: p.g, rate: p.rate, pitch: p.pitch, on: c.pack === p.id, simulated: pickVoice(p, '').sim }));
+  }
+  function setVoice(patch) {
+    const c = vcfg();
+    if (patch && typeof patch === 'object') ['pack', 'voiceURI', 'rate', 'pitch'].forEach(k => { if (k in patch) c[k] = patch[k]; });
+    vcfg(); save();
+    document.dispatchEvent(new CustomEvent('voicechange', { detail: Object.assign({}, S.voice) }));
+    return Object.assign({}, S.voice);
+  }
+  // 給自己建 SpeechSynthesisUtterance 的模組用：u.voice = t.voice; u.rate = 原本速度 × t.rate; u.pitch = t.pitch
+  function ttsVoice(baseRate) {
+    const c = vcfg(), pk = VOICE_PACKS.find(p => p.id === c.pack), r = pickVoice(pk, c.voiceURI);
+    let pitch = pk.pitch * c.pitch;
+    if (r.sim) pitch *= pk.g === 'm' ? 0.7 : 1.2;
+    return { voice: r.voice, rate: clampN((baseRate || 1) * pk.rate * c.rate, 0.1, 3, 1), pitch: clampN(pitch, 0, 2, 1), simulated: r.sim, pack: pk.id, chunk: !!pk.chunk, caption: !!pk.cap };
+  }
   function speakJP(text, rate) {
     if (!text) return;
     if (voiceOK() === false) { voiceWarn(); return; }
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ja-JP'; u.rate = rate || 0.85;
-    const v = jaVoice();
-    if (v) u.voice = v;
-    speechSynthesis.speak(u);
+    const t = ttsVoice(rate || 0.85);
+    // 慢速／長輩：在標點處切成短句逐句念，停頓更明顯
+    const parts = t.chunk ? String(text).split(/(?<=[、。！？!?，,…\n])/).map(s => s.trim()).filter(Boolean) : [String(text)];
+    parts.forEach(s => {
+      const u = new SpeechSynthesisUtterance(s);
+      u.lang = 'ja-JP'; u.rate = t.rate; u.pitch = t.pitch; u.volume = 1;
+      if (t.voice) u.voice = t.voice;
+      speechSynthesis.speak(u);
+    });
+    if (t.caption) document.querySelectorAll('.toast.tts-cap').forEach(e => e.remove());
+    if (t.caption) toast(`🔊 ${esc(text)}`, 'tts-cap');
   }
+  try { speechSynthesis.addEventListener('voiceschanged', () => document.dispatchEvent(new CustomEvent('voiceschange'))); } catch (e) { }
 
   function toast(msg, type) {
     let box = document.getElementById('toastBox');
@@ -618,7 +672,7 @@
     get level() { return levelOf(S.xp); },
     save, onChange, register, go, start, render,
     addXP, completeQuest, reward, showResult, modal, toast,
-    speak: speakJP, voiceOK, voiceHTML, layer, esc, shuffle, sample, kanaItem, wordItem,
+    speak: speakJP, voiceOK, voiceHTML, voicePacks, setVoice, ttsVoice, jaVoices, layer, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
     back,
     resetAll() { LS.del(KEY); IDB.del('save'); S = migrate({}); save(); if (CL.ref) cloudPush(); go('home'); },

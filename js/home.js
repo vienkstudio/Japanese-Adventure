@@ -67,6 +67,7 @@
         <button type="button" data-go="songs"><span aria-hidden="true">🎵</span>歌曲</button>
         <button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>
         <button type="button" data-go="mind3d"><span aria-hidden="true">🌐</span>3D 心智圖</button>
+        <button type="button" data-go="challenge"><span aria-hidden="true">🏆</span>N5–N1 挑戰</button>
       </div>
       <details class="hm-map" id="hm-map"><summary>🗾 日本地圖</summary><div class="mapbox"></div></details>
     </section>`;
@@ -138,6 +139,37 @@
   /* ---------- 設定頁 ---------- */
   const PAL_NAMES = { coral: '珊瑚', sakura: '櫻花', matcha: '抹茶', ocean: '海洋', lavender: '薰衣草', mono: '墨黑' };
   let clearArmed = false;
+  /* 語音包（資料與播放在 core.js：App.voicePacks／setVoice／ttsVoice） */
+  const VOICE_DEMO = 'こんにちは。いらっしゃいませ、ご注文はお決まりですか？';
+  function voiceBox() {
+    if (!App.voicePacks) return '';
+    const c = App.state.voice || {}, list = App.jaVoices ? App.jaVoices() : [];
+    const rng = (id, lbl, v) => `<label class="st-rng"><span>${lbl}<b id="${id}-v">×${(+v).toFixed(2)}</b></span><input type="range" id="${id}" min="0.5" max="1.5" step="0.05" value="${v}"></label>`;
+    return `<div class="st-box st-voice"><h2>🔊 語音</h2>${App.voiceHTML()}
+        <p class="st-lbl">語音包</p>
+        <div class="ob-list">${App.voicePacks().map(k => `<button type="button" class="ob-opt${k.on ? ' on' : ''}" data-vpack="${k.id}" aria-pressed="${k.on}"><span aria-hidden="true">${k.icon}</span><span><b>${esc(k.name)}${k.simulated ? '<em class="st-sim">模擬</em>' : ''}</b><small>${esc(k.desc)}</small></span></button>`).join('')}</div>
+        <p class="st-lbl">指定系統語音</p>
+        <select class="st-sel" id="st-vuri"><option value="">自動（依語音包挑選）</option>${list.map(v => `<option value="${esc(v.voiceURI)}"${v.voiceURI === c.voiceURI ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}</select>
+        ${list.some(v => v.voiceURI === c.voiceURI) || !c.voiceURI ? '' : '<p class="st-note">指定的語音在這台裝置找不到，改用自動。</p>'}
+        <p class="st-lbl">微調</p>${rng('st-vrate', '速度', c.rate || 1)}${rng('st-vpitch', '音調', c.pitch || 1)}
+        <div class="st-vbtns"><button type="button" class="btn primary" id="st-vtry">▶️ 試聽</button><button type="button" class="btn" id="st-vreset">↺ 微調歸零</button></div>
+      </div>`;
+  }
+  function bindVoice(el) {
+    if (!App.voicePacks) return;
+    const q = s => el.querySelector(s), again = () => settings(el);
+    el.querySelectorAll('[data-vpack]').forEach(b => b.onclick = () => { App.setVoice({ pack: b.dataset.vpack }); App.speak(VOICE_DEMO); again(); });
+    q('#st-vuri').onchange = e => { App.setVoice({ voiceURI: e.target.value }); App.speak(VOICE_DEMO); };
+    [['#st-vrate', 'rate'], ['#st-vpitch', 'pitch']].forEach(([s, k]) => {
+      const r = q(s);
+      r.oninput = () => { q(s + '-v').textContent = '×' + (+r.value).toFixed(2); };
+      r.onchange = () => App.setVoice({ [k]: +r.value });
+    });
+    q('#st-vtry').onclick = () => App.speak(VOICE_DEMO);
+    q('#st-vreset').onclick = () => { App.setVoice({ rate: 1, pitch: 1 }); again(); };
+    // 語音清單晚載入時（Chrome 常見）補畫一次
+    if (!(App.jaVoices && App.jaVoices().length)) document.addEventListener('voiceschange', () => { if (el.isConnected && el.querySelector('.st-voice')) again(); }, { once: true });
+  }
   function settings(el) {
     const u = App.state.ui, p = App.profile(), G = window.Game;
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${n}</button>`).join('')}</div>`;
@@ -155,6 +187,7 @@
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做 3 題定位</button>
       </div>
+      ${voiceBox()}
       <div class="st-box"><h2>🧰 其他</h2><div class="st-rows">
         ${G ? `<button type="button" class="st-row" id="st-sfx">${G.sfxOn() ? '🔊 音效' : '🔇 音效'}<small>${G.sfxOn() ? '開' : '關'}</small></button>` : ''}
         <button type="button" class="st-row" id="st-av">🎭 換頭像・⛩️ 御朱印帳<small>›</small></button>
@@ -172,7 +205,8 @@
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { App.setProfile({ lv: b.dataset.lv }); App.toast(`程度改為：${App.LV_NAMES[b.dataset.lv]}`, 'ok'); settings(el); });
     el.querySelectorAll('[data-assist]').forEach(b => b.onclick = () => { App.setProfile({ assist: b.dataset.assist }); settings(el); });
     q('#st-quiz').onclick = () => quiz(el, 0);
-    const sf = q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); settings(el); };
+    bindVoice(el);
+    const sf =q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); settings(el); };
     q('#st-av').onclick = () => {
       if (has(window.World, 'goshuin')) return World.goshuin();
       if (window.Travel && has(Travel, 'goshuin')) return Travel.goshuin();

@@ -141,6 +141,7 @@
   .mm-sub .muted{display:none}
   .mm-panel{left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:56%;border-radius:18px 18px 0 0;z-index:16}
   .mm-legend{bottom:60px;left:6px;gap:6px;font-size:.68em;padding:3px 6px;max-width:calc(100% - 12px)}
+  .mm-lgn{display:none!important}
   .mm-hint{font-size:.72em;top:auto;bottom:88px}
   .mm-qk{font-size:.8em;padding:0 10px}
   .mm-quick .mm-qk:nth-child(n+2):not(.all){display:none}
