@@ -144,7 +144,29 @@
       <p class="lead">選一個看得最舒服的（之後隨時能在 ⚙️ 設定改）</p>
       <div class="ob-list">${FS.map(([v, n, pc]) => `<button type="button" class="ob-opt ob-fs${cur === v ? ' on' : ''}" data-fs="${v}" aria-pressed="${cur === v}"><span><b style="font-size:${pc}%">${n}</b><small class="jp" lang="ja" style="font-size:${pc}%">こんにちは・你好</small></span></button>`).join('')}</div>
     </section>`;
-    el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); App.go('home'); });
+    el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); goalAsk(el); });
+  }
+  // 首次開啟第三題：學日文的目的（可複選，存 profile.goals；決定首頁快查入口與推薦）
+  const GOALS = [['travel', '🧳', '去日本旅遊', '點餐、購物、問路、緊急求助'], ['exam', '📝', '考日檢', 'N5–N1 單字、文法、挑戰題'],
+    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・動漫・新聞', '跟唱、看懂歌詞與文章']];
+  const goalList = sel => GOALS.map(([id, ic, n, d]) => `<button type="button" class="ob-opt${sel.includes(id) ? ' on' : ''}" data-goal="${id}" aria-pressed="${sel.includes(id)}"><span aria-hidden="true">${ic}</span><span><b>${n}</b><small>${d}</small></span></button>`).join('');
+  function goalAsk(el) {
+    document.body.classList.add('ob-mode');
+    const sel = [];
+    el.innerHTML = `<section class="ob">
+      <h1>學日文是為了？</h1>
+      <p class="lead">可以選好幾個，首頁會依這個推薦（之後能在 ⚙️ 設定改）</p>
+      <div class="ob-list">${goalList(sel)}</div>
+      <button type="button" class="btn primary block" id="ob-go" disabled>選好了，開始！</button>
+    </section>`;
+    const go = el.querySelector('#ob-go');
+    el.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => {
+      const g = b.dataset.goal, i = sel.indexOf(g);
+      if (i < 0) sel.push(g); else sel.splice(i, 1);
+      b.classList.toggle('on', i < 0); b.setAttribute('aria-pressed', i < 0);
+      go.disabled = !sel.length;
+    });
+    go.onclick = () => { App.setProfile({ goals: sel.slice() }); App.go('home'); };
   }
   function quiz(el, i) {
     if (i >= QUIZ.length) return result(el, 'n1');
@@ -215,6 +237,9 @@
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>
       </div>
+      <div class="st-box"><h2>🎯 學日文的目的</h2><p class="st-note">可複選，首頁會依這個推薦</p>
+        <div class="ob-list">${goalList(p.goals)}</div>
+      </div>
       <div class="st-box"><h2>🎨 外觀</h2>
         <p class="st-lbl">主題色</p>
         <div class="st-dots">${App.PALETTES.map(k => `<button type="button" class="st-dot${u.palette === k ? ' on' : ''}" data-pal="${k}" aria-pressed="${u.palette === k}"><i></i>${PAL_NAMES[k]}</button>`).join('')}</div>
@@ -238,6 +263,11 @@
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); settings(el); });
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { App.setProfile({ lv: b.dataset.lv }); App.toast(`程度改為：${App.LV_NAMES[b.dataset.lv]}`, 'ok'); settings(el); });
     el.querySelectorAll('[data-assist]').forEach(b => b.onclick = () => { App.setProfile({ assist: b.dataset.assist }); settings(el); });
+    el.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => {
+      const g = App.profile().goals, i = g.indexOf(b.dataset.goal);
+      if (i < 0) g.push(b.dataset.goal); else if (g.length > 1) g.splice(i, 1); else return App.toast('至少選一個目的');
+      App.setProfile({ goals: g }); settings(el);
+    });
     q('#st-quiz').onclick = () => quiz(el, 0);
     bindVoice(el);
     const sf =q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); settings(el); };
