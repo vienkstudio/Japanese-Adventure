@@ -39,7 +39,10 @@
   B.next = function () {
     try {
       const i = META.findIndex(m => !starsOf(m.id));
-      if (i >= 0) { const m = META[i]; return { label: '商務日語：' + m.title, sub: `第 ${i + 1} 課・${m.lv}・單字句子→對話→Email→測驗`, route: 'biz-unit', params: { id: m.id }, icon: m.icon }; }
+      if (i >= 0) {
+        const m = META[i], P = runOf(m.id);
+        return { label: '商務日語：' + m.title, sub: P ? `續做：第 ${Math.min(doneCount(P) + 1, secCount(P))} / ${secCount(P)} 小節・每節約 5 分` : `第 ${i + 1} 課・${m.lv}・分 ${secCount({ cards: Array(34) })} 小節，每節約 5 分`, route: 'biz-unit', params: { id: m.id }, icon: m.icon };
+      }
       const low = META.slice().sort((a, b) => starsOf(a.id) - starsOf(b.id))[0];
       if (starsOf(low.id) < 3) return { label: '商務日語複習：' + low.title, sub: '再挑戰拿滿 3 星', route: 'biz-unit', params: { id: low.id }, icon: low.icon };
       return { label: '商務閱讀', sub: '8 課都 3 星了，讀一篇商務短文', route: 'biz', params: {}, icon: '💼' };
@@ -78,9 +81,12 @@
     return false;
   }
 
-  /* ---------------- 進度紀錄：Learn 優先，否則答錯進不會清單 ---------------- */
+  /* ---------------- 進度紀錄：只把「真正新學」的送進 Learn；同一項一次單元只記一次 ----------------
+     卡片：還沒學過的才出現；「記住了」記一次，首次間隔分散（單字 1–2 天、句子／句型 2–4 天）
+     對話／Email／測驗：只有答錯才記（grade 0，進不會清單）；答對不重複記 */
+  const SRCN = u => '💼 商務・' + u.title;
   function itemOf(u, ref) {
-    const t = ref.slice(0, 1), key = ref.slice(2), src = '商務・' + u.title;
+    const t = ref.slice(0, 1), key = ref.slice(2), src = SRCN(u);
     if (t === 'v') { const v = u.vocab.find(x => x.jp === key); return v ? { id: 'word:' + v.jp, jp: v.jp, kana: v.kana, romaji: rom(v.kana, v.jp), zh: v.zh, source: src } : null; }
     if (t === 'p') {
       let p = u.phrases.find(x => x.jp === key);
@@ -90,23 +96,53 @@
     if (t === 'g') { const g = u.grammar.find(x => x.pat === key); return g ? { id: 'phrase:' + g.ex[0][0], jp: g.ex[0][0], zh: g.ex[0][1] + '（' + g.pat + '）', hint: g.conn, source: src } : null; }
     return null;
   }
-  // Learn 用的扁平項目（同 BIZ.items 格式）；不在單元清單內的句子（對話正解、Email 行）也給最小欄位
+  // Learn 用的扁平項目（同 BIZ.items 格式＋source「💼 商務」）；不在單元清單內的句子（對話正解）也補讀音中文
   function flatItem(u, ref) {
-    const f = (B.items || []).find(x => x.id === ref);
-    if (f) return f;
-    const it = itemOf(u, ref);
-    return { id: ref, type: ref[0] === 'v' ? 'vocab' : ref[0] === 'g' ? 'grammar' : 'phrase', jp: ref.slice(2), kana: it ? it.kana || '' : '', zh: it ? it.zh || '' : '', lv: u.lv, unit: u.id };
+    const f = (B.items || []).find(x => x.id === ref), it = itemOf(u, ref);
+    const o = Object.assign({}, f || { id: ref, type: ref[0] === 'v' ? 'vocab' : ref[0] === 'g' ? 'grammar' : 'phrase', jp: ref.slice(2), kana: it ? it.kana || '' : '', zh: it ? it.zh || '' : '', lv: u.lv, unit: u.id });
+    if (it && it.romaji && !o.romaji) o.romaji = it.romaji;
+    o.source = SRCN(u);
+    return o;
   }
-  function rec(R, u, ref, grade) {
+  const learned = ref => { try { const e = window.Learn && Learn.get && Learn.get(ref); return !!(e && e.reps > 0); } catch (er) { return false; } };
+  function addWrong(R, u, ref, via, item) {
+    const it = item || itemOf(u, ref); if (!it) return;
+    if (!via && window.Tracker) try { Tracker.add(it, true); } catch (e) { }
+    if (!R.wrong.some(w => w.ref === ref)) R.wrong.push({ ref, jp: it.jp, zh: it.zh || '' });
+  }
+  function recCard(R, u, ref, g) {
+    const P = R.P; if (P.rec[ref]) return;
+    P.rec[ref] = 1;
+    if (g >= 2) R.known++;
+    let e = null, via = false;
+    try { if (window.Learn && typeof Learn.record === 'function') { e = Learn.record(ref, g, { src: 'biz', unit: u.id, item: flatItem(u, ref), nosave: true }); via = true; } } catch (er) { }
+    if (e && g >= 2 && e.reps === 1) e.due = Date.now() + ((ref[0] === 'v' ? 1 : 2) + Math.random() * (ref[0] === 'v' ? 1 : 2)) * 864e5 - 36e5;
+    App.save();
+    if (g < 2) addWrong(R, u, ref, via);
+  }
+  function recWrong(R, u, ref, item) {
     if (!ref) return;
-    let viaLearn = false;
-    try { if (window.Learn && typeof Learn.record === 'function') { Learn.record(ref, grade, { src: 'biz', unit: u.id, item: flatItem(u, ref) }); viaLearn = true; } } catch (e) { }
-    if (grade >= 2) return;
-    const it = itemOf(u, ref);
-    if (!it) return;
-    if (!viaLearn && window.Tracker) try { Tracker.add(it, true); } catch (e) { }
-    if (R && !R.wrong.some(w => w.id === it.id)) R.wrong.push(it);
+    const P = R.P; if (P.rec[ref] === 2) return;
+    P.rec[ref] = 2;
+    let via = false;
+    try { if (window.Learn && typeof Learn.record === 'function') { Learn.record(ref, 0, { src: 'biz', unit: u.id, item: item || flatItem(u, ref) }); via = true; } } catch (e) { }
+    addWrong(R, u, ref, via, item);
   }
+  // Email 第 i 格所在的整行（所有空格填正解）→ 複習卡：讀音、中文、羅馬字都有
+  function mailItem(u, i) {
+    const E = u.email, li = E.lines.findIndex(l => l.includes('［' + (i + 1) + '］'));
+    if (li < 0) return null;
+    const jp = E.lines[li].replace(/［(\d)］/g, (m, n) => (E.blanks[+n - 1] || { opts: [''] }).opts[0]).replace(/^■/, '');
+    const kana = (E.kana && E.kana[li]) || '';
+    return { id: 'p:' + jp, type: 'phrase', jp, kana, romaji: kana ? rom(kana, jp) : '', zh: (E.zh[li] || '').replace(/^■/, ''), lv: u.lv, unit: u.id, source: SRCN(u) };
+  }
+
+  /* ---------------- 單元進度存檔：App.state.bizRun[id] = {cards, skip, done[], ok, total, known, wrong[], rec{}} ---------------- */
+  const RS = () => { const S = App.state; if (!S.bizRun || typeof S.bizRun !== 'object') S.bizRun = {}; return S.bizRun; };
+  const runOf = id => { try { return RS()[id] || null; } catch (e) { return null; } };
+  const CARD_MAX = 12;
+  const secCount = P => Math.ceil(((P && P.cards) || []).length / CARD_MAX) + 2;
+  const doneCount = P => ((P && P.done) || []).filter(Boolean).length;
 
   /* ================= 路由 biz：單元列表 ================= */
   function renderList(el) {
@@ -122,11 +158,11 @@
       </div>
       <h3 class="bz-sec">情境單元</h3>
       <div class="bz-units">${units.map((u, i) => {
-        const s = starsOf(u.id);
+        const s = starsOf(u.id), P = runOf(u.id);
         return `<button type="button" class="bz-unit${s ? ' done' : ''}" data-unit="${esc(u.id)}">
           <span class="bz-u-i">${u.icon}</span>
           <span class="bz-u-tx"><b>${i + 1}. ${esc(u.title)}</b><small>${esc(u.zh)}</small>
-            <span class="bz-u-meta">${lvB(u.lv)}${u.lv === lvNow ? '<span class="bz-rec">適合你</span>' : ''}<span class="bz-stars" aria-label="${s} 星">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span>
+            <span class="bz-u-meta">${lvB(u.lv)}${P ? `<span class="bz-rec">續做 ${doneCount(P)}/${secCount(P)} 小節</span>` : u.lv === lvNow ? '<span class="bz-rec">適合你</span>' : ''}<span class="bz-stars" aria-label="${s} 星">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span>
         </button>`;
       }).join('')}</div>
       <h3 class="bz-sec">商務閱讀</h3>
@@ -140,84 +176,154 @@
     el.querySelectorAll('[data-art]').forEach(b => b.onclick = () => App.go('biz-read', { id: b.dataset.art }));
   }
 
-  /* ================= 路由 biz-unit：卡片 → 對話 → Email → 測驗 → 結算 ================= */
+  /* ================= 路由 biz-unit：小節（每節 ≤15 步、約 5 分）＝卡片 ×N → 對話 → Email＋測驗 ================= */
   const RUNS = {};
-  const STAGES = [['card', '單字句子'], ['dlg', '對話演練'], ['mail', 'Email'], ['quiz', '小測驗']];
+  const normS = s => String(s || '').replace(/[\s　]/g, '').replace(/[。．！？!?]+$/, '');
+  const hasKana = s => /[ぁ-ゟァ-ヿ]/.test(s || '');
+  const refOf = c => c.k === 'v' ? 'v:' + c.d.jp : c.k === 'p' ? 'p:' + c.d.jp : 'g:' + c.d.pat;
+  // 測驗題與剛看過的卡片／對話選項一模一樣 → 換呈現：填空（去掉共同頭尾）或選情境／選意思
+  function remix(u, d, h) {
+    const o = d.opts.map(String), z = o[0];
+    let a = 0; while (o.every(x => a < x.length && x[a] === z[a])) a++;
+    let b = 0; while (o.every(x => b < x.length - a && x[x.length - 1 - b] === z[z.length - 1 - b])) b++;
+    const mids = o.map(x => x.slice(a, x.length - b)), pre = z.slice(0, a), suf = z.slice(z.length - b);
+    if ((pre + suf).replace(/[、。，！？!?\s　]/g, '').length >= 2 && mids.every(Boolean) && new Set(mids).size === mids.length)
+      return { t: 'cloze', q: d.q + (d.jp ? `（原句：${d.jp}）` : ''), jp: pre + '（　　）' + suf, opts: mids, exp: d.exp, ref: d.ref };
+    const key = h.when ? 'when' : 'zh', right = h[key];
+    const wrong = App.shuffle(u.phrases.filter(p => normS(p.jp) !== normS(h.jp)).map(p => p[key]).filter(x => x && x !== right)).filter((x, i, arr) => arr.indexOf(x) === i).slice(0, 2);
+    if (!right || wrong.length < 2) return d;
+    return { t: key === 'when' ? 'when' : 'mean', q: key === 'when' ? '這句話最適合用在什麼情況？' : '這句話是什麼意思？', jp: z, opts: [right].concat(wrong), exp: d.exp, ref: d.ref };
+  }
+  function quizSteps(u, sh) {
+    const seen = u.phrases.map(p => ({ jp: p.jp, zh: p.zh, when: p.when }));
+    u.dialogue.steps.forEach(st => st.choices.forEach(c => seen.push({ jp: c.jp, zh: c.zh, when: '' })));
+    const hit = jp => { const n = normS(jp); return n.length >= 4 ? seen.find(x => { const m = normS(x.jp); return m === n || (n.length >= 8 && m.includes(n)); }) : null; };
+    return u.quiz.map((d0, i) => {
+      let d = d0;
+      if (d.t !== 'order' && hasKana(d.opts[0])) { const h = hit(d.opts[0]); if (h) d = remix(u, d, h); }
+      return d.t === 'order' ? { k: 'o', st: 'quiz', d, i, pool: sh(d.parts.length), pick: [] } : { k: 'q', st: 'quiz', d, i, o: sh(d.opts.length), tried: [] };
+    });
+  }
   function build(u) {
     const sh = n => App.shuffle([...Array(n).keys()]);
-    const steps = [{ k: 'intro', st: 'card' }];
-    u.vocab.forEach(d => steps.push({ k: 'v', st: 'card', d }));
-    u.phrases.forEach(d => steps.push({ k: 'p', st: 'card', d }));
-    u.grammar.forEach(d => steps.push({ k: 'g', st: 'card', d }));
-    steps.push({ k: 'sec', st: 'dlg' });
-    u.dialogue.steps.forEach((d, i) => steps.push({ k: 'd', st: 'dlg', d, i, o: sh(d.choices.length), tried: [] }));
-    steps.push({ k: 'sec', st: 'mail' });
-    u.email.blanks.forEach((d, i) => steps.push({ k: 'm', st: 'mail', d, i, o: sh(d.opts.length), tried: [] }));
-    steps.push({ k: 'sec', st: 'quiz' });
-    u.quiz.forEach((d, i) => steps.push(d.t === 'order'
-      ? { k: 'o', st: 'quiz', d, i, pool: sh(d.parts.length), pick: [] }
-      : { k: 'q', st: 'quiz', d, i, o: sh(d.opts.length), tried: [] }));
-    return { id: u.id, steps, i: 0, ok: 0, total: 0, wrong: [], mail: [], known: 0 };
+    const all = [].concat(u.vocab.map(d => ({ k: 'v', d })), u.phrases.map(d => ({ k: 'p', d })), u.grammar.map(d => ({ k: 'g', d })));
+    let P = runOf(u.id);
+    if (!P || !Array.isArray(P.cards)) {
+      const keep = all.filter(c => !learned(refOf(c)));   // 今日課等處已學過的卡片不再出現
+      P = { cards: keep.map(refOf), skip: all.length - keep.length, done: [], ok: 0, total: 0, known: 0, wrong: [], rec: {} };
+    }
+    P.rec = P.rec || {}; P.done = P.done || []; P.wrong = P.wrong || [];
+    const cards = P.cards.map(r => all.find(c => refOf(c) === r)).filter(Boolean);
+    const secs = [], steps = [];
+    const add = (title, short, icon, list) => { secs.push({ title, short, icon, from: steps.length, to: steps.length + list.length }); steps.push(...list); };
+    const nC = Math.ceil(cards.length / CARD_MAX);
+    for (let i = 0; i < nC; i++) {
+      const a = Math.floor(cards.length * i / nC), b = Math.floor(cards.length * (i + 1) / nC);
+      add('單字句子' + (nC > 1 ? ` ${i + 1}/${nC}` : ''), '卡片' + (nC > 1 ? ' ' + (i + 1) : ''), '📇', cards.slice(a, b).map(c => ({ k: c.k, st: 'card', d: c.d })));
+    }
+    add('對話演練', '對話', '💬', [{ k: 'sec', st: 'dlg' }].concat(u.dialogue.steps.map((d, i) => ({ k: 'd', st: 'dlg', d, i, o: sh(d.choices.length), tried: [] }))));
+    add('Email＋小測驗', '信＋測驗', '✉️', [{ k: 'sec', st: 'mail' }].concat(u.email.blanks.map((d, i) => ({ k: 'm', st: 'mail', d, i, o: sh(d.opts.length), tried: [] })), [{ k: 'sec', st: 'quiz' }], quizSteps(u, sh)));
+    return { id: u.id, P, steps, secs, cur: -1, brk: -1, i: 0, ok: 0, total: 0, known: 0, wrong: [], mail: [] };
+  }
+  const SEC_T = { card: 15, d: 30, m: 25, q: 25, o: 30, sec: 5 };
+  const secMin = (R, c) => Math.max(1, Math.round(R.steps.slice(R.secs[c].from, R.secs[c].to).reduce((n, s) => n + (SEC_T[s.st === 'card' ? 'card' : s.k] || 20), 0) / 60));
+  const nextSec = R => R.secs.findIndex((x, i) => !R.P.done[i]);
+  function startSec(u, c) {
+    const old = RUNS[u.id];
+    if (old && !runOf(u.id)) RS()[u.id] = old.P;   // 新單元第一次開始：P（卡片清單）此時才存檔
+    const R = RUNS[u.id] = build(u);   // 每次進小節重建（題目狀態歸零），存檔 P 沿用
+    RS()[u.id] = R.P;
+    R.cur = c; R.i = R.secs[c].from; R.redo = !!R.P.done[c];
+    App.save();
+    return R;
+  }
+  function endSec(u, R) {
+    const P = R.P, c = R.cur;
+    if (!R.redo) {
+      P.ok += R.ok; P.total += R.total; P.known += R.known; P.done[c] = true;
+      R.wrong.forEach(w => { if (!P.wrong.some(x => x.ref === w.ref)) P.wrong.push(w); });
+    }
+    R.cur = -1; R.brk = c; R.ok = R.total = R.known = 0; R.wrong = []; R.mail = [];
+    App.save();
+    if (nextSec(R) < 0) R.fin = true;
   }
   // 計分：對話、Email、測驗第一次作答
   function score(R, step, correct) {
     if (step.scored) return;
     step.scored = true; R.total++; if (correct) R.ok++;
   }
+  function secList(R) {
+    const nx = nextSec(R);
+    return `<ol class="bz-secs">${R.secs.map((x, i) => {
+      const d = !!R.P.done[i], on = i === nx;
+      return `<li><button type="button" class="bz-secb${d ? ' done' : on ? ' on' : ''}" data-sec="${i}"><span class="bz-secn">${d ? '✓' : i + 1}</span><span class="bz-sect">${x.icon} ${esc(x.title)}</span><small>${x.to - x.from} 步・約 ${secMin(R, i)} 分</small></button></li>`;
+    }).join('')}</ol>`;
+  }
   function renderUnit(el, params) {
     if (!needData(el, 'biz-unit', params, renderUnit)) return;
     const u = unitOf(params && params.id);
     if (!u) { el.innerHTML = '<p class="center bz-load">找不到這個單元。</p>'; return; }
-    const R = RUNS[u.id] || (RUNS[u.id] = build(u));
+    let R = RUNS[u.id] || (RUNS[u.id] = build(u));
+    if (R.fin) { finish(u, R); return; }
     const draw = keep => { if (!onRoute('biz-unit')) return; renderUnit(el, params); const f = keep && el.querySelector('.bz-fb'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center' }); else window.scrollTo(0, 0); };
-    const go = n => { R.i = Math.max(0, Math.min(R.steps.length, n)); draw(); };
-    if (R.i >= R.steps.length) { finish(u, R); return; }
-    const s = R.steps[R.i];
-    const stI = STAGES.findIndex(x => x[0] === s.st);
+    const begin = c => { startSec(u, c); draw(); };
+    const skipCards = () => { R.secs.forEach((x, i) => { if (R.steps[x.from].st === 'card') R.P.done[i] = true; }); begin(R.secs.findIndex(x => R.steps[x.from].st === 'dlg')); };
+    const bindHome = () => {
+      el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => begin(+b.dataset.sec));
+      const k = el.querySelector('[data-skipcards]'); if (k) k.onclick = skipCards;
+      const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('biz');
+    };
+    // 單元首頁：小節進度（可中途離開，回來從未完成的小節繼續）
+    if (R.cur < 0) {
+      const nx = nextSec(R), nDone = doneCount(R.P), nS = R.secs.length, brk = R.brk >= 0 ? R.secs[R.brk] : null;
+      const cardsLeft = R.secs.some((x, i) => R.steps[x.from].st === 'card' && !R.P.done[i]);
+      const top = brk ? `<div class="bz-intro-i">✅</div><h2>小節完成！</h2><p>${brk.icon} ${esc(brk.title)}</p>
+          <p class="muted">可以先休息，下次回來會從第 ${nx + 1} 小節繼續。</p>`
+        : `<div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="muted">${esc(u.zh)}</p><p class="bz-goal">🎯 ${esc(u.goal)}</p>`;
+      el.innerHTML = `<div class="bz bz-run"><div class="card bz-card bz-intro">${top}
+        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(nDone / nS * 100)}%"></div></div><span>小節 ${nDone} / ${nS}</span></div>
+        ${secList(R)}
+        ${R.P.skip ? `<p class="muted bz-skipn">已學過的 ${R.P.skip} 張卡片自動略過</p>` : ''}</div>
+        <div class="bz-nav">${brk ? '<button type="button" class="btn" data-list>先休息</button>' : cardsLeft ? '<button type="button" class="btn" data-skipcards>已經會了，跳過卡片 ›</button>' : ''}
+          <button type="button" class="btn primary bz-next" data-sec="${nx}">${brk ? '▶ 下一小節' : nDone ? '▶ 繼續第 ' + (nx + 1) + ' 小節' : '▶ 開始第 1 小節'}</button></div></div>`;
+      bindHome();
+      return;
+    }
+    const S0 = R.secs[R.cur], s = R.steps[R.i];
+    const lastInSec = R.i === S0.to - 1, last = R.i === R.steps.length - 1;
+    const go = n => { R.i = n; if (R.i >= S0.to) endSec(u, R); draw(); };
     const head = `<div class="bz-head">
       <div class="bz-head-t"><span>${u.icon} ${esc(u.title)}</span>${lvB(u.lv)}</div>
-      <div class="bz-stages">${STAGES.map((x, i) => `<span class="${i < stI ? 'past' : i === stI ? 'on' : ''}">${i < stI ? '✓ ' : ''}${x[1]}</span>`).join('')}</div>
-      <div class="bar bz-bar"><div style="width:${Math.round(R.i / R.steps.length * 100)}%"></div></div>
+      <div class="bz-stages">${R.secs.map((x, i) => `<span class="${i === R.cur ? 'on' : R.P.done[i] ? 'past' : ''}">${R.P.done[i] && i !== R.cur ? '✓ ' : ''}${esc(x.short)}</span>`).join('')}</div>
+      <div class="bar bz-bar"><div style="width:${Math.round((R.i - S0.from) / (S0.to - S0.from) * 100)}%"></div></div>
     </div>`;
     let body = '';
     const nextBtn = (label, extra) => `<div class="bz-nav">${extra || ''}<button type="button" class="btn primary bz-next" data-next>${label || '下一步 ➜'}</button></div>`;
-    if (s.k === 'intro') {
-      body = `<div class="card bz-card bz-intro">
-        <div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="muted">${esc(u.zh)}</p>
-        <p class="bz-goal">🎯 ${esc(u.goal)}</p>
-        <ol class="bz-plan">
-          <li>📇 單字 ${u.vocab.length}・句子 ${u.phrases.length}・句型 ${u.grammar.length}</li>
-          <li>💬 對話演練 ${u.dialogue.steps.length} 輪（${esc(u.dialogue.title)}）</li>
-          <li>✉️ Email 填空 ${u.email.blanks.length} 格</li>
-          <li>📝 小測驗 ${u.quiz.length} 題</li>
-        </ol></div>
-        <div class="bz-nav"><button type="button" class="btn" data-skip="dlg">已經會了，直接對話 ›</button><button type="button" class="btn primary bz-next" data-next>開始學習 ➜</button></div>`;
-    } else if (s.k === 'v' || s.k === 'p' || s.k === 'g') {
+    const endLabel = d => last ? '看結果 ➜' : lastInSec ? '完成這一小節 ➜' : d;
+    if (s.k === 'v' || s.k === 'p' || s.k === 'g') {
       body = cardHTML(u, s) + `<div class="bz-nav bz-rate">
         <button type="button" class="btn" data-rate="1">🔁 還不熟</button>
         <button type="button" class="btn primary" data-rate="2">✓ 記住了</button></div>
-        <p class="center"><button type="button" class="btn ghost sm" data-skip="dlg">跳過卡片，直接對話演練 ›</button></p>`;
+        <p class="center"><button type="button" class="btn ghost sm" data-skipcards>跳過卡片，直接對話演練 ›</button></p>`;
     } else if (s.k === 'sec') {
-      const T = { dlg: ['💬', '對話演練', `情境：${u.dialogue.title}。每一輪選出最得體的說法，答錯可以再選一次。`], mail: ['✉️', 'Email 填空', `${u.email.title}：把空格填上最適合的說法。`], quiz: ['📝', '小測驗', `選擇、重組句子、敬語轉換，共 ${u.quiz.length} 題。`] }[s.st];
+      const T = { dlg: ['💬', '對話演練', `情境：${u.dialogue.title}。每一輪選出最得體的說法，答錯可以再選一次。`], mail: ['✉️', 'Email 填空', `${u.email.title}：把空格填上最適合的說法。`], quiz: ['📝', '小測驗', `填空、選情境、重組句子、敬語轉換，共 ${u.quiz.length} 題。`] }[s.st];
       body = `<div class="card bz-card bz-intro"><div class="bz-intro-i">${T[0]}</div><h2>${T[1]}</h2><p>${esc(T[2])}</p>
-        ${s.st === 'dlg' && R.known ? `<p class="muted">剛才記住了 ${R.known} 張卡片。</p>` : ''}</div>` + nextBtn('開始 ➜');
+        ${s.st === 'dlg' && R.P.known ? `<p class="muted">卡片已記住 ${R.P.known} 張。</p>` : ''}</div>` + nextBtn('開始 ➜');
     } else if (s.k === 'd') {
-      body = dlgHTML(u, s) + (s.done ? nextBtn() : '');
+      body = dlgHTML(u, s) + (s.done ? nextBtn(endLabel('下一步 ➜')) : '');
     } else if (s.k === 'm') {
       body = mailHTML(u, R, s) + (s.done ? nextBtn(s.i === u.email.blanks.length - 1 ? '完成 Email ➜' : '下一格 ➜') : '');
     } else if (s.k === 'q') {
-      body = quizHTML(s) + (s.done ? nextBtn(R.i === R.steps.length - 1 ? '看結果 ➜' : '下一題 ➜') : '');
+      body = quizHTML(s) + (s.done ? nextBtn(endLabel('下一題 ➜')) : '');
     } else if (s.k === 'o') {
-      body = orderHTML(s) + (s.done ? nextBtn(R.i === R.steps.length - 1 ? '看結果 ➜' : '下一題 ➜') : '');
+      body = orderHTML(s) + (s.done ? nextBtn(endLabel('下一題 ➜')) : '');
     }
-    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">${R.i + 1} / ${R.steps.length}</p></div>`;
+    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">小節 ${R.cur + 1}/${R.secs.length}・${R.i - S0.from + 1} / ${S0.to - S0.from}</p></div>`;
     bindCommon(el);
     const nb = el.querySelector('[data-next]'); if (nb) nb.onclick = () => go(R.i + 1);
-    el.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => go(R.steps.findIndex(x => x.k === 'sec' && x.st === b.dataset.skip)));
+    el.querySelectorAll('[data-skipcards]').forEach(b => b.onclick = skipCards);
     el.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => {
-      const g = +b.dataset.rate, ref = s.k === 'v' ? 'v:' + s.d.jp : s.k === 'p' ? 'p:' + s.d.jp : 'g:' + s.d.pat;
-      if (g >= 2) R.known++;
-      rec(g < 2 ? R : null, u, ref, g);
+      recCard(R, u, refOf(s), +b.dataset.rate);
       go(R.i + 1);
     });
     el.querySelectorAll('[data-kb]').forEach(b => b.onclick = () => App.go('kb-page', { id: b.dataset.kb }));
@@ -231,10 +337,9 @@
       else { correct = k === 0; ref = s.k === 'm' ? '' : s.d.ref; }
       s.tried.push(k); s.last = k;
       score(R, s, correct);
-      if (s.tried.length === 1) {
-        if (s.k === 'm') { const ln = u.email.lines.find(l => l.includes('［' + (s.i + 1) + '］')); if (ln) ref = 'p:' + ln.replace('［' + (s.i + 1) + '］', s.d.opts[0]); }
-        if (ref && s.k === 'm') { try { if (window.Learn && Learn.record) Learn.record(ref, correct ? 3 : 0, { src: 'biz', unit: u.id, item: flatItem(u, ref) }); } catch (e) { } }
-        else rec(R, u, ref, correct ? 3 : 0);
+      if (s.tried.length === 1 && !correct) {
+        if (s.k === 'm') { const it = mailItem(u, s.i); if (it) recWrong(R, u, it.id, it); }
+        else recWrong(R, u, ref);
       }
       if (correct) { s.done = true; if (s.k === 'm') R.mail[s.i] = s.d.opts[0]; }
       if (correct) App.speak && s.k === 'd' && App.speak(s.d.choices[k].jp);
@@ -248,7 +353,7 @@
       const ans = s.pick.map(i => s.d.parts[i]).join(''), correct = ans === s.d.parts.join('');
       const first = !s.scored;
       score(R, s, correct);
-      if (first) rec(R, u, s.d.ref, correct ? 3 : 0);
+      if (first && !correct) recWrong(R, u, s.d.ref);
       if (correct) { s.done = true; App.speak(s.d.parts.join('')); } else { s.bad = true; s.pick = []; }
       draw(true);
     };
@@ -279,7 +384,7 @@
     return `<div class="bz-opts">${s.o.map(k => {
       const c = list[k], tried = s.tried.includes(k), good = tried && (s.k === 'd' ? c.correct : k === 0);
       const cls = tried ? (good ? ' ok' : ' bad') : (s.done ? ' dim' : '');
-      return `<button type="button" class="bz-opt${cls}" data-opt="${k}"${s.done ? ' disabled' : ''}>${typeof c === 'string' ? `<span class="jp">${esc(c)}</span>` : optTxt(c, tried || s.done)}</button>`;
+      return `<button type="button" class="bz-opt${cls}" data-opt="${k}"${s.done ? ' disabled' : ''}>${typeof c === 'string' ? `<span${hasKana(c) ? ' class="jp"' : ''}>${esc(c)}</span>` : optTxt(c, tried || s.done)}</button>`;
     }).join('')}</div>${s.last != null ? `<div class="bz-fb ${s.done ? 'ok' : 'bad'}" aria-live="polite">${s.done ? '⭕ ' : '❌ '}${esc(fbOf(s.last))}${s.done ? '' : '<br><small>再選一次。</small>'}</div>` : ''}`;
   }
   // 選項內不能放按鈕（button 不可巢狀）：讀音依 assist；中文只在選過或答對後顯示
@@ -310,9 +415,10 @@
     <p class="bz-ask">［${s.i + 1}］要填什麼？</p>
     ${choiceBtns(s, s.d.opts, () => s.d.exp)}`;
   }
+  const QKIND = { keigo: '🎩 敬語轉換', cloze: '✏️ 填空', when: '🕒 選情境', mean: '🈯 選意思' };
   function quizHTML(s) {
     const d = s.d;
-    return `<div class="card bz-card bz-q"><span class="bz-kind">${d.t === 'keigo' ? '🎩 敬語轉換' : '✅ 選擇題'}</span>
+    return `<div class="card bz-card bz-q"><span class="bz-kind">${QKIND[d.t] || '✅ 選擇題'}</span>
       <p class="bz-qq">${esc(d.q)}</p>${d.jp ? `<p class="bz-qjp jp">${esc(d.jp)}</p>` : ''}</div>
       ${choiceBtns(s, d.opts, () => d.exp)}`;
   }
@@ -326,10 +432,11 @@
       ${s.done ? '' : `<div class="bz-nav"><button type="button" class="btn primary" data-check${s.pick.length === d.parts.length ? '' : ' disabled'}>確認</button></div>`}</div>`;
   }
   function finish(u, R) {
-    const pct = R.total ? R.ok / R.total : 0;
+    const P = R.P, pct = P.total ? P.ok / P.total : 0;
     const stars = pct >= 0.9 ? 3 : pct >= 0.7 ? 2 : 1;
-    const r = App.reward('biz:' + u.id, stars, '商務');
+    try { delete RS()[u.id]; } catch (e) { }
     delete RUNS[u.id];
+    const r = App.reward('biz:' + u.id, stars, '商務');
     const i = META.findIndex(m => m.id === u.id), nx = META[i + 1];
     const el = document.getElementById('main');
     if (el && onRoute('biz-unit')) el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p>完成！</p>
@@ -340,8 +447,8 @@
     }
     App.showResult({
       title: stars === 3 ? '完美！商務達人' : stars === 2 ? '過關！' : '完成！再練一次會更好',
-      stars, correct: R.ok, total: R.total, gained: r.gained, wrong: R.wrong.slice(0, 8),
-      note: `<span class="muted">對話 ${u.dialogue.steps.length} 輪＋Email ${u.email.blanks.length} 格＋測驗 ${u.quiz.length} 題・卡片記住 ${R.known} 張</span>`,
+      stars, correct: P.ok, total: P.total, gained: r.gained, wrong: P.wrong.slice(0, 8),
+      note: `<span class="muted">對話 ${u.dialogue.steps.length} 輪＋Email ${u.email.blanks.length} 格＋測驗 ${u.quiz.length} 題・新卡片記住 ${P.known} 張</span>`,
       retry: () => { const m = document.getElementById('main'); if (m) renderUnit(m, { id: u.id }); },
       back: { label: '單元列表', route: 'biz' },
       next: nx ? { label: '下一課 ➜', route: 'biz-unit', params: { id: nx.id } } : { label: '商務閱讀 ➜', route: 'biz' }
@@ -350,6 +457,10 @@
 
   /* ================= 路由 biz-read：商務短文（讀完 → 一題一屏 → 結算） ================= */
   const READS = {};
+  const RD_SRC = ['js/jp-text.js', 'js/link-import.js', 'js/reader.js'];
+  const rdOK = () => !!(window.Reader && Reader.tokensHTML && window.JPText && JPText.size);
+  let rdLoad = null;
+  const loadReader = () => rdLoad || (rdLoad = RD_SRC.reduce((p, s) => p.then(() => App.loadScript(s)), Promise.resolve()).then(() => JPText.ready()).catch(e => { rdLoad = null; throw e; }));
   function renderRead(el, params) {
     if (!needData(el, 'biz-read', params, renderRead)) return;
     const A = artOf(params && params.id);
@@ -358,14 +469,44 @@
     const draw = keep => { if (!onRoute('biz-read')) return; renderRead(el, params); const f = keep && el.querySelector('.bz-fb'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center' }); else window.scrollTo(0, 0); };
     const a = AS();
     if (S.ph === 'read') {
+      // 讀音／羅馬字／中文切換與點詞查義：沿用閱讀器的 JPText＋Reader（tokensHTML、wordCard、pref）
+      if (!rdOK()) {
+        el.innerHTML = '<p class="center muted bz-load">📖 準備字典中…</p>';
+        loadReader().then(() => { if (onRoute('biz-read')) renderRead(el, params); }, () => { S.plain = true; if (onRoute('biz-read')) renderRead(el, params); });
+        if (!S.plain) return;
+      }
+      const R = rdOK() && !S.plain;
+      if (R && !S.tk) S.tk = A.p.map(p => JPText.tokenize(p[0]));
+      const P = R ? Reader.pref() : { y: a.kana, r: false, z: a.zh };
+      const tg = R ? `<div class="rd-tg bz-tg" role="group" aria-label="顯示">${[['y', '讀音'], ['r', '羅馬字'], ['z', '中文']].map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${!!P[k]}" class="${P[k] ? 'on' : ''}">${l}</button>`).join('')}</div>` : '';
       el.innerHTML = `<div class="bz bz-read">
-        <div class="bz-head"><div class="bz-head-t"><span>${A.icon} 商務閱讀</span>${lvB(A.lv.toUpperCase())}</div></div>
+        <div class="bz-head"><div class="bz-head-t"><span>${A.icon} 商務閱讀</span>${lvB(A.lv.toUpperCase())}</div>${tg}</div>
         <h2 class="jp bz-rt">${esc(A.title)}</h2><p class="muted">${esc(A.zh)}</p>
         ${A.w && A.w.length ? `<details class="bz-gl"${a.kana ? ' open' : ''}><summary>📒 生詞 ${A.w.length} 個</summary><div class="bz-gl-l">${A.w.map(w => `<span class="bz-gw"><b class="jp">${esc(w[0])}</b>${w[1] && w[1] !== w[0] ? `<small class="jp">${esc(w[1])}</small>` : ''}<small>${esc(w[2])}</small></span>`).join('')}</div></details>` : ''}
-        <div class="card bz-card bz-paras">${A.p.map(p => `<div class="bz-para">${spk(p[0])}<div><p class="jp bz-pj">${esc(p[0])}</p><p class="bz-zh"${a.zh ? '' : ' hidden'}>${esc(p[1])}</p>${a.zh ? '' : '<button type="button" class="bz-hint" data-hint>中文</button>'}</div></div>`).join('')}</div>
+        ${R ? `<p class="muted bz-tip">👆 點任何一個詞：看讀音、中文，加入不會清單</p>
+        <div class="card bz-card bz-paras rd-doc daily${P.y ? ' y' : ''}${P.r ? ' r' : ''}${P.z ? ' z' : ''}" lang="ja">${A.p.map((p, k) => `<div class="bz-para">${spk(p[0])}<div><p class="rd-p bz-pj">${Reader.tokensHTML(S.tk[k], k)}</p><p class="rd-zh bz-zh">${esc(p[1])}</p></div></div>`).join('')}</div>`
+        : `<div class="card bz-card bz-paras">${A.p.map(p => `<div class="bz-para">${spk(p[0])}<div><p class="jp bz-pj">${esc(p[0])}</p><p class="bz-zh"${a.zh ? '' : ' hidden'}>${esc(p[1])}</p>${a.zh ? '' : '<button type="button" class="bz-hint" data-hint>中文</button>'}</div></div>`).join('')}</div>`}
         <div class="bz-nav"><button type="button" class="btn primary" data-start>讀完了，作答（${S.qs.length} 題）➜</button></div></div>`;
       bindCommon(el);
       el.querySelector('[data-start]').onclick = () => { S.ph = 'q'; draw(); };
+      if (R) {
+        const doc = el.querySelector('.rd-doc');
+        el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+          const k = b.dataset.t, v = !b.classList.contains('on');
+          b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); doc.classList.toggle(k, v); Reader.setPref(k, v);
+        });
+        doc.addEventListener('click', e => {
+          const w = e.target.closest('.rd-w'); if (!w || !w.dataset.k) return;
+          const [pi, ti] = w.dataset.k.split(':').map(Number), t = (S.tk[pi] || [])[ti];
+          if (!t) return;
+          const text = A.p[pi][0], sent = (JPText.sentences(text).find(x => t.i >= x.i && t.i < x.i + x.s.length) || { s: text }).s.trim();
+          el.querySelectorAll('.rd-w.sel').forEach(x => x.classList.remove('sel'));
+          w.classList.add('sel');
+          Reader.wordCard(t, { title: A.title, sentence: sent, zh: JPText.sentences(text).length === 1 ? A.p[pi][1] : '', source: '💼 商務閱讀', onClose: () => { w.classList.remove('sel'); if (Reader.syncTrackBtns) Reader.syncTrackBtns(el); } });
+        });
+        // 有字典沒收的漢字詞 → 再載 N2/N1 詞庫重算一次
+        if (!S.full && S.tk.some(r => JPText.hasUnknown(r))) { S.full = true; JPText.ready(true).then(() => { S.tk = A.p.map(p => JPText.tokenize(p[0])); if (onRoute('biz-read') && S.ph === 'read') renderRead(el, params); }).catch(() => { }); }
+      }
       return;
     }
     if (S.qi >= S.qs.length) {

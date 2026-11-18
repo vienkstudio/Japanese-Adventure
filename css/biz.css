@@ -124,3 +124,20 @@
 .bz-para .bz-spk{position:static;flex:none}
 .bz-pj{font-size:var(--fs-md);line-height:1.8;margin:0}
 .bz-para .bz-zh{margin:4px 0 0}
+
+/* 單元小節（每節 ≤15 步、約 5 分） */
+.bz-secs{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:grid;gap:var(--sp-2);text-align:left}
+.bz-secb{display:grid;grid-template-columns:32px 1fr;grid-template-rows:auto auto;column-gap:var(--sp-2);align-items:center;width:100%;min-height:52px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:var(--r-m);padding:var(--sp-2) var(--sp-3);font:inherit;text-align:left;cursor:pointer}
+.bz-secb small{grid-column:2;color:var(--muted);font-size:var(--fs-xs)}
+.bz-secn{grid-row:1/3;width:28px;height:28px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700}
+.bz-sect{font-weight:700;font-size:var(--fs-sm)}
+.bz-secb.done{border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+.bz-secb.done .bz-secn{background:var(--ok);color:#fff}
+.bz-secb.on{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri-t)}
+.bz-secb.on .bz-secn{background:var(--pri);color:var(--on-pri)}
+.bz-skipn{font-size:var(--fs-xs);margin:var(--sp-2) 0 0}
+/* 商務閱讀：讀音切換＋點詞（沿用 reader.css 的 .rd-doc/.rd-w） */
+.bz-tg{margin-top:var(--sp-2)}
+.bz-tip{font-size:var(--fs-xs);margin:var(--sp-2) 0 0}
+.bz-paras.rd-doc{padding:var(--sp-3)}
+.bz-paras .rd-p{margin:0;line-height:2.1}
