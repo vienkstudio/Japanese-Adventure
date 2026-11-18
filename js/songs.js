@@ -53,7 +53,11 @@
     return m ? { track: m[1], artist: m[2] } : LinkImport.songTitle(t, '');
   }
 
+  // 最後播放的歌（首頁「繼續上次那首歌」）：App.state.songLast ＝ {id, title, at}
+  function setLast(s) { try { App.state.songLast = { id: s.id, title: String(s.title || '').slice(0, 60), at: Date.now() }; App.save(); } catch (e) { } }
+  function last() { const L = App.state && App.state.songLast; return L && L.id ? { id: L.id, title: L.title || '' } : null; }
   async function delSong(id) {
+    if (last() && last().id === id) { delete App.state.songLast; App.save(); }
     await App.idb.del('song:' + id);
     await App.idb.set('songs:index', (await songIndex()).filter(x => x.id !== id));
   }
@@ -138,6 +142,7 @@
           const src = yt ? { type: 'yt', yt } : { type: 'url', url: audio.href };
           if (!existing) await putSong({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines });
           else if (data.lines.length) { mergeLyrics(existing, data.lines); await putSong(existing); }
+          if (data.note) toast(esc(data.note));
         }
         if (form.isConnected) App.go('song', { id });
       } catch {
@@ -329,6 +334,7 @@
     const s = await getSong(id);
     if (!loading.isConnected) return;
     if (!s) { el.innerHTML = '<div class="panel center"><p>找不到這首歌（可能已刪除）。</p><button class="btn primary" type="button">回歌曲清單</button></div>'; el.querySelector('button').onclick = () => App.go('songs'); return; }
+    setLast(s);
     if (s.lines.length) await JPText.ready();
     if (!loading.isConnected) return;
     const hasLyrics = s.lines.length > 0;
@@ -659,12 +665,14 @@
   function checkDict(V) {
     const ins = [...V.root.querySelectorAll('.sg-in')];
     if (!ins.length) { toast('這首歌沒有可挖空的詞'); return; }
-    let ok = 0;
+    let ok = 0, blank = 0;
     const norm = x => JPText.toHira(String(x || '').replace(/[\s　]/g, ''));
     ins.forEach(inp => {
       const [li, k] = inp.dataset.a.split(':').map(Number), t = V.tokens[li][k];
       const v = norm(inp.value);
-      const good = !!v && (v === norm(t.kana) || v === norm(t.s));
+      // 沒填的格子：不算錯、不加入不會清單
+      if (!v) { blank++; inp.classList.remove('ok', 'ng'); return; }
+      const good = v === norm(t.kana) || v === norm(t.s);
       inp.classList.toggle('ok', good); inp.classList.toggle('ng', !good);
       if (good) ok++;
       else {
@@ -672,9 +680,10 @@
         if (!inp.nextElementSibling || !inp.nextElementSibling.classList.contains('sg-ans')) inp.insertAdjacentHTML('afterend', `<span class="sg-ans">${esc(t.s)}${t.kana && t.kana !== t.s ? '（' + esc(t.kana) + '）' : ''}</span>`);
       }
     });
-    const r = ok / ins.length;
-    V.dictBest = Math.max(V.dictBest, r);
-    toast(`答對 ${ok} / ${ins.length}${ok < ins.length ? '・錯的已加入不會清單' : ' 🎉'}`, ok === ins.length ? 'ok' : '');
+    const done = ins.length - blank;
+    if (!done) { toast('還沒有填任何格子喔'); return; }
+    V.dictBest = Math.max(V.dictBest, ok / ins.length);
+    toast(`答對 ${ok} / ${done}${ok < done ? '・答錯的已加入不會清單' : ' 🎉'}${blank ? `（${blank} 格未作答，不算錯）` : ''}`, ok === done ? 'ok' : '');
   }
 
   /* ---------- 錄音跟唱 ---------- */
@@ -745,5 +754,5 @@
     });
   }
 
-  window.Songs = { DEMO, ytId: LinkImport.youtubeID, list: songIndex };
+  window.Songs = { DEMO, ytId: LinkImport.youtubeID, list: songIndex, last };
 })();

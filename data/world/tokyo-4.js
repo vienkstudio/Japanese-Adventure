@@ -75,7 +75,7 @@ WORLD.pack('tokyo', {
         T: { type: 'facility', icon: '💄', jp: 'テスターコーナー', kana: 'テスターコーナー', zh: '試用品區', loc: { jp: '一番奥の右にあります', kana: 'いちばんおくのみぎにあります', zh: '在最裡面右邊' }, tip: '貼著「テスター」或「お試し用」的才能試。試完用旁邊的面紙擦掉，口紅請用棉花棒沾取。' },
         A: { type: 'facility', icon: '🧺', jp: '買い物かご', kana: 'かいものかご', zh: '購物籃', loc: { jp: '入口の右にあります', kana: 'いりぐちのみぎにあります', zh: '在入口右邊' }, tip: '免稅的東西和不免稅的東西有些店會請你分籃裝，結帳比較快。' },
         1: { type: 'sign', jp: '免税 TAX FREE', kana: 'めんぜい', zh: '可辦免稅', style: 'r', note: '看到這個標示才代表這間店能辦免稅；要帶護照正本。' },
-        2: { type: 'sign', jp: 'お一人様一点限り', kana: 'おひとりさまいってんかぎり', zh: '每人限購一件', style: 'o', note: '「〜限り」＝只限。熱門藥品和化妝品常有購買數量限制。' }
+        2: { type: 'sign', jp: '目薬はお一人様一点限り', kana: 'めぐすりはおひとりさまいってんかぎり', zh: '眼藥水每人限購一件', style: 'o', note: '「〜限り」＝只限。熱門藥品和化妝品常有購買數量限制。' }
       },
       items: [
         { id: 'kazegusuri', jp: '風邪薬', kana: 'かぜぐすり', zh: '綜合感冒藥', emoji: '💊', price: 1480, c: 'hako', zone: 'P', tags: ['med'] },
@@ -84,7 +84,7 @@ WORLD.pack('tokyo', {
         { id: 'yoidome', jp: '酔い止め', kana: 'よいどめ', zh: '暈車藥', emoji: '🚌', price: 880, c: 'hako', zone: 'P', tags: ['med'] },
         { id: 'nodo-spray', jp: 'のどスプレー', kana: 'のどスプレー', zh: '喉嚨噴劑', emoji: '🗣️', price: 1080, c: 'hon', zone: 'P', tags: ['med'] },
         { id: 'itamidome', jp: '第一類の痛み止め', kana: 'だいいちるいのいたみどめ', zh: '第一類止痛藥（要問藥劑師）', emoji: '💊', price: 768, c: 'hako', zone: 'C', tags: ['med', 'med1'] },
-        { id: 'megusuri', jp: '目薬', kana: 'めぐすり', zh: '眼藥水', emoji: '👁️', price: 698, c: 'ko', zone: 'E', tags: ['eye'] },
+        { id: 'megusuri', jp: '目薬', kana: 'めぐすり', zh: '眼藥水', emoji: '👁️', price: 698, c: 'ko', zone: 'E', tags: ['eye'], max: 1 },
         { id: 'megusuri-cool', jp: 'クールタイプの目薬', kana: 'クールタイプのめぐすり', zh: '清涼型眼藥水', emoji: '❄️', price: 1480, c: 'ko', zone: 'E', tags: ['eye'] },
         { id: 'contact', jp: 'コンタクト洗浄液', kana: 'コンタクトせんじょうえき', zh: '隱形眼鏡清潔液', emoji: '🧪', price: 980, c: 'hon', zone: 'E', tags: ['eye'] },
         { id: 'facemask', jp: 'フェイスマスク', kana: 'フェイスマスク', zh: '面膜（7 片裝）', emoji: '🎭', price: 770, c: 'fukuro', zone: 'M', tags: ['cosme'] },

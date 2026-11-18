@@ -308,7 +308,7 @@ WORLD.pack('tokyo', {
 
     /* ==================== 中華街 點心外帶店＋伴手禮 ==================== */
     {
-      id: 'yokohama-chukagai', kind: 'store', scene: null,
+      id: 'yokohama-chukagai', kind: 'store', scene: null, pb: 'eat',
       icon: '🥟', name: '中華街點心店', jp: '中華街の点心店', kana: 'ちゅうかがいのてんしんてん',
       desc: '中華街大通上的點心外帶店，後半間賣月餅、中國茶和熊貓雜貨。現蒸的肉包和小籠包要排隊跟店員點，伴手禮自己拿去收銀台。',
       tips: [

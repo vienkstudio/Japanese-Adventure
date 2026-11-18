@@ -459,7 +459,7 @@ WORLD.pack('kyoto', {
       items: [
         { id: 'matcha-parfait', jp: '抹茶パフェ', kana: 'まっちゃパフェ', zh: '抹茶聖代', emoji: '🍨', price: 1400, zone: 'a', tags: ['sweet', 'parfait'] },
         { id: 'hojicha-parfait', jp: 'ほうじ茶パフェ', kana: 'ほうじちゃパフェ', zh: '焙茶聖代', emoji: '🍨', price: 1400, zone: 'a', tags: ['sweet', 'parfait'] },
-        { id: 'warabi', jp: 'わらび餅', kana: 'わらびもち', zh: '蕨餅（沾黃豆粉和黑糖蜜）', emoji: '🍡', price: 950, zone: 'a', tags: ['sweet'] },
+        { id: 'warabi', jp: 'わらび餅', kana: 'わらびもち', zh: '蕨餅（沾黃豆粉和黑糖蜜）', emoji: '🍡', price: 950, zone: 'a', tags: ['sweet'], soldOut: true },
         { id: 'matcha-warabi', jp: '抹茶わらび餅', kana: 'まっちゃわらびもち', zh: '抹茶蕨餅', emoji: '🍡', price: 1000, zone: 'a', tags: ['sweet'] },
         { id: 'anmitsu', jp: 'あんみつ', kana: 'あんみつ', zh: '餡蜜（寒天、紅豆、水果）', emoji: '🍧', price: 950, zone: 'a', tags: ['sweet'] },
         { id: 'cream-anmitsu', jp: 'クリームあんみつ', kana: 'クリームあんみつ', zh: '冰淇淋餡蜜', emoji: '🍧', price: 1100, zone: 'a', tags: ['sweet'] },
@@ -471,7 +471,7 @@ WORLD.pack('kyoto', {
         { id: 'matcha-set', jp: '抹茶セット', kana: 'まっちゃセット', zh: '抹茶套餐（薄茶＋當季和菓子）', emoji: '🍵', price: 1200, zone: 'b', tags: ['set'] },
         { id: 'sencha-set', jp: '煎茶セット', kana: 'せんちゃセット', zh: '煎茶套餐（附和菓子）', emoji: '🍵', price: 1100, zone: 'b', tags: ['set'] },
         { id: 'hojicha-set', jp: 'ほうじ茶セット', kana: 'ほうじちゃセット', zh: '焙茶套餐（附和菓子）', emoji: '🍵', price: 1000, zone: 'b', tags: ['set'] },
-        { id: 'warabi-set', jp: 'わらび餅セット', kana: 'わらびもちセット', zh: '蕨餅套餐（附抹茶）', emoji: '🍡', price: 1500, zone: 'b', tags: ['set'] },
+        { id: 'warabi-set', jp: 'わらび餅セット', kana: 'わらびもちセット', zh: '蕨餅套餐（附抹茶）', emoji: '🍡', price: 1500, zone: 'b', tags: ['set'], soldOut: true },
         { id: 'gyokuro', jp: '玉露セット', kana: 'ぎょくろセット', zh: '玉露套餐（最高級的綠茶）', emoji: '🍵', price: 1600, zone: 'b', tags: ['set'] },
         { id: 'chasoba', jp: '茶そば', kana: 'ちゃそば', zh: '抹茶蕎麥麵', emoji: '🍜', price: 1200, zone: 'c', tags: ['meal'] },
         { id: 'nishin', jp: 'にしんそば', kana: 'にしんそば', zh: '鯡魚蕎麥麵（京都名物）', emoji: '🐟', price: 1400, zone: 'c', tags: ['meal'] },
@@ -528,15 +528,15 @@ WORLD.pack('kyoto', {
       ],
       info: [
         { id: 'wait', q: { jp: 'どのくらい待ちますか。', kana: 'どのくらいまちますか', zh: '大概要等多久？' }, re: { jp: '三十分ほどお待ちいただきます。', kana: 'さんじっぷんほどおまちいただきます', zh: '大約要等三十分鐘。' }, opts: ['大約等 30 分鐘', '大約等 13 分鐘', '馬上可以入座'] },
-        { id: 'osusume', q: { jp: 'おすすめは何ですか。', kana: 'おすすめはなんですか', zh: '推薦什麼？' }, re: { jp: '作りたてのわらび餅が一番人気です。', kana: 'つくりたてのわらびもちがいちばんにんきです', zh: '現做的蕨餅最受歡迎。' }, opts: ['現做的蕨餅最受歡迎', '抹茶聖代最受歡迎', '蕨餅今天賣完了'] },
+        { id: 'osusume', q: { jp: 'おすすめは何ですか。', kana: 'おすすめはなんですか', zh: '推薦什麼？' }, re: { jp: '抹茶わらび餅が一番人気です。普通のわらび餅は、今日は売り切れました。', kana: 'まっちゃわらびもちがいちばんにんきです。ふつうのわらびもちは、きょうはうりきれました', zh: '抹茶蕨餅最受歡迎。原味蕨餅今天賣完了。' }, opts: ['抹茶蕨餅最受歡迎，原味的賣完了', '抹茶聖代最受歡迎', '原味蕨餅最受歡迎'] },
         { id: 'lastorder', q: { jp: 'ラストオーダーは何時ですか。', kana: 'ラストオーダーはなんじですか', zh: '最後點餐是幾點？' }, re: { jp: '午後五時半です。', kana: 'ごごごじはんです', zh: '下午五點半。' }, opts: ['下午 5 點半', '下午 5 點', '晚上 7 點半'] },
         { id: 'keep', q: { jp: 'お土産のわらび餅は、いつまで食べられますか。', kana: 'おみやげのわらびもちは、いつまでたべられますか', zh: '伴手禮的蕨餅可以放到什麼時候？' }, re: { jp: '本日中にお召し上がりください。', kana: 'ほんじつちゅうにおめしあがりください', zh: '請在今天之內吃完。' }, opts: ['今天之內要吃完', '可以放三天', '冷藏可以放一個星期'] },
         { id: 'chinese', q: { jp: '中国語のメニューはありますか。', kana: 'ちゅうごくごのメニューはありますか', zh: '有中文菜單嗎？' }, re: { jp: 'はい、写真付きのメニューがございます。', kana: 'はい、しゃしんつきのメニューがございます', zh: '有，有附照片的菜單。' }, opts: ['有，附照片的菜單', '沒有，只有日文', '只有英文菜單'] }
       ],
       quests: [
-        { id: 'rest', title: '逛完清水寺歇歇腳', zh: '旅伴：我們兩個人，坐座敷。我要抹茶聖代，你吃蕨餅，再幫我點一杯冰的抹茶拿鐵，跟甜點一起上。一起結，付現。',
-          jp: '二人で座敷にしよう。私は抹茶パフェ、あなたはわらび餅ね。あと冷たい抹茶ラテを一杯、甘味と一緒に持ってきてもらって。会計は一緒、現金で。', kana: 'ふたりでざしきにしよう。わたしはまっちゃパフェ、あなたはわらびもちね。あとつめたいまっちゃラテをいっぱい、かんみといっしょにもってきてもらって。かいけいはいっしょ、げんきんで',
-          items: [['matcha-parfait', 1], ['warabi', 1], ['matcha-latte', 1]], prefs: { people: '2', seat: 'zashiki', temp: 'ice', timing: 'with', split: 'together', pay: 'cash' } },
+        { id: 'rest', title: '逛完清水寺歇歇腳', zh: '旅伴：我們兩個人，坐座敷。我要抹茶聖代，你吃抹茶蕨餅（原味的今天賣完了），再幫我點一杯冰的抹茶拿鐵，跟甜點一起上。一起結，付現。',
+          jp: '二人で座敷にしよう。私は抹茶パフェ、あなたは抹茶わらび餅ね。あと冷たい抹茶ラテを一杯、甘味と一緒に持ってきてもらって。会計は一緒、現金で。', kana: 'ふたりでざしきにしよう。わたしはまっちゃパフェ、あなたはまっちゃわらびもちね。あとつめたいまっちゃラテをいっぱい、かんみといっしょにもってきてもらって。かいけいはいっしょ、げんきんで',
+          items: [['matcha-parfait', 1], ['matcha-warabi', 1], ['matcha-latte', 1]], prefs: { people: '2', seat: 'zashiki', temp: 'ice', timing: 'with', split: 'together', pay: 'cash' } },
         { id: 'three', title: '三個人的下午茶', zh: '旅伴：三個人坐桌位。抹茶套餐兩份、白玉紅豆湯一份。各付各的，刷卡。',
           jp: '三人でテーブル席ね。抹茶セットを二つと白玉ぜんざいを一つ。会計は別々、カードで。', kana: 'さんにんでテーブルせきね。まっちゃセットをふたつとしらたまぜんざいをひとつ。かいけいはべつべつ、カードで',
           items: [['matcha-set', 2], ['zenzai', 1]], prefs: { people: '3', seat: 'table', split: 'split', pay: 'card' } },

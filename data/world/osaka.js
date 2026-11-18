@@ -37,7 +37,7 @@ WORLD.pack('osaka', {
   shops: [
     /* ==================== 章魚燒外帶攤（store） ==================== */
     {
-      id: 'osaka-takoyaki', kind: 'store', scene: null,
+      id: 'osaka-takoyaki', kind: 'store', scene: null, pb: 'eat',
       icon: '🐙', name: '章魚燒外帶攤', jp: 'たこ焼き屋', kana: 'たこやきや',
       desc: '道頓堀路邊的章魚燒攤。在窗口跟店員說要幾顆、什麼醬，現做要等幾分鐘，拿到後在店內的立食區站著吃。',
       tips: [

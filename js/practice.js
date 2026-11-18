@@ -398,6 +398,11 @@
     return out;
   }
   const diffOf = id => ((App.state.cardDiff || {})[id] || 0);
+  // 今日翻卡數（首頁「翻 10 張字卡」用）：翻面或自評都算一張
+  function countCard() {
+    const t = App.today(), d = App.state.cardDay && App.state.cardDay.d === t ? App.state.cardDay : { d: t, n: 0 };
+    d.n++; App.state.cardDay = d; App.save();
+  }
   function cardsView(body) {
     const all = deckCards(UI.deck);
     const list = all.filter(c => (UI.lvF === 'all' || c.lv === UI.lvF) && (UI.dF === 'all' || diffOf(c.id) === +UI.dF));
@@ -436,9 +441,7 @@
     body.querySelector('#cCard').onclick = () => {
       const cc = body.querySelector('#cCard'); cc.classList.toggle('flip');
       if (!cc.classList.contains('flip')) return;
-      say();
-      const t = App.today(), d = App.state.cardDay && App.state.cardDay.d === t ? App.state.cardDay : { d: t, n: 0 };
-      d.n++; App.state.cardDay = d; App.save();
+      say(); countCard();
     };
     body.querySelector('#cSay').onclick = say;
     body.querySelector('#cPrev').onclick = () => { UI.ci = (UI.ci - 1 + list.length) % list.length; re(); };
@@ -450,8 +453,15 @@
     };
     body.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => {
       if (!App.state.cardDiff) App.state.cardDiff = {};
-      App.state.cardDiff[c.id] = +b.dataset.rate; App.save();
-      App.toast(`已標記「${b.textContent.trim()}」`);
+      const v = +b.dataset.rate;
+      App.state.cardDiff[c.id] = v;
+      const cc = body.querySelector('#cCard');
+      if (!cc || !cc.classList.contains('flip')) countCard();
+      let msg = `已標記「${b.textContent.trim()}」`;
+      if (v === 3 && !Tracker.has(c.id)) { Tracker.add({ id: c.id, jp: c.jp, kana: c.kana, romaji: c.romaji, zh: c.zh, hint: c.hint, emoji: c.emoji || '', source: c.source || '字卡' }, true); msg += '・已加入不會清單'; }
+      else if (v === 1 && Tracker.has(c.id)) { Tracker.mark(c.id, true); msg += '・不會清單記一次答對'; }
+      App.save();
+      App.toast(msg);
       const stillIn = UI.dF === 'all' || +UI.dF === +b.dataset.rate;
       if (stillIn) UI.ci = (UI.ci + 1) % Math.max(1, list.length);
       re();

@@ -151,13 +151,14 @@
   /* ---------------- 學習路線（等級→先修拓撲；grammar.js 的 ord 已是拓撲序） ---------------- */
   // 推薦一律先補齊未學會（未標「已掌握」）的先修，再學目標條目
   const RAW = new Map(M.gram.map(g => [g.id, g])), WHY = new Map();
-  function missingPre(g, out) { for (const p of g.pre) if (!ST.learned[p] && !out.has(p) && RAW.has(p)) { out.add(p); missingPre(RAW.get(p), out); } return out; }
-  function gramPath(lvs, n) {
+  // floor：低於此等級（使用者程度以下）的先修視為已會，不再往回推薦
+  function missingPre(g, out, floor) { for (const p of g.pre) { const x = RAW.get(p); if (x && !ST.learned[p] && !out.has(p) && LVI[x.lv] >= (floor || 0)) { out.add(p); missingPre(x, out, floor); } } return out; }
+  function gramPath(lvs, n, floor) {
     const res = [], inRes = new Set();
     for (const g of M.gram) {
       if (res.length >= n) break;
       if (ST.learned[g.id] || inRes.has(g.id) || (lvs && !lvs.includes(g.lv))) continue;
-      const chain = [...missingPre(g, new Set())].map(id => RAW.get(id)).filter(x => !inRes.has(x.id)).sort((a, b) => a.ord - b.ord);
+      const chain = [...missingPre(g, new Set(), floor)].map(id => RAW.get(id)).filter(x => !inRes.has(x.id)).sort((a, b) => a.ord - b.ord);
       chain.forEach(x => WHY.set(x.id, g.id)); WHY.delete(g.id);
       for (const x of chain.concat(g)) { inRes.add(x.id); res.push(x); }
     }
@@ -165,22 +166,23 @@
   }
   const preLeft = g => (g.pre || []).filter(p => !ST.learned[p]).length;
   /* ---------------- 下一步 ---------------- */
-  function nextGram() {
-    const p = LVI[profLv()];
-    const g = gramPath(LV.slice(p), 1)[0] || gramPath(null, 1)[0];
+  // 依所在等級頁（沒有就用使用者程度）推薦；使用者程度以下的先修視為已會
+  function nextGram(lv) {
+    const me = LVI[profLv()];
+    const g = lv ? gramPath([lv], 1, Math.min(me, LVI[lv]))[0] : (gramPath(LV.slice(me), 1, me)[0] || gramPath(null, 1, me)[0]);
     return g ? G_BY.get(g.id) : null;
   }
-  function nextWords(n) {
-    const lv = profLv(), ws = words(lv); if (!ws) return [];
+  function nextWords(n, at) {
+    const lv = at || profLv(), ws = words(lv); if (!ws) return [];
     const todo = ws.filter(w => !stOf(w.id));
     const tr = w => w.sc.some(s => TRAVEL.includes(s));
     return todo.filter(w => w.core && tr(w)).concat(todo.filter(w => w.core && !tr(w)), todo.filter(w => !w.core)).slice(0, n);
   }
-  function nextCard(compact) {
-    const g = nextGram(), ws = nextWords(compact ? 0 : 6);
-    if (!g && !ws.length) return `<div class="kb-next done">🎉 這一級都學完了，可以挑戰下一級！</div>`;
+  function nextCard(compact, at) {
+    const g = nextGram(at), ws = nextWords(compact ? 0 : 6, at);
+    if (!g && !ws.length) return `<div class="kb-next done">🎉 ${at ? at + ' ' : '這一級'}都學完了，可以挑戰下一級！</div>`;
     const idx = g ? GRAM.filter(x => x.lv === g.lv).indexOf(g) + 1 : 0;
-    const why = g && WHY.get(g.id), wt = why && G_BY.get(why), low = g && LVI[g.lv] < LVI[profLv()];
+    const why = g && WHY.get(g.id), wt = why && G_BY.get(why), low = g && wt && LVI[g.lv] < LVI[wt.lv];
     return `<div class="kb-next${compact ? ' compact' : ''}">
       <div class="kb-next-h">▶ 下一步該學什麼</div>
       ${g ? `<button type="button" class="kb-next-main" data-open="${esc(g.id)}"><span><b class="jp">${esc(g.jp)}</b><small>${esc(g.zh)}</small></span><em>${g.lv} 文法 #${idx}　開始 ›</em></button>${wt ? `<div class="kb-next-pre">要學「<b class="jp">${esc(wt.jp)}</b>」（${wt.lv}）得先會這條${low ? `<button type="button" class="kb-qc" data-a="lvknown" data-lv="${g.lv}">我已會 ${g.lv} 以下文法</button>` : ''}</div>` : ''}` : ''}
@@ -275,6 +277,7 @@
       <div class="kb-lvc open"><div class="kb-lvb">
         <button type="button" class="kb-lvl" data-nav="db" data-kind="word" data-lv="${lv}"><span>📘 單字</span><span>${wl}/${wt}</span>${bar(wl, wt)}</button>
         <button type="button" class="kb-lvl" data-nav="db" data-kind="gram" data-lv="${lv}"><span>📗 文法</span><span>${gl}/${gt}</span>${bar(gl, gt)}</button></div></div>
+      ${nextCard(true, lv)}
       ${lv === 'N3' ? '<p class="muted">N3 單字較多（2,140），建議先開「核心」篩選，只看本站常出現的字。</p>' : ''}`;
   }
 
@@ -293,7 +296,7 @@
     const lvs = v.f.lv.length === 1 ? v.f.lv[0] : '多個等級';
     const c = shell(el, (v.f.lv.length === 1 ? v.f.lv[0] : 'all') + '/' + kind, [['知識庫', {}], [lvs, v.f.lv.length === 1 ? { p: 'lv', lv: v.f.lv[0] } : {}], [KIND[kind].name, { p: 'db', kind }]]);
     c.innerHTML = `<h1 class="kb-h1">${KIND[kind].icon} ${lvs} ${KIND[kind].name}<small class="kb-cnt"></small></h1>
-      ${kind === 'gram' ? nextCard(true) : ''}
+      ${kind === 'gram' ? nextCard(true, v.f.lv.length === 1 ? v.f.lv[0] : null) : ''}
       <div class="kb-views" role="tablist">${VIEWS.map(x => `<button type="button" role="tab" class="kb-vt${v.view === x[0] ? ' on' : ''}" data-view="${x[0]}" aria-selected="${v.view === x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join('')}</div>
       <div class="kb-tools">
         <input type="search" class="kb-q" placeholder="搜尋 日文／讀音／中文／羅馬字" value="${esc(v.f.q || '')}" autocomplete="off" enterkeyhint="search" aria-label="搜尋">
@@ -556,7 +559,15 @@
     if (a === 'fpanel') { const fp = ROOT.querySelector('.kb-fp'); fp.hidden = !fp.hidden; if (!fp.hidden) fpanel(fp); return; }
     if (a === 'freset') { const v = VS(DB.kind); v.f = { lv: [profLv()] }; savePR(); const q = ROOT.querySelector('.kb-q'); if (q) q.value = ''; LIM = {}; PAGE = 0; chips(); return body(); }
     if (a === 'to3d') return App.go('mind3d', { focus: d.id });
-    if (a === 'lvknown') { if (!confirm(`把 ${d.lv} 以下所有文法標記為「已掌握」？`)) return; GRAM.forEach(g => { if (LVI[g.lv] <= LVI[d.lv]) { delete ST.ing[g.id]; ST.learned[g.id] = 1; } }); saveST(); return rerender(); }
+    if (a === 'lvknown') {
+      // 不跳 confirm：直接標記，提供一鍵復原
+      const ch = GRAM.filter(g => LVI[g.lv] <= LVI[d.lv] && !ST.learned[g.id]).map(g => [g.id, !!ST.ing[g.id]]);
+      ch.forEach(([id]) => { delete ST.ing[id]; ST.learned[id] = 1; }); saveST(); rerender();
+      App.toast(`✓ 已把 ${d.lv} 以下 ${ch.length} 條文法標為已掌握 <button type="button" class="kb-undo">復原</button>`, 'ok');
+      const u = document.querySelector('#toastBox .toast:last-child .kb-undo');
+      if (u) u.onclick = () => { ch.forEach(([id, ing]) => { delete ST.learned[id]; if (ing) ST.ing[id] = 1; }); saveST(); rerender(); u.closest('.toast').remove(); };
+      return;
+    }
   }
   function closeDrawer() { if (ROOT) ROOT.classList.remove('drawer'); }
 

@@ -75,13 +75,150 @@
   const RO = {
     あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o', か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko', さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so',
     た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to', な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no', は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho',
-    ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo', ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', ゐ: 'i', ゑ: 'e', を: 'wo', ん: 'n',
+    ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo', ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', ゐ: 'i', ゑ: 'e', を: 'o', ん: 'n',
     が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go', ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo', だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do',
     ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo', ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po', ゔ: 'vu',
     ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o', ゃ: 'ya', ゅ: 'yu', ょ: 'yo', ゎ: 'wa'
   };
   const PUNC = { '、': ', ', '。': '. ', '？': '? ', '！': '! ', '・': ' ', '「': '"', '」': '"', '〜': '~', '　': ' ', ' ': ' ' };
-  function romaji(s) {
+  /* ---- 分詞羅馬字：用 jp（漢字／片假名）對齊 kana 找詞界，助詞 は／へ／を 念 wa／e／o（與會話手冊一致：kore wa ikura desu ka） ---- */
+  const isA = c => /[A-Za-zＡ-Ｚａ-ｚ-]/.test(c), isK = c => /[一-鿿㐀-䶿々〆ヶ0-9０-９]/.test(c), isT = c => /[ァ-ヺー]/.test(c), isH = c => /[ぁ-ゖ]/.test(c);
+  const toH = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  const PARTS = ['ぐらい', 'くらい', 'ほど', 'ずつ', 'から', 'まで', 'より', 'など', 'だけ', 'しか', 'なら', 'は', 'が', 'を', 'に', 'で', 'へ', 'と', 'も', 'の', 'や'];
+  const P_RO = { は: 'wa', へ: 'e', を: 'o' };
+  const LEX = ['あそこ', 'こちら', 'そちら', 'あちら', 'どちら', 'わたし', 'あなた', 'みなさん', 'ぜんぶ', 'みんな', 'いくら', 'これ', 'それ', 'あれ', 'どれ', 'ここ', 'そこ', 'どこ', 'だれ', 'ひとつ', 'ふたつ', 'ひとり', 'ふたり', 'きょう', 'あした', 'おかいけい', 'あと', 'また', 'もう', 'よく', 'ちょっと', 'どのくらい', 'どのぐらい', 'いかが', 'すぐ', 'とても', 'うち', 'かかります', 'かかる', 'どうぞ', 'どう', 'まっすぐ', 'すみません'];
+  const STARTS = ['ください', 'くださ', 'ございま', 'おねがい', 'もらえ', 'もらい', 'もらっ', 'いただけ', 'いただき', 'いただい', 'でしょう', 'でしょ', 'でしたら', 'でした', 'です'];
+  const WHOLE = ['でしょう', 'でしょ', 'でしたら', 'でした', 'です'];
+  const AFTER_TE = ['います', 'いる', 'いま', 'いた', 'ない', 'ある', 'あり', 'みて', 'みま', 'おき', 'おり', 'くれ', 'しま'];
+  const CONJ = ['から', 'けど', 'ので', 'のに', 'なら', 'と'];
+  const OKURI_EX = { が: /^[るりれろっらう]/, と: /^[すさしせそ]/, や: /^[すさしせそか]/, も: /^[っう]/, の: /^[せっ]/, に: /^[ぎ]/, で: /^[きくけ]/, しか: /^[っ]/, なら: /^[べぶび]/, から: /^[いかくけ]/ };
+  // jp 切成段：K 漢字／數字、T 片假名、H 平假名、P 其他
+  function runs(jp) {
+    const out = [];
+    for (const c of jp) { const t = isA(c) ? 'A' : isK(c) ? 'K' : isT(c) ? 'T' : isH(c) ? 'H' : 'P'; const l = out[out.length - 1]; if (l && l.t === t) l.s += c; else out.push({ t, s: c }); }
+    return out;
+  }
+  // 對齊：動態規劃找 K 段讀音（每字約 2 個假名的切法最優先）；失敗回傳 null
+  const PUN = /[、。！？!?s・「」…（）〜~,.]/;
+  // 英文字母讀音（IC＝あいしー、JR＝じぇいあーる）；常見英文詞照念
+  const ABC = 'えー|えい,びー,しー,でぃー,いー,えふ,じー,えっち|えいち,あい,じぇー|じぇい,けー|けい,える,えむ,えぬ,おー,ぴー,きゅー,あーる,えす,てぃー,ゆー,ぶい,だぶりゅー|だぶる,えっくす,わい,ぜっと'.split(',');
+  const ABW = { sim: 'しむ', wi: 'わい', fi: 'ふぁい', suica: 'すいか', pasmo: 'ぱすも', icoca: 'いこか', free: 'ふりー', 'wi-fi': 'わいふぁい' };
+  const abRe = w => new RegExp('^(?:' + [ABW[w.toLowerCase()], [...w.toUpperCase()].map(c => { const i = c.charCodeAt(0) - 65; return i >= 0 && i < 26 ? '(?:' + ABC[i] + ')' : ''; }).join('')].filter(Boolean).join('|') + ')');
+  function align(kana, jp) {
+    const rs = runs(jp), K = toH(kana), N = K.length, memo = new Map();
+    function go(ri, pos) {
+      const key = ri * 1000 + pos; if (memo.has(key)) return memo.get(key);
+      let best = null;
+      if (ri === rs.length) best = [...K.slice(pos)].every(c => PUN.test(c)) ? { sc: 0, ks: [] } : null;
+      else {
+        const r = rs[ri], tryAt = (len, sc) => { const nx = go(ri + 1, pos + len); if (nx && (!best || nx.sc + sc < best.sc)) best = { sc: nx.sc + sc, ks: [kana.slice(pos, pos + len)].concat(nx.ks) }; };
+        if (r.t === 'K' || r.t === 'A') {
+          const am = r.t === 'A' ? (K.slice(pos).match(abRe(r.s.normalize('NFKC'))) || [''])[0].length : 0;
+          for (let l = 1; l <= Math.min(N - pos, r.s.length * 4 + 2); l++) { if (PUN.test(K[pos + l - 1])) break; tryAt(l, r.t === 'A' ? (l === am ? 0 : 6) : Math.pow(l - 2 * r.s.length, 2)); }
+        }
+        else if (r.t === 'P') { let l = 0; while (pos + l < N && PUN.test(K[pos + l])) l++; for (; l >= 0; l--) tryAt(l, 0); }
+        else { const h = toH(r.s); if (K.startsWith(h, pos)) tryAt(h.length, 0); }
+      }
+      memo.set(key, best); return best;
+    }
+    const b = rs.length <= 60 && N < 1000 ? go(0, 0) : null;
+    return b ? rs.map((r, i) => ({ t: r.t === 'A' ? 'K' : r.t, k: b.ks[i], n: r.s.length, s: r.s })) : null;
+  }
+  // 平假名段切詞：after＝前面是內容詞（漢字／片假名）；nextK＝後面接漢字／片假名；kLen＝前一個漢字段長度
+  function splitH(h, after, nextK, kLen, prevT) {
+    const out = [];
+    let cur = '', curSp = !after, can = after;
+    const flush = () => { if (cur) out.push({ k: cur, sp: curSp }); cur = ''; curSp = true; };
+    const unit = (k, part, extra) => { flush(); out.push(Object.assign({ k, sp: true, part: !!part }, extra || {})); };
+    const begin = w => { flush(); cur = w; curSp = true; };
+    for (let i = 0; i < h.length;) {
+      const rest = h.slice(i), last = i === h.length - 1;
+      const st = STARTS.find(x => rest.startsWith(x));
+      // 1. 內容詞後的助詞（で＋は、に＋も…可連兩個）
+      if (can && !cur && !st) {
+        const okOne = can !== 'two';
+        const p = okOne ? PARTS.find(x => rest.startsWith(x) && !(OKURI_EX[x] && OKURI_EX[x].test(rest.slice(x.length))))
+          : (/^[はものでに]/.test(rest) && rest.length > 1 && !(OKURI_EX[rest[0]] && OKURI_EX[rest[0]].test(rest.slice(1))) ? rest[0] : null);
+        if (p) { unit(p, true); i += p.length; can = okOne && !/^[はがをもや]$/.test(p) ? 'two' : false; continue; }
+      }
+      can = false;
+      // 2. 已知平假名詞（て形之後也可：入ってすぐ）
+      if (!cur || (/[てで]$/.test(cur) && cur.length > 1)) {
+        const w = LEX.find(x => rest.startsWith(x));
+        if (w) { begin(w); i += w.length; flush(); out[out.length - 1].lex = true; can = true; continue; }
+      }
+      // 3. 句尾、補助動詞前切開
+      const te = /[てで]$/.test(cur) && AFTER_TE.find(x => rest.startsWith(x));
+      const suru = (/^し(ます|ました|ません|て|た|ない)/.test(rest) && ((!cur && i === 0 && after && (kLen >= 2 || prevT)) || /い$/.test(cur))) ? 'し' : /^でき(ます|ません|る|ない)/.test(rest) && /(^|おねが)い$/.test(cur) ? 'でき' : '';
+      if (st && (cur || (i === 0 && after) || out.length)) { begin(st); i += st.length; if (WHOLE.includes(st)) flush(); continue; }
+      if (!cur && i === 0 && after && kLen >= 2 && /^でき(ます|ません|る|ない)/.test(rest)) { begin('でき'); i += 2; continue; }
+      // 送假名後的助詞（お支払いは、違いが）
+      if (after && cur && cur.length <= 2 && out.length === 0 && /[いりちきしみえけべれぎじびひげせねめ]$/.test(cur) && /^[はをがもに]./.test(rest) && !/^が[るりれろっ]/.test(rest) && !/^も[のっ]/.test(rest)) { unit(rest[0], true); i++; can = false; continue; }
+      if (te || suru) { begin(te || suru); i += (te || suru).length; continue; }
+      // ても＋いい
+      if (/[てで]$/.test(cur) && /^も(いい|よろし|かまい|だいじょうぶ)/.test(rest)) { unit('も', true); i++; continue; }
+      // 句尾 か／よ／ね
+      const lw = cur || (out.length ? out[out.length - 1].k : '') || (after && i === 0 ? 'す' : ''), f = lw && !nextK && (rest.match(/^(か|よね|よ|ね)$/) || [])[0];
+      if (f && /[すうんたるいだて]$/.test(lw)) { unit(f); i += f.length; continue; }
+      // 段尾：動詞後的接續助詞（〜から、〜と）
+      const cj = cur && CONJ.find(x => rest === x || (nextK && /^[おご]$/.test(rest.slice(x.length)) && rest.startsWith(x)));
+      if (cj && /[うくすつぬふむるぐぶいただ]$/.test(cur)) { unit(cj, true); i += cj.length; continue; }
+      // 段尾單字助詞（お待ちの、使い方を…）
+      const pre1 = nextK && rest.length === 2 && /[おご]$/.test(rest) ? rest[0] : rest;
+      if (!after && nextK && last && (cur.length >= 2 && 'はをがも'.includes(rest) || cur.length >= 3 && rest === 'の')) { unit(rest, true); i++; continue; }
+      if (after && cur && ((last || pre1.length === 1) && 'のをはがにでへとやも'.includes(pre1) || ['だけ', 'まで', 'など', 'しか'].includes(rest)) && !(pre1 === 'で' && /[んい]$/.test(cur)) && !(pre1 === 'も' && !/[いきしちにひみりぎじびえけせてねべめれ]$/.test(cur)) && !/っ$/.test(cur)) { unit(pre1, true); i += pre1.length; continue; }
+      // 漢字前的 お／ご 接頭
+      if (nextK && last && /[おご]/.test(rest)) { unit(rest, false, { pre: true }); i++; continue; }
+      if (!cur) curSp = !(i === 0 && after);
+      cur += h[i]; i++;
+    }
+    flush();
+    return out;
+  }
+  function romajiJP(kana, jp) {
+    kana = String(kana || ''); jp = String(jp || '');
+    const segs = (jp && align(kana, jp)) || [{ t: 'H', k: kana, n: 0 }];
+    const units = [];
+    segs.forEach((s, i) => {
+      const prev = segs[i - 1], next = segs[i + 1];
+      if (s.t === 'P') { units.push({ k: s.k, p: true }); return; }
+      if (s.t === 'K' || s.t === 'T') {
+        const pu = units[units.length - 1];
+        // 平假名名詞＋單一漢字（わらび餅、うに丼、たこ焼き）：視為一個詞
+        const nx = segs[i + 1], tail = !nx || nx.t === 'P' || (nx.t === 'H' && /^[はがをにでともの、。きけ]/.test(nx.k));
+        const noun = pu && pu.whole && !pu.lex && !pu.part && pu.k.length >= 2 && s.t === 'K' && s.n === 1 && tail;
+        units.push({ k: s.k, sp: !(pu && !pu.p && (pu.pre || pu.glue || noun)) });
+        return;
+      }
+      const after = !!(prev && (prev.t === 'K' || prev.t === 'T')), nextK = !!(next && (next.t === 'K' || next.t === 'T'));
+      const hs = toH(s.k).split(/([、。！？!?\s]+)/);
+      // 平假名段若原本是片假名讀音（對齊失敗時）照原字
+      hs.forEach((h, j) => {
+        if (!h) return;
+        if (j % 2) { units.push({ k: h, p: true }); return; }
+        const a = after && j === 0, nk = nextK && j === hs.length - 1;
+        // 單一送假名夾在兩個漢字間（乗り場、焼き鳥）：不斷開
+        if (a && nk && h.length === 1 && /^[きしちひみりけべめれぎじびえ]$/.test(h) && !/^[一二三四五六七八九十百千0-9０-９]/.test(segs[i + 1].s || '')) { units.push({ k: h, sp: false, glue: true }); return; }
+        const us = splitH(h, a, nk, prev && prev.t === 'K' ? prev.n : 0, prev && prev.t === 'T');
+        const lu = us[us.length - 1];
+        if (nk && lu && (us.length > 1 || !a) && !lu.part && !lu.lex && !/[いなたるうすくてだ]$/.test(lu.k)) lu.whole = true;
+        us.forEach(u => units.push(u));
+      });
+    });
+    let out = '';
+    units.forEach(u => {
+      if (u.p) { out += conv(u.k); return; }
+      const r = u.part && P_RO[u.k] ? P_RO[u.k] : conv(u.k);
+      if (!r) return;
+      out += (u.sp && out && !/\s$/.test(out) ? ' ' : '') + r;
+    });
+    return out.replace(/\s+([,.?!])/g, '$1').replace(/\s+/g, ' ').trim();
+  }
+  function romaji(s, jp) {
+    if (jp != null && jp !== '') return romajiJP(s, jp);
+    return romajiJP(s, s);
+  }
+  function conv(s) {
     s = String(s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
     let out = '', geminate = false;
     for (let i = 0; i < s.length; i++) {

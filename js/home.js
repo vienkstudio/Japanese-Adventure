@@ -49,31 +49,32 @@
     const cd = App.state.cardDay || {}, cardsN = cd.d === App.today() ? cd.n || 0 : 0, ld = App.state.lastDone || {};
     const cardTask = n => ({ id: 'cards', n, done: cardsN >= 10, b: kanaFirst ? '翻 10 張五十音字卡' : '翻 10 張字卡', s: cardsN >= 10 ? '今天翻完了 👍' : `今天已翻 ${cardsN}／10 張`, go: () => App.go('cards', kanaFirst ? { deck: 'hira' } : {}) });
     const tasks = [
-      total
-        ? { id: 'rev', n: 1, done: !due, b: due ? `複習 ${due} 個字` : '今日複習', s: due ? '答錯或不熟的字，到期了' : '今天的都複習完了 👍', go: () => App.go('review') }
+      due
+        ? { id: 'rev', n: 1, done: false, b: `複習 ${due} 個字`, s: '答錯或不熟的字，到期了', go: () => App.go('review') }
         : cardTask(1),
       { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read', { sec: 'art' }) },
       kanaFirst
-        ? (total ? cardTask(3) : { id: 'kq', n: 3, done: ld.kana === App.today(), b: '五十音小練習', s: '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) })
+        ? (due ? cardTask(3) : { id: 'kq', n: 3, done: ld.kana === App.today(), b: '五十音小練習', s: '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) })
         : { id: 'chal', n: 3, done: ld.chal === App.today(), b: `${String(p.lv || 'n5').toUpperCase()} 挑戰一輪`, s: ld.chal === App.today() ? '今天挑戰過了 👍' : '仿 JLPT 題型，10 題', go: () => App.go('challenge') }
     ];
     const doneN = tasks.filter(t => t.done).length;
+    const lastSong = (window.Songs && Songs.last && Songs.last()) || App.state.songLast || null;
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}${sk.days ? `　<span class="hm-streak">🔥 連續 ${sk.days} 天${sk.risk ? '・今天練一題就能保住' : ''}</span>` : ''}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${main.ic}</span><span><b>${esc(main.b)}</b><small>${esc(main.s)}</small></span></button>
       <p class="hm-sec">今日 3 件事<small>${doneN}／3 完成</small></p>
       <div class="hm-today">${tasks.map(t => `<button type="button" class="hm-task${t.done ? ' done' : ''}" data-t="${t.id}"><span class="n">${t.done ? '✓' : t.n}</span><span class="t"><b>${esc(t.b)}</b><small>${esc(t.s)}</small></span><span class="go" aria-hidden="true">›</span></button>`).join('')}</div>
       <div class="hm-more">
-        <button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>
+        ${kanaFirst ? '' : '<button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>'}
         <button type="button" data-go="phrasebook"><span aria-hidden="true">📖</span>手冊</button>
         <button type="button" data-go="cards"><span aria-hidden="true">🎴</span>字卡</button>
         <button type="button" data-go="challenge"><span aria-hidden="true">🏆</span>N5–N1 挑戰</button>
-        <button type="button" data-go="boot"><span aria-hidden="true">🎧</span>特訓</button>
+        <button type="button" data-go="song"><span aria-hidden="true">🎵</span>${lastSong ? '繼續唱' : '歌曲'}</button>
       </div>
     </section>`;
     el.querySelector('#hm-main').onclick = main.go;
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => tasks.find(t => t.id === b.dataset.t).go());
-    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : App.go(b.dataset.go));
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : b.dataset.go === 'song' ? (lastSong && lastSong.id ? App.go('song', { id: lastSong.id }) : App.go('songs')) : App.go(b.dataset.go));
     const det = el.querySelector('#hm-map');
     if (det) det.addEventListener('toggle', () => {
       const box = det.querySelector('.mapbox');
@@ -92,9 +93,12 @@
   const QUIZ = [
     { q: 'ね', sub: '這個假名怎麼念？', a: ['ne', 're', 'wa', 'nu'] },
     { q: 'すみません、水をください。', sub: '這句是什麼意思？', a: ['不好意思，請給我水', '不好意思，水在哪裡？', '這瓶水多少錢？', '謝謝，我不要水'] },
-    { q: '雨が降ったら、タクシーで行きましょう。', sub: '這句是什麼意思？', a: ['如果下雨，就搭計程車去吧', '因為下雨，所以沒搭計程車', '雨停了，我們走路去吧', '下雨天計程車很貴'] }
+    { q: '雨が降ったら、タクシーで行きましょう。', sub: '這句是什麼意思？', a: ['如果下雨，就搭計程車去吧', '因為下雨，所以沒搭計程車', '雨停了，我們走路去吧', '下雨天計程車很貴'] },
+    { q: '忘れないように、手帳にメモしておきます。', sub: '這句是什麼意思？', a: ['為了不忘記，先記在手帳上', '忘了帶手帳，所以沒記下來', '我常常忘記看手帳', '手帳上的筆記不見了'] },
+    { q: '大雨にもかかわらず、会場には大勢の人が集まった。', sub: '這句是什麼意思？', a: ['儘管下大雨，會場還是來了很多人', '因為下大雨，會場沒什麼人', '大雨過後，大家才陸續到會場', '會場因大雨改到別的地方'] },
+    { q: '当店は本日をもって閉店いたします。', sub: '這句是什麼意思？', a: ['本店於今天結束營業', '本店今天休息一天', '本店從今天開始營業', '本店今天提早打烊'] }
   ];
-  const FAIL_AT = ['zero', 'n5', 'n4'];   // 第 i 題答錯 → 程度
+  const FAIL_AT = ['zero', 'n5', 'n5', 'n4', 'n3', 'n2'];   // 第 i 題答錯 → 程度；全對＝n1
   function onboard(el, retake) {
     // 首次選程度：隱藏底部導覽與頂列按鈕，必須先選（core.render 換頁時自動解除）
     if (!App.profile().placed) document.body.classList.add('ob-mode');
@@ -102,7 +106,7 @@
       <h1>${retake ? '重新選程度' : 'ようこそ！歡迎 👋'}</h1>
       <p class="lead">你的日文大概到哪裡？選一個最接近的（之後隨時能在 ⚙️ 設定改，進度不會歸零）</p>
       <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt" data-lv="${id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
-      <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？3 題幫你判斷</button>
+      <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？最多 6 題幫你判斷</button>
     </section>`;
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => choose(b.dataset.lv));
     el.querySelector('#ob-quiz').onclick = () => quiz(el, 0);
@@ -113,7 +117,7 @@
     App.go('home');
   }
   function quiz(el, i) {
-    if (i >= QUIZ.length) return result(el, 'n3');
+    if (i >= QUIZ.length) return result(el, 'n1');
     const Q = QUIZ[i], opts = App.shuffle(Q.a);
     el.innerHTML = `<section class="ob">
       <p class="lead">定位小測驗 ${i + 1}／${QUIZ.length}・不會就選「不知道」，沒關係</p>
@@ -128,7 +132,7 @@
     el.innerHTML = `<section class="ob center">
       <p class="ob-q">${LV_ICON[lv]}<small>建議程度</small></p>
       <h1>${esc(App.LV_NAMES[lv])}</h1>
-      <p class="lead">${esc(App.LV_DESC[lv])}${lv === 'n3' ? '。程度更高可以到設定再往上調' : ''}</p>
+      <p class="lead">${esc(App.LV_DESC[lv])}</p>
       <button type="button" class="btn primary block" id="ob-ok">就這個，開始！</button>
       <button type="button" class="btn ghost block" id="ob-back">我自己選</button>
     </section>`;
@@ -179,7 +183,7 @@
         <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt${p.lv === id ? ' on' : ''}" data-lv="${id}" aria-pressed="${p.lv === id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
         <p class="st-lbl">提示（讀音、中文、答案提示）</p>${seg('assist', p.assist, [['full', '全部顯示'], ['some', '只給讀音'], ['none', '不要提示']])}
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
-        <button type="button" class="btn block" id="st-quiz">🤔 重新做 3 題定位</button>
+        <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>
       </div>
       <div class="st-box"><h2>🎨 外觀</h2>
         <p class="st-lbl">主題色</p>

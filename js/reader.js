@@ -115,7 +115,7 @@
     el.innerHTML = `<div class="rd-home">
       ${Reader.sectTabs(sec)}
       <section class="rd-news"${sec === 'news' ? '' : ' hidden'}>
-        <div class="rd-sech"><h3 class="rd-h3">🗞️ 近三天新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
+        <div class="rd-sech"><h3 class="rd-h3" id="rdNewsH">🗞️ 近三天新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
         <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
         <p class="muted rd-tip rd-nnote"></p>
         <div class="rd-list" id="rdNews"><p class="muted rd-tip">讀取新聞中…</p></div>
@@ -158,7 +158,7 @@
       el.querySelectorAll('[data-ncat]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
       delete el.querySelector('#rdNews').dataset.more; drawNews(el, newsCat);
     });
-    el.querySelector('#rdNewsRe').onclick = () => { try { sessionStorage.removeItem('jpq.news.' + (newsCat || nc)); } catch (e) { } drawNews(el, newsCat || nc); };
+    el.querySelector('#rdNewsRe').onclick = () => { try { sessionStorage.removeItem((LinkImport.NEWS_KEY || 'jpq.news.') + (newsCat || nc)); } catch (e) { } drawNews(el, newsCat || nc); };
     if (sec === 'news') drawNews(el, nc);
     el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
       const a = b.dataset.act;
@@ -194,6 +194,7 @@
     const box = el.querySelector('#rdNews'); if (!box) return;
     const cat = LinkImport.NEWS_CATS.find(c => c.id === id) || LinkImport.NEWS_CATS[0];
     el.querySelector('.rd-nnote').textContent = cat.note || 'Yahoo!ニュース・點標題自動匯入全文，標好讀音與中文';
+    const hh = el.querySelector('#rdNewsH'); if (hh) hh.textContent = cat.easy ? '🔰 簡單日文新聞（不限日期）' : '🗞️ 近三天新聞';
     box.innerHTML = '<p class="muted rd-tip">讀取新聞中…</p>';
     let items;
     try { items = await LinkImport.newsList(cat.id, 3); }
@@ -203,7 +204,7 @@
     const idx = await docIndex();
     const have = new Map(idx.filter(d => d.url).map(d => [d.url, d.id]));
     const lim = box.dataset.more ? items.length : 8;
-    box.innerHTML = items.slice(0, lim).map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + ago(n.t) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('') + (items.length > lim ? `<button type="button" class="btn block ghost rd-nmore">顯示更多（還有 ${items.length - lim} 則）</button>` : '');
+    box.innerHTML = items.slice(0, lim).map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + (cat.easy ? new Date(n.t).toLocaleDateString() : ago(n.t)) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('') + (items.length > lim ? `<button type="button" class="btn block ghost rd-nmore">顯示更多（還有 ${items.length - lim} 則）</button>` : '');
     const more = box.querySelector('.rd-nmore'); if (more) more.onclick = () => { box.dataset.more = '1'; drawNews(el, id); };
     box.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
       const n = items[+b.dataset.n];
@@ -212,7 +213,7 @@
       b.disabled = true; const sm = b.querySelector('small'), old = sm.textContent; sm.textContent = '匯入中，正在擷取全文…';
       try {
         const d = await LinkImport.article(n.link);
-        const id = await saveDoc({ ...d, title: d.title || n.title, src: 'news' });
+        const id = await saveDoc({ ...d, title: d.title || n.rt || n.title, src: 'news' });
         if (b.isConnected) App.go('read-article', { doc: id });
       } catch (e) {
         if (b.isConnected) { sm.textContent = '這篇讀不到全文（可能需要登入），可開原網頁複製後用「貼上文章」'; b.disabled = false; setTimeout(() => { if (sm.isConnected) sm.textContent = old; }, 5000); }
@@ -313,7 +314,9 @@
       if (t.sym) return t.s === '\n' ? '<br>' : esc(t.s);
       const lv = t.lv ? ' l-' + t.lv.toLowerCase() : '';
       const tracked = Tracker.has('word:' + t.base) ? ' tk' : '';
-      const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${esc(String(t.zh).split(/[；;，,（(]/)[0].slice(0, 8))}</span>` : '';
+      const g0 = t.zh ? String(t.zh).split(/[；;，,（(]/)[0].slice(0, 8) : '';
+      // 否定形：「見えない」顯示「不 看得見」；字典沒有的漢字詞顯示「未收錄」（整詞保留）
+      const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${t.neg ? '不 ' : ''}${esc(g0)}</span>` : t.unreg ? '<span class="rd-gl rd-unreg">未收錄</span>' : '';
       const og = window.Loan && Loan.isKata(t.s) ? Loan.label(t.s) : '';
       return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}${og ? `<span class="rd-og" lang="en">${esc(og)}</span>` : ''}</span>`;
     });
@@ -333,7 +336,7 @@
       <div class="rd-big" lang="ja">${JPText.ruby(t.s, t.kana)}</div>
       <div class="rd-kana" lang="ja">${esc(t.kana || '')}${t.romaji ? ' ・ ' + esc(t.romaji) : ''}</div>
       ${base !== t.s ? `<div class="rd-base">原形：<b lang="ja">${esc(base)}</b>${bk && bk !== base ? `（${esc(bk)}）` : ''}${esc(form)}</div>` : ''}
-      <div class="rd-mean">${t.zh ? esc(t.zh) : '<span class="muted">字典沒有這個詞</span>'}</div>
+      <div class="rd-mean">${t.zh ? (t.neg ? '<span class="chip">否定</span> ' : '') + esc(t.zh) : t.unreg ? `<span class="muted">未收錄：字典還沒有「${esc(t.s)}」這個詞${t.kana ? (t.src ? '，讀音取自原文' : '') : '，讀音未知'}。可在下面自己填中文。</span>` : '<span class="muted">字典沒有這個詞</span>'}</div>
       ${window.Loan && Loan.label(t.s, 1) ? `<div class="rd-loan">${esc(Loan.label(t.s, 1))}</div>` : window.Loan && Loan.isKata(t.s) && t.s.length > 2 && !(window.LOAN[t.s] && LOAN[t.s][0] === 'ja') ? `<div class="rd-loan muted">🌐 外來語（字典尚未收錄原文，讀音：${esc(t.romaji || '')}）</div>` : ''}
       <div class="chips rd-chips">${t.lv ? lvBadge(t.lv) : ''}${t.pos && JPText.POS_ZH[t.pos] ? `<span class="chip">${esc(JPText.POS_ZH[t.pos])}</span>` : ''}</div>
       ${t.alts && t.alts.length ? `<div class="rd-alts muted">也可能是：${t.alts.map(a => `${esc(a.jp)}（${esc(String(a.zh).split(/[；;]/)[0])}）`).join('、')}</div>` : ''}
@@ -406,6 +409,7 @@
           <button type="button" data-t="z" aria-pressed="${!!P.z}" class="${P.z ? 'on' : ''}">中文翻譯</button>
         </div>
         <button type="button" class="btn ghost rd-all" aria-label="朗讀全文">🔊</button>
+        <button type="button" class="btn sm primary rd-topdone" aria-label="讀完了">✔ 讀完</button>
       </div>
       <div class="rd-doc ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''} ${A.daily ? 'daily' : 'mine'}">
         <div class="rd-meta">${A.lv ? lvBadge(A.lv) : '<span class="chip">我的文章</span>'}<span class="muted">${len} 字</span>${A.url ? `<a href="${esc(A.url)}" target="_blank" rel="noopener" class="muted">原文 ↗</a>` : ''}</div>
@@ -414,8 +418,8 @@
         <p class="muted rd-tip rd-hint">👆 點任何一個詞：看讀音、中文，加入不會清單</p>
         <div class="rd-body" lang="ja"></div>
       </div>
-      <div class="rd-extras"><p class="muted center">分析本文文法中…</p></div>
       <div class="rd-endbox"></div>
+      <div class="rd-extras"><p class="muted center">分析本文文法中…</p></div>
     </article>`;
     drawBody(el, S);
     drawEnd(el, S);
@@ -425,6 +429,7 @@
       b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); doc.classList.toggle(k, v); setPref(k, v);
     });
     el.querySelector('.rd-all').onclick = () => App.speak(A.paras.map(p => p.jp).join('。'), .85);
+    el.querySelector('.rd-topdone').onclick = () => finish(S);
     doc.addEventListener('click', e => {
       const w = e.target.closest('.rd-w'); if (!w) return;
       const [key, k] = w.dataset.k.split(':');
@@ -469,7 +474,10 @@
       const kana = t.bkana || t.kana || '';
       seen.set(k, { base, kana, romaji: JPText.romaji(kana), zh: t.zh || '', lv: t.lv || '', n: 1, sent: sentenceOf(texts[r] || '', t.i) });
     }));
-    const list = [...seen.values()].sort((a, b) => (LVR[a.lv] || 6) - (LVR[b.lv] || 6) || b.n - a.n).slice(0, max || 60);
+    // 依使用者程度：N3 以上不列 N5／N4；自己的等級排最前，再來更難的，沒有等級的（未收錄）放最後
+    const u = JPText.userLv ? JPText.userLv() : 0;
+    const rank = lv => !LVR[lv] ? 30 : JPText.lvRank ? JPText.lvRank(lv, u) : LVR[lv];
+    const list = [...seen.values()].filter(v => !JPText.lvKeep || JPText.lvKeep(v.lv, u)).sort((a, b) => rank(a.lv) - rank(b.lv) || b.n - a.n).slice(0, max || 60);
     const items = list.map(v => App.wordItem({ jp: v.base, kana: v.kana, romaji: v.romaji, zh: v.zh || '（自填）', hint: title ? `出自《${title}》：${v.sent}` : v.sent }, source, 'word'));
     return { list, items };
   }
@@ -491,7 +499,7 @@
     const box = el.querySelector('.rd-extras'); if (!box) return;
     const A = S.A, text = A.paras.map(p => p.jp).join('\n');
     const all = [].concat(...S.tokens.map((tk, k) => { const off = A.paras.slice(0, k).reduce((n, p) => n + p.jp.length + 1, 0); return tk.map(t => Object.assign({}, t, { i: t.i + off })); }));
-    const gram = JPText.findGrammar(text, all, 12);
+    const gram = JPText.findGrammar(text, all, 12, { lv: prof().lv || 'zero' });
     const phr = JPText.findPhrases(text, all, 10);
     const gItem = g => ({ id: g.id, jp: g.pat, kana: '', romaji: '', zh: g.zh, hint: (g.ex && g.ex[0] ? '例：' + g.ex[0] + '（' + (g.ex[1] || '') + '）' : '') + (g.conn ? '｜接續：' + g.conn : ''), source: '📐 文法' });
     const pItem = p => App.wordItem({ jp: p.jp, kana: p.kana, romaji: p.romaji, zh: p.zh, hint: `出自《${A.title}》：${p.sent}` }, '🧩 片語', 'phrase');

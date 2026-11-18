@@ -222,19 +222,44 @@
     const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
     const result = { title, lines: [] };
     if (!meta || /\b(?:reaction|shorts)\b/i.test(title)) return result;
-    // 翻唱／歌ってみた／カラオケ：去掉標記後用原曲名查歌詞（歌手可能是翻唱者，查不到時只用歌名）
+    // 翻唱／歌ってみた／カラオケ：去掉標記後用原曲名查歌詞；翻唱者不是原唱，所以不做歌名／歌手對調，
+    // 而且查到的歌名必須和影片標題裡的原曲名相符才採用，否則只匯入影片
     const cover = COVER.test(title);
-    const { track, artist } = songTitle(cover ? coverClean(title) : title, cover ? '' : meta.author_name || '');
-    const tries = [[track, artist]];
-    if (artist) tries.push([artist, track], [track, '']);
+    let track, tries;
+    if (cover) {
+      // 標題切段（／、 - ），去掉【翻唱者】與頻道名，剩下的段落逐一當歌名查
+      const skip = [...title.matchAll(/[【\[]([^】\]]{1,20})[】\]]/g)].map(m => key(m[1])).concat(key(meta.author_name || ''));
+      const segs = [...new Set(coverClean(title).split(/\s*(?:[／\/|｜]|\s[-–—]\s)\s*/).map(baseTitle).filter(x => x && !skip.includes(key(x))))];
+      track = segs[0] || ''; tries = segs.map(x => [x, '']);
+    } else {
+      const st = songTitle(title, meta.author_name || '');
+      track = st.track; tries = [[st.track, st.artist]];
+      if (st.artist) tries.push([st.artist, st.track], [st.track, '']);
+    }
     let found = null;
     for (const [t, ar] of tries) {
+      if (!t) continue;
       const r = await lyrics(t, ar).catch(() => null);
-      if (r && (!found || r.score > found.score)) found = r;
+      // 查到的歌名必須和這次查詢的歌名相符（翻唱影片不採用名稱不符的歌詞）
+      if (!r || !sameSong(r.track, t)) continue;
+      if (!found || r.score > found.score) found = r;
       if (found && found.score >= 14) break;
     }
     if (found) Object.assign(result, found);
+    if (cover) {
+      result.cover = true; result.want = track;
+      if (!found) result.note = `翻唱影片：找不到和「${track || title}」相符的歌詞，只匯入影片。可以按 ✏️ 編輯，用歌名手動搜尋歌詞。`;
+    }
     return result;
+  }
+  // 歌名比對：去掉「-Arrange ver.-」「(TV size)」這類版本標記後，歌名要相同或互相包含
+  const VER = /[\s　]*(?:[-－~〜～][^-－~〜～]*?\b(?:ver(?:sion)?|arrange|remix|edit|size)\b\.?[^-－~〜～]*[-－~〜～]?|[（(【\[][^）)】\]]*?\b(?:ver(?:sion)?|arrange|remix|size|edit)\b[^）)】\]]*[）)】\]])/gi;
+  function baseTitle(t) { return String(t || '').replace(VER, ' ').replace(/\s{2,}/g, ' ').trim(); }
+  function sameSong(a, b) {
+    const x = key(baseTitle(a)), y = key(baseTitle(b));
+    if (!x || !y) return false;
+    const lo = Math.min(x.length, y.length), hi = Math.max(x.length, y.length);
+    return x === y || (lo >= 2 && lo / hi >= .5 && (x.includes(y) || y.includes(x)));
   }
 
   // LRC：[mm:ss.xx] 歌詞 → [{jp, zh:'', t}]
@@ -278,7 +303,7 @@
     const r = best[1];
     const timed = r.syncedLyrics ? parseLRC(r.syncedLyrics) : [];
     const lines = timed.length >= 4 ? timed : tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
-    return { title: `${r.trackName}（${r.artistName}）`, artist: r.artistName, lines, timed: timed.length >= 4, score: best[0] };
+    return { title: `${r.trackName}（${r.artistName}）`, track: r.trackName, artist: r.artistName, lines, timed: timed.length >= 4, score: best[0] };
   }
 
   // 近三天新聞：Yahoo!ニュース各分類 RSS（經代讀取得）＋ MATCHA 簡單日文（附振假名）
@@ -295,9 +320,20 @@
     { id: 'local', name: '地方', icon: '🗾', url: YN + 'categories/local.xml' },
     { id: 'easy', name: '簡單日文', icon: '🔰', url: 'https://matcha-jp.com/easy/feed', easy: true, note: 'MATCHA 簡單日文：附原文振假名・更新較慢、不限日期（來源偶爾會擋代讀，讀不到請稍後再試）' }
   ];
+  // RSS 標題可能帶（或被轉義兩次的）<ruby>：還原成純文字，讀音存成「｜漢字《かな》」
+  function cleanTitle(t) {
+    t = String(t || '');
+    for (let k = 0; k < 2 && !/</.test(t) && /&(?:lt|gt|amp|quot|#\d+);/.test(t); k++) t = new DOMParser().parseFromString('<!doctype html><body>' + t, 'text/html').body.textContent;
+    if (/<\/?(?:ruby|rt|rb|rp)\b/i.test(t)) {
+      const box = new DOMParser().parseFromString('<!doctype html><body><div>' + t + '</div>', 'text/html').body.firstElementChild;
+      t = rubyMark(box).textContent;
+    }
+    return t.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  }
+  const NEWS_KEY = 'jpq.news2.';
   async function newsList(id, days) {
     const cat = NEWS_CATS.find(c => c.id === id) || NEWS_CATS[0];
-    const ck = 'jpq.news.' + cat.id;
+    const ck = NEWS_KEY + cat.id;
     try { const c = JSON.parse(sessionStorage.getItem(ck) || 'null'); if (c && Date.now() - c.at < 20 * 60e3) return c.items; } catch { }
     let xml;
     try { xml = await request(cat.url, null, 4200); } catch { xml = await reader(cat.url, 'html'); }
@@ -306,15 +342,16 @@
     const since = Date.now() - (days || 3) * 864e5;
     const pick = (el, n) => { const x = [...el.children].find(c => c.localName === n); return x ? x.textContent.trim() : ''; };
     let items = [...doc.getElementsByTagNameNS('*', 'item')].map(it => {
-      let title = pick(it, 'title'), src = '';
+      const rt = cleanTitle(pick(it, 'title'));
+      let title = plain(rt), src = '';
       const m = title.match(/^(.*?)\s*[（(]([^（）()]{1,20})[）)]$/); if (m) { title = m[1].trim(); src = m[2]; }
       const t = Date.parse(pick(it, 'pubDate') || pick(it, 'date')) || 0;
-      return { title, link: pick(it, 'link'), t, src: src || (cat.easy ? 'MATCHA' : 'Yahoo!ニュース') };
+      return { title, rt: rt !== plain(rt) ? rt : '', link: pick(it, 'link'), t, src: src || (cat.easy ? 'MATCHA' : 'Yahoo!ニュース') };
     }).filter(x => x.title && publicURL(x.link));
     items = cat.easy ? items.slice(0, 15) : items.filter(x => !x.t || x.t >= since).slice(0, 30);
     try { sessionStorage.setItem(ck, JSON.stringify({ at: Date.now(), items })); } catch { }
     return items;
   }
 
-  window.LinkImport = { NEWS_CATS, newsList, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
+  window.LinkImport = { NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
 })();

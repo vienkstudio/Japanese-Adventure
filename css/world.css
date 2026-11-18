@@ -159,7 +159,14 @@
 .wd-it.on{border-color:var(--pri);background:var(--pri-t)}
 .wd-it em{position:absolute;top:-6px;right:-4px;background:var(--pri);color:var(--on-pri);border-radius:999px;font-style:normal;font-size:13px;font-weight:800;padding:0 6px}
 .wd-it em[hidden]{display:none}
-.wd-sel{position:sticky;bottom:-14px;margin:8px -14px -14px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line2);box-shadow:0 -4px 12px rgba(0,0,0,.08)}
+/* 選品面板＋叫店員／結帳鈕一起固定在面板底部，按鈕不會被蓋住 */
+.wd-foot{position:sticky;bottom:calc(-14px - env(safe-area-inset-bottom,0px));z-index:1;margin:8px -14px calc(-14px - env(safe-area-inset-bottom,0px));padding:8px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line2);box-shadow:0 -4px 12px rgba(0,0,0,.08)}
+.wd-foot .wd-acts{margin-top:6px}
+.wd-foot .wd-acts:empty{display:none}
+.wd-sel{padding-bottom:6px;border-bottom:1px solid var(--line2)}
+.wd-it.sold{opacity:.6;border-style:dashed}.wd-it.sold .p b{color:var(--err)}
+/* ✕ 不疊在第一列內容上 */
+.wd-sheet:not(.home) .wd-in>:first-child{margin-right:40px}
 .wd-sel[hidden]{display:none}
 .wd-sel-t{display:flex;align-items:center;gap:8px}.wd-sel-t .e{font-size:1.8em}.wd-sel-t>div{flex:1;min-width:0}
 .wd-sel-a{display:flex;align-items:center;gap:8px;margin-top:6px}

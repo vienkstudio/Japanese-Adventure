@@ -63,6 +63,8 @@ input[type=file].rd-in{padding:8px}
 .rd-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) 0;background:var(--bg);border-bottom:1px solid var(--line)}
 .rd-bar .rd-tg{flex:1;min-width:0}
 .rd-all{min-width:44px;padding:8px 10px;margin:0}
+.rd-topdone{flex:none;min-height:44px;margin:0;padding:6px 12px;white-space:nowrap}
+.rd-gl.rd-unreg{font-style:italic;opacity:.75}
 .rd-tg{display:flex;gap:var(--sp-1);overflow-x:auto;scrollbar-width:none}
 .rd-tg::-webkit-scrollbar{display:none}
 .rd-tg button{flex:none;min-height:44px;padding:6px 12px;border:1px solid var(--line2);border-radius:var(--r-pill);background:var(--card);color:var(--muted);font:inherit;font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap}

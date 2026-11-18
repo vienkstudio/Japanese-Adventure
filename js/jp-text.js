@@ -3,7 +3,7 @@
 // 斷詞：格子圖最小成本（最長匹配的全域版），查不到時依字種切段；活用形反查辭書形。
 (function () {
   'use strict';
-  const MIND_SRC = 'data/mind/';
+  const MIND_SRC = 'data/mind/', EXT_SRC = 'data/reading/dict-news.js';
   const BASE_LV = ['N5', 'N4', 'N3'], ALL_LV = ['N5', 'N4', 'N3', 'N2', 'N1'];
   const MAXL = 12;
   const POS_ZH = { v: '動詞', n: '名詞', i: 'い形容詞', na: 'な形容詞', adv: '副詞', pron: '代名詞', pre: '連體詞', int: '感嘆詞', ctr: '量詞', suf: '接尾詞', exp: '慣用語', conj: '連接詞', part: '助詞', aux: '助動詞', cop: '斷定', num: '數字', name: '專有名詞', sym: '符號', unk: '未知' };
@@ -415,6 +415,8 @@
 
   function addKey(surface, cand) {
     if (!surface || surface.length > MAXL) return;
+    // 單一平假名（け、こ、ゆ、さ…）只收助詞等補充字典條目，避免把「だらけ」「こわばる」拆成「毛」「孩子」
+    if (surface.length === 1 && isHira(surface) && !((cand.e.sup || cand.e.ext) && cand.e.jp === surface)) return;
     let a = DICT.get(surface);
     if (!a) DICT.set(surface, a = []);
     if (a.length >= 6) return;
@@ -452,7 +454,8 @@
     const f = MIND.conjugate(w, grp), fr = rd && rd !== w ? MIND.conjugate(rd, grp) : f;
     if (!f || !fr) return [];
     const out = [];
-    const P = (k, s, r) => { if (s && s !== w) out.push([s, r || s, k]); };
+    // ある的否定形是「ない」（助動詞），不登記成「有」
+    const P = (k, s, r) => { if (s && s !== w && !(/^(ある|有る)$/.test(w) && /^な/.test(s))) out.push([s, r || s, k]); };
     ['masu', 'te', 'ta', 'nai', 'pot', 'pass', 'caus', 'cpass', 'vol', 'imp', 'ba', 'tara'].forEach(k => P(k, f[k], fr[k]));
     const st = f.masu.slice(0, -2), sr = fr.masu.slice(0, -2);
     if (st.length > 1 || hasKanji(st)) P('stem', st, sr);
@@ -500,22 +503,38 @@
     if (builtLv.has(lv) || !(window.MIND && MIND.lex && MIND.lex[lv])) return;
     builtLv.add(lv);
     MIND.lex[lv].forEach(r => {
-      const raw = r[0], k = clean(r[1]);
+      const raw = r[0];
+      let k = clean(r[1]);
+      // 詞庫裡サ變名詞的讀音有些多了「する」（輸出→ゆしゅつする），去掉
+      if (r[4] === 's' && /する$/.test(k) && !/する$/.test(clean(raw))) k = k.slice(0, -2);
       const e = { jp: clean(raw), raw, kana: k, zh: r[2], pos: r[3], grp: r[4], lv };
       variants(raw).forEach(v => { if (!LVOF.has(v)) LVOF.set(v, lv); });
       addEntry(e, 1 + (r[3] === 'suf' || r[3] === 'ctr' ? .6 : 0) + (r[7] === 0 ? .05 : 0));
     });
   }
+  // 新聞／歌詞補充字典（data/reading/dict-news.js）：複合詞成本低於拆開，長詞優先
+  let extBuilt = false;
+  function buildExt() {
+    if (extBuilt || !window.JP_DICT_EXT || !(window.MIND && MIND.conjugate)) return; extBuilt = true;
+    String(window.JP_DICT_EXT).split(/\r?\n/).forEach(l => {
+      const [jp, k, zh, pos, g, lv] = l.split('|');
+      if (!jp || !zh || jp.length > MAXL) return;
+      // 詞庫已有的詞維持原成本（不改變既有斷詞），新詞才給低成本
+      const cost = pos === 'exp' ? .7 : pos === 'suf' ? 1.2 : LVOF.has(jp) || BYBASE.has(jp) ? 1 : jp.length >= 3 ? .75 : .8;
+      addEntry({ jp, raw: jp, kana: k || '', zh, pos: pos || 'n', grp: g || '', lv: /^N[1-5]$/.test(lv) ? lv : 'x', ext: 1 }, cost);
+    });
+  }
   function build() {
     if (window.MIND && MIND.conjugate) buildSup();
     ALL_LV.forEach(buildLv);
+    buildExt();
   }
 
   let readyP = null, fullP = null, gramP = null;
   function ready(full) {
     if (!readyP) {
       const L = (typeof App !== 'undefined' && App.loadScript) ? App.loadScript : (() => Promise.resolve());
-      readyP = [MIND_SRC + 'conj.js'].concat(BASE_LV.map(l => MIND_SRC + 'lex-' + l.toLowerCase() + '.js'))
+      readyP = [MIND_SRC + 'conj.js'].concat(BASE_LV.map(l => MIND_SRC + 'lex-' + l.toLowerCase() + '.js'), [EXT_SRC])
         .reduce((p, s) => p.then(() => L(s).catch(() => { })), Promise.resolve())
         .then(() => { build(); });
     }
@@ -545,7 +564,11 @@
   const CTR = {
     '円': ['えん', '日圓'], '時': ['じ', '點（時刻）'], '分': ['ふん', '分鐘'], '人': ['にん', '人'], '個': ['こ', '個'], '枚': ['まい', '張'], '本': ['ほん', '支；瓶'], '回': ['かい', '次'], '階': ['かい', '樓'],
     '番': ['ばん', '號'], '泊': ['はく', '晚（住宿）'], '日': ['にち', '日；天'], '月': ['がつ', '月'], '年': ['ねん', '年'], '歳': ['さい', '歲'], '杯': ['はい', '杯；碗'], '名': ['めい', '位'], '号車': ['ごうしゃ', '號車廂'],
-    '番線': ['ばんせん', '號月台'], '分間': ['ふんかん', '分鐘'], '時間': ['じかん', '小時'], '日間': ['にちかん', '天'], '週間': ['しゅうかん', '週'], 'か月': ['かげつ', '個月'], 'ヶ月': ['かげつ', '個月'], '度': ['ど', '度；次'], '番目': ['ばんめ', '第…個'], '冊': ['さつ', '本（書）'], '台': ['だい', '台'], '匹': ['ひき', '隻'], '着': ['ちゃく', '件（衣服）'], '品': ['ひん', '道（菜）'], '倍': ['ばい', '倍'], '割': ['わり', '成'], '駅': ['えき', '站'], 'つ': ['つ', '個'], 'えん': ['えん', '日圓']
+    '番線': ['ばんせん', '號月台'], '分間': ['ふんかん', '分鐘'], '時間': ['じかん', '小時'], '日間': ['にちかん', '天'], '週間': ['しゅうかん', '週'], 'か月': ['かげつ', '個月'], 'ヶ月': ['かげつ', '個月'], '度': ['ど', '度；次'], '番目': ['ばんめ', '第…個'], '冊': ['さつ', '本（書）'], '台': ['だい', '台'], '匹': ['ひき', '隻'], '着': ['ちゃく', '件（衣服）'], '品': ['ひん', '道（菜）'], '倍': ['ばい', '倍'], '割': ['わり', '成'], '駅': ['えき', '站'], 'つ': ['つ', '個'], 'えん': ['えん', '日圓'],
+    'カ月': ['かげつ', '個月'], 'ヵ月': ['かげつ', '個月'], 'ケ月': ['かげつ', '個月'], 'か国': ['かこく', '國'], 'カ国': ['かこく', '國'], 'ヵ国': ['かこく', '國'], 'ヶ国': ['かこく', '國'], 'か所': ['かしょ', '處'], 'カ所': ['かしょ', '處'], 'ヶ所': ['かしょ', '處'],
+    '万': ['まん', '萬'], '億': ['おく', '億'], '兆': ['ちょう', '兆'], '万円': ['まんえん', '萬日圓'], '億円': ['おくえん', '億日圓'], '兆円': ['ちょうえん', '兆日圓'], '万人': ['まんにん', '萬人'], '千円': ['せんえん', '千日圓'],
+    '件': ['けん', '件'], '人目': ['にんめ', '第…人'], '回目': ['かいめ', '第…次'], '度目': ['どめ', '第…次'], '秒': ['びょう', '秒'], '位': ['い', '名（名次）'], '点': ['てん', '分；件'], '議席': ['ぎせき', '席'],
+    '％': ['パーセント', '%'], '%': ['パーセント', '%'], '年ぶり': ['ねんぶり', '年來首次'], '年前': ['ねんまえ', '年前'], '日前': ['にちまえ', '天前'], '年代': ['ねんだい', '年代'], '年度': ['ねんど', '年度'], '代': ['だい', '多歲；代'], 'ドル': ['ドル', '美元'], 'キロ': ['キロ', '公里；公斤'], 'メートル': ['メートル', '公尺']
   };
   const CTR_KEYS = Object.keys(CTR).sort((a, b) => b.length - a.length);
   const DAY = { 1: 'ついたち', 2: 'ふつか', 3: 'みっか', 4: 'よっか', 5: 'いつか', 6: 'むいか', 7: 'なのか', 8: 'ようか', 9: 'ここのか', 10: 'とおか', 14: 'じゅうよっか', 20: 'はつか', 24: 'にじゅうよっか' };
@@ -562,7 +585,8 @@
         const h = { '本': ['ほん', 'ぼん', 'ぽん'], '杯': ['はい', 'ばい', 'ぱい'], '泊': ['はく', 'ぱく', 'ぱく'] }[c];
         if (last === 1) return swap('いち', 'いっ') + h[2]; if (last === 3) return nr + h[1]; if (last === 6) return swap('ろく', 'ろっ') + h[2]; if (last === 8) return swap('はち', 'はっ') + h[2]; if (ten) return swap('じゅう', 'じゅっ') + h[2]; return nr + h[0];
       }
-      case '個': case '回': case '階': case 'か月': case 'ヶ月': {
+      case '兆': case '兆円': return (last === 1 && n < 10 ? swap('いち', 'いっ') : last === 8 ? swap('はち', 'はっ') : ten ? swap('じゅう', 'じゅっ') : nr) + CTR[c][0];
+      case '個': case '回': case '階': case 'か月': case 'ヶ月': case 'カ月': case 'ヵ月': case 'ケ月': case 'か国': case 'カ国': case 'ヵ国': case 'ヶ国': case 'か所': case 'カ所': case 'ヶ所': case '件': case '回目': {
         const k = CTR[c][0];
         if (last === 1) return swap('いち', 'いっ') + k; if (last === 6) return swap('ろく', 'ろっ') + k; if (last === 8) return swap('はち', 'はっ') + k; if (ten) return swap('じゅう', 'じゅっ') + k;
         if (c === '階' && last === 3) return nr + 'がい'; return nr + k;
@@ -604,15 +628,21 @@
         }
       }
       if (USER_KEYS.size) for (let L = Math.min(MAXL, N - i); L >= 1; L--) { const k = text.substr(i, L); if (USER[k]) { relax(i, i + L, .7, { t: 'user', s: k }); break; } }
+      // 漢字連續段：單一漢字詞夾在漢字之間（米国→米＋国、半導体→…体）多半是拆錯，加成本；
+      // 段長 ≥3 時，常見前後綴（〜人、〜的、全〜、新〜…）不加
+      let kRun = 0, kPos = 0;
+      if (sc === 'k') { let a = i; while (a > 0 && isKanji(text[a - 1]) && KNUM[text[a - 1]] == null) a--; let b = i; while (b < N && isKanji(text[b]) && KNUM[text[b]] == null) b++; kRun = b - a; kPos = i - a; }
       for (let L = 1; L <= MAXL && i + L <= N; L++) {
         const cands = DICT.get(text.substr(i, L));
         if (!cands) continue;
         let b = cands[0];
         for (const c of cands) if (c.cost < b.cost) b = c;
-        relax(i, i + L, b.cost, { t: 'w', c: b, all: cands });
+        let cost = b.cost;
+        if (L === 1 && kRun >= 2 && KNUM[ch] == null && !(kRun >= 3 && AFFIX.test(ch)) && !/^(suf|ctr)$/.test(b.e.pos)) cost += 2.2;
+        relax(i, i + L, cost, { t: 'w', c: b, all: cands });
       }
       if (sc === 't' || sc === 'a' || sc === 'o') { const j = runEnd(text, i, sc); relax(i, j, sc === 't' ? 2.4 : 1, { t: 'unk', sc }); }
-      else if (sc === 'k') { const j = runEnd(text, i, 'k'); relax(i, i + 1, 4, { t: 'unk', sc }); if (j - i > 1) relax(i, j, 3 + (j - i), { t: 'unk', sc }); }
+      else if (sc === 'k') { const j = runEnd(text, i, 'k'); relax(i, i + 1, 4, { t: 'unk', sc }); for (let e = i + 2; e <= j; e++) relax(i, e, 3 + (e - i), { t: 'unk', sc }); }
       else relax(i, i + 1, sc === 'h' ? 5 : 3, { t: 'unk', sc });
     }
     // 回溯
@@ -630,6 +660,7 @@
     return out;
   }
   const USER_KEYS = new Set(Object.keys(USER));
+  const AFFIX = /[人的性化者家店屋円年月日時分秒中内外前後間用型製式率費代料長都道府県市区町村線駅港社省庁局部課室所場館院会員生君様氏側権法案制界産品物類語版号便系層隊団党派州島山川湖寺宮城園橋口目回度位件点歳倍割名台本枚個杯匹冊階番各全新旧元現再非不無未第約総両超大小高低同当毎来今昨翌初最副主諸対反準真半]/;
   function kanjiNum(s) {
     let total = 0, cur = 0, sec = 0;
     for (const c of s) {
@@ -655,11 +686,14 @@
         form: c.form && c.form !== 'dict' ? c.form : '', alts: info.all.filter(x => x.e !== e).map(x => ({ jp: x.e.jp, kana: x.e.kana, zh: x.e.zh, lv: x.e.lv })).slice(0, 3)
       };
       if (/^suru:/.test(tk.form)) { tk.base = e.jp + 'する'; tk.bkana = toHira(e.kana || e.jp) + 'する'; tk.pos = 'v'; tk.form = tk.form.slice(5); }
+      if (e.ext && LVOF.has(e.jp)) tk.lv = LVOF.get(e.jp);
+      if (/^(nai|nakatta|nakute|naide|nakereba|masen|maseNdeshita)$/.test(tk.form)) tk.neg = true;
       tk.romaji = tk.pos === 'part' && /^[はへを]$/.test(s) ? { 'は': 'wa', 'へ': 'e', 'を': 'o' }[s] : romaji(tk.kana);
       return tk;
     }
     const kana = isKanaStr(s) ? s : '';
-    return { s, base: s, kana, bkana: kana, romaji: kana ? romaji(s) : '', zh: '', pos: 'unk', lv: null, i, known: false, sc: info.sc };
+    // 字典沒有的漢字詞：保留整詞、標「未收錄」（讀音可由原文振假名補上）
+    return { s, base: s, kana, bkana: kana, romaji: kana ? romaji(s) : '', zh: '', pos: 'unk', lv: null, i, known: false, sc: info.sc, unreg: info.sc === 'k' || hasKanji(s) };
   }
 
   /* ---------------- 讀音標註 ---------------- */
@@ -713,6 +747,8 @@
 
   /* ---------------- 文法偵測 ---------------- */
   let GRAM = null;
+  // 句型的其他寫法（斷詞成一個詞的敬體／書面形）
+  const GRAM_ALIAS = { 'gram:〜によると／〜によれば': ['によりますと', 'によれば'] };
   function buildGram() {
     if (GRAM || !(window.MIND && MIND.gram)) return;
     const seen = new Set(), LVO = { N5: 0, N4: 1, N3: 2, N2: 3, N1: 4 };
@@ -736,6 +772,7 @@
           alts.push({ segs, lead, p: !!(c0 && c0.some(x => /^(part|cop)$/.test(x.e.pos))) });
         });
       });
+      (GRAM_ALIAS[g.id] || []).forEach(x => alts.push({ segs: [x], lead: true, p: true }));
       if (!alts.length) return;
       const sig = alts.map(a => (a.lead ? '~' : '') + a.segs.join('~')).sort().join('|');
       if (seen.has(sig)) return; seen.add(sig);
@@ -743,10 +780,44 @@
     });
     GRAM.sort((a, b) => a.o - b.o);
   }
+  // 誤判排除表：檢查句型前一個 token（prev）是否符合接續；不符合就不算
+  const NOUNISH = /^(n|name|pron|num|unk|suf|ctr)$/;
+  const PREDISH = /^(v|i|aux|cop)$/;
+  const GRAM_EXCL = {
+    // 〜から（理由）：前面要是述語（動詞、形容詞、だ／です／ます…），「輸出から」「駅から」是起點
+    'gram:〜から（理由）': p => !!p && (PREDISH.test(p.pos) || !!p.form || /[たいだすぬう]$/.test(p.s) && !NOUNISH.test(p.pos)),
+    // 〜より（比較）：前面是名詞；「によりますと」「により」是依據
+    'gram:〜より': p => !!p && p.s !== 'に' && !/に$/.test(p.s),
+    // 〜には（目的）：前面要是動詞辭書形；「駅には」是場所に＋は
+    'gram:〜には（目的）': p => !!p && p.pos === 'v' && !p.form,
+    // 數量詞＋からの／からある／からする（多達）：前面要是數量
+    'gram:〜からの': p => !!p && p.pos === 'num',
+    'gram:〜からある': p => !!p && p.pos === 'num',
+    'gram:〜からする': p => !!p && p.pos === 'num',
+    'gram:〜も（數量強調）': p => !!p && p.pos === 'num',
+    // 〜まで（甚至）：「から…まで」的まで不算
+    'gram:〜まで（甚至）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0,
+    'gram:〜まで（極端）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0,
+    // 〜(ら)れる：所在的詞要真的是被動／可能形（「訪れる」「流れる」不算）；自發只限 思う、感じる 這類動詞
+    'gram:〜（ら）れる（可能）': RARE, 'gram:〜（ら）れる（被動）': RARE, 'gram:〜（ら）れる（受害被動）': RARE, 'gram:〜（ら）れる（尊敬）': RARE,
+    'gram:〜(ら)れる（自發）': (p, sn, idx, ct) => RARE(p, sn, idx, ct) && /^(思う|感じる|思い出す|考える|案じる|偲ぶ|待つ|悔やむ|感ずる)$/.test(ct.base)
+  };
+  function RARE(p, sn, idx, ct) { return !!ct && /^(pass|pot)$/.test(ct.form || ''); }
+  const LVN = { zero: 0, n5: 0, n4: 1, n3: 2, n2: 3, n1: 4 }, GLV = { N5: 0, N4: 1, N3: 2, N2: 3, N1: 4 };
+  function userLv(opts) {
+    let lv = opts && opts.lv;
+    if (!lv) try { lv = (typeof App !== 'undefined' && App.profile && App.profile().lv) || 'zero'; } catch (e) { lv = 'zero'; }
+    return LVN[String(lv).toLowerCase()] || 0;
+  }
+  // 依使用者程度：N3 以上不列 N5／N4；排序＝自己的等級→更難→（較簡單的放最後）
+  function lvRank(glv, u) { const L = GLV[glv]; if (L == null) return 20; return L >= u ? L - u : 10 + (u - L); }
+  function lvKeep(glv, u) { const L = GLV[glv]; return u < 2 || L == null || L >= 2; }
   // 依 token 邊界確認：片段結尾要落在 token 結尾；開頭不是 〜 的句型，起點要落在 token 開頭
-  function findGrammar(text, tokens, max) {
+  // opts：{lv:'n3'}（不給就讀 App.profile()）
+  function findGrammar(text, tokens, max, opts) {
     buildGram();
     if (!GRAM) return [];
+    const u = userLv(opts);
     tokens = tokens || tokenize(text);
     const starts = new Set(), ends = new Set(), cov = [];
     tokens.forEach(t => { starts.add(t.i); ends.add(t.i + t.s.length); for (let k = t.i; k < t.i + t.s.length; k++) cov[k] = t; });
@@ -755,6 +826,8 @@
     const sents = sentences(text);
     const hits = [];
     for (const G of GRAM) {
+      if (!lvKeep(G.g.lv, u)) continue;
+      const EX = GRAM_EXCL[G.g.id];
       let found = null, count = 0;
       for (const sn of sents) {
         for (const a of G.alts) {
@@ -764,7 +837,8 @@
             let idx = sn.s.indexOf(seg, from), good = -1;
             while (idx >= 0) {
               const abs = sn.i + idx, end = abs + seg.length;
-              const startOK = k > 0 ? true : a.lead ? idx > 0 && (starts.has(abs) || (!a.p && midOK(abs))) : starts.has(abs);
+              let startOK = k > 0 ? true : a.lead ? idx > 0 && (starts.has(abs) || (!a.p && midOK(abs))) : starts.has(abs);
+              if (startOK && k === 0 && EX) { const pv = starts.has(abs) ? cov[abs - 1] : null; startOK = !!EX(pv && pv.sym ? null : pv, sn.s, idx, cov[abs]); }
               if (startOK && ends.has(end) && (k === 0 || idx - from <= 14)) { good = idx; break; }
               idx = sn.s.indexOf(seg, idx + 1);
             }
@@ -777,11 +851,11 @@
       }
       if (found) {
         const lead = found.raw.length - found.raw.trimStart().length;
-        hits.push({ id: G.g.id, pat: G.g.pat, lv: G.g.lv, zh: G.g.zh, conn: G.g.conn, ex: G.g.ex, note: G.g.note, sent: found.sent, hl: [found.a - lead, found.b - lead], count, at: found.at });
-        if (hits.length >= (max || 12)) break;
+        hits.push({ id: G.g.id, pat: G.g.pat, lv: G.g.lv, zh: G.g.zh, conn: G.g.conn, ex: G.g.ex, note: G.g.note, sent: found.sent, hl: [found.a - lead, found.b - lead], count, at: found.at, o: G.o });
       }
     }
-    return hits;
+    hits.sort((x, y) => lvRank(x.lv, u) - lvRank(y.lv, u) || x.o - y.o);
+    return hits.slice(0, max || 12);
   }
 
   /* ---------------- 片語偵測 ---------------- */
@@ -839,7 +913,7 @@
   const short = z => String(z || '').split(/[；;，,]/)[0];
 
   window.JPText = {
-    ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser,
+    ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser, userLv, lvRank, lvKeep,
     POS_ZH, FORM_ZH, esc, numRead,
     get size() { return DICT.size; },
     get levels() { return [...builtLv]; },

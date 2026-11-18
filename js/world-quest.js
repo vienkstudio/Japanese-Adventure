@@ -216,9 +216,10 @@
       else {
         const hasMach = s.items.some(i => zt(i) === 'machine');
         let pool = s.kind === 'eat' ? s.items.filter(i => zt(i) === (hasMach ? 'machine' : 'menu')) : s.kind === 'service' ? s.items.filter(i => zt(i) === 'counter' || zt(i) === 'machine') : s.items.filter(i => zt(i) !== 'menu');
-        if (!pool.length) pool = s.items;
+        pool = pool.filter(i => !i.soldOut);
+        if (!pool.length) pool = s.items.filter(i => !i.soldOut);
         const k = Math.min(pool.length, s.kind === 'service' ? 1 + (li() >= 3) : 1 + (li() >= 1) + (li() >= 3));
-        m.needs = App.sample(pool, k).map(it => ({ it, n: Math.random() < 0.3 ? 2 : 1 }));
+        m.needs = App.sample(pool, k).map(it => ({ it, n: Math.min(it.max || 5, Math.random() < 0.3 ? 2 : 1) }));
         m.prefs = {};
       }
       const tags = new Set(m.needs.flatMap(n => n.it.tags || [])), free = m.needs.every(n => n.it.price === 0 || zt(n.it) === 'machine');
@@ -398,12 +399,20 @@
       on({ key: k }) {
         if (k === npcKey) { R.replay(); return 'stop'; }
         if (d.places[k].type === 'sign') return;
-        if (k !== R.target) { R.mistakes++; App.toast('好像不是路人說的地方（點下面的提示列可以再聽一次）'); return; }
+        if (k !== R.target) {   // 走錯：明確告訴他錯了，可以再聽一次或照樣進去
+          R.mistakes++; G.sfx('ng');
+          const wp = d.places[k], wn = wp.type === 'shop' ? (W.shops[wp.shop] || {}).name || wp.name : wp.name;
+          const el = X.sheet(`<p class="wd-fb ng" role="status">✗ 走錯了：這裡是「${esc(wn || '')}」，不是路人說的地方。</p>
+            <div class="wd-acts"><button type="button" class="btn" id="wd-rgo">先進去看看</button><button type="button" class="btn primary" id="wd-rre">🔊 再聽一次指路</button></div>`);
+          el.querySelector('#wd-rre').onclick = () => R && R.replay();
+          el.querySelector('#wd-rgo').onclick = () => { R = null; X.paintBar(); X.closeSheet(); X.openPlace(k); };
+          return 'stop';
+        }
         const stars = R.mistakes === 0 ? 3 : R.mistakes <= 2 ? 2 : 1, tp = d.places[k];
         R = null; X.paintBar();
         const r = App.reward(`w:${d.id}:route`, stars, `${d.name}・問路`);
         const nm = tp.type === 'shop' ? (W.shops[tp.shop] || {}).name : tp.name;
-        App.showResult({ title: `🧭 找到了：${nm}`, stars, gained: r.gained, ok: '繼續 ➜' });
+        App.showResult({ title: `✓ 走對了！🧭 ${nm}`, stars, gained: r.gained, ok: '繼續 ➜' });
         return 'stop';
       }
     };
@@ -500,13 +509,13 @@
       <h2 class="jp-t">🗾 日本地圖<small>全部地區都開放，想去哪就去哪；①②③ 是推薦順序</small></h2>
       <button type="button" class="jp-cont" id="jp-next"><span>▶</span><span>${esc(n.label)}<small>${esc(n.sub || '')}</small></span></button>
       <div id="jp-mapbox"></div>
-      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-cards">🃏 我的句卡<small>${World.cardCount()} 張・說對就收集</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
+      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-boot">🎧 特訓<small>聽懂店員問句・數字</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
     </section>`;
     japan(el.querySelector('#jp-mapbox'));
     el.querySelector('#jp-next').onclick = () => App.go(n.route, n.params);
     el.querySelectorAll('.jp-reg').forEach(b => b.onclick = () => App.go('play', { r: b.dataset.r }));
     el.querySelector('#jp-gs').onclick = goshuin;
-    el.querySelector('#jp-cards').onclick = () => App.go('cards', { deck: 'sent' });
+    el.querySelector('#jp-boot').onclick = () => App.go('boot');
   }
   function cardsModal() {
     const list = Object.values(st().cards).reverse();

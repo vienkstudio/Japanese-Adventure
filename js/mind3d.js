@@ -67,7 +67,7 @@
     wh: (wh, lv) => ({ id: 'wh:' + (lv || '') + wh, type: 'wh', wh, lv, lab: wh, pri: 3, val: 9 }),
     sc: id => ({ id: 'sc:' + id, type: 'sc', sc: id, lab: SCc[id].icon + SCc[id].name, pri: 2.5, val: 8 }),
     sub: id => ({ id: 'sub:' + id, type: 'sub', sub: id, lab: SUBS[id].icon + SUBS[id].name, pri: 2.5, val: 6 }),
-    grp: (lv, wh, sc, cnt) => ({ id: `grp:${lv}|${wh}|${sc}`, type: 'grp', lv, wh, sc, cnt, lab: SCc[sc].icon + SCc[sc].name + ' ' + cnt, pri: 1.5, val: 2 + Math.sqrt(cnt) }),
+    grp: (lv, wh, sc, cnt) => ({ id: `grp:${lv}|${wh}|${sc}`, type: 'grp', lv, wh, sc, cnt, lab: SCc[sc].icon + SCc[sc].name + '・' + wh + '（' + lv + '・' + cnt + ' 詞）', pri: 1.5, val: 2 + Math.sqrt(cnt) }),
     word: w => ({ id: w.id, type: 'word', lv: w.lv, wh: w.wh, ref: w, lab: jp0(w), pri: 0, val: 1.2 }),
     gram: g => ({ id: g.id, type: 'gram', lv: g.lv, wh: g.wh, ref: g, lab: g.pat, pri: 1, val: 2.4 }),
     conj: (c, form) => ({ id: 'cj:' + c.id, type: 'conj', ref: c, form, lab: c.name.replace(/（.*/, '') + (form ? '｜' + form : ''), pri: 3, val: 7 }),
@@ -153,7 +153,7 @@
     const c = b.add(c0); c.pri = 6; c.val = Math.max(c.val * 2, 12); c.center = true;
     const addG = (g, to, o) => { const n = b.add(N.gram(g)); if (to) b.link(to, n.id, o); return n; };
     const addW = (w, to, o) => { const n = b.add(N.word(w)); if (to) b.link(to, n.id, o); return n; };
-    const groups = (lv, wh, sc, to) => { const cnt = (M.GROUPS[lv] || {})[wh + '|' + sc]; if (!cnt) return; const n = b.add(N.grp(lv, wh, sc, cnt)); n.lab = lv + '・' + wh + '・' + SCc[sc].name + ' ' + cnt; b.link(to, n.id, { t: 'in' }); };
+    const groups = (lv, wh, sc, to) => { const cnt = (M.GROUPS[lv] || {})[wh + '|' + sc]; if (!cnt) return; const n = b.add(N.grp(lv, wh, sc, cnt)); n.lab = lv + '・' + wh + '・' + SCc[sc].name + '（' + cnt + ' 詞）'; b.link(to, n.id, { t: 'in' }); };
     if (c.type === 'word') {
       const w = c.ref; c.lab = jp0(w) + '　' + w.zh;
       b.add(N.lv(w.lv)); b.link('lv:' + w.lv, c.id);
@@ -538,7 +538,7 @@
     });
   }
   function crumbChain() {
-    const out = [['總覽', { mode: 'map', sel: null, exp: null, home: 1 }]], n = SEL, m = F.mode;
+    const out = [['⌂', { mode: 'map', sel: null, exp: null, home: 1 }]], n = SEL, m = F.mode;
     const lvT = lv => [lv, { mode: 'map', sel: 'lv:' + lv, exp: null }];
     const whT = (lv, wh) => [wh + '・' + WHc[wh].desc.split('、')[0], { mode: 'map', sel: 'wh:' + lv + wh, exp: null }];
     const grT = (lv, wh, sc) => { const id = `grp:${lv}|${wh}|${sc}`; return [SCc[sc].icon + SCc[sc].name + ' 詞群', { mode: 'map', sel: id, exp: id }]; };
@@ -566,7 +566,7 @@
     nb.querySelector('[data-act=back]').disabled = H.i <= 0;
     nb.querySelector('[data-act=fwd]').disabled = H.i >= H.list.length - 1;
     const cr = nb.querySelector('.mm-crumbs');
-    cr.innerHTML = c.map((x, i) => (i ? '<span class="mm-sep" aria-hidden="true">›</span>' : '') + (x[1] ? `<button type="button" class="mm-cr" data-crumb="${i}">${esc(x[0])}</button>` : `<span class="mm-cr cur" aria-current="location">${esc(x[0])}</span>`)).join('');
+    cr.innerHTML = c.map((x, i) => (i ? '<span class="mm-sep" aria-hidden="true">›</span>' : '') + (x[1] ? `<button type="button" class="mm-cr" data-crumb="${i}"${i ? '' : ' aria-label="回到初始視角" title="回到初始視角"'}>${esc(x[0])}</button>` : `<span class="mm-cr cur" aria-current="location">${esc(x[0])}</span>`)).join('');
     cr.scrollLeft = cr.scrollWidth;
   }
 
@@ -738,7 +738,7 @@
   const TOUR = [
     ['🗂️ 側邊面板', '左側面板（手機點左上「☰ 篩選」）可選「分級」N5–N1、「分類」人事時地物／場景／詞類，以及「圖層」，3D 圖會即時更新。'],
     ['👆 點節點', '點任一節點，鏡頭會飛過去並打開資訊卡；卡片裡的先修、後續連結可以一路點下去，也能加入不會清單、聽發音。'],
-    ['◀ 上一步', '上方有「◀ 上一步」「▶ 下一步」與麵包屑，「⌂ 總覽」一鍵回到初始視角；手機返回鍵也會先退回上一個焦點。']
+    ['◀ 上一步', '上方有「◀ 上一步」「▶ 下一步」與麵包屑，「⌂ 重設」一鍵回到初始視角；手機返回鍵也會先退回上一個焦點。']
   ];
   let TI = -1;
   function tour(i) {
@@ -821,7 +821,7 @@
         <div class="mm-navbar">
           <button type="button" class="mm-nb" data-act="back" aria-label="上一步" title="上一步">◀<em>上一步</em></button>
           <button type="button" class="mm-nb" data-act="fwd" aria-label="下一步" title="下一步">▶<em>下一步</em></button>
-          <button type="button" class="mm-nb" data-act="home" aria-label="回到總覽" title="回到總覽">⌂<em>總覽</em></button>
+          <button type="button" class="mm-nb" data-act="home" aria-label="回到初始視角" title="回到初始視角">⌂<em>重設</em></button>
           <nav class="mm-crumbs" aria-label="目前位置"></nav>
         </div>
         <div class="mm-sub"></div>

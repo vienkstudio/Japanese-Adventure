@@ -5,6 +5,8 @@
 (function () {
   const esc = s => App.esc(String(s == null ? '' : s));
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
+  const lvN = L => LVS.indexOf(L);
+  const zhOK = L => lvN(L) <= 1;   // N5、N4 題幹可附中文；N3 以上作答前不給中文（解說才有）
   const LV_TIP = { N5: '基本單字・句型', N4: '日常簡單會話', N3: '日常與一般文章', N2: '工作、新聞程度', N1: '論說文、高階表達' };
   const TYPES = [
     { id: 'vocab', ic: '🔤', name: '單字', desc: '漢字讀音・表記・文脈規定・意思' },
@@ -83,6 +85,7 @@
   /* ---------------- 題庫（每級建一次） ---------------- */
   const BANK = {};
   function stripPat(pat) {
+    if (/[〜～]/.test(String(pat || '').replace(/^\s*[〜～]/, ''))) return null;   // 成對句型（〜なり〜なり、〜から〜まで…）去掉〜會變成錯字串
     const p = String(pat || '').replace(/[〜～]/g, '').replace(/（[^）]*）|\([^)]*\)/g, '').trim();
     if (!p || /[＋+／/…・A-Za-z\s]/.test(p)) return null;
     return p;
@@ -128,8 +131,9 @@
     if (B.ctx) return B.ctx;
     const M = window.MIND || { gram: [] };
     const pool = [];
-    (M.gram || []).forEach(g => { if (g.ex && g.ex[0] && g.ex[1]) pool.push([g.ex[0], g.ex[1]]); });
-    B.allParas.forEach(p => pool.push([p.jp, p.zh]));
+    // 例句只取本級以下的文法與短文，避免 N5 題目出現 N2 句型
+    (M.gram || []).forEach(g => { if (g.ex && g.ex[0] && g.ex[1] && lvN(g.lv) >= 0 && lvN(g.lv) <= lvN(B.L)) pool.push([g.ex[0], g.ex[1]]); });
+    B.allParas.forEach(p => { if (lvN(String(p.a.lv || '').toUpperCase()) <= lvN(B.L)) pool.push([p.jp, p.zh]); });
     const out = [];
     B.words.forEach(w => {
       const s = w.jp;
@@ -240,6 +244,7 @@
   }
   const FUNC = ['conj', 'adv', 'int', 'exp', 'part'];
   const posPools = (w, cand) => FUNC.includes(w.pos) ? [cand.filter(x => !FUNC.includes(x.pos))] : [cand.filter(x => x.pos === w.pos), cand];
+  const overlap = (a, b) => a.includes(b) || b.includes(a);   // 紙／手紙 這種互相包含的寫法不能同時當選項
   const sameWordOK = (B, w) => x => x.jp !== w.jp && !w.alts.includes(x.kana) && !x.alts.includes(w.kana) && !zhClash(x.zh, w.zh);
 
   const GEN = {
@@ -263,7 +268,7 @@
       const cand = B.words.filter(x => x.kj && ok(x));
       const share = cand.filter(x => x.pos === w.pos && [...x.jp].some(c => KJ.test(c) && w.jp.includes(c)));
       const same = cand.filter(x => x.pos === w.pos && x.jp.length === w.jp.length);
-      const dis = pick([share, same, cand], 3, (c, o) => !o.some(y => y.jp === c.jp)).map(x => x.jp);
+      const dis = pick([share, same, cand], 3, (c, o) => !overlap(c.jp, w.jp) && !o.some(y => overlap(y.jp, c.jp))).map(x => x.jp);
       return build({ k: 'spell', key: 'w' + w.i, ask: '寫成漢字是哪一個？', body: `<div class="ch-big jp">${esc(w.kana)}</div>`, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
     // 文脈規定：（　　）裡放哪個字
@@ -272,9 +277,9 @@
       const w = c.w, ok = sameWordOK(B, w);
       const cand = B.words.filter(x => ok(x) && !c.jp.includes(x.jp));
       const near = cand.filter(x => x.pos === w.pos && Math.abs(x.jp.length - w.jp.length) <= 1 && KJ.test(x.jp) === KJ.test(w.jp));
-      const dis = pick([near, cand.filter(x => x.pos === w.pos)], 3, (x, o) => !o.some(y => y.jp === x.jp || zhClash(y.zh, x.zh))).map(x => x.jp);
+      const dis = pick([near, cand.filter(x => x.pos === w.pos)], 3, (x, o) => !overlap(x.jp, w.jp) && !o.some(y => overlap(y.jp, x.jp) || zhClash(y.zh, x.zh))).map(x => x.jp);
       const s = esc(c.jp.slice(0, c.k)) + '<span class="ch-blank">（　　）</span>' + esc(c.jp.slice(c.k + w.jp.length));
-      return build({ k: 'ctx', key: 'w' + w.i, ask: '（　　）裡放哪個字最適合？', body: `<div class="ch-sent jp">${s}</div><p class="muted center">${esc(c.zh)}</p>`, explain: wordExplain(w) + `<br><span class="jp">${esc(c.jp)}</span>`, item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
+      return build({ k: 'ctx', key: 'w' + w.i, ask: '（　　）裡放哪個字最適合？', body: `<div class="ch-sent jp">${s}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(c.zh)}</p>` : ''), explain: wordExplain(w) + `<br><span class="jp">${esc(c.jp)}</span><br><span class="muted">${esc(c.zh)}</span>`, item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
     // 語意：單字的中文意思
     mean(B, used) {
@@ -296,7 +301,7 @@
       const p2 = cand.filter(y => y.g.cat !== g.cat);
       const dis = pick([p1, p2, cand], 3, (y, o) => !o.some(z => z.p === y.p || z.p.includes(y.p) || y.p.includes(z.p))).map(y => y.p);
       const s = x.ex[0], k = s.indexOf(x.p);
-      const body = `<div class="ch-sent jp">${esc(s.slice(0, k))}<span class="ch-blank">（　　）</span>${esc(s.slice(k + x.p.length))}</div><p class="muted center">${esc(x.ex[1])}</p>`;
+      const body = `<div class="ch-sent jp">${esc(s.slice(0, k))}<span class="ch-blank">（　　）</span>${esc(s.slice(k + x.p.length))}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(x.ex[1])}</p>` : '');
       return build({ k: 'form', key: 'g' + x.i, ask: '（　　）裡放什麼最適合？', body, explain: gramExplain(x), item: gramItem(x), mk: ['g', x.i] }, x.p, dis);
     },
     // 句子重組：★ 放哪一段
@@ -308,7 +313,7 @@
       const slots = [0, 1, 2, 3].map(i => `<span class="ch-slot${i === star ? ' star' : ''}">${i === star ? '★' : ''}</span>`).join('');
       const ans = o.parts[star];
       const opts = shuf(o.parts);
-      const body = `<div class="ch-sent jp ch-order">${esc(o.pre)}${slots}${esc(o.post)}</div><p class="muted center">${esc(o.zh)}</p>`;
+      const body = `<div class="ch-sent jp ch-order">${esc(o.pre)}${slots}${esc(o.post)}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(o.zh)}</p>` : '');
       const full = esc(o.pre) + o.parts.map((p, i) => i === star ? `<b class="ch-ans">${esc(p)}</b>` : esc(p)).join('') + esc(o.post);
       return { k: 'order', key: 'g' + o.x.i, ask: '把四段排成正確的句子，★ 放哪一段？', body, opts, ans: opts.indexOf(ans), explain: `<span class="jp">${full}</span><br>` + gramExplain(o.x), item: gramItem(o.x), mk: ['g', o.x.i] };
     },
@@ -347,7 +352,7 @@
       const w = unusedOf(B.words.filter(w => w.kn && w.kj), used, w => 'w' + w.i); if (!w) return null;
       const homo = new Set(B.words.filter(y => y.alts.includes(w.kana)).map(y => y.jp));   // 同音字都不能當干擾
       const cand = B.words.filter(x => x.kj && !homo.has(x.jp) && !x.alts.includes(w.kana) && sameWordOK(B, w)(x));
-      const dis = pick([cand.filter(x => x.pos === w.pos && x.jp.length === w.jp.length), cand.filter(x => x.pos === w.pos), cand], 3, (x, o) => !o.some(y => y.jp === x.jp)).map(x => x.jp);
+      const dis = pick([cand.filter(x => x.pos === w.pos && x.jp.length === w.jp.length), cand.filter(x => x.pos === w.pos), cand], 3, (x, o) => !overlap(x.jp, w.jp) && !o.some(y => overlap(y.jp, x.jp))).map(x => x.jp);
       return build({ k: 'ljp', key: 'w' + w.i, ask: '聽到的是哪一個字？', say: w.kana, body: '', explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
     // 聽解：聽句子選意思
@@ -363,9 +368,28 @@
       return Object.assign(q, { k: 'lpara', ask: '聽完這段話，意思是？', say: p.jp, body: '' });
     }
   };
+  /* ---------------- 題目自動檢查：選項唯一、不重疊、無疊字錯誤、N3 以上題幹無中文 ---------------- */
+  const JPK = ['kanji', 'spell', 'ctx', 'form', 'ljp', 'order'], ZHK = ['mean', 'lword'];
+  function problems(q, L) {
+    const e = [], o = (q && q.opts) || [];
+    if (!q) return ['null'];
+    if (o.length < 3) e.push('選項不足');
+    if (!(q.ans >= 0 && q.ans < o.length)) e.push('正解索引錯');
+    if (o.some(x => !String(x).trim())) e.push('空選項');
+    if (new Set(o.map(x => String(x).trim())).size !== o.length) e.push('選項重複');
+    if (JPK.includes(q.k)) o.forEach((a, i) => o.forEach((b, j) => { if (i !== j && a.length && b.includes(a) && q.k !== 'order' && q.k !== 'kanji') e.push('選項包含：' + a + '⊂' + b); }));
+    if (ZHK.includes(q.k)) o.forEach((a, i) => o.forEach((b, j) => { if (i < j && zhClash(a, b)) e.push('中文同義：' + a + '≈' + b); }));
+    if (q.k === 'form') o.forEach(a => { if (/[〜～＋+／]/.test(a) || /^(.{2,})\1$/.test(a)) e.push('疊字或殘留符號：' + a); });
+    if (!zhOK(L) && /<p class="muted center">/.test(q.body || '')) e.push('N3+ 題幹附中文');
+    return [...new Set(e)];
+  }
   function gen(k, B, used) {
-    let q = null, kk = k, n = 0;
-    while (!q && kk && n++ < 6) { try { q = GEN[kk](B, used); } catch (e) { console.warn('challenge gen', kk, e); q = null; } if (!q) kk = FALLBACK[kk]; }
+    let q = null, kk = k, n = 0, tries = 0;
+    while (!q && kk && n++ < 6) {
+      try { q = GEN[kk](B, used); } catch (e) { console.warn('challenge gen', kk, e); q = null; }
+      if (q && problems(q, B.L).length) { used.add(q.key); q = null; if (++tries < 4) { n--; continue; } }
+      if (!q) kk = FALLBACK[kk];
+    }
     if (q) { used.add(q.key); q.label = LABEL[q.k]; }
     return q;
   }
@@ -528,5 +552,24 @@
 
   App.register('challenge', { title: '挑戰', icon: '🏆', nav: false, navParent: 'home', render: renderMenu });
   App.register('challenge-play', { title: '挑戰', icon: '🏆', nav: false, navParent: 'home', render: renderPlay });
-  window.Challenge = { bank, makeRound, mutate, chunks, GEN, LVS, TYPES };
+  // 自我檢查：每級每題型產生 n 題，回傳有問題的題目（開發用：Challenge.selfTest(200)）
+  function selfTest(n) {
+    const out = { total: 0, bad: [], perKind: {} };
+    LVS.forEach(L => {
+      const B = bank(L);
+      Object.keys(GEN).forEach(k => {
+        let made = 0;
+        for (let i = 0; i < (n || 200); i++) {
+          let q = null; try { q = GEN[k](B, new Set()); } catch (e) { out.bad.push([L, k, 'throw ' + e.message]); continue; }
+          if (!q) continue;
+          made++; out.total++;
+          const p = problems(q, L);
+          if (p.length) out.bad.push([L, k, p.join('；'), q.opts.join('｜')]);
+        }
+        out.perKind[L + ':' + k] = made;
+      });
+    });
+    return out;
+  }
+  window.Challenge = { bank, makeRound, mutate, chunks, GEN, LVS, TYPES, problems, selfTest };
 })();

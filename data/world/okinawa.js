@@ -366,7 +366,7 @@ WORLD.pack('okinawa', {
 
     /* ==================== 牧志公設市場（store） ==================== */
     {
-      id: 'naha-makishi', kind: 'store', scene: null,
+      id: 'naha-makishi', kind: 'store', scene: null, pb: 'eat',
       icon: '🐟', name: '牧志公設市場', jp: '牧志公設市場', kana: 'まきしこうせついちば',
       desc: '被稱為「沖繩的廚房」的市場。一樓買海鮮、島豬肉和乾貨，買好的海鮮可以請店家送到二樓食堂代客料理。',
       tips: [

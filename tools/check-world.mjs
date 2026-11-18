@@ -176,7 +176,9 @@ for (const id in W.shops) {
     else a.bad.forEach((x, j) => { kanaPair(x, `${w}.bad[${j}]`); need(x, ['fb'], `${w}.bad[${j}]`); });
   });
   const pay = askBy.pay;
-  if (!pay) E('缺少付款方式的問句（id:\'pay\'）'); else if ((pay.a || []).length < 2) E('pay 的 a 至少 2 種付款方式');
+  const signs = Object.values(Z).filter(z => z.type === 'sign').map(z => z.jp || '');
+  const cashOnly = signs.some(t => /現金のみ/.test(t) && !/チャージ/.test(t));
+  if (!pay) E('缺少付款方式的問句（id:\'pay\'）'); else if ((pay.a || []).length < (cashOnly ? 1 : 2)) E('pay 的 a 至少 2 種付款方式');
   const ph = p => asks.filter(a => a.phase === p).length;
   if (s.kind === 'eat') { if (!ph('enter')) E('eat 需要 enter 問句（幾位）'); if (!ph('pay')) E('eat 需要 pay 問句'); }
   if (s.kind === 'service' && ph('checkin') < 3) E(`service 需要 3 題以上 checkin（目前 ${ph('checkin')}）`);
@@ -205,6 +207,22 @@ for (const id in W.shops) {
     }
   });
 
+  if (s.pb != null && !['must', 'emer', 'move', 'eat', 'shop', 'stay', 'see'].includes(s.pb)) E(`pb「${s.pb}」不是會話手冊的分類（must／emer／move／eat／shop／stay／see）`);
+  /* 看板與流程一致：賣完、只收現金、限購 */
+  const has = (t, it) => t.includes(it.jp) || (it.say && t.includes(it.say.jp));
+  signs.filter(t => /売り切れ(ました|です)|品切れ/.test(t)).forEach(t => { if (!items.some(it => it.soldOut && has(t, it))) E(`看板「${t}」寫賣完，但對應商品沒有 soldOut:true（點餐時仍可點）`); });
+  items.filter(it => it.soldOut).forEach(it => { if (!signs.some(t => /売り切れ|品切れ/.test(t) && t.includes(it.jp.replace(/セット$/, '')))) E(`商品 ${it.id} 標了 soldOut，但沒有看板說明賣完`); });
+  signs.filter(t => /一点限り/.test(t)).forEach(t => { if (!items.some(it => it.max === 1 && has(t, it))) E(`看板「${t}」限購一件，但沒有對應商品標 max:1`); });
+  if (cashOnly) {
+    if (pay && (pay.a || []).some(x => x.val !== 'cash')) E('看板寫「現金のみ」，付款問句卻能選現金以外的方式');
+    (s.may || []).filter(m => /カード|スマホ決済|スイカ/.test(m.jp || '') && m.ok).forEach(m => E(`看板寫「現金のみ」，may.${m.id} 卻允許刷卡／電子支付`));
+  }
+  (s.quests || []).forEach(q => {
+    (q.items || []).forEach(([iid, n]) => { const it = items.find(x => x.id === iid); if (!it) return; if (it.soldOut) E(`quests ${q.id} 要買已賣完的 ${iid}`); if (it.max && n > it.max) E(`quests ${q.id} 的 ${iid} 超過限購 ${it.max}`); });
+    if (cashOnly && q.prefs && q.prefs.pay && q.prefs.pay !== 'cash') E(`quests ${q.id} 在只收現金的店用 ${q.prefs.pay} 付款`);
+    if (cashOnly && /カードで|カード払い|刷卡/.test((q.jp || '') + (q.zh || ''))) E(`quests ${q.id} 在只收現金的店要刷卡`);
+  });
+
   /* 對話 */
   const dl = s.dialogues || [];
   if (!s.scene && dl.length < 1) E('沒有 scene 的店需要 1 段 dialogues');
@@ -231,6 +249,28 @@ if (!partial) for (const r of W.regions) {
   r.order.forEach(id => { if (!W.districts[id]) E(`order 裡的街區 ${id} 不存在`); });
   const placed = new Set(ds.flatMap(d => Object.values(d.places || {}).filter(p => p.type === 'shop').map(p => p.shop)));
   Object.values(W.shops).filter(s => s.region === r.id && !placed.has(s.id)).forEach(s => E(`店 ${s.id} 沒有放在任何街區`));
+}
+
+/* ---------- 羅馬字：分詞、助詞 は／へ／を 念 wa／e／o（js/phrase.js 的 Phrase.romaji） ---------- */
+{
+  cur = 'romaji';
+  const pc = { console }; pc.window = pc; vm.createContext(pc);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, '..', '..', 'js', 'phrase.js'), 'utf8'), pc, { filename: 'phrase.js' });
+  const seen = new Set();
+  const walk = o => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.jp === 'string' && typeof o.kana === 'string' && o.kana && /^[぀-ヿー、。？！!?・\s〜]+$/.test(o.kana) && !seen.has(o.jp + '|' + o.kana)) {
+      seen.add(o.jp + '|' + o.kana);
+      const r = pc.Phrase.romaji(o.kana, o.jp);
+      if (!r) E(`「${o.jp}」羅馬字是空的`);
+      else if (/[぀-ヿ]/.test(r)) E(`「${o.jp}」羅馬字有沒轉換的假名：${r}`);
+      else if (/(^|\s)wo(\s|$)/.test(r)) E(`「${o.jp}」助詞 を 應念 o：${r}`);
+      else if (r.split(/[\s,.!?]+/).some(w => w.length > 40)) E(`「${o.jp}」羅馬字沒有分詞：${r}`);
+    }
+    Object.values(o).forEach(walk);
+  };
+  walk(W.shops); walk(W.districts);
 }
 
 const nd = Object.keys(W.districts).length, ns = Object.keys(W.shops).length, ni = Object.values(W.shops).reduce((a, s) => a + (s.items || []).length, 0);

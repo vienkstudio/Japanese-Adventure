@@ -40,8 +40,47 @@ const GLV_FIX = {
 // 手動補先修（自動規則找不到同類較低級條目者）
 const GPRE_ADD = {
   '〜って（主題）': ['は'], '〜合う': ['〜ます'], '〜直す': ['〜ます'], '〜ものだ（感嘆）': ['〜ものだ（應然）'], '〜によって（手段）': ['で（手段）'],
+  '〜ごとに': ['に（頻率）'], '〜おきに': ['〜ごとに'], '〜きる': ['〜おわる'], '〜たて': ['〜たばかり'], '〜ぎみ': ['〜そうだ（樣態）'],
+  '〜こそ': ['は'], '〜さえ': ['も'], '〜まで（甚至）': ['まで'], '〜だけでなく': ['〜だけ'], '〜はもちろん': ['〜だけでなく'], '〜に限らず': ['〜だけでなく'],
+  '〜に限って': ['〜だけ'], '〜に限る': ['〜ほうがいい'], '〜一方（で）': ['〜が（逆接）'], '〜反面': ['〜が（逆接）'], '〜にしては': ['〜のに（逆接）'],
+  '〜とともに': ['と（共同）'], '〜から〜にかけて': ['〜から〜まで'], '〜に応じて': ['〜によって（不同）'], '〜次第で': ['〜によって（不同）'],
+  '〜かねる': ['〜にくい'], '〜がたい': ['〜にくい'], '〜どころか': ['〜だけでなく'], '〜やら〜やら': ['〜とか〜とか'], '〜はともかく': ['は'], '〜はさておき': ['は'],
+  '〜を経て': ['〜てから'], '〜末（に）': ['〜た後で'], '〜にあたって': ['〜とき'], '〜を問わず': ['〜かどうか'],
+  '〜なり（一～就）': ['〜たとたん（に）'], '〜と見るや': ['〜たとたん（に）'], '〜かと思いきや': ['〜と思う'], '〜からある': ['〜も（數量強調）'], '〜からする': ['〜も（數量強調）'], '〜からの': ['〜も（數量強調）'],
+  '〜まみれ': ['〜だらけ'], '〜ずくめ': ['〜だらけ'], '〜も同然だ': ['〜ようだ'], '〜ながらの': ['〜まま'], '〜なり〜なり': ['〜とか〜とか'], '〜だの〜だの': ['〜やら〜やら'],
+  '〜そびれる': ['〜はじめる'], '〜あぐねる': ['〜はじめる'], '〜にあずかる': ['いただく'], '〜を賜る': ['いただく'],
   '〜といえば': ['〜と（條件）'], '〜かわりに（代替）': ['の（所屬）'], '〜に代わって': ['〜かわりに（代替）'], '〜を通じて／〜を通して': ['で（手段）']
 };
+// 先修整條改寫（原 annot 或自動規則選錯者；評審 v6）
+const GPRE_FIX = {
+  '〜いかん': ['〜次第で'], '〜にかかっている': ['〜次第で'], '〜いかんともしがたい': ['〜いかん', '〜ようがない'],
+  '〜ごとく': ['〜ように（比喻・例示）'], '〜ごとき': ['〜ように（比喻・例示）'],
+  '〜（さ）せる（使役）': ['〜ない'], '〜（さ）せられる（使役被動）': ['〜（さ）せる（使役）', '〜（ら）れる（被動）'],
+  '〜ものとする': ['〜として', '〜ものとして'], '〜ものとして': ['〜として'], '〜ときたら': ['〜といえば', '〜といったら'], '〜ようによっては': ['〜によっては'],
+  '〜を限りに': ['〜をもって（時點）'], '〜をもって（時點）': ['〜まで'], '〜ばかり（只）': ['〜だけ'], '〜しかない': ['〜しか〜ない'],
+  '〜ところだった': ['〜るところだ'], '〜べきだ': ['〜ほうがいい'], '〜ものだ（應然）': ['〜べきだ'], '〜とは限らない': ['〜わけではない'],
+  '〜ついでに': ['〜とき'], '〜にすぎない': ['〜だけ'], '〜までもない': ['〜ことはない'], '〜には及ばない': ['〜までもない'],
+  '〜にかかわらず': ['〜を問わず'],
+  // 以下為自動規則（同類別相似度）抽查後仍不合理者
+  '〜かける／〜かけ': ['〜ているところだ'], '〜っぽい': ['〜ようだ'], '〜ふりをする': ['〜ように見える'], '〜なんて': ['〜なんか'],
+  '〜において': ['で（地點）'], '〜に沿って': ['〜とおりに'], '〜からして': ['〜からすると'], '〜限りでは': ['〜によると／〜によれば'],
+  '〜限り（限度）': ['〜だけ（限度）'], '〜に反して': ['〜に対して（對比）'], '〜だけあって': ['〜からこそ'], '〜得る': ['〜ことができる'],
+  '〜ものか': ['〜わけがない'], '〜ようがない': ['〜方（かた）'], '〜ものがある': ['〜ような気がする'], '〜どころではない': ['〜どころか'],
+  '〜をぬきにして': ['〜を除いて'], '〜につき': ['〜ため（に）（原因）'], '〜を除いて': [], 'お〜願う': ['お〜ください'],
+  '〜というもの': ['〜あいだ'], '〜に至って': ['〜てはじめて'], '〜に至っては': ['〜まで（極端）'], '〜にあって': ['〜において'],
+  '〜なくして(は)': ['〜ないことには'], '〜なしに(は)': ['〜ないことには'], '〜ゆえ(に)': ['〜ため（に）（原因）'], '〜こととて': ['〜ものだから'],
+  '〜ならでは': ['〜こそ'], '〜あっての': ['〜からこそ'], '〜に堪えない（不堪）': ['〜がたい'], '〜に足りない': ['〜に足る'],
+  '〜にかたくない': ['〜やすい'], '〜には当たらない': ['〜ことはない'], '〜と言っても過言ではない': ['〜といっても'],
+  '〜でなくてなんだろう': ['〜にほかならない'], '〜始末だ': ['〜末（に）'], '〜ともなしに': ['〜ともなく'], '〜にもまして': ['〜より'],
+  '〜とは裏腹に': ['〜に反して'], '〜と相まって': ['〜とともに'], '〜をおして': ['〜もかまわず'], '〜をいいことに': [],
+  '〜にかかわる': ['〜に関して／〜に関する'], '〜(こと)このうえない': ['〜ほど〜はない'], '〜もいいところだ': ['〜にもほどがある'], '〜の至り': ['〜の極み'], '〜極まりない': ['〜極まる'],
+  '〜かたがた': ['〜ついでに'], '〜がてら': ['〜ついでに'], '〜なりとも': ['〜でも（舉例）'], '〜たりとも': ['〜も（數量強調）']
+};
+// 接續修正
+const GCONN_FIX = { '〜ごとく': '名詞の・動詞普通形（＋が）＋ごとく；名詞の＋ごとし', '〜ごとき': '名詞（の）・動詞普通形（＋が）＋ごとき' };
+// 3D 分類修正（wh 人事時地物、sc 場景）
+const GWH_FIX = { '〜（さ）せる（使役）': '事', '〜（さ）せられる（使役被動）': '事', '〜（ら）れる（被動）': '事', '〜矢先に': '時' };
+const GSC_FIX = { '〜矢先に': ['time'] };
 // 跨級同義重複條目：刪除左邊，引用改指右邊（保留較常見分級的一條）
 const GALIAS = {
   '〜気味': '〜ぎみ', '〜かける': '〜かける／〜かけ', '〜次第': '〜次第（〜したらすぐ）', '〜とおり（に）': '〜とおりに',
@@ -50,7 +89,7 @@ const GALIAS = {
   '〜ながら（逆接）': '〜ながら（も）', '〜ながらも': '〜ながら（も）', '〜(ら)れる（尊敬）': '〜（ら）れる（尊敬）',
   '〜(ら)れる（受害）': '〜（ら）れる（受害被動）', '〜ちゃう／〜じゃう': '〜ちゃう', '〜って（傳聞）': '〜って（引用・傳聞）',
   '〜ものだ（當然）': '〜ものだ（應然）', '〜に先立ち': '〜に先立って', '〜とは言うものの': '〜とはいうものの',
-  '〜(さ)せていただく': '〜させていただく', '〜ほど': '〜ほど〜ない', '〜後で': '〜た後で', '〜以上は': '〜以上（は）', '〜ところだ': '〜るところだ'
+  '〜(さ)せていただく': '〜させていただく', '〜ほど': '〜ほど〜ない', '〜から（原因）': '〜から（理由）', '〜のに': '〜のに（逆接）', '〜ものだ': '〜ものだ（感嘆）', '〜後で': '〜た後で', '〜以上は': '〜以上（は）', '〜ところだ': '〜るところだ'
 };
 // 文法類別重分類（原「其他」52 條）
 const GCAT_FIX = {
@@ -129,7 +168,7 @@ for (const n of [5, 4, 3, 2, 1]) {
 }
 
 // ---- 文法 ----
-const gram = []; const byPat = new Map(); const dropped = [];
+const gram = []; const byPat = new Map(); const dropped = []; const noAuto = new Set();
 const norm = s => String(s).replace(/[〜～~\s・]/g, '').replace(/（[^）]*）|\([^)]*\)/g, '');
 const lvOrder = { N5: 0, N4: 1, N3: 2, N2: 3, N1: 4 };
 for (const f of ['grammar-n54.jsonl', 'grammar-n3.jsonl', 'grammar-n2.jsonl', 'grammar-n1.jsonl']) {
@@ -142,6 +181,10 @@ for (const f of ['grammar-n54.jsonl', 'grammar-n3.jsonl', 'grammar-n2.jsonl', 'g
     if (GALIAS[g.pat]) { dropped.push(g.pat); return; }
     if (GLV_FIX[g.pat] && GLV_FIX[g.pat] !== g.lv) { W('glvfix', `${g.pat} ${g.lv}→${GLV_FIX[g.pat]}`); g.lv = GLV_FIX[g.pat]; g.ord = 990; }
     if (GCAT_FIX[g.pat]) g.cat = GCAT_FIX[g.pat];
+    if (GCONN_FIX[g.pat]) g.conn = GCONN_FIX[g.pat];
+    if (GWH_FIX[g.pat]) g.wh = GWH_FIX[g.pat];
+    if (GSC_FIX[g.pat]) g.sc = GSC_FIX[g.pat];
+    if (GPRE_FIX[g.pat]) { g.pre = GPRE_FIX[g.pat]; g.preFix = 1; }
     else if (g.lv === 'N5' && /^[ぁ-ん]{1,3}(（[^）]*）)?$/.test(g.pat)) g.cat = '助詞';
     if (!GCAT.has(g.cat)) { W('gcat', `${g.pat} ${g.cat}`); g.cat = '其他'; }
     if (!WH.has(g.wh)) { W('gwh', `${g.pat} ${g.wh}`); g.wh = '事'; }
@@ -149,12 +192,27 @@ for (const f of ['grammar-n54.jsonl', 'grammar-n3.jsonl', 'grammar-n2.jsonl', 'g
     g.conj = (g.conj || []).filter(c => { const ok = CONJ.has(c); if (!ok) W('gconj', `${g.pat} ${c}`); return ok; });
     const o = { id: 'gram:' + g.pat, pat: g.pat, lv: g.lv, ord: lvOrder[g.lv] * 1000 + (+g.ord || 999), zh: g.zh || '', conn: g.conn || '', ex: Array.isArray(g.ex) ? g.ex.slice(0, 2) : [], cat: g.cat, wh: g.wh, sc: g.sc, conj: g.conj, pre: (g.pre || []).concat(GPRE_ADD[g.pat] || []), rel: g.rel || [] };
     if (g.note) o.note = g.note;
+    if (g.preFix) { o.pre = g.pre.slice(); if (!o.pre.length) noAuto.add(o.id); }
     gram.push(o); byPat.set(g.pat, o);
   });
 }
-const byNorm = new Map(); for (const g of gram) { const k = norm(g.pat); if (!byNorm.has(k)) byNorm.set(k, g); }
+const byNorm = new Map(); for (const g of gram) { const k = norm(g.pat); if (!byNorm.has(k)) byNorm.set(k, []); byNorm.get(k).push(g); }
+// 意思相似度：中文義項共用字（去掉虛字）＋句型假名雙字組
+const ZSTOP = new Set([...'～〜、，；（）()的是了在一～也都就而著把被和或與之了'] );
+const zset = z => new Set([...String(z || '')].filter(c => /[㐀-鿿]/.test(c) && !ZSTOP.has(c)));
+const bigr = p => { const s = norm(p), o = new Set(); for (let i = 0; i + 1 < s.length; i++) o.add(s.slice(i, i + 2)); return o; };
+const sim = (a, b) => { let n = 0; const A = zset(a.zh), B = zset(b.zh); for (const c of A) if (B.has(c)) n++; const P = bigr(a.pat), Q = bigr(b.pat); for (const c of P) if (Q.has(c)) n += 2; return n; };
+const wide = s => String(s).replace(/[〜～~\s]/g, '').replace(/\(/g, '（').replace(/\)/g, '）');
+const byWide = new Map(); for (const g of gram) if (!byWide.has(wide(g.pat))) byWide.set(wide(g.pat), g);
+const qual = s => (String(s).match(/（([^）]*)）$/) || [])[1] || '';
 const resolve = (p, self, field) => {
-  const q = GALIAS[p] || p, t = byPat.get(q) || byNorm.get(norm(q));
+  const q = GALIAS[p] || p; let t = byPat.get(q) || byWide.get(wide(q));
+  if (!t) {
+    const c = (byNorm.get(norm(q)) || []).filter(x => x !== self), qq = qual(wide(q));
+    const sc = x => sim(x, self) + (x.cat === self.cat ? 1 : 0) + (qq && qual(wide(x.pat)) && [...qq].some(ch => qual(wide(x.pat)).includes(ch)) ? 5 : 0);
+    if (c.length > 1) { t = c.slice().sort((a, b) => sc(b) - sc(a) || lvOrder[a.lv] - lvOrder[b.lv])[0]; W('g' + field + 'amb', `${self.pat} → ${p} ⇒ ${t.pat}`); }
+    else t = c[0] || (byNorm.get(norm(q)) || [])[0];
+  }
   if (!t) { W('g' + field, `${self.pat} → ${p}`); return null; }
   return t === self ? null : t.id;
 };
@@ -167,10 +225,15 @@ for (const g of gram) {
 // N4 以上沒有先修者自動補：優先取「相近」中較低級的條目，否則取同類別在最近較低等級的第一條
 let autoPre = 0;
 for (const g of gram) {
-  if (g.pre.length || g.lv === 'N5') continue;
+  if (g.pre.length || g.lv === 'N5' || noAuto.has(g.id)) continue;
   const L = lvOrder[g.lv];
   let p = g.rel.map(id => byId.get(id)).filter(x => lvOrder[x.lv] < L).sort((a, b) => lvOrder[b.lv] - lvOrder[a.lv] || a.ord - b.ord).slice(0, 2);
-  if (!p.length) for (let k = L - 1; k >= 0 && !p.length; k--) p = gram.filter(x => lvOrder[x.lv] === k && x.cat === g.cat).sort((a, b) => a.ord - b.ord).slice(0, 1);
+  // 同類別較低級中「意思最接近」者（相似度 ≥ 2 才採用；否則寧可不給先修，避免硬湊）
+  if (!p.length) {
+    const c = gram.filter(x => lvOrder[x.lv] < L && x.cat === g.cat).map(x => [x, sim(x, g)]).filter(([, s]) => s >= 2)
+      .sort((a, b) => b[1] - a[1] || lvOrder[b[0].lv] - lvOrder[a[0].lv] || a[0].ord - b[0].ord);
+    if (c.length) p = [c[0][0]];
+  }
   if (p.length) { g.pre = p.map(x => x.id); g.preAuto = 1; autoPre++; } else W('gnopre', g.pat);
 }
 // 依等級→先修拓撲排序（同級內 Kahn，優先原順序），重編 ord
@@ -186,6 +249,10 @@ for (const lv of Object.keys(lvOrder)) {
 }
 sorted.forEach((g, i) => { g.ord = lvOrder[g.lv] * 1000 + sorted.filter((x, j) => j < i && x.lv === g.lv).length + 1; });
 gram.length = 0; gram.push(...sorted);
+// 分級檢查：低級條目的例句裡出現較高級句型（3 字以上、無變數）→ 警告 gexhi
+const hiPat = gram.map(g => [g, String(g.pat).replace(/[〜～]/g, '').replace(/（[^）]*）|\([^)]*\)/g, '').trim()]).filter(([, p]) => p.length >= 3 && !/[＋+／/…・A-Za-z\s]/.test(p));
+const lowHas = (L, p) => hiPat.some(([x, q]) => lvOrder[x.lv] <= L && q.includes(p)) || gram.some(x => lvOrder[x.lv] <= L && norm(x.pat).includes(p));
+for (const g of gram) if (lvOrder[g.lv] <= 1 && g.ex[0]) for (const [h, p] of hiPat) if (lvOrder[h.lv] > lvOrder[g.lv] && g.ex[0].includes(p) && !lowHas(lvOrder[g.lv], p)) W('gexhi', `${g.lv} ${g.pat}：${g.ex[0]} ⊃ ${h.lv} ${h.pat}`);
 const GALIAS_OUT = {}; for (const d of dropped) { const t = byPat.get(GALIAS[d]) || byNorm.get(norm(GALIAS[d])); if (t) GALIAS_OUT['gram:' + d] = t.id; else W('galias', d); }
 for (const g of gram) stats.gram[g.lv] = (stats.gram[g.lv] || 0) + 1;
 fs.writeFileSync(P('data/mind/grammar.js'),
@@ -195,4 +262,4 @@ fs.writeFileSync(P('data/mind/grammar.js'),
 
 console.log('詞彙', stats.lex, '旅遊場景對應', sceneHit);
 console.log('文法', stats.gram, '共', gram.length, '刪重複', dropped.length, '自動補先修', autoPre);
-for (const [k, v] of Object.entries(warn)) console.log(`⚠ ${k}: ${v.length}`, v.slice(0, 12).join(' ｜ '));
+for (const [k, v] of Object.entries(warn)) console.log(`⚠ ${k}: ${v.length}`, v.slice(0, process.env.FULL ? 1e9 : 12).join(' ｜ '));

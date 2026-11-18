@@ -3,7 +3,7 @@ WORLD.pack('tokyo', {
   shops: [
     /* ==================== 百貨地下美食街 ==================== */
     {
-      id: 'ginza-depachika', kind: 'store', scene: null,
+      id: 'ginza-depachika', kind: 'store', scene: null, pb: 'eat',
       icon: '🍡', name: '百貨地下美食街', jp: 'デパ地下', kana: 'デパちか',
       desc: '百貨公司地下一樓的食品賣場。和菓子、洋菓子、便當、熟食、壽司、麵包、酒一字排開，每個櫃位各自結帳。',
       tips: [
