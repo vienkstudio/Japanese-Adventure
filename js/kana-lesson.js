@@ -170,18 +170,22 @@
   }
 
   /* ---------- 小練習：聽音選字、看字選音、平↔片（各 10 題）＋閃卡 ---------- */
-  const POOLS = { seion: () => KA, daku: () => DK, yoon: () => YO, all: () => ALL };
+  // 已學：與首頁同一個來源（Learn.kanaLearned）
+  const learnedH = () => window.Learn && Learn.kanaLearned ? Learn.kanaLearned() : (((App.state.kanaL || {}).h) || []);
+  const mine = () => { const s = new Set(learnedH()); const a = KA.filter(k => s.has(k[0])); return a.length ? a : KA.slice(0, 5); };
+  const POOLS = { mine, seion: () => KA, daku: () => DK, yoon: () => YO, all: () => ALL };
   let Q = null, F = null;
   const noVoice = () => App.voiceOK && App.voiceOK() === false;
   function qStart() {
-    const p = POOLS[ST.qp]();
-    Q = { list: shuffle(p.slice()).slice(0, 10), i: 0, ok: 0, wrong: [], done: false };
+    const p = POOLS[ST.qp](); let list = [];
+    while (list.length < 10) list = list.concat(shuffle(p.slice()));   // 已學不到 10 個字：同一批字輪流考
+    Q = { list: list.slice(0, 10), i: 0, ok: 0, wrong: [], done: false };
     qMake();
   }
   function qMake() {
     const k = Q.list[Q.i], p = POOLS[ST.qp](), r0 = rn(k[2]);
     const used = new Set([r0]), opts = [k];
-    shuffle(p.slice()).forEach(o => { if (opts.length < 4 && !used.has(rn(o[2]))) { used.add(rn(o[2])); opts.push(o); } });
+    shuffle(p.slice()).concat(ST.qp === 'mine' ? shuffle(KA.slice()) : []).forEach(o => { if (opts.length < 4 && !used.has(rn(o[2]))) { used.add(rn(o[2])); opts.push(o); } });
     shuffle(opts);
     const sc = ST.sc === 'm' ? (Math.random() < .5 ? 'h' : 'k') : ST.sc;
     let prompt, show;
@@ -218,7 +222,7 @@
   }
   function quizTab() {
     return `<div class="kn-bar">${seg('kqt', [['listen', '🎧 聽音選字'], ['read', '👀 看字選音'], ['hk', '🔁 平↔片']], ST.qt, 'g2')}</div>
-      <div class="kn-bar">${seg('kqp', [['seion', '清音 46'], ['daku', '濁音 25'], ['yoon', '拗音 27'], ['all', '全部']], ST.qp, 'g4')}</div>
+      <div class="kn-bar">${seg('kqp', [['mine', '已學 ' + learnedH().length], ['seion', '清音 46'], ['daku', '濁音 25'], ['yoon', '拗音 27'], ['all', '全部']], ST.qp, 'g5')}</div>
       <div class="kn-stage">${ST.qt === 'flash' ? flashStage() : quizStage()}</div>`;
   }
   function qEnd(root) {
@@ -238,7 +242,7 @@
     return ST.sub === 'daku' ? dakuTab() : ST.sub === 'yoon' ? yoonTab() : ST.sub === 'lesson' ? lessonTab() : ST.sub === 'quiz' ? quizTab() : tableTab();
   }
   function draw(root) {
-    const kl = (((App.state.kanaL || {}).h) || []).length;
+    const kl = learnedH().length;
     root.innerHTML = `<div class="kn-course"><button type="button" class="btn primary block" data-kcourse="1">🔰 五十音課程：每次 5 個字，先教再考（已學 ${kl}／46）</button><button type="button" class="btn block" data-kcards="1">🎴 五十音字卡（平假名・片假名・濁音拗音）</button></div>
       <div class="kn-subs">${SUBS.map(([id, n]) => `<button type="button" data-ksub="${id}" class="${id === ST.sub ? 'on' : ''}" aria-pressed="${id === ST.sub}">${n}</button>`).join('')}</div>
       <div class="kn-bar kn-scbar"><span class="kn-lb">文字</span>${seg('ksc', [['h', '平假名'], ['k', '片假名'], ['m', '平片混合']], ST.sc)}</div>
@@ -316,6 +320,7 @@
     return root;
   }
   function open(sub, ch) {
+    if (sub === 'quiz-mine') { ST.sub = 'quiz'; ST.qp = 'mine'; ST.qt = 'read'; Q = null; return; }   // 今日課「應用」：只考已學的字
     if (SUBS.some(s => s[0] === sub)) ST.sub = sub;
     if (ch) { ST.sub = 'lesson'; ST.open[ch] = true; }
   }

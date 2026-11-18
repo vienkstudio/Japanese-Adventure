@@ -75,11 +75,8 @@
     if (!S.today || S.today.date !== t) S.today = { date: t, goal: null, done: 0, learned: 0, reviewed: 0, applied: 0 };
     return S.today;
   }
-  const kanaSeen = () => {
-    const L = App.state.learn || {}; let n = 0;
-    for (const id in L) if (/^kana:[ぁ-ん]$/.test(id) && (L[id].reps || L[id].s !== 'new')) n++;
-    return Math.max(n, (((App.state.kanaL || {}).h) || []).length);
-  };
+  // 已學平假名數：與手冊五十音同一個來源（Learn.kanaLearned）
+  const kanaSeen = () => window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : (((App.state.kanaL || {}).h) || []).length;
   const kanaMode = p => p.lv === 'zero' && kanaSeen() < KANA_N;
   function curGoal(p) {
     p = p || App.profile();
@@ -87,7 +84,13 @@
     return gs.includes(g) ? g : gs[0];
   }
   const freshN = lv => ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6;
-  const APPLY_TXT = { travel: '到冒險店家用一次', exam: '日檢綜合 10 題', fun: '讀今日短文', work: '商務情境一課', kana: '五十音小考' };
+  const APPLY_TXT = { travel: '到冒險店家用一次', exam: '日檢綜合 10 題', fun: '唱一首歌或讀一篇短文', work: '商務情境一課', kana: '小考已學的字' };
+  // 首頁一句話狀態：主課（複習＋新學）做完才算完成；應用另計
+  function dayStatus(d, due) {
+    if (!d.done) return due ? `還沒開始・先複習 ${due} 個，再學新的` : '還沒開始・今天要學新的';
+    if (!d.applied) return `主課完成 ✓ 還差應用：${d.apLabel || '用出來一次'}`;
+    return '今天全部完成 ✓ 想多學可以再上一課';
+  }
 
   function render(el) {
     const p = App.profile();
@@ -95,25 +98,23 @@
     const st = window.Learn ? Learn.stats() : { due: Tracker.dueCount() }, sk = App.streakInfo(), d = dayRec();
     const km = kanaMode(p), goal = curGoal(p), n = freshN(p.lv);
     const due = Math.min(15, st.due || 0);
-    const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字，先教再考`
+    const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${kanaSeen() >= 10 && (p.goals || []).includes('travel') ? '＋2 句旅遊句' : ''}，先教再考`
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
-    const big = d.done ? '▶ 再上一課' : '▶ 開始今天的課（約 8 分鐘）';
     if (!d.applied && d.applyAt && (App.state.lastDoneAt || 0) > d.applyAt) { d.applied = 1; App.save(); }
-    const revNA = !due && !d.reviewed;
+    const big = !d.done ? '▶ 開始今天的課（約 8 分鐘）' : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
     const steps = [
-      { b: '複習', v: due ? `${due} 個到期` : d.reviewed ? `${d.reviewed} 個 ✓` : '今天沒有', ok: !due && d.reviewed > 0, na: revNA },
-      { b: '新學', v: d.learned >= n ? `${d.learned} 個 ✓` : `${d.learned}／${n}`, ok: d.learned >= n },
+      { b: '複習', v: d.done ? (d.reviewed ? `${d.reviewed} 個 ✓` : '不用 ✓') : due ? `${due} 個到期` : '今天沒有', ok: !!d.done },
+      { b: '新學', v: d.done ? `${d.learned} 個 ✓` : `0／${n}`, ok: !!d.done },
       { b: '應用', v: d.applied ? '✓' : d.applyAt ? '進行中' : '—', ok: !!d.applied }
     ];
-    const act = steps.filter(s => !s.na), pct = Math.round(act.filter(s => s.ok).length / act.length * 100);
     const gs = p.goals || [];
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}</small></h1>
-      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(d.done ? '今天的課完成了 ✓ 想多學可以再來一課' : sub)}</small></span></button>
+      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(!d.done ? sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
       ${!km && gs.length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
       <div class="hm-prog" aria-label="今日進度">
-        <p class="hm-sec">今日進度<small>${pct}%</small></p>
-        <div class="bar"><div style="width:${pct}%"></div></div>
+        <p class="hm-sec">今日進度</p>
+        <p class="hm-stat${d.done ? ' ok' : ''}">${esc(dayStatus(d, due))}</p>
         <div class="hm-steps">${steps.map(s => `<span class="${s.ok ? 'ok' : ''}"><b>${s.b}</b>${esc(s.v)}</span>`).join('')}</div>
       </div>
       <p class="hm-streak">${sk.days ? `🔥 連續 ${sk.days} 天${sk.risk ? '・今天上一課就能保住' : sk.done ? '・今天已練習 ✓' : ''}` : '🔥 今天上完一課，開始累積連勝'}</p>
@@ -132,7 +133,7 @@
      ========================================================= */
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const BIZ_JS = ['js/biz.js'];   // biz.js 的 BIZ.load() 再載入 data/biz/*
-  const SRC = { kana: ['kana-data.js'], travel: SC, exam: [], fun: ['data/reading/daily.js'].concat(SC), work: BIZ_JS };
+  const SRC = { kana: ['kana-data.js'].concat(SC), travel: SC, exam: [], fun: ['data/reading/daily.js'].concat(SC), work: BIZ_JS };
   const isKanaStr = s => /^[぀-ヿー・\s、。，！？!?「」]+$/.test(s || '');
   const romaOf = it => {
     if (it.romaji) return it.romaji;
@@ -141,6 +142,31 @@
     try { return window.Phrase && Phrase.romaji ? Phrase.romaji(k, it.jp) : ''; } catch (e) { return ''; }
   };
   const fresh = id => { const e = Learn.get(id); return !e || (e.s === 'new' && !e.reps); };
+  const hasKanji = s => /[一-鿿々〆ヶ]/.test(s || '');
+  const isSent = it => it.type === 'phrase' || /^p:/.test(it.id || '');
+  // 句子卡讀音：沒有 kana 又有漢字 → 用 JPText 斷詞補讀音（有未收錄漢字就不補，避免錯讀）
+  function fillReading(list) {
+    const need = list.filter(it => it.type !== 'kana' && it.type !== 'grammar' && !/^g:/.test(it.id || '') && (!it.kana || hasKanji(it.kana)) && hasKanji(it.jp));
+    if (!need.length) return Promise.resolve();
+    return needSrc(['js/jp-text.js']).then(() => window.JPText && JPText.ready()).then(() => {
+      need.forEach(it => {
+        try {
+          const tk = JPText.tokenize(it.jp); let ok = true;
+          const k = tk.map(t => { if (t.sym) return t.s; if (t.kana && !hasKanji(t.kana)) return t.kana; if (!hasKanji(t.s)) return t.s; ok = false; return t.s; }).join('');
+          if (ok && k && k !== it.jp) { it.kana = k; if (!it.romaji) it.romaji = romaOf({ jp: it.jp, kana: k }); }
+        } catch (e) { }
+      });
+    }).catch(() => { });
+  }
+  // 單字新學卡的例句：知識庫文法例句（已載入時）→ 情境句
+  function exOf(it) {
+    if (it.ex || it.type !== 'vocab' || !it.jp || String(it.jp).length < 2) return it.ex || null;
+    const w = String(it.jp), M = window.MIND;
+    const g = M && Array.isArray(M.gram) ? M.gram.find(x => x.ex && x.ex[0] && x.ex[0].includes(w) && x.ex[0].length <= 40) : null;
+    if (g) return [g.ex[0], g.ex[1] || ''];
+    for (const s of (window.SCENES || [])) for (const ph of (s.phrases || [])) if (ph && ph.jp && ph.jp !== w && ph.jp.includes(w)) return [ph.jp, ph.zh || ''];
+    return null;
+  }
   function fillWork(Q, n) {
     const B = window.BIZ; if (!B || !Array.isArray(B.units)) return;
     const ord = (B.META || []).map(m => m.id), us = B.units.slice().sort((x, y) => ord.indexOf(x.id) - ord.indexOf(y.id));
@@ -154,9 +180,9 @@
   function prepLesson(goal) {
     const p = App.profile(), n = freshN(p.lv);
     const js = ['js/phrase.js'].concat(SRC[goal] || []);
-    return needSrc(js).then(() => goal === 'work' && window.BIZ && has(BIZ, 'load') ? BIZ.load() : 0).then(() => Learn.prepare(goal === 'kana' ? 'travel' : goal)).then(Q => {
+    return needSrc(js).then(() => goal === 'work' && window.BIZ && has(BIZ, 'load') ? BIZ.load() : 0).then(() => Learn.prepare(goal)).then(Q => {
       Q = Object.assign({}, Q, { goal, fresh: (Q.fresh || []).slice(0, 8), due: (Q.due || []).slice(0, 15) });
-      if (goal === 'kana') Q.apply = { route: 'phrasebook', params: { tab: 'kana', sub: 'quiz' }, label: '五十音小考 10 題' };
+      if (goal === 'kana') Q.apply = { route: 'phrasebook', params: { tab: 'kana', sub: 'quiz-mine' }, label: '小考已學的假名 10 題' };
       if (goal === 'travel') Q.apply = { world: 1, route: 'play', params: {}, label: '到冒險店家用一次' };
 
       if (goal === 'work') {
@@ -164,8 +190,9 @@
         const nx = window.BIZ && has(BIZ, 'next') ? BIZ.next() : null;
         Q.apply = nx && nx.route ? { route: nx.route, params: nx.params || {}, label: nx.label } : { route: 'biz', params: {}, label: '商務日語' };
       }
-      Q.fresh = Q.fresh.slice(0, n);
-      return Q;
+      Q.fresh = Q.fresh.slice(0, goal === 'kana' ? n + 3 : n);
+      Q.fresh.forEach(it => { const ex = exOf(it); if (ex) it.ex = ex; });
+      return fillReading(Q.fresh.concat(Q.due)).then(() => Q);
     });
   }
   let RUN = null;   // 進行中的今日課（離開再回來可接著上）
@@ -173,11 +200,16 @@
     params = params || {};
     const p = App.profile(), goal = params.goal || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
     if (RUN && RUN.key === key && RUN.phase !== 'end') return step(el);
+    // 主課做完、應用還沒做：先回到結算頁（不重開一課）
+    const d0 = dayRec();
+    const pend = !params.more && d0.done && !d0.applied;
+    if (pend && RUN && RUN.key === key && RUN.phase === 'end') return step(el);
     el.innerHTML = LOADING;
     prepLesson(goal).then(Q => {
       if (!curIs('today')) return;
       RUN = { key, goal, Q, phase: 'rev', i: 0, quiz: [], retry: [], res: { rev: 0, revOk: 0, learned: new Set(), ok: 0 } };
-      if (!Q.due.length) RUN.phase = 'new';
+      if (pend) Object.assign(RUN, { phase: 'end', saved: 1, sum: { learned: d0.learned || 0, rev: d0.reviewed || 0 } });
+      if (!Q.due.length && RUN.phase === 'rev') RUN.phase = 'new';
       if (RUN.phase === 'new' && !Q.fresh.length) RUN.phase = 'end';
       step(el);
     }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日課載入失敗，請檢查網路後再試一次</p>'; });
@@ -190,16 +222,18 @@
     return `<div class="td-top"><div class="bar"><div style="width:${Math.round(done / tot * 100)}%"></div></div><p class="td-step">${esc(title)}${n ? `<small>${i + 1}／${n}</small>` : ''}</p></div>`;
   }
   function cardHTML(it, show) {
-    const ro = romaOf(it), kn = it.type === 'kana' ? '' : (it.kana && it.kana !== it.jp ? it.kana : '');
+    const ro = romaOf(it), kn = it.type === 'kana' ? '' : (it.kana && it.kana !== it.jp ? it.kana : ''), ex = show && it.ex && it.ex[0] ? it.ex : null;
     return `<div class="td-card">
       ${it.emoji ? `<div class="td-emo" aria-hidden="true">${esc(it.emoji)}</div>` : ''}
       <p class="td-jp jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p>
-      ${show ? `${kn ? `<p class="td-kana jp" lang="ja">${esc(kn)}</p>` : ''}${ro ? `<p class="td-ro">${esc(ro)}</p>` : ''}<p class="td-zh">${esc(it.type === 'kana' ? (it.zh || '') : it.zh || '')}</p>${it.hint ? `<p class="td-hint">${esc(it.hint)}</p>` : ''}` : '<p class="td-zh muted">想一想：怎麼念？什麼意思？</p>'}
+      ${show ? `${kn ? `<p class="td-kana jp" lang="ja">${esc(kn)}</p>` : ''}${ro ? `<p class="td-ro">${esc(ro)}</p>` : ''}<p class="td-zh">${esc(it.type === 'kana' ? (it.zh || '') : it.zh || '')}</p>${it.hint ? `<p class="td-hint">${esc(it.hint)}</p>` : ''}${ex ? `<p class="td-ex"><span class="jp" lang="ja">例：${esc(ex[0])}</span>${ex[1] ? `<small>${esc(ex[1])}</small>` : ''}</p>` : ''}` : '<p class="td-zh muted">想一想：怎麼念？什麼意思？</p>'}
       <button type="button" class="td-say" id="tdSay" aria-label="播放發音">🔊</button>
       ${it.source ? `<p class="td-src">${esc(it.source)}</p>` : ''}
     </div>`;
   }
-  function rec(it, g) { try { Learn.record(it.id, g, { src: 'today', item: it, type: it.type }); } catch (e) { console.warn(e); } }
+  // 答錯／忘了：不當下到期，排到明天（今天的課裡已經會再考一次）
+  const tomorrow = () => { const t = new Date(); t.setHours(24, 0, 0, 0); return t.getTime(); };
+  function rec(it, g) { try { const m = Object.assign({}, it); delete m.ex; Learn.record(it.id, g, { src: 'today', item: m, type: it.type, retryAt: tomorrow() }); } catch (e) { console.warn(e); } }
   function step(el) {
     const R = RUN, Q = R.Q;
     if (R.phase === 'rev') {
@@ -233,7 +267,12 @@
         R.phase = 'end'; return step(el);
       }
       const ans = answerOf(it);
-      const pool = [...new Set(Q.fresh.concat(Q.due).filter(x => x.type === it.type || it.type !== 'kana').map(answerOf).filter(a => a && a !== ans))];
+      // 干擾項：同型別優先（假名配假名、句子配句子、單字配單字），不夠再用其他非假名
+      const kind = x => x.type === 'kana' ? 'k' : isSent(x) ? 's' : 'w', all = Q.fresh.concat(Q.due);
+      const ansOf = l => [...new Set(l.map(answerOf).filter(a => a && a !== ans))];
+      let pool = ansOf(all.filter(x => kind(x) === kind(it)));
+      if (pool.length < 3 && it.type !== 'kana') pool = pool.concat(ansOf(all.filter(x => x.type !== 'kana' && kind(x) !== kind(it))).filter(a => !pool.includes(a)));
+      if (pool.length < 3 && isSent(it)) for (const sc of (window.SCENES || [])) for (const ph of (sc.phrases || [])) if (pool.length < 6 && ph && ph.zh && ph.zh !== ans && !pool.includes(ph.zh)) pool.push(ph.zh);
       if (!ans || pool.length < 1) { rec(it, 2); R.res.learned.add(it.id); R.i++; return step(el); }
       const opts = App.shuffle([ans].concat(App.shuffle(pool).slice(0, 3)));
       el.innerHTML = `<section class="td">${head('③ 小測驗' + (R.second ? '・再一次' : ''), R.i, R.quiz.length)}
@@ -260,6 +299,7 @@
       R.saved = 1;
       const d = dayRec();
       d.done = (d.done || 0) + 1; d.learned = (d.learned || 0) + R.res.learned.size; d.reviewed = (d.reviewed || 0) + R.res.rev;
+      if (Q.apply && Q.apply.label) d.apLabel = Q.apply.label;
       const xp = R.res.ok * 2 + R.res.revOk + 5;
       App.addXP(xp, '今日課');
       R.xp = xp;
@@ -268,17 +308,21 @@
     const end = new Date(); end.setHours(0, 0, 0, 0); const tmr = end.getTime() + 2 * 864e5;
     const L = App.state.learn || {}; let m = 0;
     for (const id in L) { const e = L[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) < tmr) m++; }
-    const sk = App.streakInfo(), A = Q.apply || {};
+    const sk = App.streakInfo(), A = Q.apply || {}, dd = dayRec();
+    if (!dd.applied && dd.applyAt && (App.state.lastDoneAt || 0) > dd.applyAt) { dd.applied = 1; App.save(); }
+    const left = A.route && !dd.applied;
     el.innerHTML = `<section class="td td-end">
-      <p class="td-big" aria-hidden="true">🎉</p><h1>今天的課完成！</h1>
+      <p class="td-big" aria-hidden="true">${left ? '👍' : '🎉'}</p><h1>${left ? '主課完成，還差應用' : '今天的課完成！'}</h1>
+      ${left ? '<p class="td-left">複習＋新學做完了 ✓ 最後一步：把今天學的用出來</p>' : ''}
       <div class="td-sum">
-        <div><b>${R.res.learned.size}</b><small>學會</small></div>
-        <div><b>${R.res.rev}</b><small>複習</small></div>
+        <div><b>${R.sum ? R.sum.learned : R.res.learned.size}</b><small>學會</small></div>
+        <div><b>${R.sum ? R.sum.rev : R.res.rev}</b><small>複習</small></div>
         <div><b>${m}</b><small>明天到期</small></div>
         <div><b>🔥${sk.days}</b><small>連勝天數</small></div>
       </div>
       ${R.xp ? `<p class="xpgain center">+${R.xp} XP</p>` : ''}
-      ${A.route ? `<button type="button" class="btn primary block" id="tdApply">▶ 用出來：${esc(A.label || '應用')}</button>` : ''}
+      ${A.route ? `<button type="button" class="btn ${left ? 'primary' : ''} block" id="tdApply">▶ 用出來：${esc(A.label || '應用')}${dd.applied ? ' ✓' : ''}</button>` : ''}
+      ${dd.applied ? `<button type="button" class="btn primary block" id="tdMore">▶ 再上一課</button>` : ''}
       <button type="button" class="btn block" id="tdHome">回首頁</button>
     </section>`;
     R.phase = 'end';
@@ -290,6 +334,7 @@
       need('play').then(() => { const nx = window.World && has(World, 'next') ? World.next() : null; App.go(nx && nx.route ? nx.route : 'play', nx && nx.route ? nx.params || {} : {}); }).catch(() => App.go('play'));
     };
     el.querySelector('#tdHome').onclick = () => App.go('home');
+    const mo = el.querySelector('#tdMore'); if (mo) mo.onclick = () => { RUN = null; lesson(el, { goal: R.goal, more: 1 }); };
   }
 
   /* ---------- 首次開啟：直接選程度，或 3 題簡單定位 ---------- */

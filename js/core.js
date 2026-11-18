@@ -447,7 +447,8 @@
     const cur0 = parseHash().name, r0 = routes[cur0], cur = (r0 && r0.navParent) || (r0 && r0.nav ? cur0 : 'home');   // 沒指定 navParent 的子頁點亮首頁
     nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
-      const badge = n === 'review' && Tracker.count() ? `<span class="badge">${Tracker.count()}</span>` : '';
+      const dn = n === 'review' ? (window.Learn ? Learn.stats().due : Tracker.dueCount()) : 0;   // 紅點＝今天到期數
+      const badge = dn ? `<span class="badge">${dn}</span>` : '';
       return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"${cur === n ? ' aria-current="page"' : ''}><span class="ni">${NAV_SVG[n] ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${NAV_SVG[n]}"/></svg>` : r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
     }).join('');
     nav.querySelectorAll('a[data-route]').forEach(a => a.onclick = e => { e.preventDefault(); go(a.dataset.route); });

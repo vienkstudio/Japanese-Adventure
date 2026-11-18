@@ -90,7 +90,7 @@
     return e;
   }
   const emit = (id, e) => { try { document.dispatchEvent(new CustomEvent('learnchange', { detail: { id, e } })); } catch (er) { } };
-  // grade：0 忘了／答錯、1 困難、2 普通／答對、3 簡單
+  // grade：0 忘了／答錯、1 困難、2 普通／答對、3 簡單；ctx.retryAt（答錯時的到期時間，毫秒）
   function record(id, grade, ctx) {
     ctx = ctx || {};
     id = idOf(id, ctx.type); if (!id) return null;
@@ -100,7 +100,7 @@
       e.lapses++; e.str = 0;
       e.stab = Math.max(0.2, (e.stab || 0) * 0.3);
       e.diff = clamp((e.diff || 5) + 1.5, 1, 10);
-      e.due = 0; e.s = 'learning';
+      e.due = ctx.retryAt > now ? ctx.retryAt : 0; e.s = 'learning';   // retryAt：今日課答錯不當下到期，排到明天
     } else {
       if (!e.stab || e.s === 'new') e.stab = Math.max(e.stab || 0, [0, 0.6, 1, 3][g]);
       else {
@@ -207,9 +207,16 @@
   const lvKey = () => { let p = 'zero'; try { p = App.profile().lv; } catch (e) { } return p === 'zero' ? 'N5' : String(p).toUpperCase(); };
   const isFresh = id => { const e = L()[id]; return !e || (e.s === 'new' && !e.reps); };
   const arr = a => Array.isArray(a) ? a : [];
+  // 已學平假名（清音 46）：Learn 的 kana: 有作答或非 new，加上舊課程 kanaL.h；首頁與手冊共用
+  const SEION = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+  function kanaLearned() {
+    const LL = L(), out = new Set(((S().kanaL || {}).h || []).filter(c => SEION.includes(c)));
+    for (const c of SEION) { const e = LL['kana:' + c]; if (e && (e.reps || e.s !== 'new')) out.add(c); }
+    return [...SEION].filter(c => out.has(c));
+  }
   function kanaFresh(n) {
-    const K = G('KANA') || [];
-    return K.filter(k => isFresh('kana:' + k[0])).slice(0, n).map(k => ({ id: 'kana:' + k[0], type: 'kana', jp: k[0] + '・' + k[1], kana: k[0], romaji: k[2], zh: '讀音 ' + k[2] + '（諧音：' + k[3] + '）', emoji: k[4], source: '五十音' }));
+    const K = G('KANA') || [], kl = new Set(kanaLearned());
+    return K.filter(k => !kl.has(k[0]) && isFresh('kana:' + k[0])).slice(0, n).map(k => ({ id: 'kana:' + k[0], type: 'kana', jp: k[0] + '・' + k[1], kana: k[0], romaji: k[2], zh: '讀音 ' + k[2] + '（諧音：' + k[3] + '）', emoji: k[4], source: '五十音' }));
   }
   function travelFresh(n, lv) {
     const out = [], seen = new Set();
@@ -219,6 +226,23 @@
       out.push(Object.assign({ id, type: t === 'phrase' ? 'phrase' : 'vocab', jp: w.jp, kana: w.kana || '', romaji: w.romaji || '', zh: w.zh || '', hint: w.hint || '', emoji: w.emoji || '', source: src }, ex));
     };
     if (lv === 'zero') { const k = kanaFresh(n); if (k.length) return k; }
+    return sceneFresh(n, lv, push, out);
+  }
+  // 零基礎＋旅遊：學滿 10 個假名後，每堂課混入 2–3 句旅遊必備句（短句、附讀音與羅馬字）
+  function kanaMix(n) {
+    const out = kanaFresh(n);
+    let goals = []; try { goals = App.profile().goals || []; } catch (e) { }
+    if (!goals.includes('travel') || kanaLearned().length < 10) return out;
+    const k = out.length >= n ? 2 : 3, ph = [];
+    for (const s of arr(G('SCENES'))) for (const w of arr(s.phrases)) {
+      if (ph.length >= k) break;
+      if (!w || !w.jp || !w.kana || String(w.jp).length > 10) continue;
+      const id = idOf(w, 'phrase'); if (!isFresh(id) || ph.some(x => x.id === id)) continue;
+      ph.push({ id, type: 'phrase', jp: w.jp, kana: w.kana, romaji: w.romaji || '', zh: w.zh || '', hint: w.use || w.hint || '', source: '🧳 旅遊必備句・' + s.name });
+    }
+    return out.concat(ph);
+  }
+  function sceneFresh(n, lv, push, out) {
     const sc = arr(G('SCENES'));
     const phraseFirst = ['n4', 'n3', 'n2', 'n1'].includes(lv);
     const order = phraseFirst ? ['phrases', 'vocab'] : ['vocab', 'phrases'];
@@ -244,8 +268,33 @@
     }
     return out.slice(0, n);
   }
-  // 歌曲新聞：先用閱讀／歌曲收進來還沒學的詞；不夠（新使用者）→ 今日短文的句子 → 旅遊詞補滿
+  // 歌曲新聞：先用閱讀／歌曲收進來還沒學的詞 → 最後播放（或最近存的）那首歌的歌詞詞彙 → 今日短文的句子 → 同級其他短文；不用旅遊句補位
   function dailyPick() { let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { } const R = window.READING; return R && typeof R.pick === 'function' ? R.pick(lv, App.today()) : null; }
+  let SONG = null;   // prepare('fun') 時從 App.idb 讀出的歌：{id, title, lines:[{jp,zh}]}
+  function loadSong() {
+    const I = App.idb; if (!I) return Promise.resolve(null);
+    const last = S().songLast;
+    return (last && last.id ? Promise.resolve(last.id) : I.get('songs:index').then(a => Array.isArray(a) && a[0] ? a[0].id : null))
+      .then(id => id ? I.get('song:' + id) : null)
+      .then(s => (SONG = s && Array.isArray(s.lines) && s.lines.length ? { id: s.id, title: s.title || '', lines: s.lines } : null))
+      .catch(() => (SONG = null));
+  }
+  const POS_OK = /^(n|v|i|na|adv)$/;
+  function songWords(n) {
+    const J = window.JPText, out = [];
+    if (!SONG || !J || typeof J.tokenize !== 'function' || !J.size) return out;
+    for (const l of SONG.lines) {
+      const jp = String(l.jp || '').trim(); if (!jp || jp.length > 40) continue;
+      let tk = []; try { tk = J.tokenize(jp); } catch (e) { }
+      for (const t of tk) {
+        if (out.length >= n) return out;
+        if (!t.known || !t.zh || !POS_OK.test(t.pos || '') || String(t.base).length < 2) continue;
+        const id = 'v:' + jp0(t.base); if (!isFresh(id) || out.some(x => x.id === id)) continue;
+        out.push({ id, type: 'vocab', jp: t.base, kana: t.bkana || '', zh: String(t.zh).split(/[；;]/)[0], lv: t.lv || '', ex: [jp, l.zh || ''], source: '🎵 歌詞：' + SONG.title });
+      }
+    }
+    return out;
+  }
   function funFresh(n) {
     const LL = L(), out = [];
     for (const id in LL) {
@@ -253,15 +302,20 @@
       if (!e.reps && /歌|song|閱讀|文章|read|新聞|📰|🎵/.test(src)) { const v = view(id); v.type = id.startsWith('p:') ? 'phrase' : 'vocab'; out.push(v); }
       if (out.length >= n) break;
     }
-    const a = out.length < n ? dailyPick() : null;
-    if (a) (a.p || []).forEach(([jp, zh]) => {
-      if (out.length >= n || !jp || jp.length > 60) return;
-      const id = idOf({ jp }, 'phrase');
-      if (!id || !isFresh(id) || out.some(x => x.id === id)) return;
-      out.push({ id, type: 'phrase', jp, kana: /^[ぁ-ゖァ-ヺー、。！？\s]+$/.test(jp) ? jp : '', zh, source: '📰 今日短文：' + a.title });
-    });
-    let plv = 'zero'; try { plv = App.profile().lv; } catch (e) { }
-    if (out.length < n) travelFresh(n, plv).forEach(x => { if (out.length < n && !out.some(y => y.id === x.id)) out.push(x); });
+    if (out.length < n) songWords(Math.min(n - out.length, Math.ceil(n / 2))).forEach(x => out.push(x));
+    const R = window.READING, a = dailyPick();
+    let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { }
+    const arts = a ? [a] : [];
+    if (R && Array.isArray(R.daily)) R.daily.filter(x => x.lv === (a ? a.lv : lv) && x !== a).forEach(x => arts.push(x));
+    for (const art of arts) {
+      if (out.length >= n) break;
+      (art.p || []).forEach(([jp, zh]) => {
+        if (out.length >= n || !jp || jp.length > 60) return;
+        const id = idOf({ jp }, 'phrase');
+        if (!id || !isFresh(id) || out.some(x => x.id === id)) return;
+        out.push({ id, type: 'phrase', jp, kana: /^[ぁ-ゖァ-ヺー、。！？「」\s]+$/.test(jp) ? jp : '', zh, source: '📰 ' + (art === a ? '今日短文' : '短文') + '：' + art.title });
+      });
+    }
     return out.slice(0, n);
   }
   function bizList() {
@@ -285,14 +339,19 @@
   const APPLY = {
     travel: () => ({ route: 'play', params: {}, label: '到冒險店家用出來' }),
     exam: () => ({ route: 'challenge-play', params: { lv: lvKey(), t: 'mix' }, label: lvKey() + ' 綜合 10 題' }),
-    fun: () => { const a = dailyPick(); return a ? { route: 'read-article', params: { daily: a.id }, label: '讀今日短文：' + a.title } : { route: 'songs', params: {}, label: '聽一首歌' }; },
+    // 歌曲新聞：依日期輪替「唱一首歌（最後那首，沒有就熱門精選）」與「讀一篇短文」
+    fun: () => {
+      const a = dailyPick(), odd = Math.floor(Date.parse(App.today()) / DAY) % 2, last = S().songLast;
+      const song = last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
+      return odd || !a ? song : { route: 'read-article', params: { daily: a.id }, label: '讀一篇短文：' + a.title };
+    },
     work: () => ({ route: 'biz', params: {}, label: '商務情境練習' })
   };
   function queue(goal) {
     let p = { lv: 'zero', goals: ['travel'] }; try { p = App.profile(); } catch (e) { }
     goal = goal || (p.goals && p.goals[0]) || 'travel';
     const n = ['n3', 'n2', 'n1'].includes(p.lv) ? 8 : p.lv === 'zero' ? 5 : 6;
-    const fresh = goal === 'exam' ? examFresh(n) : goal === 'work' ? workFresh(n) : goal === 'fun' ? funFresh(n) : travelFresh(n, p.lv);
+    const fresh = goal === 'exam' ? examFresh(n) : goal === 'work' ? workFresh(n) : goal === 'fun' ? funFresh(n) : goal === 'kana' ? kanaMix(n) : travelFresh(n, p.lv);
     return { goal, due: due(15).map(view), fresh, apply: (APPLY[goal] || APPLY.travel)() };
   }
   // 需要的內容先載入（日檢：文法＋當級詞庫）再回傳 queue
@@ -300,7 +359,10 @@
     let p = { goals: ['travel'] }; try { p = App.profile(); } catch (e) { }
     goal = goal || (p.goals && p.goals[0]) || 'travel';
     const src = goal === 'exam' ? ['data/mind/grammar.js', 'data/mind/lex-' + lvKey().toLowerCase() + '.js'] : goal === 'fun' ? ['data/reading/daily.js'] : [];
-    return src.reduce((pr, s) => pr.then(() => App.loadScript(s)), Promise.resolve()).catch(() => { }).then(() => queue(goal));
+    let pr = src.reduce((pr, s) => pr.then(() => App.loadScript(s)), Promise.resolve()).catch(() => { });
+    // 歌曲新聞：有存歌就讀歌詞，載入斷詞（JPText）取歌詞裡的詞
+    if (goal === 'fun') pr = pr.then(loadSong).then(s => s ? App.loadScript('js/jp-text.js').then(() => window.JPText && JPText.ready()) : 0).catch(() => { });
+    return pr.then(() => queue(goal));
   }
 
   /* ---------------- 知識庫狀態相容層（取代 localStorage jpq.mind.v1） ----------------
@@ -474,7 +536,7 @@
   window.Learn = {
     idOf, kbIdOf, jp0, normP,
     record, setStatus, get, status, atLeast, star, fav, inList: id => inList(get(id)),
-    due, queue, prepare, stats, view, views,
+    due, queue, prepare, stats, view, views, kanaLearned,
     mindST, kbItem, resolvePending, migrate, importList,
     ORDER: ST_ORDER
   };
