@@ -136,6 +136,7 @@
   const SRC = { kana: ['kana-data.js'].concat(SC), travel: SC, exam: [], fun: ['data/reading/daily.js'].concat(SC), work: BIZ_JS };
   const isKanaStr = s => /^[぀-ヿー・\s、。，！？!?「」]+$/.test(s || '');
   const romaOf = it => {
+    if (it && it.type === 'grammar' && /^[〜~]?[はへを]$/.test(it.jp || '')) return { は: 'wa', へ: 'e', を: 'o' }[it.jp.slice(-1)];   // 助詞句型
     if (it.romaji) return it.romaji;
     const k = it.kana || (isKanaStr(it.jp) ? it.jp : '');
     if (!k || !isKanaStr(k)) return '';
@@ -179,10 +180,10 @@
   }
   function prepLesson(goal) {
     const p = App.profile(), n = freshN(p.lv);
-    const js = ['js/phrase.js'].concat(SRC[goal] || []);
+    const js = ['js/phrase.js'].concat(SRC[goal] || [], ['js/path.js']);
     return needSrc(js).then(() => goal === 'work' && window.BIZ && has(BIZ, 'load') ? BIZ.load() : 0).then(() => Learn.prepare(goal)).then(Q => {
       Q = Object.assign({}, Q, { goal, fresh: (Q.fresh || []).slice(0, 8), due: (Q.due || []).slice(0, 15) });
-      if (goal === 'kana') Q.apply = { route: 'phrasebook', params: { tab: 'kana', sub: 'quiz-mine' }, label: '小考已學的假名 10 題' };
+      if (goal === 'kana') Q.apply = { route: 'path', params: { goal: 'kana' }, label: '五十音路線：下一個單元' };
       if (goal === 'travel') Q.apply = { world: 1, route: 'play', params: {}, label: '到冒險店家用一次' };
 
       if (goal === 'work') {
@@ -222,7 +223,7 @@
     return `<div class="td-top"><div class="bar"><div style="width:${Math.round(done / tot * 100)}%"></div></div><p class="td-step">${esc(title)}${n ? `<small>${i + 1}／${n}</small>` : ''}</p></div>`;
   }
   function cardHTML(it, show) {
-    const ro = romaOf(it), kn = it.type === 'kana' ? '' : (it.kana && it.kana !== it.jp ? it.kana : ''), ex = show && it.ex && it.ex[0] ? it.ex : null;
+    const ro = romaOf(it), kn = it.type === 'kana' ? '' : (it.kana && it.kana !== it.jp ? it.kana : ''), ex = show && it.ex && it.ex[0] ? (typeof it.ex[0] === 'object' ? [it.ex[0].jp, it.ex[0].zh] : it.ex) : null;   // 路線單元的 ex 是 [{jp,zh}]
     return `<div class="td-card">
       ${it.emoji ? `<div class="td-emo" aria-hidden="true">${esc(it.emoji)}</div>` : ''}
       <p class="td-jp jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p>
@@ -516,6 +517,6 @@
 
   App.register('home', { title: '今天', icon: '🏠', nav: true, navOrder: 1, render });
   App.register('today', { title: '今日課', icon: '▶', nav: false, navParent: 'home', render: lesson });
-  App.register('settings', { title: '設定', icon: '⚙️', nav: false, navParent: 'home', render: settings });
+  App.register('settings', { title: '設定', icon: '⚙️', nav: false, navParent: 'me', render: settings });
   window.Home = { render, settings, onboard, lazy, need, needSrc, loadCSS };
 })();

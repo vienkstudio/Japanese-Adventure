@@ -1,6 +1,7 @@
 /* 五十音講義＋訓練：會話手冊的「🔤 五十音」分頁（由 phrasebook.js 呼叫）。
    內容來自根目錄舊頁《日文講義.html》《50音訓練表.html》（兩頁保留不刪）。
-   window.KanaLesson = { render(box, {sub, ch}), open(sub, ch), search(q, norm) -> {n, html} }
+   window.KanaLesson = { render(box, {sub, ch}), open(sub, ch), search(q, norm) -> {n, html},
+     units() -> [{id:'k1'..'k12', title, chars}], unitInfo(id) -> {id, title, chars, items, intro(html), more:{title, html}|null} }（路線頁五十音 12 單元）
    資料：kana-data.js 的 KANA／DAKU／YOON／GRID／ROW_NAMES。不會清單 id：'kana:<平假名>'。 */
 (function () {
   'use strict';
@@ -349,5 +350,34 @@
     };
   }
 
-  window.KanaLesson = { render, open, search };
+  /* ---------- 五十音路線（js/path.js 用）：清音 10 行＋濁音＋拗音＝12 單元 ---------- */
+  const SPECIAL = { し: 'shi', ち: 'chi', つ: 'tsu', ふ: 'fu', ん: 'n', を: 'o（wo）' };
+  const UNITS = [
+    ['k1', 'あ行：五個母音', [0], 's2'], ['k2', 'か行', [1]], ['k3', 'さ行', [2]], ['k4', 'た行', [3]], ['k5', 'な行', [4]],
+    ['k6', 'は行', [5]], ['k7', 'ま行', [6]], ['k8', 'や行', [7]], ['k9', 'ら行', [8]], ['k10', 'わ行・ん', [9, 10]],
+    ['k11', '濁音・半濁音', null, 's5'], ['k12', '拗音・促音・長音', null, 's6']
+  ];
+  const noGo = h => h.replace(/<button type="button" class="kn-go"[^>]*>[\s\S]*?<\/button>/g, '');
+  function unitRows(u) {
+    if (u[0] === 'k11') return DK;
+    if (u[0] === 'k12') return YO;
+    return [].concat(...u[2].map(i => (GR[i] || []).filter(Boolean).map(h => BY[h])));
+  }
+  function unitInfo(id) {
+    const u = UNITS.find(x => x[0] === id); if (!u) return null;
+    const ks = unitRows(u).filter(Boolean);
+    const items = ks.map(k => Object.assign(itemOf(k), { type: 'kana', lv: 'N5' }));
+    const sp = ks.filter(k => SPECIAL[k[0]]).map(k => `<span lang="ja">${esc(k[0])}</span>＝${esc(SPECIAL[k[0]])}`);
+    const kana = ks.length && isKana(ks[0]);
+    const intro = kana
+      ? `<div class="kn-unit">${ks.map(k => `<button type="button" class="kn-ub" data-ks="${esc(k[0])}"><span class="g" lang="ja">${esc(k[0])}<small>${esc(k[1])}</small></span><span class="r">${esc(rn(k[2]))}</span><span class="x">${esc(k[3])} ${esc(k[4])}</span></button>`).join('')}</div>
+        <ul class="kn-umem">${ks.map(k => `<li><b lang="ja">${esc(k[0])}</b>：${esc(k[5])}</li>`).join('')}</ul>
+        ${sp.length ? `<div class="kn-tip">⚠️ 特例：${sp.join('、')}</div>` : ''}`
+      : `<div class="kn-unit">${ks.map(k => `<button type="button" class="kn-ub" data-ks="${esc(k[0])}"><span class="g" lang="ja">${esc(k[0])}<small>${esc(k[1])}</small></span><span class="r">${esc(k[2])}</span><span class="x">${esc(k[3])}</span></button>`).join('')}</div>`;
+    const ch = u[3] && CH.find(c => c[0] === u[3]);
+    return { id, title: u[1], chars: ks.map(k => k[0]), items, intro, more: ch ? { title: ch[1], html: noGo(ch[2]()) } : null };
+  }
+  const units = () => UNITS.map(u => ({ id: u[0], title: u[1], chars: unitRows(u).filter(Boolean).map(k => k[0]) }));
+
+  window.KanaLesson = { render, open, search, unitInfo, units };
 })();

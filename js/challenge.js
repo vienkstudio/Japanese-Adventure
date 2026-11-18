@@ -411,6 +411,35 @@
     return qs;
   }
 
+  // 共用出題（路線日檢單元、活動 choice）：Challenge.makeQuestions(lv, kind, n, {ids?})
+  //   kind：GEN 題型（'mean'、'kanji'、'form'…）、題型陣列（輪流出）、或 'vocab'|'grammar'|'reading'|'listen'|'mix'|'mock'（同挑戰選單）
+  //   opt.ids：只考這些 Learn id（'v:<jp>'、'g:<句型>'）；干擾項仍取同級題庫。需先載入 grammar.js＋當級 lex（Challenge.need(lv)）
+  //   回傳挑戰題目格式 {k, label, ask, body(html), opts, ans, explain(html), item, say?, col?} 另加 id（Learn id，可為 null）
+  function makeQuestions(L, kind, n, opt) {
+    L = String(L || 'N5').toUpperCase(); if (lvN(L) < 0) L = 'N5';
+    opt = opt || {}; n = Math.max(1, n || 10);
+    const B = bank(L), used = new Set();
+    let qs = [];
+    if (Array.isArray(opt.ids)) {
+      const J = window.Learn && Learn.jp0 ? Learn.jp0 : clean;
+      const want = new Set(opt.ids.map(id => window.Learn ? Learn.idOf(id) : id).filter(Boolean));
+      B.words.forEach(w => { if (!want.has('v:' + J(w.jp))) used.add('w' + w.i); });
+      B.grams.forEach(x => { if (!want.has('g:' + String(x.g.id).replace(/^gram:/, ''))) used.add('g' + x.i); });
+      B.arts.forEach(a => used.add('a' + a.id)); B.allParas.forEach(p => used.add('p' + p.id));
+    }
+    if (typeof kind === 'string' && !GEN[kind]) qs = makeRound(L, PLAN[kind] || kind === 'mock' ? kind : 'mix').slice(0, n);
+    else {
+      const ks = (Array.isArray(kind) ? kind : [kind]).filter(k => GEN[k]);
+      if (!ks.length) ks.push('mean');
+      for (let i = 0, miss = 0; qs.length < n && miss < ks.length * 2; i++) {
+        const q = gen(ks[i % ks.length], B, used);
+        if (q) { q.sec = q.sec || 'unit'; qs.push(q); miss = 0; } else miss++;
+      }
+    }
+    qs.forEach(q => { q.id = q.item && window.Learn ? Learn.idOf(q.item.id) : null; });
+    return qs;
+  }
+
   /* ---------------- 等級選單 ---------------- */
   let selLv = null;
   function renderMenu(el) {
@@ -577,5 +606,5 @@
     });
     return out;
   }
-  window.Challenge = { bank, makeRound, mutate, chunks, GEN, LVS, TYPES, problems, selfTest };
+  window.Challenge = { bank, makeRound, makeQuestions, need, mutate, chunks, GEN, LVS, TYPES, problems, selfTest };
 })();

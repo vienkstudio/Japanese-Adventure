@@ -351,7 +351,14 @@
     let p = { lv: 'zero', goals: ['travel'] }; try { p = App.profile(); } catch (e) { }
     goal = goal || (p.goals && p.goals[0]) || 'travel';
     const n = ['n3', 'n2', 'n1'].includes(p.lv) ? 8 : p.lv === 'zero' ? 5 : 6;
-    const fresh = goal === 'exam' ? examFresh(n) : goal === 'work' ? workFresh(n) : goal === 'fun' ? funFresh(n) : goal === 'kana' ? kanaMix(n) : travelFresh(n, p.lv);
+    let fresh = goal === 'exam' ? examFresh(n) : goal === 'work' ? workFresh(n) : goal === 'fun' ? funFresh(n) : goal === 'kana' ? kanaMix(n) : travelFresh(n, p.lv);
+    try {
+      const pu = goal !== 'fun' && goal !== 'kana' && window.Path && typeof Path.nextUnit === 'function' ? Path.nextUnit(goal) : null;
+      if (pu && Array.isArray(pu.items) && pu.items.length) {
+        const fromUnit = pu.items.filter(x => x && x.id && isFresh(x.id)).map(x => Object.assign({ source: '🧭 ' + (pu.title || '路線') }, x));
+        fresh = fromUnit.concat(fresh.filter(x => !fromUnit.some(y => y.id === x.id))).slice(0, n);
+      }
+    } catch (e) { }
     return { goal, due: due(15).map(view), fresh, apply: (APPLY[goal] || APPLY.travel)() };
   }
   // 需要的內容先載入（日檢：文法＋當級詞庫）再回傳 queue
@@ -362,6 +369,7 @@
     let pr = src.reduce((pr, s) => pr.then(() => App.loadScript(s)), Promise.resolve()).catch(() => { });
     // 歌曲新聞：有存歌就讀歌詞，載入斷詞（JPText）取歌詞裡的詞
     if (goal === 'fun') pr = pr.then(loadSong).then(s => s ? App.loadScript('js/jp-text.js').then(() => window.JPText && JPText.ready()) : 0).catch(() => { });
+    if (window.Path && typeof Path.prepare === 'function' && goal !== 'fun' && goal !== 'kana') pr = pr.then(() => Path.prepare(goal)).catch(() => { });
     return pr.then(() => queue(goal));
   }
 

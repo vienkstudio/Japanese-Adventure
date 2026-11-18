@@ -90,7 +90,7 @@
 
   /* ---------------- 閱讀首頁 ---------------- */
   App.register('read', {
-    title: '閱讀', icon: '📰', nav: true, navOrder: 3,
+    title: '閱讀', icon: '📰', nav: false, navParent: 'lookup',
     render(el, params) {
       params = params || {};
       const sh = readShare();

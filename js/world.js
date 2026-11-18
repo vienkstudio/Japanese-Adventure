@@ -359,6 +359,18 @@
   let STAGE = null, MAP = null, S = null, D = null, RUN = null, PARAMS = null, fromDistrict = false;
   const ABORT = { abort: 1 };
   let pending = null;
+  // SIM：shopSim 模式（活動框架的 shop 活動）；null = 自由逛
+  let SIM = null;
+  const mistake = () => { if (SIM) SIM.miss++; Q.mistake(); };
+  const pref = id => (SIM ? (SIM.goal.prefs[id] != null ? SIM.goal.prefs[id] : null) : Q.pref(id));
+  // 收集結果（同一句取最低分），由活動 runner 統一 Learn.record
+  function simRec(o, grade, type) {
+    if (!SIM || !o || !o.jp || !window.Learn) return;
+    const id = Learn.idOf({ jp: o.jp }, type || 'phrase'); if (!id) return;
+    const r = SIM.res.find(x => x.id === id);
+    if (r) { r.grade = Math.min(r.grade, grade); return; }
+    SIM.res.push({ id, grade, item: { jp: o.jp, kana: o.kana || '', zh: o.zh || '', source: '🧳 ' + (S ? S.name : '店家') } });
+  }
   const Q = {   // 由 world-quest.js 覆寫
     pref() { return null; }, mistake() { }, on() { }, bar() { return ''; }, async checkBasket() { return true; }, swap() { }, active() { return false; },
     clerkExtra() { return []; }, npcExtra() { return []; }, enter() { }, leave() { }, board() { }, shopBadge() { return ''; }, barTap() { }, goals() { return ''; }, bindGoals() { }
@@ -460,7 +472,7 @@
   function addCard(m) {
     const w = st(); if (!m || !m.jp) return false;
     // 說對一句＝統一進度記一次答對（第一次收集，或已到期該複習時）
-    if (window.Learn) { const id = Learn.idOf(m, 'phrase'), e = Learn.get(id); if (!e || (e.due || 0) <= Date.now()) Learn.record(id, 2, { src: 'world', item: { jp: m.jp, kana: m.kana || '', zh: m.zh || '', source: '冒險句卡' }, nosave: true }); }
+    if (window.Learn && !SIM) { const id = Learn.idOf(m, 'phrase'), e = Learn.get(id); if (!e || (e.due || 0) <= Date.now()) Learn.record(id, 2, { src: 'world', item: { jp: m.jp, kana: m.kana || '', zh: m.zh || '', source: '冒險句卡' }, nosave: true }); }
     if (w.cards[m.jp]) { App.save(); return false; }
     w.cards[m.jp] = { jp: m.jp, kana: m.kana || '', zh: m.zh || '', r: S ? S.region : D ? D.region : '', s: S ? S.id : '', t: App.today() };
     App.save(); paintHud();
@@ -509,7 +521,7 @@
       };
       const styles = () => {
         const box = el.querySelector('.wd-styles');
-        if (!model.styles) { box.hidden = true; return; }
+        if (!model.styles || SIM) { box.hidden = true; return; }
         box.innerHTML = '<small>說法</small>' + Phrase.STYLES.map(s => `<button type="button" data-st="${s.id}" class="${s.id === model.style ? 'on' : ''}" title="${esc(s.note)}">${esc(s.zh)}</button>`).join('');
         box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { st().style = b.dataset.st; App.save(); reset(); App.toast(esc(Phrase.STYLES.find(s => s.id === b.dataset.st).note)); });
       };
@@ -531,13 +543,14 @@
           App.speak(model.jp); G.sfx('ok'); G.bump('ok'); G.burst(line, 10); mood('happy');
           fb.className = 'wd-fb ok'; fb.textContent = '✓ ' + model.jp;
           el.querySelectorAll('button').forEach(b => { b.disabled = true; });
+          simRec(model, miss ? (miss > 1 ? 0 : 1) : 2);
           addCard(model); Q.on('spoke', { model });
           setTimeout(() => fin(miss), 700);
         } else if (r.short) {   // 還沒排完：只提示，不算失誤、不收進不會清單
           fb.className = 'wd-fb'; fb.textContent = '👉 ' + r.fb;
         } else {
-          miss++; Q.mistake(); G.sfx('ng'); G.shake(); mood('puzzled', 'え？');
-          Tracker.add(item({ jp: model.jp, kana: model.kana, zh: model.zh }, S ? S.name : '冒險', 'phrase'), true);
+          miss++; mistake(); G.sfx('ng'); G.shake(); mood('puzzled', 'え？');
+          if (!SIM) Tracker.add(item({ jp: model.jp, kana: model.kana, zh: model.zh }, S ? S.name : '冒險', 'phrase'), true);
           fb.className = 'wd-fb ng'; fb.textContent = '✗ ' + r.fb;
           if (miss >= 2 && mdl.hidden) hint.hidden = false;
         }
@@ -561,17 +574,21 @@
       <div class="wd-opts">${opts.map((o, i) => `<button type="button" class="wd-opt" data-i="${i}">${tx(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
       App.speak(line.jp); bindSpk(el, line);
       const fb = el.querySelector('.wd-fb');
+      let wrong = 0;
       el.querySelectorAll('.wd-opt').forEach(b => b.onclick = e => {
         if (e.target.closest('.wd-peek')) return;
         const o = opts[+b.dataset.i];
         if (!o.ok) {
-          b.disabled = true; b.classList.add('ng'); Q.mistake(); G.sfx('ng'); G.shake(); mood('puzzled', 'え？');
+          wrong++;
+          b.disabled = true; b.classList.add('ng'); mistake(); G.sfx('ng'); G.shake(); mood('puzzled', 'え？');
           fb.className = 'wd-fb ng'; fb.textContent = '✗ ' + o.fb;
-          Tracker.add(item({ jp: line.jp, kana: line.kana, zh: '店員問：' + a.zh }, S.name, 'phrase'), true);
+          if (SIM) simRec(line, 0);
+          else Tracker.add(item({ jp: line.jp, kana: line.kana, zh: '店員問：' + a.zh }, S.name, 'phrase'), true);
           return;
         }
+        simRec(o, wrong ? 1 : 2);
         b.classList.add('ok'); G.sfx('ok'); G.bump('ok'); App.speak(o.jp); mood('happy');
-        if (wantA && o.val !== wantA.val) { Q.mistake(); fb.className = 'wd-fb'; fb.textContent = `✓ 日文正確（旅伴原本想要「${wantA.brief}」，沒關係）`; }
+        if (wantA && o.val !== wantA.val) { mistake(); fb.className = 'wd-fb'; fb.textContent = `✓ 日文正確（旅伴原本想要「${wantA.brief}」，沒關係）`; }
         el.querySelectorAll('.wd-opt').forEach(x => { x.disabled = true; });
         setTimeout(() => done(o.val), 750);
       });
@@ -588,7 +605,7 @@
       const show = () => { el.querySelector('.wd-hid').hidden = true; el.querySelector('.wd-shown').hidden = false; };
       el.querySelectorAll('.wd-opt').forEach(b => b.onclick = () => {
         const o = list[+b.dataset.i];
-        if (!o.ok) { b.disabled = true; b.classList.add('ng'); Q.mistake(); G.sfx('ng'); show(); return; }
+        if (!o.ok) { b.disabled = true; b.classList.add('ng'); mistake(); simRec(line, 0); G.sfx('ng'); show(); return; }
         b.classList.add('ok'); G.sfx('ok'); G.bump('ok'); show();
         el.querySelector('.wd-fb').className = 'wd-fb ok'; el.querySelector('.wd-fb').textContent = line.zh || '';
         el.querySelectorAll('.wd-opt').forEach(x => { x.disabled = true; });
@@ -635,9 +652,9 @@
   }
   const zIcon = z => window.WorldArt ? WorldArt.zone(z) : esc(z.icon || '');
   const RANK = { counter: 0, shelf: 1, machine: 1, seat: 2, facility: 3, sign: 4 };
-  function sceneHTML(s) {
+  function sceneHTML(s, only) {
     const bg = bgOf(s), ck = counters()[0], npc = staff(ck);
-    const keys = Object.keys(s.zones).filter(k => !['deco', 'menu'].includes(s.zones[k].type)).sort((a, b) => (RANK[s.zones[a].type] || 0) - (RANK[s.zones[b].type] || 0));
+    const keys = Object.keys(s.zones).filter(k => !['deco', 'menu'].includes(s.zones[k].type) && (!only || only.includes(k))).sort((a, b) => (RANK[s.zones[a].type] || 0) - (RANK[s.zones[b].type] || 0));
     const card = k => { const z = s.zones[k]; return `<button type="button" class="wd-card t-${z.type}" data-z="${esc(k)}">${z.type === 'sign' ? signHTML(z, 'mini') : `<span class="e">${zIcon(z)}</span><b class="jp" lang="ja">${esc(z.jp)}</b>`}<small>${esc(z.zh || '')}</small></button>`; };
     return `<div class="wd-scene sc-${bg}">${artSVG(bg)}
       <button type="button" class="wd-clerk" id="wd-clerk" aria-label="跟${esc(npc.who)}說話">${clerkSVG(bg, s.id + npc.who, npc)}<span class="wd-tag">${esc(npc.who)}</span><span class="wd-say" hidden></span></button>
@@ -699,6 +716,7 @@
     return list[(hash(App.today() + S.id) + qn) % list.length];
   }
   function shopHome() {
+    if (SIM) return simHome();
     if (!S || !STAGE || !STAGE.isConnected) return;
     const npc = staff(), p = primary(), q = quickLine(), greet = !RUN.greeted, z0 = zero();
     const line = greetLine();
@@ -720,7 +738,12 @@
   /* ---- 商品面板：貨架／券売機／菜單／櫃台商品 ---- */
   const KIND_BTN = { shelf: '🧺 放進籃子', machine: '💴 投幣購買', menu: '📝 加入點單', counter: '🗣️ 跟店員要' };
   function itemsSheet(key, tabs) {
-    const z = zone(key), list = itemsIn(key);
+    if (SIM) {   // 只列目標需要的區域與品項（加少量干擾）
+      const zs = simZones();
+      if (zs.length && !zs.includes(key)) key = zs[0];
+      tabs = zs.length > 1 ? zs : null;
+    }
+    const z = zone(key), list = itemsIn(key).filter(it => !SIM || SIM.show.has(it));
     let sel = null, n = 1;
     const eat = S.kind === 'eat' && z.type === 'menu';
     const el = sheet(`${tabs && tabs.length > 1 ? `<div class="wd-tabs">${tabs.map(k => `<button type="button" data-tab="${esc(k)}" class="${k === key ? 'on' : ''}">${esc(zone(k).icon)} <span lang="ja">${esc(zone(k).jp)}</span></button>`).join('')}</div>` : ''}
@@ -745,7 +768,7 @@
         box.innerHTML = `<div class="wd-sel-t"><span class="e">${esc(it.emoji)}</span><div>${tx(line, true)}</div></div>`;
         App.speak(line.jp); return;
       }
-      box.innerHTML = `<div class="wd-sel-t"><span class="e">${esc(it.emoji)}</span><div>${tx(it, true)}</div>${App.trackBtn(item(it, S.name), true)}</div>
+      box.innerHTML = `<div class="wd-sel-t"><span class="e">${esc(it.emoji)}</span><div>${tx(it, true)}</div>${SIM ? '' : App.trackBtn(item(it, S.name), true)}</div>
         <div class="wd-sel-a"><button type="button" class="wd-qb" data-q="-1" aria-label="減少">−</button><span class="wd-qn"><b lang="ja">${esc(cnt.jp)}</b><i lang="ja">${esc(cnt.kana)}</i>${zero() ? `<i class="wd-r">${esc(roma(cnt.kana, cnt.jp))}</i>` : ''}</span><button type="button" class="wd-qb" data-q="1" aria-label="增加">＋</button>
         <button type="button" class="btn primary" id="wd-add">${KIND_BTN[z.type] || '選這個'}</button></div>`;
       box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (+b.dataset.q > 0 && n >= (it.max || 5)) return App.toast(lim(it)); n = Math.max(1, Math.min(it.max || 5, n + +b.dataset.q)); show(); App.speak(Phrase.count(it.c, n).kana); });
@@ -776,6 +799,8 @@
     const ch = put - price;
     App.toast(`🎫 <span lang="ja">${esc(it.jp)}</span> ×${n}${ch ? `・おつり ${yen(ch)}` : ''}`, 'ok');
     Q.on('vend');
+    if (SIM) { simRec(it, 2, 'vocab'); }
+    if (SIM) { if (simCheck()) return; if (!simMissing().some(x => zone(x.it.zone).type === 'machine')) return simHome(); }
     itemsSheet(key, keysOf('machine'));
   });
   function basketSheet() {
@@ -802,7 +827,7 @@
   }
   /* ---- 流程：問句、賣完、付款 ---- */
   async function runAsks(phase, npc) {
-    for (const a of asksFor(phase)) RUN.vals[a.id] = await askQ(a, Q.pref(a.id), npc);
+    for (const a of asksFor(phase)) RUN.vals[a.id] = await askQ(a, pref(a.id), npc);
   }
   const orderLine = list => ({
     jp: list.map(b => Phrase.spoken(b.it).jp + 'を' + Phrase.count(b.it.c, b.n).jp).join('と、') + 'ですね。かしこまりました。',
@@ -810,7 +835,7 @@
     zh: list.map(b => `${b.it.zh} ${b.n} 份`).join('、') + '對嗎？好的。'
   });
   async function incident(list, npc) {   // 程度 n3 以上偶爾遇到：賣完了，要改點（內容變化，不是門檻）
-    if (li() < 3 || RUN.incident || !list.length || Math.random() < 0.5) return;
+    if (SIM || li() < 3 || RUN.incident || !list.length || Math.random() < 0.5) return;
     const b = list[Math.random() * list.length | 0];
     const alts = App.shuffle(itemsIn(b.it.zone).filter(i => i !== b.it && !i.soldOut && !inBasket(i))).slice(0, 3);
     if (!alts.length) return;
@@ -841,11 +866,13 @@
   function finishPurchase() {
     const bought = RUN.basket.slice();
     bought.forEach(b => addDex(b.it));
+    if (SIM) bought.forEach(b => SIM.got.set(b.it, (SIM.got.get(b.it) || 0) + b.n));
     RUN.basket = []; RUN.served = false; RUN.toPay = false; RUN.incident = false;
     const vals = RUN.vals; RUN.vals = {};
     paintHud(); closeSheet();
     Q.on('bought', { items: bought, vals });
     paintBar();
+    if (SIM) simCheck();
   }
   const checkout = flow(async key => {
     const npc = staff(key);
@@ -862,6 +889,7 @@
       await say('this', {}, { title: '把籃子放上櫃台，跟店員說' });
       await npcSay(npc, { jp: 'はい、お預かりします。', kana: 'はい、おあずかりします', zh: '好的，我來幫您結帳。' });
     }
+    if (SIM && S.kind !== 'eat') await runAsks('order', npc);   // 櫃台品項的追問（房號、送到房間、座位…）
     if (total() > 0) { await runAsks('pay', npc); await payTotal(npc); }
     else await npcSay(npc, { jp: 'はい、どうぞ。', kana: 'はい、どうぞ', zh: '好的，請用。' });
     finishPurchase();
@@ -903,7 +931,7 @@
     await npcSay(npc, { jp: '少々お待ちください。', kana: 'しょうしょうおまちください', zh: '請稍等。' });
     RUN.basket.forEach(b => addDex(b.it));
     await npcSay(npc, { jp: 'お待たせしました。ごゆっくりどうぞ。', kana: 'おまたせしました。ごゆっくりどうぞ', zh: '讓您久等了，請慢用。' }, `<p class="wd-serve">${RUN.basket.map(b => esc(b.it.emoji)).join(' ')}</p>`);
-    RUN.served = true; Q.on('served');
+    RUN.served = true; if (SIM) SIM.served = true; Q.on('served');
     if (!sayL.length) return finishPurchase();
     RUN.toPay = true; closeSheet(); paintBar();
     App.toast('🍽️ ごちそうさまでした！按「入座點餐」去結帳', 'ok');
@@ -918,7 +946,7 @@
   const checkin = flow(async key => {
     const npc = staff(key);
     await npcSay(npc, greetLine());
-    for (const a of S.asks.filter(a => a.phase === 'checkin')) RUN.vals[a.id] = await askQ(a, Q.pref(a.id), npc);
+    for (const a of S.asks.filter(a => a.phase === 'checkin')) RUN.vals[a.id] = await askQ(a, pref(a.id), npc);
     // 車站類：問過目的地 → 最後報票價、付款
     const dest = RUN.vals.dest && S.items.find(i => i.id === RUN.vals.dest);
     if (dest && dest.price > 0) {
@@ -930,7 +958,9 @@
       addDex(dest);
     } else await npcSay(npc, { jp: 'かしこまりました。ありがとうございます。', kana: 'かしこまりました。ありがとうございます', zh: '好的，謝謝您。' });
     const vals = RUN.vals; RUN.vals = {};
+    if (SIM) SIM.checked = true;
     closeSheet(); Q.on('checkin', { vals }); paintBar();
+    if (SIM) simCheck();
   });
 
   /* ---- 自由對話：問位置、有沒有、多少錢、拜託、可不可以、問資訊 ---- */
@@ -1024,6 +1054,7 @@
   }
   function openZone(key) {
     const z = zone(key); if (!z) return;
+    if (SIM && z.type === 'counter') return simNext();
     if (z.type === 'shelf' || z.type === 'machine') itemsSheet(key, keysOf(z.type));
     else if (z.type === 'counter') (RUN.basket.length && S.kind !== 'eat' && !RUN.toPay ? checkout : RUN.toPay ? bill : clerkSheet)(key);
     else if (z.type === 'seat') sit(key);
@@ -1055,6 +1086,224 @@
   function leaveShop() {
     Q.leave();
     if (fromDistrict) { fromDistrict = false; App.back(); } else App.go('play', { r: PARAMS.r, d: D.id });
+  }
+
+  /* =========================================================
+     shopSim：活動框架的 shop 活動 — 直接進店、只顯示完成子目標需要的區域與按鈕
+     World.shopSim(el, {shop, goal, items}) → Promise<{results:[{id, grade, item}], meta}>
+     goal：委託 id（'night' 或 'q-night'）｜'checkin'｜'rand'｜{id?, title?, items:[[品項id, 數量]], prefs:{問句id: val}, checkin?}
+     未指定 goal：依 items（Learn.view 陣列）挑重疊最多的委託，否則第一個未完成的委託
+     不呼叫 Learn.record；說對的句子、答錯的店員問句放進 results，由 runner 統一記
+     ========================================================= */
+  const regionOfShop = id => W.regions.find(r => (r.shops || []).some(x => x[1] === id));
+  function loadShop(id) {
+    if (W.shops[id]) return Promise.resolve(W.shops[id]);
+    const R = regionOfShop(id); if (!R) return Promise.reject(new Error('找不到店家 ' + id));
+    return loadRegion(R.id).then(() => W.shops[id] || Promise.reject(new Error('找不到店家 ' + id)));
+  }
+  function simGoal(s, goal, items) {
+    const qs = s.quests || [], byId = id => s.items.find(i => i.id === id);
+    const zt = it => (s.zones[it.zone] || {}).type;
+    const ckAsks = s.asks.filter(a => a.phase === 'checkin');
+    let q = null, g = null;
+    if (goal && typeof goal === 'object') g = goal;
+    else if (goal === 'checkin' && ckAsks.length) g = { id: 'checkin', checkin: 1 };
+    else if (goal === 'rand') g = { id: 'rand' };
+    else if (goal) q = qs.find(x => x.id === goal || 'q-' + x.id === goal) || null;
+    if (!g && !q && qs.length) {
+      let cand = qs;
+      if (items && items.length) {
+        const txt = items.map(i => (i && (i.jp || '') + ' ' + (i.zh || '')) || '').join(' ');
+        const sc = x => x.items.filter(([id]) => { const it = byId(id); return it && (txt.includes(it.jp) || txt.includes(it.zh)); }).length;
+        const best = Math.max(...qs.map(sc));
+        if (best > 0) cand = qs.filter(x => sc(x) === best);
+      }
+      q = cand.find(x => !App.stars(`w:${s.id}:q-${x.id}`)) || cand[hash(App.today() + s.id) % cand.length];
+    }
+    if (!g && !q) g = ckAsks.length ? { id: 'checkin', checkin: 1 } : { id: 'rand' };
+    const icon = s.kind === 'eat' ? '🍽️' : s.kind === 'service' ? '🛎️' : '🛍️';
+    let o;
+    if (q) o = { id: 'q-' + q.id, title: q.title, icon, msg: q.zh, jpMsg: { jp: q.jp, kana: q.kana }, needs: q.items.map(([id, n]) => ({ it: byId(id), n })), prefs: Object.assign({}, q.prefs) };
+    else if (g.checkin) {
+      const prefs = {}; ckAsks.forEach(a => { prefs[a.id] = a.a[Math.random() * a.a.length | 0].val; });
+      o = { id: 'checkin', title: g.title || '辦手續', icon: '📝', msg: g.msg || '到櫃台辦手續，照旅伴的條件回答。', needs: [], prefs: Object.assign(prefs, g.prefs || {}), checkin: 1 };
+    } else if (g.items) o = { id: g.id || 'sim', title: g.title || '採買任務', icon, msg: g.msg || '', needs: g.items.map(([id, n]) => ({ it: byId(id), n: n || 1 })), prefs: Object.assign({}, g.prefs || {}), checkin: g.checkin ? 1 : 0 };
+    else {   // 隨機：1–2 樣
+      const hasM = s.items.some(i => zt(i) === 'machine');
+      let pool = s.kind === 'eat' ? s.items.filter(i => zt(i) === (hasM ? 'machine' : 'menu')) : s.kind === 'service' ? s.items.filter(i => zt(i) === 'counter' || zt(i) === 'machine') : s.items.filter(i => zt(i) !== 'menu');
+      pool = pool.filter(i => !i.soldOut && !(i.tags || []).includes('dest'));
+      if (!pool.length) pool = s.items.filter(i => !i.soldOut);
+      o = { id: 'rand', title: s.kind === 'eat' ? '今天吃什麼' : '臨時採買', icon: '🎲', msg: '旅伴傳來一張清單。', needs: App.sample(pool, Math.min(pool.length, li() >= 1 ? 2 : 1)).map(it => ({ it, n: 1 })), prefs: {} };
+    }
+    o.needs = o.needs.filter(n => n.it && !(s.kind === 'eat' && zt(n.it) === 'counter'));
+    if (!o.needs.length && !o.checkin && ckAsks.length) o.checkin = 1;
+    o.key = /^(q-|checkin$|rand$)/.test(o.id) ? `w:${s.id}:${o.id}` : '';
+    return o;
+  }
+  const simZones = () => [...new Set(SIM.goal.needs.map(n => n.it.zone))].filter(k => S.zones[k]);
+  const inB = it => RUN.basket.filter(b => b.it === it).reduce((a, b) => a + b.n, 0);
+  const paidB = it => RUN.basket.filter(b => b.it === it && b.paid).reduce((a, b) => a + b.n, 0);
+  const simMissing = () => SIM.goal.needs.filter(n => (SIM.got.get(n.it) || 0) + inB(n.it) < n.n);
+  const simHave = n => (SIM.got.get(n.it) || 0) + paidB(n.it) >= n.n;
+  function simComplete() {
+    const g = SIM.goal;
+    if (g.checkin && !SIM.checked) return false;
+    if (!g.needs.every(simHave)) return false;
+    if (S.kind === 'eat' && g.needs.length) return !!SIM.served && !RUN.toPay;
+    return !RUN.basket.some(b => !b.paid);
+  }
+  function simCheck() {
+    if (!SIM || SIM.done || !simComplete()) return false;
+    SIM.done = true;
+    const stars = SIM.miss === 0 ? 3 : SIM.miss <= 2 ? 2 : 1, g = SIM.goal;
+    if (g.key) { try { App.reward(g.key, stars, `${S.name}・${g.title}`); } catch (e) { } }
+    G.sfx('win');
+    sheet(`<div class="wd-sim-done"><p class="wd-sim-st">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p><h3>✓ ${esc(g.title)}　完成！</h3><p class="muted">${SIM.miss ? `失誤 ${SIM.miss} 次` : '零失誤！'}</p></div>`, { home: 1 });
+    const fin = SIM.finish;
+    setTimeout(() => fin({ done: true, stars }), 1200);
+    return true;
+  }
+  // 下一步：[icon, 文字, fn]
+  function simNext(run) {
+    const g = SIM.goal, ck = counters()[0];
+    let r = null;
+    if (S.kind === 'eat') {
+      const miss = simMissing(), mm = miss.filter(n => zone(n.it.zone).type === 'machine'), seat = keysOf('seat')[0];
+      if (RUN.toPay) r = ['🧾', '吃飽了，結帳', () => bill(ck)];
+      else if (mm.length) r = ['🎫', '去券売機買餐券', () => itemsSheet(mm[0].it.zone)];
+      else if (!RUN.entered) r = ['🍽️', '進店入座', () => sit(seat)];
+      else if (miss.length) r = ['📖', '翻菜單點餐', () => itemsSheet(miss[0].it.zone)];
+      else if (RUN.basket.length && !RUN.served) r = ['🙋', '叫店員點餐', () => orderFlow()];
+    } else {
+      const miss = simMissing();
+      if (g.checkin && !SIM.checked) r = ['🛎️', '到櫃台辦手續', () => checkin(ck)];
+      else if (miss.length) {
+        const t = zone(miss[0].it.zone).type;
+        r = [t === 'machine' ? '🎫' : t === 'counter' ? '🗣️' : '🧺', t === 'machine' ? '去機器購買' : t === 'counter' ? '跟店員要' : '去貨架拿', () => itemsSheet(miss[0].it.zone)];
+      } else if (RUN.basket.some(b => !b.paid)) r = ['🧾', '去結帳', () => checkout(ck)];
+    }
+    if (run === false) return r;
+    if (r) r[2](); else if (!simCheck()) simHome();
+    return r;
+  }
+  function simHome() {
+    if (!SIM || !S || !STAGE || !STAGE.isConnected || SIM.done) return;
+    const g = SIM.goal, nx = simNext(false), greet = !RUN.greeted, line = greetLine();
+    const briefs = S.asks.filter(a => g.prefs[a.id] != null).map(a => a.a.find(x => x.val === String(g.prefs[a.id]))).filter(Boolean);
+    const chip = (t, ok) => `<span class="wd-chip${ok ? ' ok' : ''}">${ok ? '✓ ' : ''}${t}</span>`;
+    const jpOnly = assist() === 'none' && g.jpMsg;
+    const el = sheet(`${greet ? bubble(staff(), line) : ''}
+      <div class="wd-sim-goal"><p class="wd-sim-t">${g.icon} <b>${esc(g.title)}</b></p>
+        ${jpOnly ? `<p class="wd-sim-m">${tx(g.jpMsg)}</p>` : g.msg ? `<p class="wd-sim-m">${esc(g.msg)}</p>` : ''}
+        ${g.needs.length ? `<div class="wd-chips">${g.needs.map(n => chip(`${esc(n.it.emoji)} <span lang="ja">${esc(n.it.jp)}</span> ×${n.n}`, simHave(n) || (SIM.got.get(n.it) || 0) + inB(n.it) >= n.n)).join('')}</div>` : ''}
+        ${briefs.length ? `<p class="wd-sub">店員問的時候，旅伴想要：</p><div class="wd-chips">${briefs.map(b => chip(esc(b.brief))).join('')}</div>` : ''}
+        ${g.checkin ? `<div class="wd-chips">${chip('辦好手續', SIM.checked)}</div>` : ''}</div>
+      ${nx ? `<div class="wd-acts"><button type="button" class="btn primary wd-sim-go" id="wd-sim-go"><span>${nx[0]}</span> ${esc(nx[1])} ➜</button></div>` : ''}`, { home: 1 });
+    if (greet) { RUN.greeted = true; App.speak(line.jp); bindSpk(el, line); }
+    const b = el.querySelector('#wd-sim-go'); if (b) b.onclick = () => simNext();
+  }
+  function shopSim(el, opt) {
+    opt = opt || {};
+    return new Promise(resolve => {
+      const id = typeof opt.shop === 'string' ? opt.shop : opt.shop && opt.shop.id;
+      el.innerHTML = '<p class="center muted wd-wait">🚃 移動中…</p>';
+      let tick = 0, my = null;
+      const finish = meta => {
+        if (!my || my.closed) return; my.closed = true;
+        clearInterval(tick);
+        if (pending) { const r = pending; pending = null; r(ABORT); }
+        if (window.speechSynthesis) speechSynthesis.cancel();
+        focusMode(false);
+        const res = my.res.map(r => ({ id: r.id, grade: r.grade, item: r.item }));
+        const out = { results: res, meta: Object.assign({ shop: id, goal: my.goal.id, title: my.goal.title, mistakes: my.miss, done: false }, meta || {}) };
+        if (SIM === my) { SIM = null; S = null; RUN = null; }
+        resolve(out);
+      };
+      loadShop(id).then(shop => {
+        if (!el.isConnected) return resolve({ results: [], meta: { shop: id, done: false } });
+        const d = W.districts[(regionOfShop(id) || { shops: [] }).shops.find(x => x[1] === id)[0]] || Object.values(W.districts).find(x => x.region === shop.region) || { id: '', name: '', region: shop.region };
+        S = shop; D = d; MAP = null; PARAMS = { r: shop.region, d: d.id, s: shop.id };
+        RUN = { basket: [], vals: {}, entered: false, served: false, toPay: false, incident: false, greeted: false };
+        my = SIM = { goal: simGoal(shop, opt.goal, opt.items), res: [], miss: 0, got: new Map(), checked: false, served: false, done: false, closed: false, finish: m => finish(m) };
+        // 品項面板只列：目標品項＋每區 2 個干擾
+        const show = new Set(SIM.goal.needs.map(n => n.it));
+        simZones().forEach(k => itemsIn(k).filter(it => !show.has(it) && !it.soldOut).slice(0, 2).forEach(it => show.add(it)));
+        SIM.show = show;
+        Q.enter(S);
+        stage(el, `<div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name || '')}</small></div>
+          <button type="button" class="wd-hb" id="wd-sim-x" aria-label="離開這間店">✕</button>`, 'wd-shop wd-sim');
+        const box = STAGE.querySelector('.wd-box');
+        box.innerHTML = sceneHTML(S, simZones().filter(k => S.zones[k].type !== 'counter'));
+        box.querySelectorAll('.wd-card').forEach(b => b.onclick = () => openZone(b.dataset.z));
+        STAGE.querySelector('#wd-clerk').onclick = () => simNext();
+        STAGE.querySelector('#wd-sim-x').onclick = () => finish({ done: false, left: true });
+        MAP = { pulse: SCN.pulse, pos: () => [0, 0], comps: [], goObj: openZone, fit() { }, stop() { } };
+        STAGE._fit();
+        tick = setInterval(() => { if (!STAGE || !STAGE.isConnected || SIM !== my) finish({ done: false, left: true }); }, 1000);
+        simHome();
+      }).catch(e => { console.error(e); el.innerHTML = '<p class="center wd-wait">😵 載入失敗，請檢查網路後再試一次</p>'; resolve({ results: [], meta: { shop: id, done: false, error: String(e.message || e) } }); });
+    });
+  }
+
+  /* ---------------- 店型分類（路線頁旅遊場景包用；不必載入地區資料） ---------------- */
+  const SHOP_TYPES = {
+    konbini: { name: '便利商店', icon: '🏪' }, restaurant: { name: '餐廳', icon: '🍱' }, ramen: { name: '拉麵與麵店', icon: '🍜' }, izakaya: { name: '居酒屋與燒肉', icon: '🏮' },
+    cafe: { name: '咖啡與甜點', icon: '☕' }, drugstore: { name: '藥妝店', icon: '💊' }, shopping: { name: '購物', icon: '🛍️' }, market: { name: '市場與小吃', icon: '🐟' },
+    transit: { name: '車站與交通', icon: '🚉' }, airport: { name: '機場', icon: '✈️' }, hotel: { name: '飯店與溫泉', icon: '🏨' }, sight: { name: '觀光與寺社', icon: '⛩️' },
+    medical: { name: '緊急醫療', icon: '🏥' }, rental: { name: '租車與租借', icon: '🚗' }
+  };
+  const TYPE_OF = {
+    'ueno-konbini': 'konbini',
+    'ueno-shokudo': 'restaurant', 'harajuku-sushi': 'restaurant', 'kyoto-yudofu': 'restaurant', 'osaka-okonomiyaki': 'restaurant', 'sapporo-soupcurry': 'restaurant', 'sapporo-ichiba': 'restaurant',
+    'yokohama-ramen': 'ramen', 'naha-soba': 'ramen',
+    'yokohama-izakaya': 'izakaya', 'shinjuku-yakiniku': 'izakaya', 'osaka-kushikatsu': 'izakaya', 'sapporo-genghis': 'izakaya',
+    'harajuku-cafe': 'cafe', 'kyoto-kanmi': 'cafe',
+    'ginza-drugstore': 'drugstore',
+    'harajuku-clothes': 'shopping', 'shinjuku-denki': 'shopping', 'ginza-bungu': 'shopping', 'osaka-hyakkin': 'shopping', 'sapporo-omiyage': 'shopping',
+    'asakusa-nakamise': 'market', 'kyoto-nishiki': 'market', 'osaka-kuromon': 'market', 'naha-makishi': 'market', 'ginza-depachika': 'market', 'yokohama-chukagai': 'market', 'osaka-takoyaki': 'market', 'motobu-michinoeki': 'market',
+    'ueno-station': 'transit', 'narita-skyliner': 'transit', 'kyoto-bus': 'transit',
+    'narita-airport': 'airport', 'narita-sim': 'airport',
+    'ueno-hotel': 'hotel', 'kyoto-ryokan': 'hotel', 'niseko-onsen': 'hotel',
+    'asakusa-sensoji': 'sight', 'kyoto-kiyomizu': 'sight', 'asakusa-kanko': 'sight', 'osaka-castle': 'sight', 'motobu-aquarium': 'sight', 'yokohama-cosmo': 'sight', 'shinjuku-karaoke': 'sight',
+    'shinjuku-clinic': 'medical',
+    'naha-rentacar': 'rental', 'niseko-rental': 'rental', 'motobu-marine': 'rental', 'asakusa-kimono': 'rental'
+  };
+  const stripIcon = t => String(t || '').replace(/^[^぀-鿿\w]+\s*/u, '').trim();
+  // → {type: [{id, name, district, districtName, region, icon}]}；type 說明見 World.SHOP_TYPES
+  function shopsByType() {
+    const out = {};
+    W.regions.forEach(r => (r.shops || []).forEach(([d, id, label]) => {
+      const s = W.shops[id], t = TYPE_OF[id] || (s && s.kind === 'eat' ? 'restaurant' : s && s.kind === 'service' ? 'sight' : 'shopping');
+      const [dl, sl] = String(label).split('・');
+      (out[t] || (out[t] = [])).push({ id, name: s ? s.name : stripIcon(sl), district: d, districtName: stripIcon(dl), region: r.id, icon: s ? s.icon : (String(sl || '').split(' ')[0] || '') });
+    }));
+    return out;
+  }
+  // 該店必備句（玩家說的）＋店員問句，Learn.view 格式；需先載入地區資料（World.loadShop(id)），未載入回傳 []
+  function shopPhrases(id) {
+    const s = W.shops[id]; if (!s || !window.Phrase) return [];
+    const o = { style: st().style, lv: lv() }, out = [], seen = new Set(), src = '🧳 ' + s.name;
+    const pid = m => (window.Learn ? Learn.idOf({ jp: m.jp }, 'phrase') : 'p:' + m.jp);
+    const add = (m, role, zh) => {
+      if (!m || !m.jp) return; const i = pid(m); if (!i || seen.has(i)) return; seen.add(i);
+      const v = { id: i, type: 'phrase', jp: m.jp, kana: m.kana || '', zh: zh || m.zh || '', role, source: src };
+      const r = romaOf(v); if (r) v.romaji = r;
+      out.push(v);
+    };
+    const mkp = (intent, slots) => { try { return Phrase.make(intent, slots, o); } catch (e) { return null; } };
+    const isDest = it => (it.tags || []).includes('dest');
+    const q = (s.quests || [])[0], qi = q ? q.items.map(([i]) => s.items.find(x => x.id === i)).filter(Boolean) : [];
+    const first = qi[0] || s.items.find(i => !i.soldOut);
+    if (first) add(mkp('want', { items: [{ it: first, n: 1 }] }), 'say');
+    if (s.kind === 'eat') { add(mkp('call', {}), 'say'); add(mkp('bill', {}), 'say'); } else if (s.kind === 'store') add(mkp('this', {}), 'say');
+    const fac = Object.values(s.zones).find(z => z.type === 'facility' && z.loc); if (fac) add(mkp('where', { x: fac }), 'say');
+    const pit = s.items.find(i => i.price > 0 && !isDest(i) && !(i.tags || []).includes('charge')); if (pit) add(mkp('price', { x: pit }), 'say');
+    const dst = s.items.find(i => isDest(i) && i.price > 0); if (dst) add(mkp('go', { x: dst }), 'say');
+    if ((s.may || [])[0]) add(mkp('may', { a: s.may[0] }), 'say');
+    if ((s.info || [])[0]) add(s.info[0].q, 'say');
+    out.splice(6);
+    s.asks.slice().sort((a, b) => (a.when === 'always' ? 0 : 1) - (b.when === 'always' ? 0 : 1)).slice(0, 3).forEach(a => add({ jp: a.v[0][0], kana: a.v[0][1] }, 'clerk', '店員問：' + a.zh));
+    return out;
   }
 
   /* =========================================================
@@ -1176,10 +1425,10 @@
       if (s) { fromDistrict = fd; renderShop(el, s, d); } else renderDistrict(el, d);
     }).catch(e => { console.error(e); el.innerHTML = '<p class="center wd-wait">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
-  App.register('play', { title: '冒險', icon: '🗾', nav: true, navOrder: 2, render });
+  App.register('play', { title: '冒險', icon: '🗾', nav: false, navParent: 'path', render });
 
   window.World = {
-    st, lv, li, assist, prof, showKana, showZh, zero, romaOf, loadRegion, loadEvents, regionOf, Q, tx, item, REC, cardCount, bgOf, clerkSVG, signHTML,
+    st, lv, li, assist, prof, shopSim, shopsByType, shopPhrases, loadShop, SHOP_TYPES, showKana, showZh, zero, romaOf, loadRegion, loadEvents, regionOf, Q, tx, item, REC, cardCount, bgOf, clerkSVG, signHTML,
     X: {
       get S() { return S; }, get D() { return D; }, get RUN() { return RUN; }, get MAP() { return MAP; }, get PARAMS() { return PARAMS; }, get STAGE() { return STAGE; },
       sheet, closeSheet, step, flow, note, pick, build, say, mk, askQ, hear, npcSay, bubble, bindSpk, paintBar, paintHud, staff, zone, itemsIn, counters, locTargets, locLine, talk, clerkSheet, signHTML, mood, shopHome, enterShop, openPlace, districtInfo, cardsSheet, addCard, ABORT, G
