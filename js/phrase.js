@@ -100,7 +100,9 @@
     const man = Math.floor(n / 10000), rest = n % 10000;
     return (man ? (man >= 10000 ? four(Math.floor(man / 10000)) + '億' + (man % 10000 ? four(man % 10000) + '万' : '') : four(man) + '万') : '') + (rest ? four(rest) : '');
   }
-  const arabic = jp => jp.normalize('NFKC').replace(/\d{1,3}(?:,\d{3})+|\d+/g, m => { const n = +m.replace(/,/g, ''); return n < 1e12 ? kanjiNum(n) : m; });
+  const arabic = (jp, kana) => jp.normalize('NFKC')
+    .replace(/(\d{1,2}):(\d{2})/g, (m, h, mi) => kanjiNum(+h) + '時' + (+mi === 0 ? '' : +mi === 30 && /じはん/.test(kana || '') ? '半' : kanjiNum(+mi) + '分'))
+    .replace(/\d{1,3}(?:,\d{3})+|\d+/g, m => { const n = +m.replace(/,/g, ''); return n < 1e12 ? kanjiNum(n) : m; });
   // 數量詞：數字＋量詞自成一詞（大人一人 → otona hitori、何回乗る → nankai noru）
   const NUMC = '何〇一二三四五六七八九十百千万億';
   const COUNTER = '号車|号室|時半|時間|日間|週間|年間|分間|ヶ月|か月|カ月|番線|番目|人前|円|人|回|分|時|階|名|泊|個|杯|枚|本|番|歳|日|品|度|足|着|箱|袋|皿|台(?!湾)|冊|組|号|両|週|秒|匹|頭|軒|駅|件|割';
@@ -121,7 +123,9 @@
   function runs(jp) {
     const out = [];
     for (const c of jp) { const t = isA(c) ? 'A' : isK(c) ? 'K' : isT(c) ? 'T' : isH(c) ? 'H' : 'P'; const l = out[out.length - 1]; if (l && l.t === t) l.s += c; else out.push({ t, s: c }); }
-    return out.flatMap(r => r.t === 'K' ? splitK(r.s) : [r]);
+    const o = out.flatMap(r => r.t === 'K' ? splitK(r.s) : [r]);
+    for (let i = 0; i < o.length - 1; i++) { const r = o[i]; if (r.t === 'K' && r.s.length > 1 && /申$/.test(r.s) && o[i + 1].t === 'H' && /^し/.test(o[i + 1].s)) { o.splice(i, 1, { t: 'K', s: r.s.slice(0, -1) }, { t: 'K', s: '申' }); i++; } }
+    return o;
   }
   // 數字讀音分段：せんななひゃくはちじゅうえん → sen nanahyaku hachijuu en
   const ND = 'いち|に|さん|よん|ご|ろく|なな|はち|きゅう';
@@ -229,7 +233,7 @@
   function romajiJP(kana, jp) {
     // 〜（填空處）當作一個名詞：〜へは → ~ e wa
     const T = s => s.replace(/[〜~～]/g, 'ヴヴ');
-    kana = T(String(kana || '')); jp = T(arabic(String(jp || '')));
+    kana = T(String(kana || '')); jp = T(arabic(String(jp || ''), String(kana || '')));
     let segs = jp ? align(kana, jp) : null;
     // 整句對不齊：逐句／逐段再對；某段還是對不齊就用假名＋助詞規則（不整句黏成一串）
     if (!segs && jp) {
@@ -260,7 +264,7 @@
         if (j % 2) { units.push({ k: h, p: true }); return; }
         const a = after && j === 0, nk = nextK && j === hs.length - 1;
         // 單一送假名夾在兩個漢字間（乗り場、焼き鳥）：不斷開
-        if (a && nk && h.length === 1 && /^[きしちひみりけべめれぎじびえ]$/.test(h) && !/^[一二三四五六七八九十百千0-9０-９]/.test(segs[i + 1].s || '')) { units.push({ k: h, sp: false, glue: true }); return; }
+        if (a && nk && h.length === 1 && /^[きしちひみりけべめれぎじびえ]$/.test(h) && !/^[一二三四五六七八九十百千0-9０-９申]/.test(segs[i + 1].s || '')) { units.push({ k: h, sp: false, glue: true }); return; }
         const us = splitH(h, a, nk, prev && isKN(prev.t) ? prev.n : 0, prev && prev.t === 'T', nk && isKN(next.t));
         const lu = us[us.length - 1];
         if (nk && lu && (us.length > 1 || !a) && !lu.part && !lu.lex && !/[いなたるうすくてだ]$/.test(lu.k)) lu.whole = true;
@@ -278,6 +282,7 @@
     out = out.replace(/\s+([,.?!])/g, '$1').replace(/\s+/g, ' ').trim();
     GLUE.forEach(([a, b]) => { out = out.replace(a, b); });
     out = out.replace(/vuvu/g, '~');
+    out = out.replace(/([a-z])jihan(?![a-z])/g, '$1ji han');
     return out;
   }
   // 固定說法（專有名詞）不拆

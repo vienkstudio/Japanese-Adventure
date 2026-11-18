@@ -15,6 +15,10 @@ const verbose = process.argv.includes('-v');
 
 // [jp, kana, 期望, 評審報告的錯例]
 const CASES = [
+  ['最終入館 17:30', 'さいしゅうにゅうかん じゅうしちじはん', 'saishuunyuukan juushichiji han', 'juushi chijihan'],
+  ['会議は17:30からです', 'かいぎはじゅうしちじさんじゅっぷんからです', 'kaigi wa juushichiji sanjuppun kara desu', ''],
+  ['ご連絡申し上げます', 'ごれんらくもうしあげます', 'gorenraku moushiagemasu', 'gorenrakumoushiagemasu'],
+  ['お詫び申し上げます', 'おわびもうしあげます', 'owabi moushiagemasu', 'owabimoushiagemasu'],
   ['お会計は150円です。', 'おかいけいはひゃくごじゅうえんです', 'okaikei wa hyaku gojuu en desu', 'okaikei wa hyakugojuuen desu'],
   ['お会計は1,780円です。', 'おかいけいはせんななひゃくはちじゅうえんです', 'okaikei wa sen nanahyaku hachijuu en desu', ''],
   ['お会計は2,580円です。', 'おかいけいはにせんごひゃくはちじゅうえんです', 'okaikei wa nisen gohyaku hachijuu en desu', 'okaikei wa nisengo hyakuhachijuuen'],

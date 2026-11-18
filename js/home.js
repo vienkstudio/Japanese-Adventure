@@ -98,12 +98,14 @@
     const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字，先教再考`
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
     const big = d.done ? '▶ 再上一課' : '▶ 開始今天的課（約 8 分鐘）';
+    if (!d.applied && d.applyAt && (App.state.lastDoneAt || 0) > d.applyAt) { d.applied = 1; App.save(); }
+    const revNA = !due && !d.reviewed;
     const steps = [
-      { b: '複習', v: d.done && !due ? '✓' : due ? `${due} 個到期` : '沒有到期', ok: !due },
+      { b: '複習', v: due ? `${due} 個到期` : d.reviewed ? `${d.reviewed} 個 ✓` : '今天沒有', ok: !due && d.reviewed > 0, na: revNA },
       { b: '新學', v: d.learned >= n ? `${d.learned} 個 ✓` : `${d.learned}／${n}`, ok: d.learned >= n },
-      { b: '應用', v: d.applied ? '✓' : '—', ok: !!d.applied }
+      { b: '應用', v: d.applied ? '✓' : d.applyAt ? '進行中' : '—', ok: !!d.applied }
     ];
-    const pct = Math.round(steps.filter(s => s.ok).length / 3 * 100);
+    const act = steps.filter(s => !s.na), pct = Math.round(act.filter(s => s.ok).length / act.length * 100);
     const gs = p.goals || [];
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}</small></h1>
@@ -139,17 +141,6 @@
     try { return window.Phrase && Phrase.romaji ? Phrase.romaji(k, it.jp) : ''; } catch (e) { return ''; }
   };
   const fresh = id => { const e = Learn.get(id); return !e || (e.s === 'new' && !e.reps); };
-  function fillFun(Q, n) {
-    const R = window.READING; if (!R || !has(R, 'pick')) return null;
-    const a = R.pick(App.profile().lv, App.today()); if (!a) return null;
-    (a.p || []).forEach(([jp, zh]) => {
-      if (Q.fresh.length >= n || !jp || jp.length > 60) return;
-      const id = Learn.idOf({ jp }, 'phrase');
-      if (!id || !fresh(id) || Q.fresh.some(x => x.id === id)) return;
-      Q.fresh.push({ id, type: 'phrase', jp, kana: isKanaStr(jp) ? jp : '', zh, source: '📰 今日短文：' + a.title });
-    });
-    return a;
-  }
   function fillWork(Q, n) {
     const B = window.BIZ; if (!B || !Array.isArray(B.units)) return;
     const ord = (B.META || []).map(m => m.id), us = B.units.slice().sort((x, y) => ord.indexOf(x.id) - ord.indexOf(y.id));
@@ -167,11 +158,7 @@
       Q = Object.assign({}, Q, { goal, fresh: (Q.fresh || []).slice(0, 8), due: (Q.due || []).slice(0, 15) });
       if (goal === 'kana') Q.apply = { route: 'phrasebook', params: { tab: 'kana', sub: 'quiz' }, label: '五十音小考 10 題' };
       if (goal === 'travel') Q.apply = { world: 1, route: 'play', params: {}, label: '到冒險店家用一次' };
-      if (goal === 'fun') {
-        const a = fillFun(Q, n);
-        if (Q.fresh.length < n) Learn.queue('travel').fresh.forEach(x => { if (Q.fresh.length < n && !Q.fresh.some(y => y.id === x.id)) Q.fresh.push(x); });
-        Q.apply = a ? { route: 'read-article', params: { daily: a.id }, label: '讀今日短文：' + a.title } : { route: 'songs', params: {}, label: '聽一首歌' };
-      }
+
       if (goal === 'work') {
         if (Q.fresh.length < n) fillWork(Q, n);
         const nx = window.BIZ && has(BIZ, 'next') ? BIZ.next() : null;
@@ -297,7 +284,7 @@
     R.phase = 'end';
     const ap = el.querySelector('#tdApply');
     if (ap) ap.onclick = () => {
-      const d = dayRec(); d.applied = 1; App.save();
+      const d = dayRec(); if (!d.applied) d.applyAt = Date.now(); App.save();
       if (!A.world) return App.go(A.route, A.params || {});
       ap.disabled = true;
       need('play').then(() => { const nx = window.World && has(World, 'next') ? World.next() : null; App.go(nx && nx.route ? nx.route : 'play', nx && nx.route ? nx.params || {} : {}); }).catch(() => App.go('play'));
