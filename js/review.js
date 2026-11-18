@@ -1,6 +1,6 @@
 /* =========================================================
    日語冒險 — 不會清單 / 間隔複習 review.js
-   路由：review（nav:true，📌，不會清單）
+   路由：review（nav:false，navParent me；從「我的」今日到期進入）；字卡→ act {type:'flashcard', ids}、空清單→ path
    依賴：App、Tracker（core.js）；選用 KANA/DAKU/YOON、SCENES 作干擾項
    ========================================================= */
 (function () {
@@ -197,7 +197,7 @@
         <h2>不會清單還是空的</h2>
         <p>闖關時答錯的字會<b>自動</b>加進來；看到不熟的字，也可以按「＋ 加入不會清單」。</p>
         <p class="muted">連續答對 3 次就算「已掌握」🎓</p>
-        <div class="rv-row2"><button class="btn primary" data-go="cards">🎴 翻字卡（含五十音）</button><button class="btn" data-go="home">🗾 去冒險</button></div>
+        <div class="rv-row2"><button class="btn primary" data-go="path">🧭 去路線學新的</button></div>
         <div class="rv-opt rv-center"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
       </div>`;
       bindCommon(el);
@@ -208,7 +208,7 @@
       <div class="panel noprint">
         <h2 class="rv-h">📌 複習</h2>
         <button class="btn primary block rv-go" data-mode="flash">▶ 開始複習<small id="rvGoSub"></small></button>
-        <button class="btn block rv-cards" data-go="cards">🎴 字卡：五十音、不會清單、N5–N1 單字</button>
+        <button class="btn block rv-cards" data-cards="1">🎴 字卡：翻不會清單</button>
         <details class="rv-more"><summary>換題型、範圍、題數</summary>
         <div class="rv-opt"><b>範圍：</b><div class="tabs" id="rvScope">
           <button data-v="due">⏰ 今日到期</button><button data-v="all">提前複習全部</button><button data-v="filter">目前篩選結果</button></div></div>
@@ -273,6 +273,12 @@
 
   function bindCommon(el) {
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
+    // 字卡＝統一活動框架的 flashcard（act 路由）；不會清單空的就翻今天到期的，再沒有就去路線
+    el.querySelectorAll('[data-cards]').forEach(b => b.onclick = () => {
+      const ids = (Tracker.list(false).length ? Tracker.list(false) : Tracker.dueList()).map(t => t.id).slice(0, 20);
+      if (!ids.length) return App.go('path');
+      App.go('act', { type: 'flashcard', ids, title: '不會清單字卡', back: { route: 'review', params: {} } });
+    });
     el.querySelectorAll('[data-act]').forEach(b => {
       const a = b.dataset.act;
       if (a === 'export') b.onclick = doExport;
@@ -602,7 +608,7 @@
     if (rw) rw.onclick = () => startSession(el, s.mode, wrongs.map(w => Tracker.get(w.id)).filter(Boolean));
   }
 
-  App.register('review', { title: '複習', icon: '📌', nav: true, navOrder: 5, render });
+  App.register('review', { title: '複習', icon: '📌', nav: false, navParent: 'me', render });
 
   // 供測試／其他模組使用
   W.ReviewAPI = { normRomaji, romajiMatch, kanaToRomaji, romajiOf };

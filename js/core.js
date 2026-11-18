@@ -436,6 +436,9 @@
   // 導覽圖示：線條 SVG（stroke=currentColor，跟主題變色）；沒列在這裡的路由用 emoji
   const NAV_SVG = {
     home: 'M3 11l9-8 9 8M5 9.5V20h5v-6h4v6h5V9.5',
+    path: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15.5 8.5l-2 5-5 2 2-5 5-2z',
+    lookup: 'M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM15.5 15.5L20 20',
+    me: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5',
     play: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
     read: 'M4 5h11v14H6.5A2.5 2.5 0 0 1 4 16.5V5zM15 9h5v8a2 2 0 0 1-2 2h-3M7 9h5M7 12.5h5M7 16h3',
     kb: 'M12 3l9 5-9 5-9-5 9-5zM3 12.5l9 5 9-5M3 17l9 5 9-5',
@@ -447,7 +450,7 @@
     const cur0 = parseHash().name, r0 = routes[cur0], cur = (r0 && r0.navParent) || (r0 && r0.nav ? cur0 : 'home');   // 沒指定 navParent 的子頁點亮首頁
     nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
-      const dn = n === 'review' ? (window.Learn ? Learn.stats().due : Tracker.dueCount()) : 0;   // 紅點＝今天到期數
+      const dn = n === 'me' || n === 'review' ? (window.Learn ? Learn.stats().due : Tracker.dueCount()) : 0;   // 紅點＝今天到期數
       const badge = dn ? `<span class="badge">${dn}</span>` : '';
       return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"${cur === n ? ' aria-current="page"' : ''}><span class="ni">${NAV_SVG[n] ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${NAV_SVG[n]}"/></svg>` : r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
     }).join('');

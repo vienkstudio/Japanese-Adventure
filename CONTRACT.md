@@ -144,7 +144,7 @@ migrate 也會修正型別：`xp` 非有限數字→0（負數→0）、`cleared
 頂列 `#backBtn` 是全站**唯一**返回鍵（首頁不顯示、不佔位）；各頁內容區不要再放 ← 按鈕。
 
 ## 路由一覽
-底部導覽 5 鈕：`home`(1) 今天、`play`(2) 冒險、`read`(3) 閱讀、`kb`(4) 知識庫、`review`(5) 複習；其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。
+底部導覽 4 鈕（第二階段，2026-11-19）：`home`(1) 今天、`path`(2) 路線、`lookup`(3) 查、`me`(4) 我的；`play`／`challenge*`／`boot*`／`biz*`／`act` 歸路線，`read*`／`songs`／`song`／`kb*`／`mind3d`／`phrasebook` 歸查，`review`／`cards`／`settings`／`classic` 歸我的；其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。
 | 路由 | 模組 | 說明 |
 |---|---|---|
 | `home`（nav 1） | home.js | 「今天」：唯一主按鈕「▶ 開始今天的課（約 8 分鐘）」→ `today`；多目的的人主按鈕下有 1 顆「今天練：⇄ 換」切換今天的目的；連勝與今日進度（複習／新學／應用，不可點）。**不放捷徑列、不加條件按鈕**；含頂列與導覽可點元素 ≤10（實測 10）。未定位（`profile.placed` false）先顯示程度選擇→字級→目的，body 加 `.ob-mode` |
@@ -219,3 +219,13 @@ N5／N4：〜ください・〜お願いします；N3：請求（〜お願い�
 - 委託星數：`App.state.cleared['w:<店>:<委託>@<程度>']`、問路 `'w:<街區>:route@<程度>'`；獎勵一律走 `App.reward`。一間店完成 5 個委託蓋御朱印並掉落頭像。
 - 樣式 `css/world.css`：前綴 `wd-`（地圖、面板）、`jp-`（首頁、日本地圖）、`ev-`（狀況題）。
 - 舊旅程 `travel.js` 的路由改名為 `trip`，不再是入口。
+
+
+## 第二階段：路線、活動框架、查／我的（2026-11-19）
+完整規格見 `docs/評審v10/00-第二階段契約.md`。
+- `js/activity.js`＋`js/activities/{flashcard,choice,wordbank,listen}.js`：`Activity.run/session/register`，活動只呼叫 `ctx.mark(item, grade)`，由 runner 統一 `Learn.record(id, grade, {src, item, type})`；路由 `act`（參數 `{type, ids|items, params}` 或 `{steps, title, back, next, lv}`）。shop 步驟用 `World.shopSim`。
+- `js/path.js`：`Path.units(goal,{lv})`、`Path.unit(id)`、`Path.loadUnit(id)`、`Path.nextUnit(goal)`、`Path.prepare(goal)`；路由 `path`（參數 `{tab}` 或 `{goal}`）、`path-unit`。旅遊 14 場景包、日檢 N5–N3 單元＋模擬考、五十音 12 單元（唯一五十音入口）、商務 8 單元、歌曲新聞入口卡。
+- `Learn.queue`：非歌曲／五十音目的的新學優先取 `Path.nextUnit(goal)`；`Learn.prepare` 先 `Path.prepare`。
+- `js/lookup.js`（查：單一搜尋＋依目的工具卡，3D 與匯入網址為實驗入口）、`js/me.js`（我的：複習、統計、成就、御朱印、設定、經典練習、備份）。
+- `World.shopSim(el,{shop,goal,items})`、`World.shopsByType()`、`World.shopPhrases(id)`、`World.loadShop(id)`。
+- 回歸測試：`node tools/test-romaji.mjs`、`node tools/test-jptext.mjs`、`node tools/test-activity.mjs`、`node tools/check-world.mjs`。

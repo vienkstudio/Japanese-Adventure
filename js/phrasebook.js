@@ -1,6 +1,7 @@
 /* 旅遊會話手冊：依情境分類、中日文／羅馬字搜尋（含同義詞）、每句語音、全螢幕「給店員看」。
-   路由：phrasebook（nav:false，從首頁或店內 📖 進入）。參數：App.go('phrasebook', {q:'關鍵字'}) 或 {cat:'eat'}（cat 也可給場景 id，如 'konbini'）。
-   🔤 五十音分頁（js/kana-lesson.js，須先載入）：App.go('phrasebook', {tab:'kana'})，可加 sub:'table'|'daku'|'yoon'|'lesson'|'quiz'、ch:'s6'（講義章節）。
+   路由：phrasebook（nav:false，navParent lookup，從「查」或店內 📖 進入）。參數：App.go('phrasebook', {q:'關鍵字'}) 或 {cat:'eat'}（cat 也可給場景 id，如 'konbini'）。
+   🔤 五十音分頁：改為導到五十音路線 App.go('path', {goal:'kana'})（唯一的五十音入口）；舊連結 {tab:'kana'} 也轉過去。
+   對外 window.Phrasebook：MUST、SYN、terms、search(q)、loadWorld、kataKana、showBig(w) 全螢幕大字、romOf、kanaOf、showRom（「查」頁共用）。
    資料：⭐ 必備句（本檔 MUST）＋ SCENES 的 phrases / vocab ＋ 冒險世界 WORLD 各店（搜尋時才載入全部地區）。
    零基礎或提示「全部顯示」時，每句加羅馬字；kana 欄保留片假名。 */
 (function () {
@@ -18,7 +19,12 @@
   ];
   const UI = { cat: 'must', q: '' };
   const hasKana = () => !!window.KanaLesson;
-  const cats = () => CATS.filter(c => c[0] !== 'kana' || hasKana());
+  const cats = () => CATS;
+  // 五十音：唯一入口是五十音路線。先把目前這筆歷史的參數清掉，返回時才不會又被轉走
+  function toKana() {
+    try { const s = history.state; if (s && s.jpq && s.name === 'phrasebook') history.replaceState(Object.assign({}, s, { params: {} }), ''); } catch (e) { }
+    App.go('path', { goal: 'kana' });
+  }
 
   /* ---------- ⭐ 必備句（旅遊最常用；羅馬字一律由 Phrase.romaji 產生） ---------- */
   const MUST = [
@@ -344,17 +350,16 @@
     params = params || {};
     if (params.q != null && String(params.q).trim()) { UI.q = String(params.q); }
     else if (params.cat) { const c = catOf(params.cat); if (c) { UI.cat = c; UI.q = ''; } }
-    if (params.tab === 'kana' && hasKana()) { UI.cat = 'kana'; UI.q = ''; KanaLesson.open(params.sub, params.ch); }
+    if (params.tab === 'kana') return toKana();
+    if (UI.cat === 'kana') UI.cat = 'must';
     el.innerHTML = `<section class="pb">
       <h1>📖 旅遊會話手冊</h1>
       <input class="pb-search" type="search" placeholder="搜尋：多少錢、退稅、儲值、ikura、促音、か…" value="${esc(UI.q)}" aria-label="搜尋會話">
       <div class="pb-cats">${cats().map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}" aria-pressed="${!UI.q && UI.cat === id}">${n}</button>`).join('')}</div>
       <div id="pb-list"></div>${App.voiceHTML ? App.voiceHTML() : ''}</section>`;
     const box = el.querySelector('#pb-list');
-    let kanaOpen = params.tab === 'kana' && params.ch ? { ch: params.ch } : null;
     const paint = () => {
-      if (!String(UI.q || '').trim() && UI.cat === 'kana' && hasKana()) { KEYS = []; KanaLesson.render(box, kanaOpen); kanaOpen = null; }
-      else box.innerHTML = list();
+      box.innerHTML = list();
       el.querySelectorAll('[data-cat]').forEach(b => { const on = !UI.q && b.dataset.cat === UI.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); if (on) { const bar = b.parentNode; bar.scrollLeft = Math.max(0, b.offsetLeft - bar.offsetLeft - 16); } });
     };
     const ensureWorld = () => {
@@ -365,18 +370,17 @@
       const s = e.target.closest('[data-say]'), b = e.target.closest('[data-show]');
       if (s) { const w = KEYS[+s.dataset.say]; if (w) App.speak(String(w.kana || w.jp).replace(/〜/g, '')); }
       if (b) { const w = KEYS[+b.dataset.show]; if (w) showBig(w); }
-      if (e.target.closest('.kn')) return;   // 五十音分頁自己處理點擊
       const ks = e.target.closest('[data-ks]'), kg = e.target.closest('[data-kgo]');
       if (ks) App.speak(ks.dataset.ks);
-      if (kg && hasKana()) { const [sub, ch] = kg.dataset.kgo.split(':'); KanaLesson.open(sub, ch); kanaOpen = ch ? { ch } : null; UI.cat = 'kana'; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); }
+      if (kg) toKana();
     };
     const inp = el.querySelector('.pb-search');
     let t = null;
     inp.oninput = () => { UI.q = inp.value; clearTimeout(t); t = setTimeout(() => { paint(); ensureWorld(); }, 120); };
-    el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { UI.cat = b.dataset.cat; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); });
+    el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { if (b.dataset.cat === 'kana') return toKana(); UI.cat = b.dataset.cat; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); });
     paint(); ensureWorld();
   }
 
-  App.register('phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home', render });
-  window.Phrasebook = { MUST, SYN, terms, search: q => search(q).ph, loadWorld, kataKana };
+  App.register('phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'lookup', render });
+  window.Phrasebook = { MUST, EMER, SYN, terms, search: q => search(q).ph, loadWorld, kataKana, showBig, romOf, kanaOf, showRom };
 })();
