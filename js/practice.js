@@ -397,7 +397,8 @@
     }));
     return out;
   }
-  const diffOf = id => ((App.state.cardDiff || {})[id] || 0);
+  // 自評難度＝ Learn 最後一次評分（0 忘了/1 困難→😵3、2 普通→🤔2、3 簡單→😊1；沒評過＝0）
+  const diffOf = id => { const e = window.Learn && Learn.get(id); return !e || e.g == null ? 0 : [3, 3, 2, 1][e.g]; };
   // 今日翻卡數（首頁「翻 10 張字卡」用）：翻面或自評都算一張
   function countCard() {
     const t = App.today(), d = App.state.cardDay && App.state.cardDay.d === t ? App.state.cardDay : { d: t, n: 0 };
@@ -452,15 +453,15 @@
       re();
     };
     body.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => {
-      if (!App.state.cardDiff) App.state.cardDiff = {};
       const v = +b.dataset.rate;
-      App.state.cardDiff[c.id] = v;
       const cc = body.querySelector('#cCard');
       if (!cc || !cc.classList.contains('flip')) countCard();
+      const wasIn = Tracker.has(c.id);
+      // 自評直接記進統一進度：😵 困難＝忘了（進不會清單）、🤔 普通＝答對、😊 簡單＝很熟
+      Learn.record(c.id, { 3: 0, 2: 2, 1: 3 }[v], { src: 'card', item: { jp: c.jp, kana: c.kana, romaji: c.romaji, zh: c.zh, hint: c.hint, emoji: c.emoji || '', source: c.source || '字卡', lv: c.lv && c.lv !== 'x' ? c.lv : '' } });
       let msg = `已標記「${b.textContent.trim()}」`;
-      if (v === 3 && !Tracker.has(c.id)) { Tracker.add({ id: c.id, jp: c.jp, kana: c.kana, romaji: c.romaji, zh: c.zh, hint: c.hint, emoji: c.emoji || '', source: c.source || '字卡' }, true); msg += '・已加入不會清單'; }
-      else if (v === 1 && Tracker.has(c.id)) { Tracker.mark(c.id, true); msg += '・不會清單記一次答對'; }
-      App.save();
+      if (v === 3 && !wasIn) msg += '・已加入不會清單';
+      else if (v !== 3 && wasIn) msg += '・記一次答對';
       App.toast(msg);
       const stillIn = UI.dF === 'all' || +UI.dF === +b.dataset.rate;
       if (stillIn) UI.ci = (UI.ci + 1) % Math.max(1, list.length);
@@ -654,7 +655,7 @@
         if (S.pat <= 0) { stopT(); timeout(); }
       }, 200);
     };
-    const addWrong = it => { Tracker.add(it, true); if (!S.wrong.some(w => w.id === it.id)) S.wrong.push(it); };
+    const addWrong = it => { ((w) => Learn.record(w.id, 0, { src: 'menu', item: w }))(it); if (!S.wrong.some(w => w.id === it.id)) S.wrong.push(it); };
     const gain = (anchor, base) => {
       S.combo++; S.best = Math.max(S.best, S.combo); S.ok++; S.tot++;
       const pts = Math.round(base * (1 + Math.min(S.combo - 1, 5) * 0.2));

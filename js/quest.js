@@ -373,7 +373,7 @@
       } else {
         G.combo = 0; G.hearts--;
         G.wrong.set(it.h, App.kanaItem(it.raw));
-        Tracker.add(App.kanaItem(it.raw), true);
+        ((w) => Learn.record(w.id, 0, { src: 'quest', item: w }))(App.kanaItem(it.raw));
         anim('#qMon', 'atk');
         setTimeout(() => { anim('#qHero', 'hurt'); hearts(); g.sfx('hurt'); }, 220);
         App.speak(it.h);

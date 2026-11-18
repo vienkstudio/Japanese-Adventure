@@ -15,13 +15,7 @@
 <script>/* 先套主題，避免閃爍（設定由 App.setTheme 寫入 jpQuest.ui） */try{var u=JSON.parse(localStorage.getItem("jpQuest.ui")||"{}"),h=document.documentElement;if(u.theme==="light"||u.theme==="dark")h.setAttribute("data-theme",u.theme);h.setAttribute("data-palette",u.palette||"coral");if(u.fs&&u.fs!=="m")h.setAttribute("data-fs",u.fs);}catch(e){}</script>
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
-<link rel="stylesheet" href="css/travel.css">
-<link rel="stylesheet" href="css/mind.css">
-<link rel="stylesheet" href="css/world.css">
-<link rel="stylesheet" href="css/kb.css">
-<link rel="stylesheet" href="css/reader.css">
-<link rel="stylesheet" href="css/kana.css">
-<link rel="stylesheet" href="css/challenge.css">
+<!-- 其他 CSS 隨路由載入（Home.lazy 第 3 個參數） -->
 </head>
 <body>
 <header id="top"><div class="in">
@@ -31,48 +25,47 @@
 </div></header>
 <main id="main"></main>
 
-<!-- 資料 -->
-<script src="kana-data.js"></script>
-<script src="data/loan.js"></script>
-<script>window.SCENES = window.SCENES || [];</script>
-<script src="data/scenes-1.js"></script>
-<script src="data/scenes-2.js"></script>
-<script src="data/scene-ext.js"></script>
-<script src="data/cards.js"></script>
-<script src="data/menus.js"></script>
-<script src="data/travel.js"></script>
-<script src="data/travel-ext.js"></script>
-<script src="data/travel-stops.js"></script>
-<!-- 核心 -->
+<!-- 同步載入：只有外殼（核心、學習進度、遊戲化、今天首頁）。其他全部進入路由時才載入 -->
 <script src="js/core.js"></script>
+<script src="js/learn.js"></script>
 <script src="js/game.js"></script>
-<!-- 首頁、設定、首次程度選擇 -->
 <script src="js/home.js"></script>
-<!-- 功能模組 -->
-<script src="js/quest.js"></script>
-<script src="js/practice.js"></script>
-<script src="js/town.js"></script>
-<script src="js/review.js"></script>
-<script src="js/travel.js"></script>
-<!-- 冒險世界 -->
-<script src="js/phrase.js"></script>
-<script src="data/world/index.js"></script>
-<script src="js/world-art.js"></script>
-<script src="js/world.js"></script>
-<script src="js/world-quest.js"></script>
 <script>
-// 延遲載入：第一次進入才下載。導覽 5 鈕：home 1、play 2（B 在 world.js 設定）、read 3、kb 4、review 5
-App.lazy([['boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }], ['boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'home' }]], ['data/drills.js', 'js/drill.js']);
-App.lazy([['phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'home' }]], ['js/kana-lesson.js', 'js/phrasebook.js']);   // App.go('phrasebook', {q:'關鍵字'} 或 {cat:'eat'})
-App.lazy([['challenge', { title: '挑戰', icon: '🏆', nav: false, navParent: 'home' }], ['challenge-play', { title: '挑戰', icon: '🏆', nav: false, navParent: 'home' }]], ['data/mind/grammar.js', 'js/challenge.js']);
-// 知識庫（C）：kb、kb-page；mind3d＝舊 3D 心智圖（實驗功能）
-const MIND_DATA = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js'];
-App.lazy([['kb', { title: '知識庫', icon: '📚', nav: true, navOrder: 4 }], ['kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }], ['mind', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js']));
-App.lazy([['mind3d', { title: '3D 心智圖', icon: '🧠', nav: false, navParent: 'kb' }]], MIND_DATA.concat(['js/kb.js', 'vendor/3d-force-graph.min.js', 'js/mind3d.js', 'js/mind-game.js']));
-// 閱讀與歌曲（D）
-const READ_JS = ['data/reading/daily.js', 'js/jp-text.js', 'js/link-import.js', 'js/reader.js', 'js/songs.js'];
-App.lazy([['read', { title: '閱讀', icon: '📰', nav: true, navOrder: 3 }], ['read-article', { title: '閱讀', icon: '📰', nav: false, navParent: 'read' }],
-  ['songs', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }], ['song', { title: '歌曲', icon: '🎵', nav: false, navParent: 'read' }]], READ_JS);
+// 延遲載入：Home.lazy([[路由, 外殼定義]…], [依序載入的 js…], [css…])；第一次進入才下載。導覽 5 鈕：home 1、play 2、read 3、kb 4、review 5
+(function (L) {
+  const K = ['kana-data.js'], SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'], PH = ['js/phrase.js'], LO = ['data/loan.js'];
+  const TD = ['data/travel.js', 'data/travel-ext.js', 'data/travel-stops.js'];
+  const r = (name, title, icon, o) => [name, Object.assign({ title, icon, nav: false }, o && o.nav ? {} : { navParent: 'home' }, o || {})];
+  // 冒險世界（狀況題 event 另需舊旅程的 TravelData）
+  const WD = PH.concat(LO, SC, ['data/world/index.js', 'js/world-art.js', 'js/world.js', 'js/world-quest.js']);
+  L([r('play', '冒險', '🗾', { nav: true, navOrder: 2 })], WD, ['css/world.css']);
+  L([r('event', '狀況題', '⚡', { navParent: 'play' })], WD.concat(TD), ['css/world.css']);
+  // 複習、字卡
+  L([r('review', '複習', '📌', { nav: true, navOrder: 5 })], K.concat(SC, PH, ['js/review.js']));
+  L([r('cards', '字卡', '🎴', { navParent: 'review' })], K.concat(SC, ['data/cards.js'], PH, LO, ['js/practice.js']), ['css/world.css']);
+  // 手冊（含五十音講義）、特訓、挑戰
+  L([r('phrasebook', '手冊', '📖')], K.concat(SC, PH, ['data/world/index.js', 'js/kana-lesson.js', 'js/phrasebook.js']), ['css/kana.css']);
+  L([r('boot', '特訓', '🎧'), r('boot-play', '特訓', '🎧')], SC.concat(['data/drills.js', 'js/drill.js']));
+  L([r('challenge', '挑戰', '🏆'), r('challenge-play', '挑戰', '🏆')], ['data/mind/grammar.js', 'js/challenge.js'], ['css/challenge.css']);
+  // 知識庫（kb、kb-page）；mind3d＝3D 心智圖（實驗功能）
+  const MIND = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js'];
+  L([r('kb', '知識庫', '📚', { nav: true, navOrder: 4 }), r('kb-page', '知識庫', '📚', { navParent: 'kb' }), r('mind', '知識庫', '📚', { navParent: 'kb', transient: true })], PH.concat(LO, MIND, ['js/kb.js']), ['css/kb.css']);
+  L([r('mind3d', '3D 心智圖', '🧠', { navParent: 'kb' })], PH.concat(LO, SC, MIND, ['js/kb.js', 'vendor/3d-force-graph.min.js', 'js/mind3d.js', 'js/mind-game.js']), ['css/kb.css', 'css/mind.css']);
+  // 閱讀與歌曲（含商務短文 data/reading/biz.js）
+  L([r('read', '閱讀', '📰', { nav: true, navOrder: 3}), r('read-article', '閱讀', '📰', { navParent: 'read' }),
+    r('songs', '歌曲', '🎵', { navParent: 'read' }), r('song', '歌曲', '🎵', { navParent: 'read' })],
+    PH.concat(LO, SC, ['data/reading/daily.js', 'data/reading/biz.js', 'js/jp-text.js', 'js/link-import.js', 'js/reader.js', 'js/songs.js']), ['css/reader.css']);
+  // 商務日語（C）：css/biz.css 由 biz.js 自行插入
+  L([r('biz', '商務日語', '💼'), r('biz-unit', '商務日語', '💼'), r('biz-read', '商務閱讀', '💼')],
+    PH.concat(['data/biz/units-1.js', 'data/biz/units-2.js', 'data/biz/units-3.js', 'data/biz/units-4.js', 'data/reading/biz.js', 'js/biz.js']), ['css/biz.css']);
+  // 🏯 經典練習：舊旅程 13 站、舊練習地圖、情境小遊戲、town 單字測驗／對話／口說、quest 關卡（一起載入，彼此路由互通）
+  const OLD = K.concat(SC, ['data/cards.js', 'data/menus.js'], TD, PH, LO, ['js/quest.js', 'js/practice.js', 'js/town.js', 'js/travel.js', 'js/classic.js']);
+  L([r('classic', '經典練習', '🏯', { navParent: 'play' }),
+    r('trip', '旅程・五十音', '🗾'), r('trip-stop', '站內流程', '📍', { transient: true }), r('trip-event', '旅遊情境', '💬'), r('trip-next', '下一站', '🚶', { transient: true }),
+    r('practice-map', '原版練習', '🎯'), r('stage', '場景關卡', '🗺️'), r('practice', '練習', '🎯', { transient: true }), r('menu', '情境挑戰', '🧾'),
+    r('town', '日本街道', '🏙️', { transient: true }), r('scene', '場景', '🏠'), r('drill', '練習', '🎯'),
+    r('map', '冒險地圖', '🗺️', { transient: true }), r('quest', '關卡', '⚔️')], OLD, ['css/travel.css', 'css/world.css', 'css/kana.css']);
+})(Home.lazy);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }
 </script>

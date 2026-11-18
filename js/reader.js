@@ -145,6 +145,7 @@
       <div class="tabs rd-tabs">${READING.LV.map(l => `<button type="button" data-lv="${l}" class="${l === tab ? 'on' : ''}">${esc(READING.LV_NAME[l])}</button>`).join('')}</div>
       <p class="muted rd-tip">${esc(READING.LV_DESC[tab])}・點文章開始讀，點任何一個詞看意思</p>
       <div class="rd-list">${list.map(a => `<button type="button" class="rd-item" data-go="${a.id}"><span class="rd-ic" aria-hidden="true">${a.icon}</span><span class="rd-it"><b>${esc(a.title)}</b><small class="muted">${esc(a.zh)}</small></span>${doneMark(a.id)}</button>`).join('')}</div>
+      ${(window.BIZ_READING || []).length ? `<h3 class="rd-h3">💼 商務</h3><div class="rd-list">${window.BIZ_READING.map(a => `<button type="button" class="rd-item" data-biz="${esc(a.id)}"><span class="rd-ic" aria-hidden="true">${a.icon || '💼'}</span><span class="rd-it"><b>${esc(a.title)}</b><small class="muted">${esc(a.zh)}・${esc(String(a.lv || '').toUpperCase())}</small></span></button>`).join('')}</div>` : ''}
       <h3 class="rd-h3">🗂️ 我的文章</h3>
       <div class="rd-list" id="rdMine"><p class="muted rd-tip">讀取中…</p></div>
       <p class="muted rd-tip">貼上的文章只存在這台裝置，不會上傳。</p>
@@ -152,6 +153,7 @@
     </div>`;
     bindSect(el, true);
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go('read-article', { daily: b.dataset.go }));
+    el.querySelectorAll('[data-biz]').forEach(b => b.onclick = () => App.go('biz-read', { id: b.dataset.biz }));
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv, news: nc, sec: 'art' }));
     el.querySelectorAll('[data-ncat]').forEach(b => b.onclick = () => {
       newsCat = b.dataset.ncat;

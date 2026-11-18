@@ -10,20 +10,15 @@
   const TRAVEL = M.TRAVEL || ['trans', 'travel', 'food', 'shop', 'med'];
   const DESK = () => innerWidth >= 960;
 
-  /* ---------------- 狀態（與 3D 共用 jpq.mind.v1） ---------------- */
-  const MK = 'jpq.mind.v1';
-  const ST = M.ST || (M.ST = (() => { try { return JSON.parse(App.store.get(MK) || '{}'); } catch (e) { return {}; } })());
-  ST.learned = ST.learned || {}; ST.ing = ST.ing || {}; ST.fav = ST.fav || {}; ST.recent = ST.recent || [];
-  const saveST = () => App.store.set(MK, JSON.stringify(ST));
-  // 文法重複條目已合併：舊 id 的狀態搬到保留的 id
-  (() => {
-    const A = M.GALIAS || {}; let ch = 0;
-    for (const a in A) ['learned', 'ing', 'fav'].forEach(k => { if (ST[k][a]) { ST[k][A[a]] = ST[k][a]; delete ST[k][a]; ch = 1; } });
-    if (ST.recent.some(id => A[id])) { ST.recent = [...new Set(ST.recent.map(id => A[id] || id))]; ch = 1; }
-    if (ch) saveST();
-  })();
-  const stOf = id => ST.learned[id] ? 2 : ST.ing[id] ? 1 : 0;
-  function setSt(id, s) { delete ST.learned[id]; delete ST.ing[id]; if (s === 2) ST.learned[id] = 1; else if (s === 1) ST.ing[id] = 1; saveST(); }
+  /* ---------------- 狀態：統一進度 Learn（App.state.learn；收藏、最近開啟在 App.state.mind） ----------------
+     M.ST 保留舊形狀給 3D／任務用：ST.learned／ing／fav 由 Learn 計算，done／best／recent 存 App.state.mind（跟著備份） */
+  const ST = M.ST = Learn.mindST();
+  const saveST = () => App.save();
+  // 文法重複條目已合併：learned／ing／fav 由 Learn.idOf 依 GALIAS 對應；最近開啟清單直接換 id
+  (() => { const A = M.GALIAS || {}; if (ST.recent.some(id => A[id])) { ST.recent = [...new Set(ST.recent.map(id => A[id] || id))]; saveST(); } })();
+  const ST_ID = ['new', 'learning', 'review'];
+  const stOf = id => { const s = Learn.status(id); return s === 'review' || s === 'mastered' ? 2 : s === 'learning' ? 1 : 0; };
+  function setSt(id, s, nosave) { if (stOf(id) === s) return; Learn.setStatus(id, ST_ID[s], { src: 'kb', item: Learn.kbItem(id), nosave }); }
   function touch(id) { ST.recent = [id].concat(ST.recent.filter(x => x !== id)).slice(0, 40); saveST(); }
   const PK = 'jpq.kb.v1';
   const PR = (() => { try { return JSON.parse(App.store.get(PK) || '{}'); } catch (e) { return {}; } })();
@@ -143,8 +138,9 @@
       ${it.kind !== 'conj' ? sayB(it.kind === 'gram' && it.ref.ex && it.ref.ex[0] ? it.ref.ex[0] : it.jp) : ''}${favB(it.id)}</div>`;
   }
   function learnedCount(lv, kind) {
-    if (kind === 'gram') return GRAM.filter(g => g.lv === lv && ST.learned[g.id]).length;
-    const pre = 'w:' + lv + ':'; let n = 0; for (const k in ST.learned) if (k.startsWith(pre)) n++; return n;
+    if (kind === 'gram') return GRAM.filter(g => g.lv === lv && stOf(g.id) === 2).length;
+    const ws = words(lv);
+    return ws ? ws.filter(w => stOf(w.id) === 2).length : Learn.stats({ lv, type: 'v' }).known;
   }
   const total = (lv, kind) => (M.STATS[kind === 'gram' ? 'gram' : 'lex'] || {})[lv] || 0;
 
@@ -208,7 +204,7 @@
       <div class="kb-th">等級</div>${LV.map(lvRow).join('')}
       <div class="kb-th">其他</div>
       <button type="button" class="kb-ti${on('conj')}" data-nav="conj">🔁 動詞變化<small>${CONJ.length}</small></button>
-      <button type="button" class="kb-ti${on('fav')}" data-nav="fav">⭐ 收藏<small>${Object.keys(ST.fav).length}</small></button>
+      <button type="button" class="kb-ti${on('fav')}" data-nav="fav">⭐ 收藏<small>${Learn.views(e => e.fav).length}</small></button>
       <button type="button" class="kb-ti${on('recent')}" data-nav="recent">🕘 最近開啟</button>
       <button type="button" class="kb-ti" data-nav="3d">🌐 3D 心智圖</button>
     </div>`;
@@ -316,10 +312,12 @@
     const t = which === 'fav' ? '⭐ 收藏' : '🕘 最近開啟';
     const c = shell(el, which, [['知識庫', {}], [t.slice(2), { p: which }]]);
     c.innerHTML = `<h1 class="kb-h1">${t}</h1><div class="kb-body"><p class="muted center">載入中…</p></div>`;
-    const ids = which === 'fav' ? Object.keys(ST.fav) : ST.recent.slice();
-    const lvs = [...new Set(ids.filter(i => i.startsWith('w:')).map(i => i.split(':')[1]))];
+    let ids = which === 'fav' ? null : ST.recent.slice();
+    const favLv = Learn.views(e => e.fav).map(v => v.lv).filter(l => LV.includes(l));
+    const lvs = [...new Set((ids || []).filter(i => i.startsWith('w:')).map(i => i.split(':')[1]).concat(favLv))];
     loadLvs(lvs).then(() => {
       const b = c.querySelector('.kb-body'); if (!b) return;
+      if (!ids) ids = Object.keys(ST.fav);
       const list = ids.map(getItem).filter(Boolean);
       b.innerHTML = list.length ? `<div class="kb-list">${list.slice(0, 60).map(rowHTML).join('')}</div>` : `<p class="kb-empty">${which === 'fav' ? '還沒有收藏。點任一項右邊的 ☆ 就會收進這裡。' : '還沒有開過任何項目。'}</p>`;
     }).catch(() => { });
@@ -561,11 +559,11 @@
     if (a === 'to3d') return App.go('mind3d', { focus: d.id });
     if (a === 'lvknown') {
       // 不跳 confirm：直接標記，提供一鍵復原
-      const ch = GRAM.filter(g => LVI[g.lv] <= LVI[d.lv] && !ST.learned[g.id]).map(g => [g.id, !!ST.ing[g.id]]);
-      ch.forEach(([id]) => { delete ST.ing[id]; ST.learned[id] = 1; }); saveST(); rerender();
+      const ch = GRAM.filter(g => LVI[g.lv] <= LVI[d.lv] && stOf(g.id) !== 2).map(g => [g.id, stOf(g.id) === 1]);
+      ch.forEach(([id]) => setSt(id, 2, true)); saveST(); rerender();
       App.toast(`✓ 已把 ${d.lv} 以下 ${ch.length} 條文法標為已掌握 <button type="button" class="kb-undo">復原</button>`, 'ok');
       const u = document.querySelector('#toastBox .toast:last-child .kb-undo');
-      if (u) u.onclick = () => { ch.forEach(([id, ing]) => { delete ST.learned[id]; if (ing) ST.ing[id] = 1; }); saveST(); rerender(); u.closest('.toast').remove(); };
+      if (u) u.onclick = () => { ch.forEach(([id, ing]) => setSt(id, ing ? 1 : 0, true)); saveST(); rerender(); u.closest('.toast').remove(); };
       return;
     }
   }

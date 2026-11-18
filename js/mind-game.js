@@ -36,9 +36,24 @@
     combos.forEach(c => {
       const vars = Object.assign({}, c, t.vars ? t.vars(c, M) : {});
       if (t.when && !t.when(vars, M)) return;
-      add({ id: tpl(t.id, vars), cat: t.cat, icon: tpl(t.icon, vars), title: tpl(t.title, vars), desc: tpl(t.desc || '', vars), lv: vars.lv, steps: t.steps, vars });
+      add({ id: tpl(t.id, vars), cat: t.cat, icon: tpl(t.icon, vars), title: tpl(t.title, vars), desc: tpl(t.desc || '', vars), steps: t.steps, vars });
     });
   });
+  // 舊存檔：以等級分的任務 id 併入不分等級的新任務（取最高星數），對應不到的保留不動
+  const LEGACY = [[/^classify-N\d$/, () => 'classify'], [/^scenesort-N\d$/, () => 'scenesort'], [/^hunt-N\d$/, () => 'hunt'],
+    [/^star-N\d-(.+)$/, m => 'star-' + m[1]], [/^gram-N\d-(.+)$/, m => 'gram-' + m[1]], [/^conj-identify-n3$/, () => 'conj-identify']];
+  (function migrate() {
+    let ch = false;
+    Object.keys(ST.done).forEach(k => {
+      for (const [re, to] of LEGACY) {
+        const m = k.match(re); if (!m) continue;
+        const id = to(m); if (!BY[id]) break;
+        ST.done[id] = Math.max(ST.done[id] || 0, ST.done[k] || 0); delete ST.done[k]; ch = true; break;
+      }
+    });
+    if (ch) V.saveST();
+  })();
+  const starSum = () => ALL.reduce((a, s) => a + (ST.done[s.id] || 0), 0);
 
   /* ---------------- 選題 ---------------- */
   const CLEAN = /[（(〜～;；・]/;
@@ -51,24 +66,28 @@
       const pos = arr(sel.pos);
       const pool = lvs.reduce((a, l) => a.concat(V.LEX[l] || []), []).filter(w => (!sel.wh || w.wh === sel.wh) && (!sel.sc || w.sc.includes(sel.sc)) && (!sel.sc0 || w.sc[0] === sel.sc0)
         && (!pos || pos.includes(w.pos)) && (!sel.verb || w.pos === 'v') && !CLEAN.test(w.jp) && w.zh.length <= 14);
-      return shuffle(pool).slice(0, n).map(wv);
+      // 不分等級出題：優先挑接近使用者程度的詞（只影響難易，不是分類）
+      const me = V.profIdx(), LI = l => M.LEVELS.indexOf(l);
+      const near = pool.map(w => [Math.abs(LI(w.lv) - me) + Math.random(), w]).sort((a, b) => a[0] - b[0]).slice(0, Math.max(n * 5, 30)).map(x => x[1]);
+      return shuffle(near).slice(0, n).map(wv);
     }
     if (sel.type === 'gram') {
       const lvs = arr(sel.lv);
       let pool = V.GRAM.filter(g => (!lvs || lvs.includes(g.lv)) && (!sel.cat || g.cat === sel.cat) && (!sel.conj || g.conj.includes(sel.conj)) && (!sel.unlearned || !ST.learned[g.id]));
       // 依路線出題：先修未學會者排後面；不限類別時直接走學習路線（會補入較低級的先修）
       const ready = g => g.pre.every(p => ST.learned[p]);
-      if (sel.order === 'ord' && sel.unlearned && !sel.cat && !sel.conj && M.kb && M.kb.gramPath) return M.kb.gramPath(lvs, n);
+      if (sel.order === 'ord' && sel.unlearned && !sel.cat && !sel.conj && M.kb && M.kb.gramPath) { try { return M.kb.gramPath(lvs || null, n).map(g => V.G_BY.get(g.id) || g); } catch (e) { } }
       if (sel.order !== 'ord') pool = shuffle(pool);
       else { const un = pool.filter(g => !ST.learned[g.id]); pool = un.filter(ready).concat(un.filter(g => !ready(g)), pool.filter(g => ST.learned[g.id])); }
       return pool.slice(0, n);
     }
     if (sel.type === 'grp') {
+      // 詞群＝人事時地物 × 場景（各級合併）
       const out = [];
-      (arr(sel.lv) || M.LEVELS).forEach(lv => Object.keys(M.GROUPS[lv] || {}).forEach(k => {
-        const c = M.GROUPS[lv][k], p = k.split('|');
-        if (c >= (sel.min || 1) && c <= (sel.max || 1e9) && V.SCc[p[1]]) out.push({ id: `grp:${lv}|${p[0]}|${p[1]}`, lv, wh: p[0], sc: p[1], cnt: c, name: V.SCc[p[1]].name + '・' + p[0] });
-      }));
+      Object.keys(V.GRP).forEach(k => {
+        const c = V.GRP[k], p = k.split('|');
+        if (c >= (sel.min || 1) && c <= (sel.max || 1e9) && V.SCc[p[1]] && V.WHc[p[0]]) out.push({ id: 'grp:' + k, wh: p[0], sc: p[1], cnt: c, name: V.SCc[p[1]].name + '・' + p[0] });
+      });
       return shuffle(out).slice(0, n);
     }
     return [];
@@ -99,7 +118,7 @@
   };
 
   /* ---------------- 執行狀態 ---------------- */
-  let RUN = null, BD = { open: false, cat: '推薦', lv: '' };
+  let RUN = null, BD = { open: false, cat: '推薦' };
   function wait(run, kind) { return new Promise((resolve, reject) => { run.waiter = { kind, resolve, reject }; }); }
   function fire(kind, val) { if (!RUN || !RUN.waiter) return false; const w = RUN.waiter; if (val !== SKIP && w.kind !== kind) return false; RUN.waiter = null; w.resolve(val); return true; }
   function onNode(n) { if (RUN && !RUN.done) fire('node', n); return true; }
@@ -159,14 +178,13 @@
     async say(st, run) { ui(run, { text: st.text, next: st.btn || '繼續 ▶' }); if (st.speak) App.speak(st.speak); await wait(run, 'tap'); },
     async mode(st, run) { V.select(null); if (st.focus) await V.focus(st.focus); else await V.setMode(st.mode); await sleep(st.ms || 500); },
     async filter(st, run) {
-      if (st.lv) { V.F.lv.clear(); arr(st.lv).forEach(l => V.F.lv.add(l)); }
       if (st.wh) { V.F.wh.clear(); arr(st.wh).forEach(w => V.F.wh.add(w)); }
       if ('sc' in st) { V.F.sc.clear(); if (st.sc) V.F.sc.add(st.sc); }
       V.restyle();
     },
     async cam(st) { const n = st.to && V.node(st.to); if (n) V.flyTo(n, st.dist); await sleep(st.ms || 700); },
     async mark(st) { V.HL.clear(); (st.ids || []).forEach(id => V.HL.set(id, 'hl')); V.restyle(); },
-    async expand(st) { await V.expand(st.grp); await sleep(700); },
+    async expand(st) { await V.expand(V.norm(st.grp)); await sleep(700); },
     async pick(st, run) { run.vars[st.as] = await pick(st.sel, run); },
     async set(st, run) {
       if (st.rand) run.vars[st.as] = rand(st.rand);
@@ -188,7 +206,6 @@
       } else {
         c = { id: 'q', type: 'verb', lab: '？', val: 14 };
         if (st.hubs === 'wh') hubs = M.WH.map(w => V.N.wh(w.id));
-        else if (st.hubs === 'lv') hubs = M.LEVELS.map(l => V.N.lv(l));
         else {
           const ws = run.vars[st.from] || []; let ids = Array.from(new Set(ws.map(w => w.sc0)));
           const rest = shuffle(M.SCENES.map(s => s.id).filter(x => !ids.includes(x)));
@@ -245,7 +262,7 @@
     const sc = BY[id]; if (!sc) return;
     stop(true); BD.open = false;
     const run = RUN = { sc, vars: Object.assign({}, sc.vars), right: 0, wrong: 0, combo: 0, maxCombo: 0, asked: 0, prog: 0, cancel: false, waiter: null, ui: { text: '準備中…' },
-      keep: { lv: Array.from(V.F.lv), wh: Array.from(V.F.wh), sc: Array.from(V.F.sc) } };
+      keep: { wh: Array.from(V.F.wh), sc: Array.from(V.F.sc) } };
     V.select(null); V.F.side = false; V.intercept(onNode); V.renderBar();
     Promise.resolve().then(() => runSteps(typeof sc.steps === 'function' ? sc.steps(run.vars, M) : sc.steps, run)).then(() => finish(run))
       .catch(e => { if (e === CANCEL) return; console.error(e); App.toast('任務發生錯誤：' + (e.message || e)); if (RUN === run) stop(); });
@@ -266,7 +283,7 @@
     const r = RUN; RUN = null; r.cancel = true;
     if (r.waiter) { const w = r.waiter; r.waiter = null; w.reject(CANCEL); }
     V.intercept(null); V.HL.clear();
-    V.F.lv.clear(); r.keep.lv.forEach(l => V.F.lv.add(l)); V.F.wh.clear(); r.keep.wh.forEach(w => V.F.wh.add(w)); V.F.sc.clear(); r.keep.sc.forEach(s => V.F.sc.add(s));
+    V.F.wh.clear(); r.keep.wh.forEach(w => V.F.wh.add(w)); V.F.sc.clear(); r.keep.sc.forEach(s => V.F.sc.add(s));
     if (r.verbSet) V.setVerb({ jp: '書く', grp: '1', zh: '寫' });
     if (V.mode === 'game') { V.F.mode = 'map'; if (!silent) { V.setMode('map'); return; } }
     if (!silent) { V.show(true); } else hud();
@@ -279,16 +296,19 @@
   /* ---------------- HUD／任務板 ---------------- */
   const stars = n => '★★★'.slice(0, n) + '☆☆☆'.slice(0, 3 - n);
   function recommend() {
-    const nx = V.nextOf(), lv = nx ? nx.lv : 'N5', out = [];
+    const nx = V.nextOf(), out = [];
     if (!ST.done.tour) out.push(BY.tour);
     out.push(BY.daily, BY['path-next']);
-    ['分類', '場景', '單字', '尋寶', '變化', '文法'].forEach(c => { const s = ALL.find(x => x.cat === c && !ST.done[x.id] && (!x.lv || x.lv === lv)) || ALL.find(x => x.cat === c && !ST.done[x.id]); if (s) out.push(s); });
+    // 文法：推薦「下一步」所屬類別的任務；其他分類推第一個還沒玩的
+    const gc = nx && BY['gram-' + nx.cat];
+    if (gc && !ST.done[gc.id]) out.push(gc);
+    ['分類', '場景', '單字', '尋寶', '變化', '文法'].forEach(c => { const s = ALL.find(x => x.cat === c && !ST.done[x.id]); if (s) out.push(s); });
     return out.filter((s, i) => s && out.indexOf(s) === i);
   }
   function hud() {
     const root = V.root; if (!root || !root.isConnected) return;
     const Q = s => root.querySelector(s);
-    const total = Object.keys(ST.done).reduce((a, k) => a + ST.done[k], 0), learned = V.GRAM.filter(g => ST.learned[g.id]).length;
+    const total = starSum(), learned = V.GRAM.filter(g => ST.learned[g.id]).length;
     const stt = Q('.mm-stats'); if (stt) stt.innerHTML = `<span title="任務星數">⭐ 星 ${total}</span><span title="已學文法">🧠 已學 ${learned}/${V.GRAM.length}</span><span title="最高連擊">🔥 連擊 ${ST.best}</span>`;
     const dock = Q('.mm-dock'); let h = '';
     if (RUN) {
@@ -321,11 +341,10 @@
     const root = V.root, el = root && root.querySelector('.mm-board'); if (!el) return;
     el.classList.toggle('open', BD.open);
     if (!BD.open) { el.innerHTML = ''; return; }
-    const list = BD.cat === '推薦' ? recommend() : ALL.filter(s => s.cat === BD.cat && (!BD.lv || !s.lv || s.lv === BD.lv));
-    const total = Object.keys(ST.done).reduce((a, k) => a + ST.done[k], 0);
+    const list = BD.cat === '推薦' ? recommend() : ALL.filter(s => s.cat === BD.cat);
+    const total = starSum();
     el.innerHTML = `<div class="mm-bd"><div class="mm-bh"><b>🎮 任務板</b><span class="muted">⭐ ${total}／${ALL.length * 3}</span><button type="button" class="mm-x" data-g="bclose" aria-label="關閉">✕</button></div>
       <div class="mm-row">${CATS.map(c => `<button type="button" class="mm-chip${BD.cat === c ? ' on' : ''}" data-g="bcat" data-v="${c}">${c}</button>`).join('')}</div>
-      ${BD.cat === '推薦' || BD.cat === '導覽' ? '' : `<div class="mm-row">${[''].concat(M.LEVELS).map(l => `<button type="button" class="mm-chip${BD.lv === l ? ' on' : ''}" data-g="blv" data-v="${l}">${l || '全部等級'}</button>`).join('')}</div>`}
       <div class="mm-ml">${list.map(s => `<button type="button" class="mm-ms${ST.done[s.id] ? ' done' : ''}" data-g="start" data-id="${esc(s.id)}"><span class="ic">${esc(s.icon || '🎮')}</span><span class="tx"><b>${esc(s.title)}</b><small>${esc(s.desc || '')}</small></span><em>${stars(ST.done[s.id] || 0)}</em></button>`).join('') || '<p class="muted center">這個分類沒有任務</p>'}</div></div>`;
   }
   function onClick(e) {
@@ -341,7 +360,6 @@
     if (g === 'board') { BD.open = true; return renderBoard(); }
     if (g === 'bclose') { BD.open = false; return renderBoard(); }
     if (g === 'bcat') { BD.cat = t.dataset.v; return renderBoard(); }
-    if (g === 'blv') { BD.lv = t.dataset.v; return renderBoard(); }
   }
   function mount(params) {
     const root = V.root; if (!root) return;

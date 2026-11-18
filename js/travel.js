@@ -287,7 +287,7 @@
         if (ok) { R.ok++; body.querySelector('.kn-ans').textContent = `${it.r}・諧音「${it.hint}」`; setTimeout(() => { if (body.isConnected) next(); }, 800); return; }
         b.classList.add('ng');
         const item = kanaTrack(it);
-        Tracker.add(item, true); if (!R.wrong.some(w => w.id === item.id)) R.wrong.push(item);
+        ((w) => Learn.record(w.id, 0, { src: 'trip', item: w }))(item); if (!R.wrong.some(w => w.id === item.id)) R.wrong.push(item);
         body.querySelector('.kn-ans').innerHTML = `<div class="kn-miss"><b class="jp" lang="ja">${esc(it.g)}</b><span>＝ ${esc(it.r)}</span><small>諧音「${esc(it.hint)}」${it.memo ? '・' + esc(it.memo) : ''}</small></div>`;
         body.querySelector('.kn-after').innerHTML = `<div class="kn-nav">${App.trackBtn(item)}<button class="btn primary" type="button" id="kn-go">下一題 ➜</button></div>`;
         body.querySelector('#kn-go').onclick = next;
@@ -425,7 +425,7 @@
           hearts = Math.max(0, hearts - 1); combo = 0;
           button.classList.add('trip-wrong');
           G.sfx('hurt'); G.shake(); G.floatText(button, '💔', true);
-          Tracker.add(item, true); wrongItems.push(item);
+          ((w) => Learn.record(w.id, 0, { src: 'trip', item: w }))(item); wrongItems.push(item);
         }
         const hud = el.querySelector('.trip-hud');
         if (hud) hud.innerHTML = `<span class="trip-hearts">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)}</span>${combo >= 2 ? `<span class="trip-combo">🔥${combo}</span>` : ''}`;

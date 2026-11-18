@@ -1,5 +1,6 @@
-// 3D 心智圖（路由 mind3d，實驗功能；主介面為 js/kb.js 知識庫）：N5–N1 詞彙・文法・時態變化・學習順序
-// 版面：左側面板（分級／分類／圖層；手機為抽屜）＋頂部（模式・搜尋）＋導覽列（上一步／下一步／總覽／麵包屑）＋右側資訊卡
+// 3D 心智圖（路由 mind3d，實驗功能；主介面為 js/kb.js 知識庫）：詞彙・文法・時態變化・學習順序
+// 結構不分等級：詞彙＝人事時地物扇區 × 生活場景詞群；文法＝依類別聚集；路線＝先修深度 × 類別。等級只當節點小標籤。
+// 版面：左側面板（分類／圖層；手機為抽屜）＋頂部（模式・搜尋）＋導覽列（上一步／下一步／總覽／麵包屑）＋右側資訊卡
 // 依賴：vendor/3d-force-graph.min.js、data/mind/{taxonomy,conj,grammar}.js；詞彙 data/mind/lex-n*.js 需要時才載入
 (function () {
   'use strict';
@@ -26,20 +27,26 @@
   const POS_IDS = Object.keys(M.POS);
   const POS_COLOR = Object.fromEntries(POS_IDS.map((p, i) => [p, hsl(15 + i * 360 / POS_IDS.length, 60, 50)]));
   const scOf = s => SCc[s] ? s : SUBS[s] ? SUBS[s].parent : s;
-  // 各級 × 人事時地物／場景 的詞數（由 M.GROUPS 加總）
-  const WCNT = {}, SCNT = {};
-  LV.forEach(lv => { WCNT[lv] = {}; SCNT[lv] = {}; const g = M.GROUPS[lv] || {}; for (const k in g) { const p = k.split('|'); WCNT[lv][p[0]] = (WCNT[lv][p[0]] || 0) + g[k]; SCNT[lv][p[1]] = (SCNT[lv][p[1]] || 0) + g[k]; } });
+  // 人事時地物 × 場景 的詞數（M.GROUPS 各級合併，不分等級）
+  const GRP = {}, WCNT = {}, SCNT = {};
+  LV.forEach(lv => { const g = M.GROUPS[lv] || {}; for (const k in g) GRP[k] = (GRP[k] || 0) + g[k]; });
+  for (const k in GRP) { const p = k.split('|'); WCNT[p[0]] = (WCNT[p[0]] || 0) + GRP[k]; SCNT[p[1]] = (SCNT[p[1]] || 0) + GRP[k]; }
+  const CATS = M.GCAT.filter(c => BYCAT[c]).concat(Object.keys(BYCAT).filter(c => !M.GCAT.includes(c)));
+  const CAT_COLOR = Object.fromEntries(CATS.map((c, i) => [c, hsl(i * 360 / CATS.length, 55, 50)]));
+  // 舊 id（含等級）→ 新 id：grp:N5|物|food → grp:物|food；wh:N5物 → wh:物；lv:N5 → hub:w
+  const norm = id => { id = String(id || ''); let m = id.match(/^grp:N\d\|(.+)$/); if (m) return 'grp:' + m[1]; m = id.match(/^wh:N\d(.+)$/); if (m) return 'wh:' + m[1]; return /^lv:/.test(id) ? 'hub:w' : id; };
+  // 使用者程度（只拿來決定任務出題的難易順序，不是結構）
+  function profIdx() { let p = null; try { p = App.profile && App.profile(); } catch (e) { } const i = LV.indexOf(String((p && p.lv) || '').toUpperCase()); return i < 0 ? 0 : i; }
 
   /* ---------------- 狀態 ---------------- */
-  const KEY = 'jpq.mind.v1', TOUR_KEY = 'jpq.mind.tour';
+  const TOUR_KEY = 'jpq.mind.tour';
   // 與知識庫（js/kb.js）共用同一份狀態物件，避免兩邊各自寫回互相覆蓋
-  const ST = M.ST || (M.ST = (() => { try { return JSON.parse(App.store.get(KEY) || '{}'); } catch (e) { return {}; } })());
-  ST.learned = ST.learned || {};
-  const saveST = () => App.store.set(KEY, JSON.stringify(ST));
-  // 預設只顯示使用者目前等級（App.profile().lv；zero→N5）
-  function profLv() { let p = null; try { p = App.profile && App.profile(); } catch (e) { } const l = String((p && p.lv) || 'zero').toUpperCase(); return LV.includes(l) ? l : 'N5'; }
-  // F.cls：側邊「分類」目前分頁（wh 人事時地物／sc 場景／pos 詞類），也決定著色；F.color='lv' 改依等級著色
-  const F = { mode: 'map', lv: new Set([profLv()]), cls: 'wh', wh: new Set(), sc: new Set(), pos: new Set(), color: 'cls', side: false,
+  // 狀態由 Learn.mindST() 提供（存在 App.state，跟著備份）；不再直接讀寫 localStorage
+  const ST = M.ST || (M.ST = (window.Learn && Learn.mindST()) || {});
+  if (!ST.learned) ST.learned = {};
+  const saveST = () => App.save();
+  // F.cls：側邊「分類」目前分頁（wh 人事時地物／sc 場景／pos 詞類），也決定著色
+  const F = { mode: 'map', cls: 'wh', wh: new Set(), sc: new Set(), pos: new Set(), side: false,
     L: { word: true, gram: true, pre: false, path: false, done: true, todo: true } };
   let FOCUS = 'cj:te', VERB = { jp: '書く', grp: '1', zh: '寫' }, EXP = null, SEL = null, NEXT = null;
   const HL = new Map(); let INTERCEPT = null;
@@ -59,15 +66,18 @@
   const trackItem = w => ({ id: 'word:' + jp0(w), jp: jp0(w), kana: w.kana, zh: w.zh, source: '心智圖 ' + w.lv });
   const gramItem = g => ({ id: 'gram:' + g.pat, jp: g.pat, zh: g.zh, source: '心智圖 ' + g.lv + ' 文法' });
   const isVerb = w => w.pos === 'v' || w.grp === 's';
-  const grpOf = w => SCc[w.sc[0]] ? `grp:${w.lv}|${w.wh}|${w.sc[0]}` : null;
+  const grpOf = w => SCc[w.sc[0]] ? `grp:${w.wh}|${w.sc[0]}` : null;
+  // 某詞群（人事時地物 × 場景）的所有詞，跨等級合併（等級只用來排序：常用的在前）
+  const grpWords = (wh, sc) => LV.reduce((a, l) => a.concat((LEX[l] || []).filter(w => w.wh === wh && w.sc[0] === sc)), []);
 
   /* ---------------- 節點 ---------------- */
+  const HUBS = { w: '📚 詞彙：人事時地物 × 場景', g: '📘 文法：依類別' };
   const N = {
-    lv: lv => ({ id: 'lv:' + lv, type: 'lv', lv, lab: lv, pri: 4, val: 16 }),
-    wh: (wh, lv) => ({ id: 'wh:' + (lv || '') + wh, type: 'wh', wh, lv, lab: wh, pri: 3, val: 9 }),
+    hub: k => ({ id: 'hub:' + k, type: 'hub', hub: k, lab: HUBS[k], pri: 4, val: 10 }),
+    wh: wh => ({ id: 'wh:' + wh, type: 'wh', wh, lab: wh, pri: 3.5, val: 9 }),
     sc: id => ({ id: 'sc:' + id, type: 'sc', sc: id, lab: SCc[id].icon + SCc[id].name, pri: 2.5, val: 8 }),
     sub: id => ({ id: 'sub:' + id, type: 'sub', sub: id, lab: SUBS[id].icon + SUBS[id].name, pri: 2.5, val: 6 }),
-    grp: (lv, wh, sc, cnt) => ({ id: `grp:${lv}|${wh}|${sc}`, type: 'grp', lv, wh, sc, cnt, lab: SCc[sc].icon + SCc[sc].name + '・' + wh + '（' + lv + '・' + cnt + ' 詞）', pri: 1.5, val: 2 + Math.sqrt(cnt) }),
+    grp: (wh, sc, cnt) => ({ id: `grp:${wh}|${sc}`, type: 'grp', wh, sc, cnt, lab: SCc[sc].icon + SCc[sc].name + '・' + wh + '（' + cnt + ' 詞）', pri: 1 + Math.min(1.5, cnt / 80), val: 2 + Math.sqrt(cnt) }),
     word: w => ({ id: w.id, type: 'word', lv: w.lv, wh: w.wh, ref: w, lab: jp0(w), pri: 0, val: 1.2 }),
     gram: g => ({ id: g.id, type: 'gram', lv: g.lv, wh: g.wh, ref: g, lab: g.pat, pri: 1, val: 2.4 }),
     conj: (c, form) => ({ id: 'cj:' + c.id, type: 'conj', ref: c, form, lab: c.name.replace(/（.*/, '') + (form ? '｜' + form : ''), pri: 3, val: 7 }),
@@ -76,21 +86,21 @@
   function need(id) {
     const t = String(id || '').split(':')[0];
     if (t === 'w') return loadLex(id.split(':')[1]);
-    if (t === 'grp') return loadLex(id.slice(4).split('|')[0]);
-    if (t === 'sub') return loadAll();
+    if (t === 'grp' || t === 'sub') return loadAll();
     return Promise.resolve();
   }
   function mk(id) {
+    id = norm(id);
     const t = id.split(':')[0], r = id.slice(t.length + 1);
     if (t === 'w') { const p = r.split(':'), w = LEX[p[0]] && LEX[p[0]][+p[1]]; return w && N.word(w); }
     if (t === 'gram') { const g = G_BY.get(id); return g && N.gram(g); }
     if (t === 'cj') return M.CONJ_BY[r] && N.conj(M.CONJ_BY[r]);
     if (t === 'sc') return SCc[r] && N.sc(r);
     if (t === 'sub') return SUBS[r] && N.sub(r);
-    if (t === 'grp') { const p = r.split('|'); return SCc[p[2]] && N.grp(p[0], p[1], p[2], (M.GROUPS[p[0]] || {})[p[1] + '|' + p[2]] || 0); }
+    if (t === 'grp') { const p = r.split('|'); return SCc[p[1]] && WHc[p[0]] && N.grp(p[0], p[1], GRP[r] || 0); }
     if (t === 'cat') return BYCAT[r] && N.cat(r);
-    if (t === 'wh') { const lv = LV.find(l => r.startsWith(l)); const w = lv ? r.slice(2) : r; return WHc[w] && N.wh(w, lv); }
-    if (t === 'lv') return LV.includes(r) && N.lv(r);
+    if (t === 'wh') return WHc[r] && N.wh(r);
+    if (t === 'hub') return HUBS[r] && N.hub(r);
     return null;
   }
   function GB() {
@@ -102,41 +112,43 @@
     };
   }
   const fix = (n, x, y, z) => { n.x = n.fx = x; n.y = n.fy = y; n.z = n.fz = z; return n; };
-  const lvOK = g => F.lv.has(g.lv);
-
-  /* ---------------- 圖 1：總覽（等級分層 × 人事時地物扇區 × 場景群） ---------------- */
-  const LAYER = 380;
+  /* ---------------- 圖 1：總覽（下層：人事時地物扇區 × 場景詞群；上層：文法依類別聚集；不分等級） ---------------- */
+  const GY = 340, EXP_MAX = 300;
   function buildMap() {
     if (!MAP) {
-      const b = GB(), SEC = Math.PI * 2 / WH.length, HALF = SEC * 0.42;
-      LV.forEach((lv, li) => {
-        const Y = (li - (LV.length - 1) / 2) * LAYER;
-        fix(b.add(N.lv(lv)), 0, Y, 0);
-        if (li) b.link('lv:' + LV[li - 1], 'lv:' + lv, { t: 'seq', arrow: 1 });
-        WH.forEach((w, wi) => {
-          const th = wi * SEC, hub = fix(b.add(N.wh(w.id, lv)), Math.cos(th) * 70, Y, Math.sin(th) * 70);
-          b.link('lv:' + lv, hub.id, { t: 'in' });
-          const gs = GRAM.filter(g => g.lv === lv && g.wh === w.id);
-          gs.forEach((g, k) => {
-            const r = 120 + 110 * Math.sqrt((k + .5) / gs.length), a = th + HALF * (((k * .618034) % 1) * 2 - 1);
-            fix(b.add(N.gram(g)), Math.cos(a) * r, Y + 22 + (k % 3) * 12, Math.sin(a) * r); b.link(hub.id, g.id, { t: 'in' });
-          });
-          const grs = M.SCENES.map(s => [s.id, (M.GROUPS[lv] || {})[w.id + '|' + s.id] || 0]).filter(x => x[1]);
-          grs.forEach((x, k) => {
-            const a = th + (grs.length > 1 ? HALF * (k / (grs.length - 1) * 2 - 1) : 0), r = 290 + (k % 3) * 60;
-            const n = fix(b.add(N.grp(lv, w.id, x[0], x[1])), Math.cos(a) * r, Y - 14, Math.sin(a) * r); b.link(hub.id, n.id, { t: 'in' });
-          });
+      const b = GB(), SEC = Math.PI * 2 / WH.length, HALF = SEC * 0.44;
+      // 詞彙層：中心 → 七個人事時地物扇區 → 各場景詞群（跨等級合併）
+      fix(b.add(N.hub('w')), 0, 0, 0);
+      WH.forEach((w, wi) => {
+        const th = wi * SEC, hub = fix(b.add(N.wh(w.id)), Math.cos(th) * 125, 12, Math.sin(th) * 125);
+        b.link('hub:w', hub.id, { t: 'in' });
+        const grs = M.SCENES.map(s => [s.id, GRP[w.id + '|' + s.id] || 0]).filter(x => x[1]).sort((a, z) => z[1] - a[1]);
+        grs.forEach((x, k) => {
+          const a = th + (grs.length > 1 ? HALF * (((k * .618034) % 1) * 2 - 1) : 0), r = 200 + 190 * Math.sqrt((k + .5) / grs.length);
+          const n = fix(b.add(N.grp(w.id, x[0], x[1])), Math.cos(a) * r, -10 - (k % 3) * 14, Math.sin(a) * r); b.link(hub.id, n.id, { t: 'in' });
         });
       });
+      // 文法層：中心 → 各文法類別 → 該類文法（依學習順序由內往外）
+      fix(b.add(N.hub('g')), 0, GY, 0);
+      const CR = 400, CS = Math.PI * 2 / CATS.length;
+      CATS.forEach((c, ci) => {
+        const th = ci * CS, ch = fix(b.add(N.cat(c)), Math.cos(th) * CR, GY + 30, Math.sin(th) * CR);
+        b.link('hub:g', ch.id, { t: 'in' });
+        BYCAT[c].forEach((g, k) => {
+          const a = k * 2.399963, r = 9 + 6.2 * Math.sqrt(k + 1);
+          fix(b.add(N.gram(g)), ch.x + Math.cos(a) * r, GY + 4 - (k % 4) * 9, ch.z + Math.sin(a) * r); b.link(ch.id, g.id, { t: 'in' });
+        });
+      });
+      b.link('hub:w', 'hub:g', { t: 'seq' });
       GRAM.forEach(g => { g.pre.forEach(p => b.link(p, g.id, { t: 'pre', arrow: 1, hid: 1 })); g.rel.forEach(r => b.link(g.id, r, { t: 'rel', hid: 1 })); });
-      // 「路線」圖層：各級文法依學習順序串起來
-      LV.forEach(lv => { const gs = GRAM.filter(g => g.lv === lv); gs.forEach((g, k) => { if (k) b.link(gs[k - 1].id, g.id, { t: 'route', arrow: 1, hid: 1 }); }); });
+      // 「路線」圖層：全部文法依學習順序（先修拓撲序）串起來
+      GRAM.forEach((g, k) => { if (k) b.link(GRAM[k - 1].id, g.id, { t: 'route', arrow: 1, hid: 1 }); });
       MAP = b.out();
     }
     const nodes = MAP.nodes.slice(), links = MAP.links.slice();
     if (EXP) {
       const g = MAP.nodes.find(n => n.id === EXP);
-      const ws = g && LEX[g.lv] ? LEX[g.lv].filter(w => w.wh === g.wh && w.sc[0] === g.sc) : [];
+      const ws = g ? grpWords(g.wh, g.sc).slice(0, EXP_MAX) : [];
       const R = 16 + 4.2 * Math.sqrt(ws.length);
       ws.forEach((w, i) => {
         const y = 1 - (i + .5) / ws.length * 2, rr = Math.sqrt(1 - y * y), a = i * 2.399963;
@@ -153,10 +165,9 @@
     const c = b.add(c0); c.pri = 6; c.val = Math.max(c.val * 2, 12); c.center = true;
     const addG = (g, to, o) => { const n = b.add(N.gram(g)); if (to) b.link(to, n.id, o); return n; };
     const addW = (w, to, o) => { const n = b.add(N.word(w)); if (to) b.link(to, n.id, o); return n; };
-    const groups = (lv, wh, sc, to) => { const cnt = (M.GROUPS[lv] || {})[wh + '|' + sc]; if (!cnt) return; const n = b.add(N.grp(lv, wh, sc, cnt)); n.lab = lv + '・' + wh + '・' + SCc[sc].name + '（' + cnt + ' 詞）'; b.link(to, n.id, { t: 'in' }); };
+    const groups = (wh, sc, to, lab) => { const cnt = GRP[wh + '|' + sc]; if (!cnt) return; const n = b.add(N.grp(wh, sc, cnt)); if (lab) n.lab = lab(n); b.link(to, n.id, { t: 'in' }); };
     if (c.type === 'word') {
       const w = c.ref; c.lab = jp0(w) + '　' + w.zh;
-      b.add(N.lv(w.lv)); b.link('lv:' + w.lv, c.id);
       b.add(N.wh(w.wh)); b.link('wh:' + w.wh, c.id);
       w.sc.forEach(s => {
         if (SCc[s]) { b.add(N.sc(s)); b.link('sc:' + s, c.id); }
@@ -173,16 +184,16 @@
         M.CONJ.filter(x => x.kind === 'form' && x.id !== 'dict').forEach(x => {
           const n = b.add(N.conj(x, f[x.id]));
           b.link(x.from === 'dict' ? c.id : 'cj:' + x.from, n.id, { t: 'conj', arrow: 1 });
-          (BYCONJ[x.id] || []).filter(lvOK).slice(0, 2).forEach(g => addG(g, n.id, { t: 'use' }));
+          (BYCONJ[x.id] || []).slice(0, 2).forEach(g => addG(g, n.id, { t: 'use' }));
         });
       }
     } else if (c.type === 'gram') {
       const g = c.ref; c.lab = g.pat + '　' + g.zh;
-      b.add(N.lv(g.lv)); b.link('lv:' + g.lv, c.id);
       b.add(N.wh(g.wh)); b.link('wh:' + g.wh, c.id);
       g.sc.forEach(s => { b.add(N.sc(s)); b.link('sc:' + s, c.id); });
       b.add(N.cat(g.cat)); b.link('cat:' + g.cat, c.id);
-      BYCAT[g.cat].filter(x => x !== g && x.lv === g.lv).slice(0, 10).forEach(x => addG(x, 'cat:' + g.cat, { t: 'sib' }));
+      // 同類別中學習順序最接近的 10 條
+      BYCAT[g.cat].filter(x => x !== g).sort((a, z) => Math.abs(a.ord - g.ord) - Math.abs(z.ord - g.ord)).slice(0, 10).forEach(x => addG(x, 'cat:' + g.cat, { t: 'sib' }));
       const up = (x, d) => x.pre.forEach(p => { const pg = G_BY.get(p); if (!pg) return; addG(pg); b.link(p, x.id, { t: 'pre', arrow: 1 }); if (d < 3) up(pg, d + 1); });
       up(g, 1);
       (POST.get(g.id) || []).slice(0, 16).forEach(x => { addG(x); b.link(g.id, x.id, { t: 'pre', arrow: 1 }); });
@@ -192,27 +203,26 @@
       const x = c.ref;
       if (x.from) { b.add(N.conj(M.CONJ_BY[x.from])); b.link('cj:' + x.from, c.id, { t: 'conj', arrow: 1 }); }
       M.CONJ.filter(y => y.from === x.id).forEach(y => { b.add(N.conj(y)); b.link(c.id, 'cj:' + y.id, { t: 'conj', arrow: 1 }); });
-      (BYCONJ[x.id] || []).filter(lvOK).slice(0, 90).forEach(g => addG(g, c.id, { t: 'use' }));
+      (BYCONJ[x.id] || []).slice(0, 90).forEach(g => addG(g, c.id, { t: 'use' }));
     } else if (c.type === 'sc') {
       Object.values(SUBS).filter(s => s.parent === c.sc).forEach(s => { b.add(N.sub(s.id)); b.link(c.id, 'sub:' + s.id); });
-      LV.filter(l => F.lv.has(l)).forEach(lv => WH.forEach(w => groups(lv, w.id, c.sc, c.id)));
-      GRAM.filter(g => lvOK(g) && g.sc.includes(c.sc)).slice(0, 40).forEach(g => addG(g, c.id, { t: 'use' }));
+      WH.forEach(w => groups(w.id, c.sc, c.id));
+      GRAM.filter(g => g.sc.includes(c.sc)).slice(0, 40).forEach(g => addG(g, c.id, { t: 'use' }));
     } else if (c.type === 'sub') {
       b.add(N.sc(SUBS[c.sub].parent)); b.link('sc:' + SUBS[c.sub].parent, c.id);
       LV.forEach(lv => (LEX[lv] || []).forEach(w => { if (w.sc.includes(c.sub)) addW(w, c.id, { t: 'in' }); }));
     } else if (c.type === 'grp') {
-      b.add(N.lv(c.lv)); b.link('lv:' + c.lv, c.id); b.add(N.wh(c.wh)); b.link('wh:' + c.wh, c.id); b.add(N.sc(c.sc)); b.link('sc:' + c.sc, c.id);
-      (LEX[c.lv] || []).filter(w => w.wh === c.wh && w.sc[0] === c.sc).slice(0, 260).forEach(w => addW(w, c.id, { t: 'in' }));
+      b.add(N.wh(c.wh)); b.link('wh:' + c.wh, c.id); b.add(N.sc(c.sc)); b.link('sc:' + c.sc, c.id);
+      grpWords(c.wh, c.sc).slice(0, 260).forEach(w => addW(w, c.id, { t: 'in' }));
     } else if (c.type === 'cat') {
-      BYCAT[c.cat].filter(lvOK).slice(0, 120).forEach(g => addG(g, c.id, { t: 'use' }));
+      b.add(N.hub('g')); b.link('hub:g', c.id);
+      BYCAT[c.cat].slice(0, 120).forEach(g => addG(g, c.id, { t: 'use' }));
     } else if (c.type === 'wh') {
-      (c.lv ? [c.lv] : LV.filter(l => F.lv.has(l))).forEach(lv => {
-        let to = c.id;
-        if (!c.lv) { b.add(N.lv(lv)); b.link(c.id, 'lv:' + lv); to = 'lv:' + lv; }
-        M.SCENES.forEach(s => groups(lv, c.wh, s.id, to));
-      });
-    } else if (c.type === 'lv') {
-      WH.forEach(w => { const h = b.add(N.wh(w.id, c.lv)); b.link(c.id, h.id); M.SCENES.forEach(s => groups(c.lv, w.id, s.id, h.id)); });
+      M.SCENES.forEach(s => groups(c.wh, s.id, c.id, n => SCc[s.id].icon + SCc[s.id].name + '（' + n.cnt + ' 詞）'));
+      GRAM.filter(g => g.wh === c.wh).slice(0, 30).forEach(g => addG(g, c.id, { t: 'use' }));
+    } else if (c.type === 'hub') {
+      if (c.hub === 'w') WH.forEach(w => { b.add(N.wh(w.id)); b.link(c.id, 'wh:' + w.id); });
+      else CATS.forEach(x => { b.add(N.cat(x)); b.link(c.id, 'cat:' + x); });
     }
     return b.out();
   }
@@ -221,34 +231,44 @@
   function buildTense(hide) {
     const b = GB(), f = hide ? {} : M.conjugate(VERB.jp, VERB.grp) || {};
     const v = b.add({ id: 'verb', type: 'verb', lab: (VERB.grp === 's' ? VERB.jp + 'する' : VERB.jp) + '　' + (VERB.zh || ''), pri: 6, val: 18 });
-    M.CONJ.forEach(c => { const n = b.add(N.conj(c, f[c.id])); n.cnt = (BYCONJ[c.id] || []).filter(lvOK).length; });
+    M.CONJ.forEach(c => { const n = b.add(N.conj(c, f[c.id])); n.cnt = (BYCONJ[c.id] || []).length; });
     b.link('verb', 'cj:dict', { t: 'conj', arrow: 1 });
     M.CONJ.forEach(c => {
       if (c.from) b.link('cj:' + c.from, 'cj:' + c.id, { t: 'conj', arrow: 1 });
-      (BYCONJ[c.id] || []).filter(lvOK).slice(0, 8).forEach(g => { b.add(N.gram(g)); b.link('cj:' + c.id, g.id, { t: 'use' }); });
+      (BYCONJ[c.id] || []).slice(0, 8).forEach(g => { b.add(N.gram(g)); b.link('cj:' + c.id, g.id, { t: 'use' }); });
     });
     v.center = true;
     return b.out();
   }
 
-  /* ---------------- 圖 4：學習路線（N5→N1 螺旋時間軸） ---------------- */
-  // 下一步：所選等級中第一條未學文法，但先修沒學會時改推最早的未學先修（可能在較低等級）
+  /* ---------------- 圖 4：學習路線（高度＝先修深度，方位＝文法類別；不分等級） ---------------- */
+  // 下一步：學習順序上第一條未學文法；先修沒學會時改推最早的未學先修
   const preDone = g => g.pre.every(p => ST.learned[p]);
   function nextOf() {
-    if (M.kb && M.kb.gramPath) return M.kb.gramPath(LV.filter(l => F.lv.has(l)), 1)[0] || null;
-    return GRAM.find(g => !ST.learned[g.id] && lvOK(g) && preDone(g)) || null;
+    if (M.kb && M.kb.gramPath) { try { const g = M.kb.gramPath(null, 1)[0]; if (g) return G_BY.get(g.id) || g; } catch (e) { } }
+    return GRAM.find(g => !ST.learned[g.id] && preDone(g)) || GRAM.find(g => !ST.learned[g.id]) || null;
   }
+  // 先修深度：沒有先修＝0，否則＝最深先修＋1
+  const DEPTH = new Map();
+  const depthOf = g => { if (DEPTH.has(g.id)) return DEPTH.get(g.id); DEPTH.set(g.id, 0); const d = g.pre.reduce((a, p) => { const x = G_BY.get(p); return x ? Math.max(a, depthOf(x) + 1) : a; }, 0); DEPTH.set(g.id, d); return d; };
+  let PATH = null;
   function buildPath() {
-    const b = GB(), list = GRAM.filter(lvOK), R = 180, D = 0.105, RISE = 0.9, H0 = list.length * RISE / 2;
-    let prev = null, plv = null;
-    list.forEach((g, k) => {
-      const a = k * D, n = fix(b.add(N.gram(g)), Math.cos(a) * R, k * RISE - H0, Math.sin(a) * R);
-      if (g.lv !== plv) { const h = fix(b.add(N.lv(g.lv)), Math.cos(a) * (R + 55), k * RISE - H0, Math.sin(a) * (R + 55)); h.lab = g.lv + ' 起點'; h.val = 7; b.link(h.id, n.id, { t: 'seq' }); plv = g.lv; }
-      if (prev) b.link(prev.id, n.id, { t: 'seq' });
-      prev = n;
-    });
-    list.forEach(g => g.pre.forEach(p => b.link(p, g.id, { t: 'pre', arrow: 1, hid: 1 })));
-    const o = b.out(); o.h = list.length * RISE; return o;
+    if (!PATH) {
+      const b = GB(), STEP = 62, CS = Math.PI * 2 / CATS.length, cell = {};
+      let maxD = 0;
+      GRAM.forEach(g => { maxD = Math.max(maxD, depthOf(g)); });
+      const H0 = maxD * STEP / 2;
+      CATS.forEach((c, ci) => { const th = ci * CS, n = fix(b.add(N.cat(c)), Math.cos(th) * 300, -H0 - STEP, Math.sin(th) * 300); n.val = 4; });
+      GRAM.forEach(g => {
+        const d = depthOf(g), ci = CATS.indexOf(g.cat), key = d + '|' + ci, k = cell[key] = (cell[key] || 0) + 1;
+        const a = ci * CS + CS * .38 * (((k * .618034) % 1) * 2 - 1), r = 120 + 22 * Math.ceil(k / 2);
+        fix(b.add(N.gram(g)), Math.cos(a) * r, d * STEP - H0 + (k % 2) * 10, Math.sin(a) * r);
+        if (!g.pre.length) b.link('cat:' + g.cat, g.id, { t: 'in', hid: 1 });
+      });
+      GRAM.forEach(g => g.pre.forEach(p => b.link(p, g.id, { t: 'pre', arrow: 1, hid: 1 })));
+      PATH = b.out(); PATH.h = (maxD + 1) * STEP;
+    }
+    return { nodes: PATH.nodes.slice(), links: PATH.links.slice(), h: PATH.h };
   }
 
   /* ---------------- 外觀 ---------------- */
@@ -259,31 +279,29 @@
   const TK = {};
   const tk = (v, d) => TK[v] || (TK[v] = css(v) || d);
   const GREY = '#9aa3b2';
-  const lvC = lv => lv ? tk('--' + String(lv).toLowerCase(), M.LV_COLOR[lv]) : GREY;
   function clsColor(n) {
-    if (F.color === 'lv') return lvC(n.lv);
     if (F.cls === 'sc') { const s = n.type === 'grp' ? n.sc : n.ref && n.ref.sc ? scOf(n.ref.sc[0]) : null; return SC_COLOR[s] || GREY; }
     if (F.cls === 'pos') return n.type === 'word' ? POS_COLOR[n.ref.pos] || GREY : n.type === 'gram' ? '#8a94a6' : GREY;
     return (WHc[n.wh] || {}).color || GREY;
   }
   function colorOf(n) {
     const hl = HL.get(n.id); if (hl) return hl === 'ok' ? tk('--ok', '#2ec4a6') : hl === 'bad' ? tk('--err', '#ff4d4f') : tk('--gold', '#ffd23f');
-    if (n.type === 'lv') return lvC(n.lv);
+    if (n.type === 'hub') return '#5b6475';
     if (n.type === 'wh') return WHc[n.wh].color;
     if (n.type === 'sc' || n.type === 'sub') return F.cls === 'sc' ? SC_COLOR[n.type === 'sc' ? n.sc : scOf(n.sub)] || '#d9a441' : '#d9a441';
     if (n.type === 'conj') return KIND_COLOR[n.ref.kind];
-    if (n.type === 'cat') return '#8a94a6';
+    if (n.type === 'cat') return CAT_COLOR[n.cat] || '#8a94a6';
     if (n.type === 'verb') return '#ff6b5b';
     if (n.type === 'gram' && n.id === NEXT && (F.mode === 'path' || F.L.path)) return tk('--gold', '#ffb703');
-    if (F.mode === 'path' && n.type === 'gram') return ST.learned[n.id] ? lvC(n.lv) : mix(lvC(n.lv), BG, .62);
+    if (F.mode === 'path' && n.type === 'gram') { const c = CAT_COLOR[n.ref.cat] || GREY; return ST.learned[n.id] ? c : mix(c, BG, .62); }
     return clsColor(n);
   }
   const valOf = n => n.val * (n === SEL && !n.center ? (n.type === 'word' || n.type === 'gram' ? 3 : 1.5) : 1) * ((F.mode === 'path' || F.L.path) && n.id === NEXT ? 2.5 : 1) * (HL.has(n.id) ? 2.2 : 1);
   const isDone = n => n.type === 'gram' ? !!ST.learned[n.id] : (() => { const t = Tracker.get('word:' + jp0(n.ref)); return !!(t && t.mastered); })();
   function vis(n) {
     if (F.mode !== 'map' && F.mode !== 'path') return true;
-    if (n.lv && !F.lv.has(n.lv)) return false;
-    if (n.type === 'lv') return true;
+    if (n.type === 'cat' || n.hub === 'g') return F.mode === 'path' || F.L.gram;
+    if (n.hub === 'w') return F.L.word;
     if (F.wh.size && n.wh && !F.wh.has(n.wh)) return false;
     if (n.type === 'grp') return F.L.word && (!F.sc.size || F.sc.has(n.sc));
     if (n.type === 'word') { if (!F.L.word || (F.sc.size && !F.sc.has(scOf(n.ref.sc[0]))) || (F.pos.size && !F.pos.has(n.ref.pos))) return false; }
@@ -299,6 +317,7 @@
     if (!vis(s) || !vis(t)) return false;
     if (l.t === 'route') return F.L.path;
     if (l.t === 'pre' && F.L.pre) return true;
+    if (l.t === 'pre' && F.mode === 'path' && NEXT && (s.id === NEXT || t.id === NEXT)) return true;
     return !l.hid || s === SEL || t === SEL;
   }
   const LINK_COLOR = { pre: '#ff8a3d', rel: '#a77bff', conj: '#4a8cff', seq: '#9aa3b2', kanji: '#ff6b8a', use: '#2ec4a6', route: '#ffb703' };
@@ -350,7 +369,7 @@
     if (!raf) raf = requestAnimationFrame(tick);
   }
   function restyle() { if (!G) { renderList(); return; } G.nodeVal(valOf).nodeColor(colorOf).nodeVisibility(vis).linkVisibility(lvis); }
-  const DIST = { word: 140, gram: 150, lv: 620, wh: 380, conj: 170, cat: 200 };
+  const DIST = { word: 140, gram: 150, hub: 700, wh: 420, conj: 170, cat: 220 };
   function flyTo(n, dist, tries) {
     if (!G || !n) return;
     if (n.x === undefined || isNaN(n.x)) { if ((tries || 0) < 12) setTimeout(() => flyTo(n, dist, (tries || 0) + 1), 120); return; }
@@ -402,7 +421,7 @@
     }
     for (const [id, el] of shown) if (!now.has(id)) { el.style.display = 'none'; el._t = el._c = null; shown.delete(id); free.push(el); }
   }
-  const LFS = { lv: 17, wh: 15, sc: 12.5, sub: 12.5, cat: 12.5, conj: 12.5, verb: 12.5, gram: 11.5, grp: 11.5, star: 15 }, LPAD = { lv: 1, conj: 1, verb: 1 };
+  const LFS = { hub: 15, wh: 15, sc: 12.5, sub: 12.5, cat: 12.5, conj: 12.5, verb: 12.5, gram: 11.5, grp: 11.5, star: 15 }, LPAD = { hub: 1, conj: 1, verb: 1 };
   function labW(t, fs) { let w = 0; for (const ch of t) w += /[\u0000-ÿ]/.test(ch) ? fs * .6 : fs; return w; }
   function resetLabels() { shown.clear(); free.length = 0; if (LAB) LAB.innerHTML = ''; }
 
@@ -412,7 +431,7 @@
     let box = STAGE.querySelector('.mm-list');
     if (!box) { box = document.createElement('div'); box.className = 'mm-list'; STAGE.insertBefore(box, STAGE.firstChild); }
     const by = {}; NODES.filter(vis).forEach(n => (by[n.type] = by[n.type] || []).push(n));
-    const NAME = { lv: '等級', wh: '人事時地物', sc: '場景', sub: '旅遊場景', grp: '詞彙群', gram: '文法', conj: '變化形／時態', cat: '文法類別', word: '詞彙', verb: '動詞' };
+    const NAME = { hub: '總覽', wh: '人事時地物', sc: '場景', sub: '旅遊場景', grp: '詞彙群', gram: '文法', conj: '變化形／時態', cat: '文法類別', word: '詞彙', verb: '動詞' };
     box.innerHTML = '<p class="muted">此裝置無法使用 3D（WebGL）。建議改用 <button type="button" class="mm-chip on" data-act="kb">📚 知識庫</button>，以下為簡易清單。</p>' + Object.keys(NAME).filter(t => by[t]).map(t =>
       `<div class="mm-ph">${NAME[t]}（${by[t].length}）</div><div class="mm-chips">${by[t].slice(0, 300).map(n => `<button class="mm-chip" data-sel="${esc(n.id)}">${esc(n.lab)}</button>`).join('')}</div>`).join('');
   }
@@ -422,24 +441,22 @@
     const m = F.mode; let p = Promise.resolve();
     NEXT = (nextOf() || {}).id || null;
     if (m === 'map') {
-      // 鏡頭只框住目前勾選的等級層
-      const ys = LV.map((l, i) => F.lv.has(l) ? (i - (LV.length - 1) / 2) * LAYER : null).filter(y => y !== null);
-      const cy = ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0, hy = ys.length ? (Math.max(...ys) - Math.min(...ys)) / 2 : 0;
-      apply(buildMap(), { fixed: true, keep, dir: keep ? null : [0, .32, 1], ext: [440, hy + 260], cy });
+      // 鏡頭框住詞彙層（下）與文法層（上）
+      apply(buildMap(), { fixed: true, keep, dir: keep ? null : [0, .32, 1], ext: [470, GY / 2 + 230], cy: GY / 2 });
     }
     else if (m === 'focus') {
       const id = FOCUS;
       p = need(id).then(() => { if (F.mode !== 'focus' || FOCUS !== id) return; const d = buildFocus(id); if (!d) return; apply(d); if (!INTERCEPT) SEL = NODES.find(n => n.center) || null; restyle(); renderPanel(); renderNav(); });
     } else if (m === 'tense') apply(buildTense(VERB.hide));
-    else if (m === 'path') { const d = buildPath(); apply(d, { fixed: true, keep, dir: keep ? null : [0, .3, 1], ext: [260, d.h / 2 + 90] }); }
+    else if (m === 'path') { const d = buildPath(); apply(d, { fixed: true, keep, dir: keep ? null : [0, .3, 1], ext: [380, d.h / 2 + 130] }); }
     renderBar(); renderPanel();
     return p;
   }
   function setMode(m) { F.mode = m; SEL = null; HL.clear(); resetLabels(); return show(); }
   function focus(id) { FOCUS = id; F.mode = 'focus'; SEL = null; HL.clear(); resetLabels(); closeResults(); return show(); }
   function expand(id) {
-    const lv = id.slice(4).split('|')[0]; EXP = id;
-    return loadLex(lv).then(() => { if (F.mode !== 'map') return null; apply(buildMap(), { fixed: true, keep: true }); const g = NODES.find(x => x.id === id); if (g) flyTo(g); return g; });
+    id = norm(id); EXP = id;
+    return loadAll().then(() => { if (F.mode !== 'map') return null; apply(buildMap(), { fixed: true, keep: true }); const g = NODES.find(x => x.id === id); if (g) flyTo(g); return g; });
   }
   // 遊戲層或內部用：只改選取，不記歷史
   function select(n, fromGraph) {
@@ -492,7 +509,6 @@
   function stepFwd() { if (H.i >= H.list.length - 1) return; H.i++; pushLayer(); restore(H.list[H.i]); }
   // 讓目標節點在目前篩選下看得到
   function reveal(t) {
-    if (t.lv && LV.includes(t.lv)) F.lv.add(t.lv);
     if (!vis(t)) { F.wh.clear(); F.sc.clear(); F.pos.clear(); Object.assign(F.L, { word: true, gram: true, done: true, todo: true }); App.toast('已放寬篩選以顯示此節點'); }
   }
   function restore(s, home) {
@@ -507,7 +523,7 @@
     return Promise.all([need(s.sel), need(s.exp)]).then(() => {
       if (seq !== RSEQ || !ROOT) return;
       const t = s.sel && mk(s.sel);
-      if (t && (s.mode === 'map' || s.mode === 'path')) { const lv0 = F.lv.size; reveal(t); if (F.lv.size !== lv0 && s.mode === 'path') return show(true); }
+      if (t && (s.mode === 'map' || s.mode === 'path')) reveal(t);
       if (changed) { SEL = null; resetLabels(); return show(keep); }
     }).then(() => {
       if (seq !== RSEQ || !ROOT) return;
@@ -526,6 +542,7 @@
   }
   // 從資訊卡／搜尋／麵包屑導航到某節點：目前圖上有就飛過去，否則到總覽圖（展開所屬詞群）或焦點圖
   function navTo(id, replace) {
+    id = norm(id);
     if (M.game && M.game.running) M.game.stop(true);
     return need(id).then(() => {
       const cur = NODES.find(n => n.id === id);
@@ -533,22 +550,24 @@
       const n = mk(id); if (!n) return;
       if (n.type === 'word') { const g = grpOf(n.ref); if (g) return goV({ mode: 'map', sel: id, exp: g }, replace); }
       if (n.type === 'grp') return goV({ mode: 'map', sel: id, exp: id }, replace);
-      if (n.type === 'gram' || n.type === 'lv' || (n.type === 'wh' && n.lv)) return goV({ mode: 'map', sel: id, exp: F.mode === 'map' ? EXP : null }, replace);
+      if (n.type === 'gram' || n.type === 'hub' || n.type === 'wh' || n.type === 'cat') return goV({ mode: 'map', sel: id, exp: F.mode === 'map' ? EXP : null }, replace);
       return goV({ mode: 'focus', focus: id, sel: null }, replace);
     });
   }
   function crumbChain() {
     const out = [['⌂', { mode: 'map', sel: null, exp: null, home: 1 }]], n = SEL, m = F.mode;
-    const lvT = lv => [lv, { mode: 'map', sel: 'lv:' + lv, exp: null }];
-    const whT = (lv, wh) => [wh + '・' + WHc[wh].desc.split('、')[0], { mode: 'map', sel: 'wh:' + lv + wh, exp: null }];
-    const grT = (lv, wh, sc) => { const id = `grp:${lv}|${wh}|${sc}`; return [SCc[sc].icon + SCc[sc].name + ' 詞群', { mode: 'map', sel: id, exp: id }]; };
+    const hubT = k => [k === 'w' ? '📚 詞彙' : '📘 文法', { mode: 'map', sel: 'hub:' + k, exp: null }];
+    const whT = wh => [wh + '・' + WHc[wh].desc.split('、')[0], { mode: 'map', sel: 'wh:' + wh, exp: null }];
+    const grT = (wh, sc) => { const id = `grp:${wh}|${sc}`; return [SCc[sc].icon + SCc[sc].name + ' 詞群', { mode: 'map', sel: id, exp: id }]; };
+    const catT = c => ['〔' + c + '〕', { mode: 'map', sel: 'cat:' + c, exp: null }];
     if (m === 'map' || m === 'game') {
       if (n) {
-        if (n.type === 'lv') out.push(lvT(n.lv));
-        else if (n.type === 'wh' && n.lv) out.push(lvT(n.lv), whT(n.lv, n.wh));
-        else if (n.type === 'grp') out.push(lvT(n.lv), whT(n.lv, n.wh), grT(n.lv, n.wh, n.sc));
-        else if (n.type === 'gram') out.push(lvT(n.lv), whT(n.lv, n.wh), [n.lab, null]);
-        else if (n.type === 'word') { const w = n.ref; out.push(lvT(w.lv), whT(w.lv, w.wh)); if (SCc[w.sc[0]]) out.push(grT(w.lv, w.wh, w.sc[0])); out.push([n.lab, null]); }
+        if (n.type === 'hub') out.push(hubT(n.hub));
+        else if (n.type === 'wh') out.push(hubT('w'), whT(n.wh));
+        else if (n.type === 'grp') out.push(hubT('w'), whT(n.wh), grT(n.wh, n.sc));
+        else if (n.type === 'cat') out.push(hubT('g'), catT(n.cat));
+        else if (n.type === 'gram') out.push(hubT('g'), catT(n.ref.cat), [n.lab, null]);
+        else if (n.type === 'word') { const w = n.ref; out.push(hubT('w'), whT(w.wh)); if (SCc[w.sc[0]]) out.push(grT(w.wh, w.sc[0])); out.push([n.lab, null]); }
         else out.push([n.lab, null]);
       }
     } else {
@@ -571,7 +590,6 @@
   }
 
   /* ---------------- 頂部／側邊面板 ---------------- */
-  const chip = (attr, val, on, html, title) => `<button type="button" class="mm-chip${on ? ' on' : ''}" data-${attr}="${esc(val)}"${title ? ` title="${esc(title)}"` : ''}>${html}</button>`;
   const nFilters = () => F.wh.size + F.sc.size + F.pos.size + ['word', 'gram', 'done', 'todo'].filter(k => !F.L[k]).length;
   function renderTop() {
     const Q = s => ROOT.querySelector(s);
@@ -582,16 +600,15 @@
   function renderSide() {
     const box = ROOT && ROOT.querySelector('.mm-sidein'); if (!box) return;
     ROOT.querySelector('.mm-side').classList.toggle('open', F.side);
-    const my = profLv(), lvs = LV.filter(l => F.lv.has(l));
-    const gIn = f => GRAM.filter(g => F.lv.has(g.lv) && f(g)).length;
+    const gIn = f => GRAM.filter(f).length;
     const row = (attr, val, on, dot, name, cnt, title) => `<div class="mm-it${on ? ' on' : ''}"><button type="button" class="mm-ck" data-${attr}="${esc(val)}" aria-pressed="${on}"${title ? ` title="${esc(title)}"` : ''}><b class="mm-box" aria-hidden="true">${on ? '✓' : ''}</b>${dot ? `<i style="background:${dot}"></i>` : ''}<span>${esc(name)}</span><small>${cnt}</small></button><button type="button" class="mm-solo" data-solo="${attr}|${esc(val)}" aria-label="只看 ${esc(name)}">只看</button></div>`;
     let list = '', note = '';
-    if (F.cls === 'wh') list = WH.map(w => row('wh', w.id, F.wh.has(w.id), w.color, w.name + '・' + w.desc.split('、')[0], lvs.reduce((a, l) => a + (WCNT[l][w.id] || 0), 0) + gIn(g => g.wh === w.id), w.desc)).join('');
-    else if (F.cls === 'sc') list = M.SCENES.map(s => row('sc', s.id, F.sc.has(s.id), SC_COLOR[s.id], s.icon + s.name, lvs.reduce((a, l) => a + (SCNT[l][s.id] || 0), 0) + gIn(g => g.sc.includes(s.id)))).join('');
+    if (F.cls === 'wh') list = WH.map(w => row('wh', w.id, F.wh.has(w.id), w.color, w.name + '・' + w.desc.split('、')[0], (WCNT[w.id] || 0) + gIn(g => g.wh === w.id), w.desc)).join('');
+    else if (F.cls === 'sc') list = M.SCENES.map(s => row('sc', s.id, F.sc.has(s.id), SC_COLOR[s.id], s.icon + s.name, (SCNT[s.id] || 0) + gIn(g => g.sc.includes(s.id)))).join('');
     else {
-      const ready = lvs.every(l => LEX[l]), cnt = {};
-      if (ready) lvs.forEach(l => LEX[l].forEach(w => { cnt[w.pos] = (cnt[w.pos] || 0) + 1; }));
-      else Promise.all(lvs.map(loadLex)).then(() => { if (F.cls === 'pos') renderSide(); }).catch(() => { });
+      const ready = LV.every(l => LEX[l]), cnt = {};
+      if (ready) LV.forEach(l => LEX[l].forEach(w => { cnt[w.pos] = (cnt[w.pos] || 0) + 1; }));
+      else loadAll().then(() => { if (F.cls === 'pos') renderSide(); }).catch(() => { });
       list = POS_IDS.filter(p => !ready || cnt[p]).map(p => row('pos', p, F.pos.has(p), POS_COLOR[p], M.POS[p], ready ? cnt[p] : '…')).join('');
       note = '<p class="mm-snote">詞類只篩選單字（展開詞群後可見）。</p>';
     }
@@ -599,10 +616,6 @@
     const curN = tabN[F.cls];
     const lay = (k, name, dot) => { const on = F.L[k]; return `<div class="mm-it${on ? ' on' : ''}"><button type="button" class="mm-ck" data-layer="${k}" aria-pressed="${on}"><b class="mm-box" aria-hidden="true">${on ? '✓' : ''}</b>${dot ? `<i style="background:${dot}"></i>` : ''}<span>${name}</span></button></div>`; };
     box.innerHTML = `<div class="mm-sh"><b>篩選與圖層</b><button type="button" class="mm-x mm-sidex" data-act="side" aria-label="關閉面板">✕</button></div>
-      <section class="mm-sec"><h3>分級</h3>
-        ${LV.map(l => `<div class="mm-it${F.lv.has(l) ? ' on' : ''}"><button type="button" class="mm-ck two" data-lv="${l}" aria-pressed="${F.lv.has(l)}"><b class="mm-box" aria-hidden="true">${F.lv.has(l) ? '✓' : ''}</b><i style="background:${lvC(l)}"></i><span><b>${l}${l === my ? '<em class="mm-me">我的程度</em>' : ''}</b><small>${App.LV_NAMES && App.LV_NAMES[l.toLowerCase()] ? esc(App.LV_NAMES[l.toLowerCase()]) + '・' : ''}${M.STATS.lex[l] || 0} 詞・${M.STATS.gram[l] || 0} 文法</small></span></button><button type="button" class="mm-solo" data-solo="lv|${l}" aria-label="只看 ${l}">只看</button></div>`).join('')}
-        <div class="mm-row">${chip('act', 'mylv', F.lv.size === 1 && F.lv.has(my), '只看我的程度（' + my + '）')}${chip('act', 'alllv', F.lv.size === LV.length, '全部')}${chip('act', 'colorlv', F.color === 'lv', '依等級著色')}</div>
-      </section>
       <section class="mm-sec"><h3>分類${curN ? `<button type="button" class="mm-clr" data-act="clsclear">清除（${curN}）</button>` : ''}</h3>
         <div class="mm-seg" role="tablist">${[['wh', '人事時地物'], ['sc', '場景'], ['pos', '詞類']].map(x => `<button type="button" role="tab" class="${F.cls === x[0] ? 'on' : ''}" data-cls="${x[0]}" aria-selected="${F.cls === x[0]}">${x[1]}${tabN[x[0]] ? `<sup>${tabN[x[0]]}</sup>` : ''}</button>`).join('')}</div>
         <p class="mm-snote">勾選＝多選，「只看」＝單選並聚焦；顏色即 3D 圖著色。</p>${note}
@@ -621,17 +634,16 @@
     if (INTERCEPT || F.mode === 'map' || F.mode === 'focus') sub = '';
     else if (F.mode === 'tense') sub = VERBS.map(v => `<button type="button" class="mm-chip${VERB.jp === v[0] ? ' on' : ''}" data-verb="${v.join('|')}">${v[0]}${v[1] === 's' ? 'する' : ''}</button>`).join('');
     else if (F.mode === 'path') {
-      const list = GRAM.filter(lvOK), done = list.filter(g => ST.learned[g.id]).length, nx = nextOf();
+      const list = GRAM, done = list.filter(g => ST.learned[g.id]).length, nx = nextOf();
       const why = nx && M.kb && M.kb.why ? G_BY.get(M.kb.why(nx.id)) : null;
-      sub = `<b>已學 ${done}／${list.length}</b>${nx ? `<span class="muted">下一步</span><button type="button" class="mm-chip on" data-sel="${esc(nx.id)}">${esc(nx.pat)}${lvOK(nx) ? '' : ' ' + nx.lv} ▶</button>${why ? `<span class="muted">（${esc(why.pat)} 的先修）</span>` : ''}` : '🎉 全部完成'}`;
+      sub = `<b>已學 ${done}／${list.length}</b>${nx ? `<span class="muted">下一步</span><button type="button" class="mm-chip on" data-sel="${esc(nx.id)}">${esc(nx.pat)} ▶</button>${why ? `<span class="muted">（${esc(why.pat)} 的先修）</span>` : ''}` : '🎉 全部完成'}`;
     }
     Q('.mm-sub').innerHTML = sub;
-    const lvL = LV.map(l => [lvC(l), l]);
     let lg = [];
     if (F.mode === 'tense') lg = Object.keys(KIND_NAME).map(k => [KIND_COLOR[k], KIND_NAME[k]]);
-    else if (F.mode === 'path') lg = lvL.concat([[tk('--gold', '#ffb703'), '下一步'], [mix(lvC('N5'), BG, .62), '未學（淡）']]);
+    else if (F.mode === 'path') lg = [[tk('--gold', '#ffb703'), '下一步'], [CAT_COLOR[CATS[0]], '已學（類別色）'], [mix(CAT_COLOR[CATS[0]], BG, .62), '未學（淡）'], [LINK_COLOR.pre, '先修→後續（點節點顯示）']];
     else if (F.mode === 'focus') lg = [['#d9a441', '場景'], ['#8a94a6', '文法類別'], [KIND_COLOR.form, '變化形'], [LINK_COLOR.pre, '先修→後續']];
-    const note = F.mode === 'path' ? '<span class="mm-lgn">由下往上＝學習順序</span>' : '';
+    const note = F.mode === 'path' ? '<span class="mm-lgn">由下往上＝先修→後續；同一方位＝同類別</span>' : '';
     Q('.mm-legend').innerHTML = lg.length ? lg.map(x => `<span><i style="background:${x[0]}"></i>${x[1]}</span>`).join('') + note : '';
     if (M.game) M.game.hud();
   }
@@ -664,7 +676,7 @@
       h = `<div class="mm-ph1"><span class="mm-jp">${esc(r.jp)}</span>${say(j)}</div>
         <div class="mm-kana">${esc(r.kana)}</div><div class="mm-zh">${esc(r.zh)}${tr && tr.mastered ? '　🎓已掌握' : ''}</div>
         <div class="mm-tags">${lvB(r.lv)}<span class="mm-tag st">${M.POS[r.pos] || ''}${r.grp ? '・' + M.GRP[r.grp] : ''}</span>${whB(r.wh)}${r.sc.map(scB).join('')}</div>
-        ${g && !(F.mode === 'map' && EXP === g) ? `<div class="mm-ph">所屬詞群</div><div class="mm-tags"><button type="button" class="mm-tag" data-go="${esc(g)}">${SCc[r.sc[0]].icon}${SCc[r.sc[0]].name}・${r.wh}（${r.lv}）</button></div>` : ''}`;
+        ${g && !(F.mode === 'map' && EXP === g) ? `<div class="mm-ph">所屬詞群</div><div class="mm-tags"><button type="button" class="mm-tag" data-go="${esc(g)}">${SCc[r.sc[0]].icon}${SCc[r.sc[0]].name}・${r.wh}</button></div>` : ''}`;
       if (isVerb(r)) { const f = M.conjugate(j, r.grp); if (f) h += `<div class="mm-ph">動詞變化</div>${formTable(f)}`; }
       else { const a = M.adjForms(j, r.pos); if (a) h += `<div class="mm-ph">形容詞變化</div><table class="mm-tb">${Object.keys(a).map(k => `<tr><th>${k}</th><td>${esc(a[k])}</td></tr>`).join('')}</table>`; }
       btn = App.trackBtn(trackItem(r)) + (isVerb(r) ? `<button type="button" class="btn sm" data-act="verb">⏳ 看變化</button>` : '');
@@ -687,23 +699,28 @@
         ${r.from && M.CONJ_BY[r.from] ? `<div class="mm-ph">◀ 由此變來</div><div class="mm-tags"><button type="button" class="mm-tag" data-go="cj:${r.from}">${esc(M.CONJ_BY[r.from].name)}</button></div>` : ''}
         <div class="mm-ph">用到此形的文法（${list.length}）</div><div class="mm-tags">${list.slice(0, 24).map(g => gB(g.id)).join('')}${list.length > 24 ? '<span class="muted">…</span>' : ''}</div>`;
     } else if (n.type === 'grp') {
-      const ws = (LEX[n.lv] || []).filter(w => w.wh === n.wh && w.sc[0] === n.sc);
-      h = `<div class="mm-ph1"><span class="mm-jp">${SCc[n.sc].icon}${SCc[n.sc].name}</span></div><div class="mm-kana">${n.lv}・${n.wh}・${n.cnt} 個詞</div>
-        <div class="mm-tags">${lvB(n.lv)}${whB(n.wh)}${scB(n.sc)}</div>
+      const ws = grpWords(n.wh, n.sc);
+      h = `<div class="mm-ph1"><span class="mm-jp">${SCc[n.sc].icon}${SCc[n.sc].name}</span></div><div class="mm-kana">${n.wh}・${n.cnt} 個詞</div>
+        <div class="mm-tags">${whB(n.wh)}${scB(n.sc)}</div>
         ${ws.length ? `<div class="mm-ph">詞彙（點了飛過去）</div><div class="mm-tags mm-words">${ws.slice(0, 80).map(w => `<button type="button" class="mm-tag" data-sel="${w.id}">${esc(jp0(w))} <small>${esc(w.zh)}</small></button>`).join('')}${ws.length > 80 ? '<span class="muted">…</span>' : ''}</div>` : '<p class="muted">再點一次節點展開詞彙</p>'}`;
     } else if (n.type === 'sc' || n.type === 'sub') {
       const s = n.type === 'sc' ? SCc[n.sc] : SUBS[n.sub];
       h = `<div class="mm-ph1"><span class="mm-jp">${s.icon}${esc(s.name)}</span></div><div class="mm-kana">${n.type === 'sc' ? '生活場景' : '旅遊場景（' + SCc[s.parent].name + '）'}</div>`;
-      if (n.type === 'sc') h += `<div class="mm-ph">各級詞數</div><div class="mm-tags">${LV.map(l => `<span class="mm-tag st">${l}：${SCNT[l][n.sc] || 0}</span>`).join('')}</div>`;
+      if (n.type === 'sc') h += `<div class="mm-ph">人事時地物詞群</div><div class="mm-tags">${WH.filter(w => GRP[w.id + '|' + n.sc]).map(w => `<button type="button" class="mm-tag" data-go="grp:${w.id}|${n.sc}"><i style="background:${w.color}"></i>${w.id} <small>${GRP[w.id + '|' + n.sc]}</small></button>`).join('')}</div>`;
       else btn = `<button type="button" class="btn sm" data-act="scene">🗾 前往場景練習</button>`;
     } else if (n.type === 'wh') {
-      h = `<div class="mm-ph1"><span class="mm-jp">${n.wh}</span></div><div class="mm-kana">${n.lv || '全等級'}</div><div>${esc(WHc[n.wh].desc)}</div>`;
-      if (n.lv) h += `<div class="mm-ph">場景詞群</div><div class="mm-tags">${M.SCENES.filter(s => (M.GROUPS[n.lv] || {})[n.wh + '|' + s.id]).map(s => `<button type="button" class="mm-tag" data-go="grp:${n.lv}|${n.wh}|${s.id}">${s.icon}${s.name} <small>${M.GROUPS[n.lv][n.wh + '|' + s.id]}</small></button>`).join('')}</div>`;
-    } else if (n.type === 'lv') {
-      h = `<div class="mm-ph1"><span class="mm-jp">${n.lv}</span></div><div class="mm-kana">詞彙 ${M.STATS.lex[n.lv] || 0}・文法 ${M.STATS.gram[n.lv] || 0}</div>
-        <div class="mm-ph">人事時地物</div><div class="mm-tags">${WH.map(w => `<button type="button" class="mm-tag" data-go="wh:${n.lv}${w.id}"><i style="background:${w.color}"></i>${w.id} <small>${(WCNT[n.lv][w.id] || 0) + GRAM.filter(g => g.lv === n.lv && g.wh === w.id).length}</small></button>`).join('')}</div>`;
+      h = `<div class="mm-ph1"><span class="mm-jp">${n.wh}</span></div><div class="mm-kana">${WCNT[n.wh] || 0} 詞・${GRAM.filter(g => g.wh === n.wh).length} 文法</div><div>${esc(WHc[n.wh].desc)}</div>`;
+      h += `<div class="mm-ph">場景詞群</div><div class="mm-tags">${M.SCENES.filter(s => GRP[n.wh + '|' + s.id]).map(s => `<button type="button" class="mm-tag" data-go="grp:${n.wh}|${s.id}">${s.icon}${s.name} <small>${GRP[n.wh + '|' + s.id]}</small></button>`).join('')}</div>`;
+    } else if (n.type === 'hub') {
+      h = n.hub === 'w'
+        ? `<div class="mm-ph1"><span class="mm-jp">📚 詞彙</span></div><div class="mm-kana">人事時地物 × 生活場景・${Object.values(WCNT).reduce((a, x) => a + x, 0)} 詞</div>
+          <div class="mm-ph">人事時地物</div><div class="mm-tags">${WH.map(w => `<button type="button" class="mm-tag" data-go="wh:${w.id}"><i style="background:${w.color}"></i>${w.id} <small>${WCNT[w.id] || 0}</small></button>`).join('')}</div>`
+        : `<div class="mm-ph1"><span class="mm-jp">📘 文法</span></div><div class="mm-kana">依類別・${GRAM.length} 條</div>
+          <div class="mm-ph">文法類別</div><div class="mm-tags">${CATS.map(c => `<button type="button" class="mm-tag" data-go="cat:${esc(c)}"><i style="background:${CAT_COLOR[c]}"></i>${esc(c)} <small>${BYCAT[c].length}</small></button>`).join('')}</div>`;
     } else if (n.type === 'cat') {
-      h = `<div class="mm-ph1"><span class="mm-jp">${esc(n.cat)}</span></div><div class="mm-kana">文法類別・${BYCAT[n.cat].length} 條</div><div class="mm-tags">${LV.map(l => `<span class="mm-tag st">${l}：${BYCAT[n.cat].filter(g => g.lv === l).length}</span>`).join('')}</div>`;
+      const gs = BYCAT[n.cat], dn = gs.filter(g => ST.learned[g.id]).length;
+      h = `<div class="mm-ph1"><span class="mm-jp">${esc(n.cat)}</span></div><div class="mm-kana">文法類別・${gs.length} 條・已學 ${dn}</div>
+        <div class="mm-ph">文法（依學習順序）</div><div class="mm-tags">${gs.slice(0, 30).map(g => gB(g.id)).join('')}${gs.length > 30 ? '<span class="muted">…</span>' : ''}</div>`;
     } else if (n.type === 'verb') {
       const f = M.conjugate(VERB.jp, VERB.grp) || {};
       h = `<div class="mm-ph1"><span class="mm-jp">${esc(f.dict || VERB.jp)}</span>${say(f.dict || VERB.jp)}</div><div class="mm-zh">${esc(VERB.zh || '')}</div><div class="mm-kana">${M.GRP[VERB.grp] || ''}</div>${formTable(f)}`;
@@ -736,7 +753,7 @@
 
   /* ---------------- 首次導覽（3 步，只顯示一次） ---------------- */
   const TOUR = [
-    ['🗂️ 側邊面板', '左側面板（手機點左上「☰ 篩選」）可選「分級」N5–N1、「分類」人事時地物／場景／詞類，以及「圖層」，3D 圖會即時更新。'],
+    ['🗂️ 側邊面板', '左側面板（手機點左上「☰ 篩選」）可依「人事時地物／場景／詞類」篩選，以及開關「圖層」，3D 圖會即時更新。下層是詞彙（人事時地物 × 場景），上層是文法（依類別）。'],
     ['👆 點節點', '點任一節點，鏡頭會飛過去並打開資訊卡；卡片裡的先修、後續連結可以一路點下去，也能加入不會清單、聽發音。'],
     ['◀ 上一步', '上方有「◀ 上一步」「▶ 下一步」與麵包屑，「⌂ 重設」一鍵回到初始視角；手機返回鍵也會先退回上一個焦點。']
   ];
@@ -756,7 +773,7 @@
   /* ---------------- 事件 ---------------- */
   function setSide(on) { F.side = on; renderSide(); renderTop(); }
   function onClick(e) {
-    const t = e.target.closest('[data-mode],[data-lv],[data-wh],[data-sc],[data-pos],[data-layer],[data-cls],[data-solo],[data-go],[data-center],[data-sel],[data-say],[data-act],[data-verb],[data-crumb],.mm-l');
+    const t = e.target.closest('[data-mode],[data-wh],[data-sc],[data-pos],[data-layer],[data-cls],[data-solo],[data-go],[data-center],[data-sel],[data-say],[data-act],[data-verb],[data-crumb],.mm-l');
     if (!t || !ROOT || !ROOT.contains(t)) return;
     const d = t.dataset;
     if (t.classList.contains('mm-l')) { if (t._n) graphClick(t._n); return; }
@@ -767,11 +784,10 @@
     if (d.sel) return navTo(d.sel);
     if (d.crumb) { const c = CRUMBS[+d.crumb]; if (c) goV(c); return; }
     if (d.verb) return goV({ mode: 'tense', verb: d.verb, sel: null });
-    if (d.lv) { F.lv.has(d.lv) ? F.lv.size > 1 && F.lv.delete(d.lv) : F.lv.add(d.lv); return lvChanged(); }
     if (d.wh || d.sc || d.pos) { const k = d.wh ? 'wh' : d.sc ? 'sc' : 'pos', v = d[k]; F[k].has(v) ? F[k].delete(v) : F[k].add(v); restyle(); return renderBar(); }
     if (d.solo) {
-      const [k, v] = d.solo.split('|'), set = F[k], only = set.size === 1 && set.has(v);
-      if (k === 'lv') { set.clear(); set.add(v); return lvChanged(true); }
+      const [k, v] = d.solo.split('|'), set = F[k]; if (!set) return;
+      const only = set.size === 1 && set.has(v);
       set.clear(); if (!only) set.add(v);
       if (k !== F.cls) F.cls = k;
       restyle(); renderBar(); if (!only) fitVisible(); return;
@@ -783,9 +799,6 @@
     if (a === 'back') return stepBack();
     if (a === 'fwd') return stepFwd();
     if (a === 'home') return goV({ mode: 'map', sel: null, exp: null, home: 1 });
-    if (a === 'mylv') { F.lv.clear(); F.lv.add(profLv()); return lvChanged(true); }
-    if (a === 'alllv') { LV.forEach(l => F.lv.add(l)); return lvChanged(true); }
-    if (a === 'colorlv') { F.color = F.color === 'lv' ? 'cls' : 'lv'; restyle(); return renderBar(); }
     if (a === 'clsclear') { F[F.cls].clear(); restyle(); return renderBar(); }
     if (a === 'search') { const sb = ROOT.querySelector('.mm-search'); sb.classList.toggle('open'); if (sb.classList.contains('open')) sb.querySelector('input').focus(); else closeResults(); return; }
     if (a === 'board') { setSide(false); if (M.game) M.game.board(); return; }
@@ -798,10 +811,6 @@
     if (a === 'learn' && SEL && SEL.type === 'gram') { if (ST.learned[SEL.id]) delete ST.learned[SEL.id]; else ST.learned[SEL.id] = 1; saveST(); NEXT = (nextOf() || {}).id || null; restyle(); renderBar(); return renderPanel(); }
     if (a === 'verb' && SEL && SEL.type === 'word') { const w = SEL.ref; return goV({ mode: 'tense', verb: jp0(w) + '|' + w.grp + '|' + w.zh, sel: null }); }
     if (a === 'scene' && SEL && SEL.type === 'sub') return App.go('scene', { id: SEL.sub });
-  }
-  function lvChanged(fit) {
-    if (F.mode === 'map') { restyle(); renderBar(); if (fit) show(false); return; }
-    resetLabels(); show(F.mode === 'path');
   }
 
   /* ---------------- 路由 ---------------- */
@@ -833,7 +842,7 @@
       </div>
       <div class="mm-tour" role="dialog" aria-label="操作導覽"></div>
     </div>
-    <p class="mm-foot muted">詞彙清單：open-anki-jlpt-decks（MIT，源自 tanos.co.uk JLPT 清單，CC BY）；JLPT 官方 2010 年後未公布清單，分級僅供參考。中文釋義、分類與文法為本站整理。</p></div>`;
+    <p class="mm-foot muted">詞彙清單：open-anki-jlpt-decks（MIT，源自 tanos.co.uk JLPT 清單，CC BY）；JLPT 官方 2010 年後未公布清單，等級標籤僅供參考。中文釋義、分類與文法為本站整理。</p></div>`;
     STAGE = el.querySelector('.mm-stage'); PANEL = el.querySelector('.mm-panel'); LAB = el.querySelector('.mm-labels');
     resetLabels();
     el.querySelector('.mm').addEventListener('click', onClick);
@@ -857,7 +866,7 @@
     size();
     ensureGraph();
     if (back) restore(back, true);
-    else { show(); if (params && params.focus) navTo(params.focus, true); }
+    else { show(); if (params && params.focus) navTo(norm(params.focus), true); }
     size();
     if (M.game) M.game.mount(params);
     if (!App.store.get(TOUR_KEY) && !(params && params.script)) { const mm0 = el.querySelector('.mm'); setTimeout(() => { if (mm0.isConnected) tour(0); }, 600); }
@@ -866,7 +875,7 @@
 
   /* ---------------- 對外 API（給 js/mind-game.js 的腳本引擎用） ---------------- */
   M.view = {
-    F, ST, saveST, LEX, N, GB, fix, loadLex, loadAll, jp0, trackItem, isVerb, GRAM, G_BY, BYCONJ, BYCAT, SUBS, WHc, SCc, HL,
+    F, ST, saveST, LEX, N, GB, fix, loadLex, loadAll, jp0, trackItem, isVerb, GRAM, G_BY, BYCONJ, BYCAT, SUBS, WHc, SCc, HL, GRP, CATS, norm, profIdx, grpWords,
     get nodes() { return NODES; }, get stage() { return STAGE; }, get root() { return ROOT; }, get mode() { return F.mode; }, get graph() { return G; },
     node: id => NODES.find(n => n.id === id) || null,
     setMode, focus, show, apply, restyle, flyTo, select, renderBar, renderPanel, expand, nextOf, resetLabels, nav: navTo,

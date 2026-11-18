@@ -356,3 +356,51 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 :root[data-fs=l] .pb-row,:root[data-fs=xl] .pb-row{flex-wrap:wrap}
 :root[data-fs=l] .pb-row .pb-t,:root[data-fs=xl] .pb-row .pb-t{flex:1 1 0;min-width:0}
 :root[data-fs=l] .pb-row .pb-act,:root[data-fs=xl] .pb-row .pb-act{flex:1 0 100%;flex-direction:row;justify-content:flex-end;align-items:center}
+
+/* ---------- 今天首頁（hm-goal、hm-prog）與今日課（td-）、經典練習（cl-） ---------- */
+.hm-goal{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);min-height:44px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--text);font:inherit;font-size:var(--fs-sm);padding:0 var(--sp-4);cursor:pointer;align-self:center}
+.hm-goal span{color:var(--pri);font-weight:800}
+.hm-prog{background:var(--card);border-radius:var(--r-l);box-shadow:var(--shadow);padding:var(--sp-3) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)}
+.hm-prog .hm-sec{margin:0}
+.hm-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-2);text-align:center;font-size:var(--fs-sm);color:var(--muted)}
+.hm-steps b{display:block;color:var(--text);font-size:var(--fs-md)}
+.hm-steps .ok b{color:var(--ok)}
+.hm .hm-streak{text-align:center}
+.td{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:var(--sp-3)}
+.td-top{display:flex;flex-direction:column;gap:6px}
+.td-step{margin:0;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.td-step small{color:var(--muted);font-weight:500;font-size:var(--fs-sm)}
+.td-card{position:relative;background:var(--card);border-radius:var(--r-l);box-shadow:var(--shadow);padding:var(--sp-4);text-align:center;min-height:200px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.td-emo{font-size:2em}
+.td-jp{font-size:2.2em;font-weight:800;margin:0;line-height:1.3;word-break:break-word}
+.td-kana{font-size:var(--fs-lg);margin:0;color:var(--muted)}
+.td-ro{margin:0;color:var(--acc-d);font-weight:700}
+.td-zh{margin:4px 0 0;font-size:var(--fs-lg)}
+.td-hint,.td-src{margin:0;color:var(--muted);font-size:var(--fs-sm)}
+.td-say{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;border:none;background:var(--chip);font-size:1.2em;cursor:pointer}
+.td-q{margin:4px 0 0;text-align:center;color:var(--muted)}
+.td-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-2)}
+.td-grade .btn,.td-opts .btn{margin:0;min-height:48px}
+.td-opts{display:flex;flex-direction:column;gap:var(--sp-2)}
+.td-opts .btn.ok{background:var(--ok-t);border-color:var(--ok)}
+.td-opts .btn.ng{background:var(--err-t);border-color:var(--err)}
+.td-fb{margin:0;text-align:center;font-weight:800;display:flex;flex-direction:column;gap:var(--sp-2)}
+.td-fb.ok{color:var(--ok)}.td-fb.ng{color:var(--err)}
+.td-end{text-align:center}
+.td-end h1{margin:0}
+.td-big{font-size:3em;margin:0}
+.td-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2)}
+.td-sum div{background:var(--card);border-radius:var(--r-m);box-shadow:var(--shadow);padding:var(--sp-3) 4px}
+.td-sum b{display:block;font-size:var(--fs-xl)}
+.td-sum small{color:var(--muted);font-size:var(--fs-xs)}
+.td-end .btn{margin:0}
+.cl-entry{margin-top:var(--sp-4)}
+.cl{max-width:560px;margin:0 auto}
+.cl-list{display:flex;flex-direction:column;gap:var(--sp-2)}
+.cl-row,.cl-sec>summary{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:1px solid var(--line);border-radius:var(--r-m);background:var(--card);color:var(--text);padding:var(--sp-3);min-height:60px;font:inherit;text-align:left;cursor:pointer;list-style:none}
+.cl-sec>summary::-webkit-details-marker{display:none}
+.cl-row>span:first-child,.cl-sec>summary>span:first-child{font-size:1.6em;flex:none}
+.cl-row b,.cl-sec b{display:block}
+.cl-row small,.cl-sec small{display:block;color:var(--muted);font-size:var(--fs-sm)}
+.cl-sec .chips{padding:0 var(--sp-2)}
+.cl-chip{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);font:inherit;font-size:var(--fs-sm)}
