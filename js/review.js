@@ -148,7 +148,9 @@
   };
 
   /* ---------------- UI 狀態（換頁保留） ---------------- */
-  const ui = { src: '', q: '', sort: 'new', showMastered: false, scope: 'due', count: '10', cmode: 'mix' };
+  const ui = { src: '', q: '', sort: 'new', showMastered: false, every: false, scope: 'due', count: '10', cmode: 'mix' };
+  // 清單來源：預設＝不會清單（Tracker）；勾「全部學過的」＝統一進度裡所有學過的項目（字卡、挑戰、知識庫、冒險）
+  const pool = inclM => ui.every ? Learn.views(e => e.s !== 'new' && (inclM || e.s !== 'mastered')).sort((a, b) => b.added - a.added) : Tracker.list(inclM);
   // 到期資訊：今天到期／N 天後
   const DAY = 864e5;
   function dueText(t) {
@@ -159,7 +161,7 @@
     return `<span class="rv-due">📅 ${n <= 1 ? '明天' : n + ' 天後'}複習</span>`;
   }
   function nextDue() {
-    const fut = Tracker.list(false).filter(t => (t.due || 0) > Date.now()).sort((a, b) => a.due - b.due);
+    const fut = Learn.views(e => e.s !== 'new' && (e.due || 0) > Date.now()).sort((a, b) => a.due - b.due);
     return fut[0] || null;
   }
   let session = null;
@@ -169,7 +171,7 @@
   const dots = n => { n = Math.min(3, n || 0); return '●'.repeat(n) + '○'.repeat(3 - n); };
 
   function filtered() {
-    let arr = Tracker.list(ui.showMastered);
+    let arr = pool(ui.showMastered);
     if (ui.src) arr = arr.filter(t => (t.source || '其他') === ui.src);
     const q = ui.q.trim().toLowerCase();
     if (q) {
@@ -189,7 +191,7 @@
   function render(el) {
     session = null;
     const all = Tracker.list(true);
-    if (!all.length) {
+    if (!all.length && !Tracker.dueCount() && !Learn.stats().known) {
       el.innerHTML = `<div class="panel rv-empty">
         <div class="rv-big">📌</div>
         <h2>不會清單還是空的</h2>
@@ -235,6 +237,7 @@
         </div>
         <div class="rv-tools noprint">
           <label><input type="checkbox" id="rvShowM"> 顯示已掌握</label>
+          <label><input type="checkbox" id="rvEvery"> 全部學過的</label>
           <span class="rv-sp"></span>
           <button class="btn sm ghost" data-act="clearM">🧹 清除已掌握</button>
           <button class="btn sm ghost" data-act="export">📤 匯出</button>
@@ -250,6 +253,8 @@
     so.onchange = () => { ui.sort = so.value; refresh(el); };
     const sm = el.querySelector('#rvShowM'); sm.checked = ui.showMastered;
     sm.onchange = () => { ui.showMastered = sm.checked; refresh(el); };
+    const ev = el.querySelector('#rvEvery'); ev.checked = ui.every;
+    ev.onchange = () => { ui.every = ev.checked; ui.src = ''; refresh(el); };
     tabs(el, '#rvScope', 'scope', () => refresh(el));
     tabs(el, '#rvCount', 'count', () => refresh(el));
     tabs(el, '#rvCmode', 'cmode');
@@ -283,15 +288,15 @@
   }
 
   function refresh(el) {
-    const all = Tracker.list(true);
-    const pending = all.filter(t => !t.mastered).length, mastered = all.length - pending;
+    // 統計＝統一進度（字卡、挑戰、知識庫、冒險、複習同一份）
+    const st = Learn.stats();
     el.querySelector('#rvStats').innerHTML =
-      `<div class="rv-stat"><b>${Tracker.dueCount()}</b>今天到期</div><div class="rv-stat"><b>${pending}</b>學習中</div><div class="rv-stat"><b>${mastered}</b>已掌握 🎓</div>`;
+      `<div class="rv-stat"><b>${st.due}</b>今天到期</div><div class="rv-stat"><b>${st.learning + st.review}</b>學習中</div><div class="rv-stat"><b>${st.mastered}</b>已掌握 🎓</div>`;
     // 來源分組
-    const by = {};
-    Tracker.list(ui.showMastered).forEach(t => { const s = t.source || '其他'; by[s] = (by[s] || 0) + 1; });
+    const by = {}, cur = pool(ui.showMastered);
+    cur.forEach(t => { const s = t.source || '其他'; by[s] = (by[s] || 0) + 1; });
     const chips = el.querySelector('#rvChips');
-    chips.innerHTML = `<button class="chip rv-chip ${ui.src ? '' : 'rv-on'}" data-src="">全部 ${Tracker.list(ui.showMastered).length}</button>` +
+    chips.innerHTML = `<button class="chip rv-chip ${ui.src ? '' : 'rv-on'}" data-src="">全部 ${cur.length}</button>` +
       Object.keys(by).sort((a, b) => by[b] - by[a]).map(s => `<button class="chip rv-chip ${ui.src === s ? 'rv-on' : ''}" data-src="${esc(s)}">${esc(s)} ${by[s]}</button>`).join('');
     chips.querySelectorAll('[data-src]').forEach(c => c.onclick = () => { ui.src = ui.src === c.dataset.src ? '' : c.dataset.src; refresh(el); });
 
@@ -310,7 +315,7 @@
       const when = nd ? (() => { const d = new Date(nd.due); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : '';
       info.innerHTML = ui.scope === 'due' && !n
         ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個到期：<b>${esc(nd.jp)}</b>（${when}）` : ''}<br><span class="muted">想多練可以選「提前複習全部」。</span></div>`
-        : `本次範圍共 ${n} 個項目${ui.scope === 'due' ? '（間隔排程：答對後 1→3→7 天再出現）' : ''}`;
+        : `本次範圍共 ${n} 個項目${ui.scope === 'due' ? '（間隔排程：答對越多次，隔越久再出現；字卡、挑戰、冒險學過的到期也會出現）' : ''}`;
       const gs = el.querySelector('#rvGoSub'); if (gs) gs.textContent = n ? `閃卡・${Math.min(n, ui.count === 'all' ? n : +ui.count)} 題` : '今天沒有到期的，可展開下方改範圍';
     }
     const pi = el.querySelector('#rvPrintInfo');

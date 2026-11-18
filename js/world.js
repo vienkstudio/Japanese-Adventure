@@ -458,7 +458,10 @@
 
   /* ---- 句卡：說對的句子收進來（收集＝成長證明） ---- */
   function addCard(m) {
-    const w = st(); if (!m || !m.jp || w.cards[m.jp]) return false;
+    const w = st(); if (!m || !m.jp) return false;
+    // 說對一句＝統一進度記一次答對（第一次收集，或已到期該複習時）
+    if (window.Learn) { const id = Learn.idOf(m, 'phrase'), e = Learn.get(id); if (!e || (e.due || 0) <= Date.now()) Learn.record(id, 2, { src: 'world', item: { jp: m.jp, kana: m.kana || '', zh: m.zh || '', source: '冒險句卡' }, nosave: true }); }
+    if (w.cards[m.jp]) { App.save(); return false; }
     w.cards[m.jp] = { jp: m.jp, kana: m.kana || '', zh: m.zh || '', r: S ? S.region : D ? D.region : '', s: S ? S.id : '', t: App.today() };
     App.save(); paintHud();
     App.toast(`🃏 新句卡：<span lang="ja">${esc(m.jp)}</span>`, 'ok');

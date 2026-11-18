@@ -6,7 +6,8 @@
 (function () {
   const KEY = 'jpQuest.v1';
   const SCHEMA = 2;
-  const DEF = { v: SCHEMA, xp: 0, cleared: {}, tracked: [], log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
+  const MIGS = [];
+  const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
   const fresh = () => JSON.parse(JSON.stringify(DEF));
   /* ---- 單一程度 profile（取代 world.lv、trip.level、L1–L4）與外觀 ui ---- */
   const LV_IDS = ['zero', 'n5', 'n4', 'n3', 'n2', 'n1'];
@@ -42,12 +43,13 @@
     const st = Object.assign(fresh(), o && typeof o === 'object' ? o : {});
     st.xp = Number.isFinite(+st.xp) ? Math.max(0, Math.round(+st.xp)) : 0;   // 字串、NaN、負數 → 修正，避免 S.xp += n 變成字串相加
     if (Array.isArray(st.cleared)) st.cleared = {};
-    if (!Array.isArray(st.tracked)) st.tracked = [];
+    if (st.tracked != null && !Array.isArray(st.tracked)) delete st.tracked;   // 舊不會清單：由 learn.js 遷移到 learn
+    if (!st.learn || typeof st.learn !== 'object' || Array.isArray(st.learn)) st.learn = {};
     if (!Array.isArray(st.log)) st.log = [];
     ['cleared', 'sceneDone'].forEach(k => { if (!st[k] || typeof st[k] !== 'object') st[k] = {}; });
     if (!st.streak || typeof st.streak !== 'object') st.streak = fresh().streak;
     if (typeof st.streak.days !== 'number') st.streak.days = 0;
-    if ((st.v || 1) < 2) st.tracked.forEach(t => { if (t.due == null) t.due = 0; });   // v1 → v2：不會清單加複習排程
+    if ((st.v || 1) < 2 && st.tracked) st.tracked.forEach(t => { if (t && t.due == null) t.due = 0; });   // v1 → v2：不會清單加複習排程
     if (!st.profile || typeof st.profile !== 'object') st.profile = profileFromOld(st); else normProfile(st.profile);
     if (!st.profile.placed && st.xp > 0) st.profile.placed = true;
     syncOld(st);
@@ -56,8 +58,10 @@
     if (!PALETTES.includes(st.ui.palette)) st.ui.palette = 'coral';
     if (!['m', 'l', 'xl'].includes(st.ui.fs)) st.ui.fs = 'm';
     st.v = SCHEMA;
+    MIGS.forEach(f => { try { f(st); } catch (e) { console.error(e); } });   // 其他模組的存檔遷移（learn.js）
     return st;
   }
+  const hasProgress = st => !!(st && (st.xp || Object.keys(st.learn || {}).length || (st.tracked || []).length));
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }, del(k) { try { localStorage.removeItem(k); } catch (e) { } } };
   let S;
   try { S = migrate(JSON.parse(LS.get(KEY) || '{}')); }
@@ -113,7 +117,7 @@
       const d = snap.exists ? snap.data() : null;
       if (d && d.s && (d.t || 0) > (S._t || 0)) {
         try { S = migrate(JSON.parse(d.s)); LS.set(KEY, JSON.stringify(S)); CL.status = 'cloud'; applyTheme(); render(); toast('☁️ 已載入雲端存檔', 'ok'); } catch (e) { }
-      } else if (S.xp || S.tracked.length || Object.keys(S.cleared).length) cloudPush();
+      } else if (hasProgress(S) || Object.keys(S.cleared).length) cloudPush();
       else CL.status = 'cloud';
       renderNav();
     } catch (e) { }
@@ -500,7 +504,7 @@
     IDB.get('save').then(v => {
       if (!v) { if (S._t) IDB.set('save', JSON.stringify(S)); return; }
       let o; try { o = migrate(JSON.parse(v)); } catch (e) { return; }
-      if ((o._t || 0) > (S._t || 0) && (o.xp || (o.tracked || []).length)) { S = o; LS.set(KEY, JSON.stringify(S)); applyTheme(); render(); toast('💾 已從備援存檔還原進度', 'ok'); }
+      if ((o._t || 0) > (S._t || 0) && hasProgress(o)) { S = o; LS.set(KEY, JSON.stringify(S)); applyTheme(); render(); toast('💾 已從備援存檔還原進度', 'ok'); }
     });
   }
   // 延遲載入：先登記路由外殼，第一次進入時才依序載入 scripts，載完自動重畫
@@ -526,39 +530,43 @@
   }
   function onChange(fn) { listeners.push(fn); }
 
-  /* ---------------- Tracker：不會清單 ----------------
+  /* ---------------- Tracker：不會清單（Learn 的檢視） ----------------
      item: {id, jp, kana?, romaji?, zh, hint?, emoji?, source}
-     id 規則：'kana:あ'（假名，用平假名當 key）、'word:<jp>'、'phrase:<jp>'
+     舊 id（'word:<jp>'、'phrase:<jp>'、'gram:<句型>'）會由 Learn.idOf 轉成新 id（v:、p:、g:）；kana:、num:、cnt: 原樣
+     清單＝ App.state.learn 中 star 或 lapses>ack 的項目；排程與掌握全部走 Learn.record
   ---------------------------------------------------- */
+  const LN = () => window.Learn;
   const Tracker = {
     add(item, silent) {
-      if (!item || !item.id) return false;
-      const ex = this.get(item.id);
-      if (ex) { if (ex.mastered) { ex.mastered = false; ex.streak = 0; save(); } return false; }
-      S.tracked.unshift(Object.assign({ source: '其他' }, item, { added: Date.now(), right: 0, wrong: 0, streak: 0, mastered: false, due: 0 }));
-      if (!S.trackHelp) { S.trackHelp = 1; setTimeout(() => toast('📌 答錯或不熟的字會收進「不會清單」，按底部「複習」就能複習', 'ok'), 1500); }
-      save();
+      if (!item || !item.id || !LN()) return false;
+      const ex = LN().get(item.id), was = !!(ex && LN().inList(item.id) && ex.s !== 'mastered');
+      if (was) return false;
+      LN().star(item.id, true, { item, src: 'review' });
+      if (!S.trackHelp) { S.trackHelp = 1; save(); setTimeout(() => toast('📌 答錯或不熟的字會收進「不會清單」，按底部「複習」就能複習', 'ok'), 1500); }
       if (!silent) toast(`📌 已加入不會清單：${esc(item.jp)}`);
       return true;
     },
-    remove(id) { S.tracked = S.tracked.filter(t => t.id !== id); save(); },
-    has(id) { return S.tracked.some(t => t.id === id && !t.mastered); },
-    get(id) { return S.tracked.find(t => t.id === id) || null; },
-    list(includeMastered) { return S.tracked.filter(t => includeMastered || !t.mastered); },
-    count() { return S.tracked.filter(t => !t.mastered).length; },
-    // 複習時呼叫：間隔排程（答對後 1→3→7 天再出現；答錯立刻再練）；連續答對 3 次 → mastered
+    remove(id) { if (LN()) LN().star(id, false); },
+    has(id) { const e = LN() && LN().get(id); return !!(e && LN().inList(id) && e.s !== 'mastered'); },
+    // 任何有進度的項目都回傳（含不在清單、已掌握）；欄位與舊版相同：mastered、due、right、wrong、streak、added、source…
+    get(id) { return LN() ? LN().view(id) : null; },
+    list(includeMastered) { return LN() ? LN().views((e, id) => LN().inList(id) && (includeMastered || e.s !== 'mastered')).sort((a, b) => b.added - a.added) : []; },
+    count() { return LN() ? LN().stats().list : 0; },
+    // 複習時呼叫：走 Learn 排程（答對拉長間隔、答錯立刻再練）；達到穩定度＝mastered
     mark(id, correct) {
-      const t = this.get(id); if (!t) return null;
-      if (correct) { t.right++; t.streak++; t.due = Date.now() + [0, 1, 3, 7][Math.min(3, t.streak)] * 864e5 - 36e5; if (t.streak >= 3 && !t.mastered) { t.mastered = true; toast(`🎓 已掌握：${esc(t.jp)}`, 'ok'); } }
-      else { t.wrong++; t.streak = 0; t.mastered = false; t.due = 0; }
-      save(); return t;
+      if (!LN()) return null;
+      const before = LN().status(id);
+      LN().record(id, correct ? 2 : 0, { src: 'review' });
+      const t = LN().view(id);
+      if (t && t.mastered && before !== 'mastered') toast(`🎓 已掌握：${esc(t.jp)}`, 'ok');
+      return t;
     },
-    // 今天該複習的（到期或剛加入）
-    dueList() { const now = Date.now(); return S.tracked.filter(t => !t.mastered && (t.due || 0) <= now); },
-    dueCount() { return this.dueList().length; },
-    clearMastered() { S.tracked = S.tracked.filter(t => !t.mastered); save(); },
-    exportJSON() { return JSON.stringify(S.tracked, null, 2); },
-    importJSON(txt) { const arr = JSON.parse(txt); if (!Array.isArray(arr)) throw new Error('格式錯誤'); let n = 0; arr.forEach(i => { if (i && i.id && !this.get(i.id)) { S.tracked.push(i); n++; } }); save(); return n; }
+    // 今天該複習的：所有到期的學習項目（不限不會清單）
+    dueList() { return LN() ? LN().due().map(id => LN().view(id)) : []; },
+    dueCount() { return LN() ? LN().due().length : 0; },
+    clearMastered() { if (!LN()) return; this.list(true).filter(t => t.mastered).forEach(t => LN().star(t.id, false)); },
+    exportJSON() { return JSON.stringify(this.list(true), null, 2); },
+    importJSON(txt) { const arr = JSON.parse(txt); if (!Array.isArray(arr)) throw new Error('格式錯誤'); return LN() ? LN().importList(arr) : 0; }
   };
 
   // 共用「＋不會清單」按鈕：trackBtn(item) 產生 HTML，點擊由事件代理處理
@@ -684,7 +692,8 @@
     profile, setProfile, setTheme, applyTheme, LV_IDS, LV_NAMES, LV_DESC, PALETTES,
     trackBtn, streakInfo, today: dayKey, backup, lazy, loadScript, idb: IDB,
     addUnlock(fn) { unlockFns.push(fn); },
-    store: LS
+    store: { get: LS.get, del: LS.del, set(k, v) { if (k === 'jpq.mind.v1') { save(); return; } LS.set(k, v); } },   // 知識庫狀態已併入 App.state（learn、mind）
+    onMigrate(fn) { MIGS.push(fn); let ch = false; try { ch = fn(S); } catch (e) { console.error(e); } if (ch) save(); }
   };
   window.Tracker = Tracker;
 })();

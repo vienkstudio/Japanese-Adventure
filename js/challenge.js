@@ -1,6 +1,6 @@
 // N5–N1 挑戰（仿 JLPT 題型）：路由 challenge（等級選單）、challenge-play（作答）
 // 題目從 data/mind/lex-n*.js、data/mind/grammar.js、data/reading/daily.js 自動產生；資料需要時才載入。
-// 存檔：App.state.chal = { timed, best:{'N5:vocab':0..100}, pass:{N5:1}, m:{N5:{w:[字索引], g:[文法索引]}} }
+// 存檔：App.state.chal = { timed, best:{'N5:vocab':0..100}, pass:{N5:1} }；單字／文法掌握走 Learn.record（App.state.learn，舊 chal.m 由 learn.js 遷移）
 // 星數走 App.reward('chal:N5:vocab', stars)，存在 App.state.cleared。
 (function () {
   const esc = s => App.esc(String(s == null ? '' : s));
@@ -43,43 +43,15 @@
     const c = S.chal && typeof S.chal === 'object' ? S.chal : (S.chal = {});
     if (!c.best || typeof c.best !== 'object') c.best = {};
     if (!c.pass || typeof c.pass !== 'object') c.pass = {};
-    if (!c.m || typeof c.m !== 'object') c.m = {};
     return c;
   }
-  function mastery(L) { const m = rec().m[L] || {}; return { w: Array.isArray(m.w) ? m.w : [], g: Array.isArray(m.g) ? m.g : [] }; }
-  function setMastery(L, kind, i, ok) {
-    const c = rec(), m = c.m[L] || (c.m[L] = { w: [], g: [] });
-    const arr = Array.isArray(m[kind]) ? m[kind] : (m[kind] = []);
-    const k = arr.indexOf(i);
-    if (ok && k < 0) arr.push(i);
-    if (!ok && k >= 0) arr.splice(k, 1);
-    const ST = kbState(); kbMark(L, kind, i, ok, ST); kbSave(ST);
-  }
-  /* 挑戰成績回寫知識庫（與 kb.js／mind3d.js 共用 jpq.mind.v1）：答對→已掌握；答錯→學習中 */
-  const MK = 'jpq.mind.v1';
-  function kbState() {
-    const M = window.MIND || (window.MIND = { lex: {}, gram: [] });
-    if (!M.ST) { try { M.ST = JSON.parse(App.store.get(MK) || '{}'); } catch (e) { M.ST = {}; } }
-    const ST = M.ST; ST.learned = ST.learned || {}; ST.ing = ST.ing || {};
-    return ST;
-  }
-  function kbId(L, kind, i) {
-    if (kind === 'w') return 'w:' + L + ':' + i;
-    const g = ((window.MIND && MIND.gram) || []).filter(x => x.lv === L)[i];
-    return g ? g.id : null;
-  }
-  function kbMark(L, kind, i, ok, ST) {
-    const id = kbId(L, kind, i); if (!id) return;
-    if (ok) { delete ST.ing[id]; ST.learned[id] = 1; }
-    else { delete ST.learned[id]; ST.ing[id] = 1; }
-  }
-  const kbSave = ST => { try { App.store.set(MK, JSON.stringify(ST)); } catch (e) { } };
-  // 舊存檔：挑戰已掌握但知識庫沒有的，補上（每級一次即可，重複也無害）
-  function kbSync(L) {
-    const m = mastery(L); if (!m.w.length && !m.g.length) return;
-    const ST = kbState(); let ch = 0;
-    [['w', m.w], ['g', m.g]].forEach(([k, a]) => a.forEach(i => { const id = kbId(L, k, i); if (id && !ST.learned[id]) { delete ST.ing[id]; ST.learned[id] = 1; ch = 1; } }));
-    if (ch) kbSave(ST);
+  // 已掌握：統一進度 App.state.learn（Learn）中，該級單字／文法狀態 ≥ review 的數量（與知識庫、複習同一份）
+  function masteredCount(L) { const a = Learn.stats({ lv: L, type: 'v' }), b = Learn.stats({ lv: L, type: 'g' }); return a.known + b.known; }
+  // 作答記進 Learn：第一次就答對＝本來就會（3 簡單）；之後答對 2；答錯 0
+  function recordAns(q, L, ok) {
+    if (!q.item) return;
+    const id = Learn.idOf(q.item.id); if (!id) return;
+    Learn.record(id, ok ? (Learn.status(id) === 'new' ? 3 : 2) : 0, { src: 'chal', lv: L, item: Object.assign({}, q.item, { lv: L }), nosave: true });
   }
   const starsOf = (L, t) => (App.state.cleared || {})['chal:' + L + ':' + t] || 0;
   const lvKey = () => { const p = App.profile().lv; return p && p !== 'zero' ? p.toUpperCase() : 'N5'; };
@@ -443,13 +415,13 @@
   let selLv = null;
   function renderMenu(el) {
     el.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>';
-    need(null).then(() => { LVS.forEach(kbSync); if (el.isConnected) drawMenu(el); }).catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
+    need(null).then(() => { if (el.isConnected) drawMenu(el); }).catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
   function drawMenu(el) {
     const L = selLv || (selLv = lvKey());
     const c = rec(), st = (window.MIND && MIND.STATS) || { lex: {}, gram: {} };
     const sumStars = l => TYPES.reduce((s, t) => s + starsOf(l, t.id), 0);
-    const ms = mastery(L), tot = (st.lex[L] || 0) + (st.gram[L] || 0), got = ms.w.length + ms.g.length;
+    const tot = (st.lex[L] || 0) + (st.gram[L] || 0), got = masteredCount(L);
     const pct = tot ? Math.min(100, Math.round(got / tot * 100)) : 0;
     const passed = c.pass[L], mockBest = c.best[L + ':mock'];
     el.innerHTML = `<section class="ch">
@@ -485,7 +457,6 @@
     const t = typeOf(params && params.t) ? params.t : 'vocab';
     el.innerHTML = '<p class="center muted" style="margin:48px 0">出題中…</p>';
     need(L).then(() => {
-      kbSync(L);
       if (!el.isConnected) return;
       const qs = makeRound(L, t);
       if (!qs.length) { el.innerHTML = '<div class="panel center"><p>😵 這個等級暫時出不了題</p></div>'; return; }
@@ -524,8 +495,8 @@
       bs.forEach((b, i) => { b.disabled = true; if (i === q.ans) b.classList.add('ok'); else if (i === k) b.classList.add('ng'); });
       if (ok) G.ok++;
       const sec = G.sec[q.sec] || (G.sec[q.sec] = { ok: 0, n: 0 }); sec.n++; if (ok) sec.ok++;
-      if (q.mk) setMastery(G.L, q.mk[0], q.mk[1], ok);
-      if (!ok && q.item) { Tracker.add(q.item, true); if (!G.wrong.some(w => w.id === q.item.id)) G.wrong.push(q.item); }
+      recordAns(q, G.L, ok);
+      if (!ok && q.item && !G.wrong.some(w => w.id === q.item.id)) G.wrong.push(q.item);
       App.save();
       const last = G.i + 1 >= n;
       el.querySelector('#ch-fb').innerHTML = `<div class="ch-exp ${ok ? 'ok' : 'ng'}">

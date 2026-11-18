@@ -326,7 +326,7 @@
               missed = true;
               const r = cs.find(isOK);
               const it = App.wordItem({ jp: r.jp, kana: r.kana, romaji: r.romaji, zh: r.zh, hint: `情境：${s.speaker || '對方'}說「${s.zh || s.jp}」時這樣回` }, sc.name, 'phrase');
-              Tracker.add(it, true);
+              ((w) => Learn.record(w.id, 0, { src: 'town', item: w }))(it);
               if (!res.wrong.some(w => w.id === it.id)) res.wrong.push(it);
             }
           }
@@ -481,7 +481,7 @@
         if (ok) { correct++; fb.innerHTML = `<span class="t-fb-ok">⭕ 正確！</span>`; }
         else {
           b.classList.add('ng');
-          Tracker.add(it, true);
+          ((w) => Learn.record(w.id, 0, { src: 'town', item: w }))(it);
           if (!wrong.some(x => x.id === it.id)) wrong.push(it);
           fb.innerHTML = `<span class="t-fb-ng">❌ 答錯了</span>`;
         }

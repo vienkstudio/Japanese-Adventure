@@ -252,7 +252,7 @@
       const body = el.querySelector('#dr-q');
       M.ask(body, qs[R.i], (got, max, item) => {
         R.pts += got; R.max += max;
-        if (got < max && item) { Tracker.add(item, true); if (!R.wrong.some(w => w.id === item.id)) R.wrong.push(item); }
+        if (got < max && item) { ((w) => Learn.record(w.id, 0, { src: 'boot', item: w }))(item); if (!R.wrong.some(w => w.id === item.id)) R.wrong.push(item); }
         try { G.sfx(got === max ? 'ok' : 'hurt'); } catch (e) { }
         const after = el.querySelector('#dr-after');
         after.innerHTML = `<button type="button" class="dr-next">${R.i + 1 >= qs.length ? '看結果' : '下一題 ➜'}</button>`;

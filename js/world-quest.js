@@ -300,7 +300,7 @@
             <div class="wd-opts wd-signs">${opts.map((o, j) => `<button type="button" class="wd-opt" data-i="${j}">${o.type === 'sign' ? X.signHTML(o) : `<b class="jp" lang="ja">${esc(o.jp)}</b>`}${World.showKana() && o.kana !== o.jp ? `<i class="wd-k" lang="ja">${esc(o.kana)}</i>` : ''}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
             el.querySelectorAll('.wd-opt').forEach(b => b.onclick = () => {
               const o = opts[+b.dataset.i];
-              if (o !== z) { b.disabled = true; b.classList.add('ng'); m.mistakes++; G.sfx('ng'); Tracker.add(item(z, s.name), true); el.querySelector('.wd-fb').className = 'wd-fb ng'; el.querySelector('.wd-fb').textContent = `✗ ${o.jp}＝${o.zh}`; return; }
+              if (o !== z) { b.disabled = true; b.classList.add('ng'); m.mistakes++; G.sfx('ng'); ((w) => Learn.record(w.id, 0, { src: 'world', item: w }))(item(z, s.name)); el.querySelector('.wd-fb').className = 'wd-fb ng'; el.querySelector('.wd-fb').textContent = `✗ ${o.jp}＝${o.zh}`; return; }
               b.classList.add('ok'); G.sfx('ok'); G.bump('ok'); App.speak(z.jp); Q.on('visit', { zone: '#' + z.jp });
               el.querySelector('.wd-fb').className = 'wd-fb ok'; el.querySelector('.wd-fb').textContent = `✓ ${z.jp}（${z.kana}）＝${z.zh}`;
               el.querySelectorAll('.wd-opt').forEach(x => { x.disabled = true; });
@@ -328,7 +328,7 @@
               if (e.target.closest('.wd-peek')) return;
               const o = opts[+b.dataset.i];
               fb.className = 'wd-fb ' + (o.correct ? 'ok' : 'ng'); fb.textContent = (o.correct ? '✓ ' : '✗ ') + o.feedback;
-              if (!o.correct) { b.disabled = true; b.classList.add('ng'); m.mistakes++; G.sfx('ng'); X.mood('puzzled', 'え？'); Tracker.add(item(stp.choices.find(c => c.correct), s.name, 'phrase'), true); return; }
+              if (!o.correct) { b.disabled = true; b.classList.add('ng'); m.mistakes++; G.sfx('ng'); X.mood('puzzled', 'え？'); ((w) => Learn.record(w.id, 0, { src: 'world', item: w }))(item(stp.choices.find(c => c.correct), s.name, 'phrase')); return; }
               b.classList.add('ok'); G.sfx('ok'); G.bump('ok'); App.speak(o.jp); X.mood('happy');
               el.querySelectorAll('.wd-opt').forEach(x => { x.disabled = true; });
               el.querySelector('#wd-ok').hidden = false;
@@ -462,7 +462,7 @@
           const right = choices[+b.dataset.i] === q.answers[0];
           btns.forEach(x => { x.disabled = true; if (choices[+x.dataset.i] === q.answers[0]) x.classList.add('ok'); });
           if (right) { correct++; combo++; G.sfx(combo >= 3 ? 'combo' : 'ok'); G.bump('ok'); G.burst(b, 12); }
-          else { hearts = Math.max(0, hearts - 1); combo = 0; b.classList.add('ng'); G.sfx('hurt'); G.shake(); Tracker.add(it, true); wrong.push(it); }
+          else { hearts = Math.max(0, hearts - 1); combo = 0; b.classList.add('ng'); G.sfx('hurt'); G.shake(); ((w) => Learn.record(w.id, 0, { src: 'world', item: w }))(it); wrong.push(it); }
           el.querySelector('#ev-hud').innerHTML = hud();
           fb.hidden = false; fb.className = 'ev-fb ' + (right ? 'ok' : 'ng');
           fb.innerHTML = `<b>${right ? '✓ 回應正確' : '✗ 這樣回應更合適'}</b><p class="jp" lang="ja">${esc(q.answers[0])}</p><p>${esc(q.explanation)}</p>${App.trackBtn(it, true)}`;
