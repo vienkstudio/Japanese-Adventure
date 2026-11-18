@@ -244,6 +244,8 @@
     }
     return out.slice(0, n);
   }
+  // 歌曲新聞：先用閱讀／歌曲收進來還沒學的詞；不夠（新使用者）→ 今日短文的句子 → 旅遊詞補滿
+  function dailyPick() { let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { } const R = window.READING; return R && typeof R.pick === 'function' ? R.pick(lv, App.today()) : null; }
   function funFresh(n) {
     const LL = L(), out = [];
     for (const id in LL) {
@@ -251,7 +253,16 @@
       if (!e.reps && /歌|song|閱讀|文章|read|新聞|📰|🎵/.test(src)) { const v = view(id); v.type = id.startsWith('p:') ? 'phrase' : 'vocab'; out.push(v); }
       if (out.length >= n) break;
     }
-    return out;
+    const a = out.length < n ? dailyPick() : null;
+    if (a) (a.p || []).forEach(([jp, zh]) => {
+      if (out.length >= n || !jp || jp.length > 60) return;
+      const id = idOf({ jp }, 'phrase');
+      if (!id || !isFresh(id) || out.some(x => x.id === id)) return;
+      out.push({ id, type: 'phrase', jp, kana: /^[ぁ-ゖァ-ヺー、。！？\s]+$/.test(jp) ? jp : '', zh, source: '📰 今日短文：' + a.title });
+    });
+    let plv = 'zero'; try { plv = App.profile().lv; } catch (e) { }
+    if (out.length < n) travelFresh(n, plv).forEach(x => { if (out.length < n && !out.some(y => y.id === x.id)) out.push(x); });
+    return out.slice(0, n);
   }
   function bizList() {
     const B = window.BIZ; if (!B) return [];
@@ -274,7 +285,7 @@
   const APPLY = {
     travel: () => ({ route: 'play', params: {}, label: '到冒險店家用出來' }),
     exam: () => ({ route: 'challenge-play', params: { lv: lvKey(), t: 'mix' }, label: lvKey() + ' 綜合 10 題' }),
-    fun: () => ({ route: 'songs', params: {}, label: '聽一首歌' }),
+    fun: () => { const a = dailyPick(); return a ? { route: 'read-article', params: { daily: a.id }, label: '讀今日短文：' + a.title } : { route: 'songs', params: {}, label: '聽一首歌' }; },
     work: () => ({ route: 'biz', params: {}, label: '商務情境練習' })
   };
   function queue(goal) {
@@ -288,7 +299,7 @@
   function prepare(goal) {
     let p = { goals: ['travel'] }; try { p = App.profile(); } catch (e) { }
     goal = goal || (p.goals && p.goals[0]) || 'travel';
-    const src = goal === 'exam' ? ['data/mind/grammar.js', 'data/mind/lex-' + lvKey().toLowerCase() + '.js'] : [];
+    const src = goal === 'exam' ? ['data/mind/grammar.js', 'data/mind/lex-' + lvKey().toLowerCase() + '.js'] : goal === 'fun' ? ['data/reading/daily.js'] : [];
     return src.reduce((pr, s) => pr.then(() => App.loadScript(s)), Promise.resolve()).catch(() => { }).then(() => queue(goal));
   }
 

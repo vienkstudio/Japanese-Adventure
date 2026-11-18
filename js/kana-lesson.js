@@ -226,7 +226,7 @@
     const ok = Q.ok, stars = ok >= 9 ? 3 : ok >= 7 ? 2 : ok >= 5 ? 1 : 0;
     const g = ok ? App.addXP(ok, '五十音小練習') : null;
     if (!App.state.lastDone || typeof App.state.lastDone !== 'object') App.state.lastDone = {};
-    App.state.lastDone.kana = App.today(); App.save();
+    App.state.lastDone.kana = App.today(); App.state.lastDoneAt = Date.now(); App.save();
     const seen = new Set(), wrong = Q.wrong.filter(k => !seen.has(k[0]) && seen.add(k[0])).map(itemOf);
     stage(root);
     App.showResult({ title: stars ? '練習完成！' : '再練一次', stars, correct: ok, total: 10, gained: g && g.gained, wrong, retry: () => { qStart(); stage(root); }, ok: '確定' });

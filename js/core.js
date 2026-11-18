@@ -320,9 +320,9 @@
   function reward(id, stars, reason) {
     stars = Math.max(0, Math.min(3, stars | 0));
     const prev = S.cleared[id] || 0;
-    if (!stars) return { stars, prevStars: prev, gained: 0, levelUp: false, firstClear: false };
     if (!S.lastDone || typeof S.lastDone !== 'object') S.lastDone = {};
-    S.lastDone[String(id).split(':')[0]] = dayKey();
+    S.lastDone[String(id).split(':')[0]] = dayKey(); S.lastDoneAt = Date.now();
+    if (!stars) { save(); return { stars, prevStars: prev, gained: 0, levelUp: false, firstClear: false }; }
     let xp = 3;
     if (stars > prev) { xp = XPS[stars] - XPS[prev] + (stars === 3 ? 10 : 0); S.cleared[id] = stars; }
     save();
