@@ -161,7 +161,7 @@
     async filter(st, run) {
       if (st.lv) { V.F.lv.clear(); arr(st.lv).forEach(l => V.F.lv.add(l)); }
       if (st.wh) { V.F.wh.clear(); arr(st.wh).forEach(w => V.F.wh.add(w)); }
-      if ('sc' in st) V.F.sc = st.sc;
+      if ('sc' in st) { V.F.sc.clear(); if (st.sc) V.F.sc.add(st.sc); }
       V.restyle();
     },
     async cam(st) { const n = st.to && V.node(st.to); if (n) V.flyTo(n, st.dist); await sleep(st.ms || 700); },
@@ -245,8 +245,8 @@
     const sc = BY[id]; if (!sc) return;
     stop(true); BD.open = false;
     const run = RUN = { sc, vars: Object.assign({}, sc.vars), right: 0, wrong: 0, combo: 0, maxCombo: 0, asked: 0, prog: 0, cancel: false, waiter: null, ui: { text: '準備中…' },
-      keep: { lv: Array.from(V.F.lv), wh: Array.from(V.F.wh), sc: V.F.sc } };
-    V.select(null); V.F.open = false; V.intercept(onNode); V.renderBar();
+      keep: { lv: Array.from(V.F.lv), wh: Array.from(V.F.wh), sc: Array.from(V.F.sc) } };
+    V.select(null); V.F.side = false; V.intercept(onNode); V.renderBar();
     Promise.resolve().then(() => runSteps(typeof sc.steps === 'function' ? sc.steps(run.vars, M) : sc.steps, run)).then(() => finish(run))
       .catch(e => { if (e === CANCEL) return; console.error(e); App.toast('任務發生錯誤：' + (e.message || e)); if (RUN === run) stop(); });
   }
@@ -266,7 +266,7 @@
     const r = RUN; RUN = null; r.cancel = true;
     if (r.waiter) { const w = r.waiter; r.waiter = null; w.reject(CANCEL); }
     V.intercept(null); V.HL.clear();
-    V.F.lv.clear(); r.keep.lv.forEach(l => V.F.lv.add(l)); V.F.wh.clear(); r.keep.wh.forEach(w => V.F.wh.add(w)); V.F.sc = r.keep.sc;
+    V.F.lv.clear(); r.keep.lv.forEach(l => V.F.lv.add(l)); V.F.wh.clear(); r.keep.wh.forEach(w => V.F.wh.add(w)); V.F.sc.clear(); r.keep.sc.forEach(s => V.F.sc.add(s));
     if (r.verbSet) V.setVerb({ jp: '書く', grp: '1', zh: '寫' });
     if (V.mode === 'game') { V.F.mode = 'map'; if (!silent) { V.setMode('map'); return; } }
     if (!silent) { V.show(true); } else hud();
@@ -289,7 +289,7 @@
     const root = V.root; if (!root || !root.isConnected) return;
     const Q = s => root.querySelector(s);
     const total = Object.keys(ST.done).reduce((a, k) => a + ST.done[k], 0), learned = V.GRAM.filter(g => ST.learned[g.id]).length;
-    Q('.mm-stats').innerHTML = `<span title="任務星數">⭐ ${total}</span><span title="已學文法">🧠 ${learned}/${V.GRAM.length}</span><span title="最高連擊">🔥 ${ST.best}</span>`;
+    const stt = Q('.mm-stats'); if (stt) stt.innerHTML = `<span title="任務星數">⭐ 星 ${total}</span><span title="已學文法">🧠 已學 ${learned}/${V.GRAM.length}</span><span title="最高連擊">🔥 連擊 ${ST.best}</span>`;
     const dock = Q('.mm-dock'); let h = '';
     if (RUN) {
       const u = RUN.ui || {}, sc = RUN.sc;

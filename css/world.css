@@ -368,3 +368,25 @@
 .gs-grid .tg-cell{width:auto;min-width:0;height:auto;aspect-ratio:1;font-size:13px}
 .gs-grid .tg-cell small{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wd-og{display:block;font-size:var(--fs-xs);color:var(--acc-d);font-style:italic;line-height:1.3;font-weight:400}
+
+/* ===== v5 插畫地圖（js/world-art.js）：街區底圖一張 SVG，格子透明只負責點擊；店內區域卡、日本地圖徽章 ===== */
+.wd-art{position:absolute;left:0;top:0;width:calc(var(--cols)*var(--ts));height:calc(var(--rows)*var(--ts));display:block;pointer-events:none}
+.wd-map.has-art .wd-t{position:relative;background:transparent;box-shadow:none}
+.wd-map.has-art .wd-o{border-radius:calc(var(--ts)*.12)}
+.wd-map.has-art .wd-o:hover{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pri) 55%,transparent)}
+.wd-map.has-art .wd-o.pulse{background:color-mix(in srgb,var(--pri) 16%,transparent);box-shadow:0 0 0 3px var(--pri),inset 0 0 0 2px var(--card)}
+.wd-map.has-art .p-sign{align-items:flex-start;padding-top:calc(var(--ts)*.14)}
+.wd-map.has-art .p-sign .sg{display:flex;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.3))}
+.wd-map.has-art .p-sign .wd-sign.mini{height:calc(var(--ts)*.42);max-width:calc(var(--ts)*.96)}
+.wd-me .me-r{stroke:var(--pri)}
+:root[data-theme=dark] .wd-art{filter:brightness(.8) saturate(.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .wd-art{filter:brightness(.8) saturate(.9)}}
+.wd-card .e .wa-z,.wd-legend .wa-z{display:block;width:30px;height:30px}
+.wd-card .e:has(.wa-z){line-height:0}
+.jp-node.art>span{font-size:1em;line-height:0;margin:1px 0}
+.jp-map .jp-node svg{position:static;inset:auto;display:block}.jp-map .jp-node .wa-reg{width:32px;height:32px}.jp-map .jp-node small .wa-seal{display:inline-block}
+.jp-node small .wa-seal{width:13px;height:13px;vertical-align:-2px;margin-right:2px}
+.jp-node.art.here::after{content:none}
+.jp-here{position:absolute;top:-22px;right:-10px;width:22px;height:28px;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.jp-map .jp-here svg{display:block;width:100%;height:100%}
+.wa-pin-b{fill:var(--pri)}

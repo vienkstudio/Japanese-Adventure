@@ -111,8 +111,10 @@
     const list = READING.daily.filter(a => a.lv === tab);
     const doneMark = id => st.done[id] ? `<span class="rd-done" title="已讀">✔</span>` : '';
     const nc = params.news || newsCat || 'domestic';
+    const sec = params.sec || readSec || 'news'; readSec = sec;
     el.innerHTML = `<div class="rd-home">
-      <section class="rd-news">
+      ${Reader.sectTabs(sec)}
+      <section class="rd-news"${sec === 'news' ? '' : ' hidden'}>
         <div class="rd-sech"><h3 class="rd-h3">🗞️ 近三天新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
         <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
         <p class="muted rd-tip rd-nnote"></p>
@@ -129,6 +131,7 @@
           <p class="muted rd-tip">匯入後一律自動標讀音、羅馬字、中文，文末列出本文單字、片語、文法，都能加入不會清單。</p>
         </details>
       </section>
+      <div class="rd-artsec"${sec === 'art' ? '' : ' hidden'}>
       <button type="button" class="rd-today" data-go="${t.id}">
         <span class="rd-today-ic" aria-hidden="true">${t.icon}</span>
         <span class="rd-today-tx"><small>今日短文・${esc(READING.LV_DESC[t.lv])}</small><b>${esc(t.title)}</b><span class="muted">${esc(t.zh)}</span></span>
@@ -137,7 +140,6 @@
       <div class="rd-acts">
         <button type="button" class="rd-act" data-act="paste"><span>📋</span>貼上文章</button>
         <button type="button" class="rd-act" data-act="url"><span>🔗</span>匯入文章網址</button>
-        <button type="button" class="rd-act" data-act="songs"><span>🎵</span>歌曲跟唱</button>
       </div>
       <h3 class="rd-h3">📚 文章庫</h3>
       <div class="tabs rd-tabs">${READING.LV.map(l => `<button type="button" data-lv="${l}" class="${l === tab ? 'on' : ''}">${esc(READING.LV_NAME[l])}</button>`).join('')}</div>
@@ -146,16 +148,18 @@
       <h3 class="rd-h3">🗂️ 我的文章</h3>
       <div class="rd-list" id="rdMine"><p class="muted rd-tip">讀取中…</p></div>
       <p class="muted rd-tip">貼上的文章只存在這台裝置，不會上傳。</p>
+      </div>
     </div>`;
+    bindSect(el, true);
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go('read-article', { daily: b.dataset.go }));
-    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv, news: nc }));
+    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => homeView(el, { lv: b.dataset.lv, news: nc, sec: 'art' }));
     el.querySelectorAll('[data-ncat]').forEach(b => b.onclick = () => {
       newsCat = b.dataset.ncat;
       el.querySelectorAll('[data-ncat]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
       delete el.querySelector('#rdNews').dataset.more; drawNews(el, newsCat);
     });
     el.querySelector('#rdNewsRe').onclick = () => { try { sessionStorage.removeItem('jpq.news.' + (newsCat || nc)); } catch (e) { } drawNews(el, newsCat || nc); };
-    drawNews(el, nc);
+    if (sec === 'news') drawNews(el, nc);
     el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
       const a = b.dataset.act;
       if (a === 'songs') App.go('songs');
@@ -171,7 +175,20 @@
     });
   }
 
-  let newsCat = '';
+  let newsCat = '', readSec = '';
+  // 閱讀頁與歌曲頁共用的頂部分頁
+  function sectTabs(cur) {
+    return `<div class="tabs rd-sects" role="tablist">${[['news', '📰 新聞'], ['art', '📚 文章'], ['song', '🎵 歌曲']].map(([k, n]) => `<button type="button" role="tab" data-sect="${k}" class="${k === cur ? 'on' : ''}" aria-selected="${k === cur}">${n}</button>`).join('')}</div>`;
+  }
+  function bindSect(el, inRead) {
+    el.querySelectorAll('[data-sect]').forEach(b => b.onclick = () => {
+      const k = b.dataset.sect;
+      if (k === 'song') { App.go('songs'); return; }
+      readSec = k;
+      if (inRead) return homeView(el, { sec: k });
+      App.go('read', { sec: k });
+    });
+  }
   const ago = t => { if (!t) return ''; const m = Math.max(1, Math.round((Date.now() - t) / 60000)); return m < 60 ? m + ' 分鐘前' : m < 1440 ? Math.round(m / 60) + ' 小時前' : Math.round(m / 1440) + ' 天前'; };
   async function drawNews(el, id) {
     const box = el.querySelector('#rdNews'); if (!box) return;
@@ -558,5 +575,5 @@
     } catch (e) { return false; }
   }
 
-  window.Reader = { tokensHTML, wordCard, syncTrackBtns, vocabList, vocabHTML, parseFuri, applyFuri, lvBadge, pref, setPref, saveDoc, readShare, todayDone };
+  window.Reader = { sectTabs, bindSect, tokensHTML, wordCard, syncTrackBtns, vocabList, vocabHTML, parseFuri, applyFuri, lvBadge, pref, setPref, saveDoc, readShare, todayDone };
 })();

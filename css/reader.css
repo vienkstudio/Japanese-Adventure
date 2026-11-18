@@ -249,3 +249,11 @@ input[type=file].rd-in{padding:8px}
 .rd-og{display:none;font-size:var(--fs-xs);line-height:1.25;color:var(--acc-d);white-space:nowrap;font-style:italic}
 .rd-doc.z .rd-og,.rd-doc.r .rd-og{display:block}
 .rd-loan{margin-top:4px;color:var(--acc-d);font-weight:700}
+
+/* 熱門精選 */
+.sg-hot .sg-hn{font-weight:900;color:var(--pri);font-size:var(--fs-md);width:32px;text-align:center}
+.sg-hot .rd-item:nth-child(-n+3) .sg-hn{color:var(--on-pri);background:var(--pri);border-radius:999px;height:32px;display:inline-flex;align-items:center;justify-content:center}
+
+/* 閱讀頁頂部分頁：新聞／文章／歌曲 */
+.rd-sects{position:sticky;top:var(--topH,56px);z-index:5;background:var(--bg);margin:0 0 var(--sp-3);padding:var(--sp-1) 0}
+.rd-sects button{flex:1;min-height:44px;font-weight:800}

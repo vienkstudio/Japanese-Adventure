@@ -288,7 +288,7 @@
     let html = '';
     for (let y = 0; y < H; y++) for (let x = 0; x < Wd; x++) {
       const c = at(x, y), o = isObj(c) ? cfg.objs[c] : null;
-      html += `<div class="wd-t ${o ? 'wd-o ' + (o.cls || '') : cfg.cls(c, x, y)}" style="grid-column:${x + 1};grid-row:${y + 1}" data-x="${x}" data-y="${y}"${o ? ` data-o="${esc(c)}" role="button" tabindex="0" aria-label="${esc(o.label || o.aria || '')}"` : ''}>${o ? (o.html || `<span>${esc(o.icon || '')}</span>`) : cfg.deco ? cfg.deco(c, x, y) : ''}</div>`;
+      html += `<div class="wd-t ${o ? 'wd-o ' + (o.cls || '') : cfg.cls(c, x, y)}" style="grid-column:${x + 1};grid-row:${y + 1}" data-x="${x}" data-y="${y}"${o ? ` data-o="${esc(c)}" role="button" tabindex="0" aria-label="${esc(o.label || o.aria || '')}"` : ''}>${o ? (o.html != null ? o.html : `<span>${esc(o.icon || '')}</span>`) : !cfg.art && cfg.deco ? cfg.deco(c, x, y) : ''}</div>`;
     }
     comps.forEach((cp, i) => {
       const o = cfg.objs[cp.key]; if (!o.label && !o.badge) return;
@@ -296,7 +296,8 @@
       const cx = (Math.min(...xs) + Math.max(...xs) + 1) / 2, by = Math.max(...ys) + 1;
       if (o.label) html += `<div class="wd-lb" style="left:calc(var(--ts)*${cx});top:calc(var(--ts)*${by})" data-c="${i}">${esc(o.label)}${o.badge ? `<em>${o.badge}</em>` : ''}</div>`;
     });
-    host.innerHTML = `<div class="wd-map" style="--cols:${Wd};--rows:${H}">${html}<div class="wd-me" aria-hidden="true">${meSVG()}</div></div>`;
+    const art = cfg.art ? cfg.art() : '';
+    host.innerHTML = `<div class="wd-map${art ? ' has-art' : ''}" style="--cols:${Wd};--rows:${H}">${art ? `<svg class="wd-art" viewBox="0 0 ${Wd * 100} ${H * 100}" preserveAspectRatio="none" aria-hidden="true">${art}</svg>` : ''}${html}<div class="wd-me" aria-hidden="true">${meSVG()}</div></div>`;
     const map = host.firstElementChild, me = map.querySelector('.wd-me');
     let pos = (cfg.start || [0, 0]).slice(), moving = 0, ts = 40;
     const place = () => { me.style.transform = `translate(${pos[0] * ts}px,${pos[1] * ts}px)`; };
@@ -350,7 +351,7 @@
     return { el: map, fit, pulse, goObj, pos: () => pos.slice(), comps, at, route, stop: () => { moving++; } };
   }
   // 玩家小人（SVG，主色上色）
-  const meSVG = () => `<svg viewBox="0 0 40 48" aria-hidden="true"><ellipse cx="20" cy="45" rx="11" ry="3" fill="#000" opacity=".2"/><path d="M8 44 Q9 26 20 25 Q31 26 32 44Z" class="me-b"/><rect x="25" y="28" width="9" height="13" rx="2" fill="#8a5a3b"/><circle cx="20" cy="15" r="10" fill="#f6d3b3"/><path d="M10 14 Q10 4 20 4 Q30 4 30 14 Q26 9 20 9 Q14 9 10 14Z" fill="#2b2118"/><circle cx="16.5" cy="16" r="1.5" fill="#2b2b2b"/><circle cx="23.5" cy="16" r="1.5" fill="#2b2b2b"/></svg>`;
+  const meSVG = () => window.WorldArt ? WorldArt.me() : `<svg viewBox="0 0 40 48" aria-hidden="true"><ellipse cx="20" cy="45" rx="11" ry="3" fill="#000" opacity=".2"/><path d="M8 44 Q9 26 20 25 Q31 26 32 44Z" class="me-b"/><rect x="25" y="28" width="9" height="13" rx="2" fill="#8a5a3b"/><circle cx="20" cy="15" r="10" fill="#f6d3b3"/><path d="M10 14 Q10 4 20 4 Q30 4 30 14 Q26 9 20 9 Q14 9 10 14Z" fill="#2b2118"/><circle cx="16.5" cy="16" r="1.5" fill="#2b2b2b"/><circle cx="23.5" cy="16" r="1.5" fill="#2b2b2b"/></svg>`;
 
   /* =========================================================
      舞台：HUD＋（街區地圖｜店內場景）＋提示列＋面板（不覆蓋地圖，地圖讓位）
@@ -627,11 +628,12 @@
     const b = STAGE.querySelector('#wd-bk'); if (b) { const n = RUN ? basketN() : 0; b.hidden = !n; b.innerHTML = `🧺<b>${n}</b>`; }
     const c = STAGE.querySelector('#wd-cards'); if (c) c.innerHTML = `🃏<b>${cardCount()}</b>`;
   }
+  const zIcon = z => window.WorldArt ? WorldArt.zone(z) : esc(z.icon || '');
   const RANK = { counter: 0, shelf: 1, machine: 1, seat: 2, facility: 3, sign: 4 };
   function sceneHTML(s) {
     const bg = bgOf(s), ck = counters()[0], npc = staff(ck);
     const keys = Object.keys(s.zones).filter(k => !['deco', 'menu'].includes(s.zones[k].type)).sort((a, b) => (RANK[s.zones[a].type] || 0) - (RANK[s.zones[b].type] || 0));
-    const card = k => { const z = s.zones[k]; return `<button type="button" class="wd-card t-${z.type}" data-z="${esc(k)}">${z.type === 'sign' ? signHTML(z, 'mini') : `<span class="e">${esc(z.icon || '')}</span><b class="jp" lang="ja">${esc(z.jp)}</b>`}<small>${esc(z.zh || '')}</small></button>`; };
+    const card = k => { const z = s.zones[k]; return `<button type="button" class="wd-card t-${z.type}" data-z="${esc(k)}">${z.type === 'sign' ? signHTML(z, 'mini') : `<span class="e">${zIcon(z)}</span><b class="jp" lang="ja">${esc(z.jp)}</b>`}<small>${esc(z.zh || '')}</small></button>`; };
     return `<div class="wd-scene sc-${bg}">${artSVG(bg)}
       <button type="button" class="wd-clerk" id="wd-clerk" aria-label="跟${esc(npc.who)}說話">${clerkSVG(bg, s.id + npc.who, npc)}<span class="wd-tag">${esc(npc.who)}</span><span class="wd-say" hidden></span></button>
       <div class="wd-spots">${keys.map(card).join('')}</div></div>`;
@@ -1012,7 +1014,7 @@
   function infoSheet() {
     const el = sheet(`<div class="wd-zh"><span class="wd-zi">${esc(S.icon)}</span>${tx(S, true)}</div><p>${esc(S.desc)}</p>
       <h3 class="wd-h">🎌 這種店的規矩</h3><ul class="wd-tips">${S.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
-      <h3 class="wd-h">🗺️ 店內有什麼 <small>點一下過去看看</small></h3><div class="wd-legend">${Object.keys(S.zones).filter(k => !['deco', 'menu'].includes(S.zones[k].type)).map(k => `<button type="button" data-z="${esc(k)}">${S.zones[k].type === 'sign' ? signHTML(S.zones[k], 'mini') : `<span>${esc(S.zones[k].icon || '')}</span>`}${tx(S.zones[k], true)}</button>`).join('')}</div>
+      <h3 class="wd-h">🗺️ 店內有什麼 <small>點一下過去看看</small></h3><div class="wd-legend">${Object.keys(S.zones).filter(k => !['deco', 'menu'].includes(S.zones[k].type)).map(k => `<button type="button" data-z="${esc(k)}">${S.zones[k].type === 'sign' ? signHTML(S.zones[k], 'mini') : `<span>${zIcon(S.zones[k])}</span>`}${tx(S.zones[k], true)}</button>`).join('')}</div>
       <div class="wd-acts"><button type="button" class="btn" id="wd-board">🎯 挑戰（選做）</button></div>`);
     el.querySelectorAll('[data-z]').forEach(b => b.onclick = e => { if (e.target.closest('.wd-peek')) return; openZone(b.dataset.z); });
     el.querySelector('#wd-board').onclick = () => Q.board();
@@ -1103,7 +1105,8 @@
       <div class="wd-title"><b lang="ja">${esc(d.jp)}</b><small>${esc(d.icon)} ${esc(regionOf(d.region).name)}・${esc(d.name)}</small></div>
       <button type="button" class="wd-hb" id="wd-cards" aria-label="我的句卡"></button><button type="button" class="wd-hb" id="wd-info" aria-label="這一區">ℹ️</button>`, 'wd-district');
     const objs = {};
-    Object.keys(d.places).forEach(k => { const i = placeInfo(d.places[k]); objs[k] = Object.assign({ cls: 'p-' + d.places[k].type }, i); });
+    const A = window.WorldArt;   // 有插畫圖庫：建築、景點、路人畫在底圖，格子只負責點擊
+    Object.keys(d.places).forEach(k => { const p = d.places[k], i = placeInfo(p); if (A && p.type !== 'sign') i.html = ''; objs[k] = Object.assign({ cls: 'p-' + p.type }, i); });
     const start = w.pos[d.id] && d.map[w.pos[d.id][1]] && '=.'.includes(d.map[w.pos[d.id][1]][w.pos[d.id][0]]) ? w.pos[d.id] : d.start;
     const box = STAGE.querySelector('.wd-box'); box.className = 'wd-box wd-mapwrap';
     STAGE._fit();
@@ -1111,6 +1114,7 @@
       rows: d.map, objs, start, walk: c => c === '=' || c === '.',
       cls: c => c === '=' ? 't-road' : c === '.' ? 't-walk' : c === '^' ? 't-green' : c === '~' ? 't-water' : c === '#' ? 't-bld' : 't-void',
       deco: (c, x, y) => c === '#' ? `<i class="win w${(x * 7 + y * 13) % 4}"></i>` : c === '^' ? `<i class="tree${(x + y) % 3 ? '' : ' s'}"></i>` : c === '~' ? '<i class="wave"></i>' : '',
+      art: A ? () => A.district(d, W.shops) : null,
       onObj: openPlace, onMove: p => { w.pos[d.id] = p; }
     });
     w.pos[d.id] = start; App.save();

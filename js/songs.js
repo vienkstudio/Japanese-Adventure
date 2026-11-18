@@ -80,8 +80,20 @@
     }
   });
 
+  // 熱門精選：一鍵匯入（YouTube 官方影片＋LRCLIB 逐句時間歌詞）
+  const HOT = [["アイドル","YOASOBI","ZRtdQ81jPUQ"],["夜に駆ける","YOASOBI","by4SYYWlhEs"],["Bling-Bang-Bang-Born","Creepy Nuts","mLW35YMzELE"],["ライラック","Mrs. GREEN APPLE","QjrkrVmC-8M"],["ケセラセラ","Mrs. GREEN APPLE","Jy-QS27q7lA"],["怪獣の花唄","Vaundy","UM9XNpgrqVk"],["Lemon","米津玄師","SX_ViT4Ra7k"],["KICK BACK","米津玄師","M2cckDmNLMI"],["新時代","Ado","1FliVTcX8bQ"],["唱","Ado","pgXpM4l_MwI"],["Pretender","Official髭男dism","TQ8WlA2GXbk"],["Subtitle","Official髭男dism","hN5MBlGv2Ac"],["水平線","back number","iqEr3P78fz8"],["SPECIALZ","King Gnu","fhzKLBZJC3w"],["はいよろこんで","こっちのけんと","jzi6RNVEOtA"],["晩餐歌","tuki.","oZpYEEcvu5I"],["ドライフラワー","優里","kzZ6KXDM1RI"],["紅蓮華","LiSA","x1FV6IrjZCY"],["群青","YOASOBI","Y4nEEZwckuU"],["ベテルギウス","優里","cbqvxDTLMps"],["青と夏","Mrs. GREEN APPLE","-MKfbxHy_NA"],["オトノケ","Creepy Nuts","tRwHpyOq4P4"],["さよーならまたいつか！","米津玄師","-wb2PAx6aEs"]];
+  async function importHot(t, a, yt) {
+    const id = 'yt:' + yt, old = await getSong(id);
+    if (old && old.lines.length) return id;
+    const L = await LinkImport.lyrics(t, a).catch(() => null);
+    const s = old || { id, title: `${t}（${a}）`, src: { type: 'yt', yt }, lines: [] };
+    if (L && L.lines.length) mergeLyrics(s, L.lines);
+    await putSong(s);
+    return id;
+  }
   function listView(el) {
     el.innerHTML = `<div class="sg-home">
+      ${Reader.sectTabs('song')}
       <div class="sg-head"><h2 class="rd-h2">🎵 歌曲跟唱</h2></div>
       <form id="sgImport">
         <label class="rd-lbl">歌曲網址<input class="rd-in" type="url" id="sgLink" inputmode="url" placeholder="YouTube、YouTube Music 或音訊檔網址" required></label>
@@ -89,13 +101,24 @@
         <p class="rd-tip" id="sgImportStatus" role="status" aria-live="polite"></p>
       </form>
       <p class="muted rd-tip">YouTube 會自動帶入標題，再用歌名與歌手查找 LRCLIB 的日文歌詞。沒有找到歌詞時，仍可匯入音源。</p>
+      <h3 class="rd-h3">🔥 熱門精選 <small class="muted">點一下自動匯入影片與逐句歌詞</small></h3>
+      <div class="rd-list sg-hot">${HOT.map(([t, a, yt], k) => `<button type="button" class="rd-item" data-hot="${k}"><span class="rd-ic sg-hn" aria-hidden="true">${k + 1}</span><span class="rd-it"><b lang="ja">${esc(t)}</b><small class="muted" lang="ja">${esc(a)}</small></span><span class="rd-go" aria-hidden="true">▶</span></button>`).join('')}</div>
       <h3 class="rd-h3">示範曲</h3>
       <div class="rd-list"><button type="button" class="rd-item" data-song="demo"><span class="rd-ic" aria-hidden="true">🌅</span><span class="rd-it"><b lang="ja">${esc(DEMO.title)}</b><small class="muted">自編童謠・${DEMO.lines.length} 句・語音朗讀</small></span>${App.state.cleared && App.state.cleared['song:demo'] ? '<span class="rd-done">✔</span>' : ''}</button></div>
       <h3 class="rd-h3">我的歌</h3>
       <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
       <p class="muted rd-tip">儲存的歌曲留在這台裝置。YouTube 與音訊網址播放時需要連網。</p>
     </div>`;
+    Reader.bindSect(el);
     el.querySelector('#sgNew').onclick = () => App.go('songs', { mode: 'new' });
+    el.querySelectorAll('[data-hot]').forEach(b => b.onclick = async () => {
+      if (b.disabled) return;
+      const [t, a, yt] = HOT[+b.dataset.hot], sm = b.querySelector('small'), old = sm.textContent;
+      b.disabled = true; sm.textContent = '匯入歌詞中…';
+      try { const id = await importHot(t, a, yt); if (b.isConnected) App.go('song', { id }); }
+      catch (e) { if (b.isConnected) { sm.textContent = '匯入失敗，請稍後再試'; setTimeout(() => { if (sm.isConnected) sm.textContent = old; }, 4000); } }
+      finally { b.disabled = false; }
+    });
     const form = el.querySelector('#sgImport'), submit = form.querySelector('#sgFetch'), status = form.querySelector('#sgImportStatus');
     form.onsubmit = async e => {
       e.preventDefault();

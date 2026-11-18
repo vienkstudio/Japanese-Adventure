@@ -482,7 +482,7 @@
     'M25.3 97.8L28.6 94.5L31.9 90.1L34.1 86.8L39.6 81.3L38.5 83.5L33.0 83.5L29.7 86.8L26.4 90.1L27.5 92.3L25.3 95.6Z'
   ];
   function japan(el) {
-    const here = (st().at || {}).r;
+    const here = (st().at || {}).r, A = window.WorldArt;
     el.innerHTML = `<div class="jp-map"><svg viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
         <defs><pattern id="jp-wave" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 3 Q2 1 4 3 T8 3" class="wave"/></pattern></defs>
         <rect width="100" height="100" fill="url(#jp-wave)"/>
@@ -491,7 +491,7 @@
         <path class="rail" d="M26 95.4 L38.4 63.7 L39.9 61.9 L61.9 58.1 L71.2 16.8"/>
         ${W.regions.map(r => { const o = nodeOf(r); return `<line class="lead" x1="${r.x}" y1="${r.y}" x2="${o[0]}" y2="${o[1]}"/><circle class="pin" cx="${r.x}" cy="${r.y}" r="1.4"/>`; }).join('')}
       </svg>
-      ${W.regions.map((r, i) => { const o = nodeOf(r), g = regionStamps(r.id), tot = (r.shops || []).length; return `<button type="button" class="jp-node${here === r.id ? ' here' : ''}" style="left:${o[0]}%;top:${o[1]}%" data-r="${r.id}" aria-label="${esc(r.name)}"><i class="no">${'①②③④⑤⑥'[i] || ''}</i><span>${r.icon}</span><b>${esc(r.name)}</b><small>⛩️${g}/${tot}</small></button>`; }).join('')}</div>`;
+      ${W.regions.map((r, i) => { const o = nodeOf(r), g = regionStamps(r.id), tot = (r.shops || []).length; return `<button type="button" class="jp-node${here === r.id ? ' here' : ''}${A ? ' art' : ''}" style="left:${o[0]}%;top:${o[1]}%" data-r="${r.id}" aria-label="${esc(r.name)}"><i class="no">${'①②③④⑤⑥'[i] || ''}</i><span>${A ? A.region(r.id) : r.icon}</span><b>${esc(r.name)}</b><small>${A ? A.seal() : '⛩️'}${g}/${tot}</small>${A && here === r.id ? `<i class="jp-here">${A.pin()}</i>` : ''}</button>`; }).join('')}</div>`;
     el.querySelectorAll('[data-r]').forEach(b => b.onclick = () => App.go('play', { r: b.dataset.r }));
   }
   function mapPage(el) {

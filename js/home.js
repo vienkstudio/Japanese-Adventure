@@ -52,7 +52,7 @@
       total
         ? { id: 'rev', n: 1, done: !due, b: due ? `複習 ${due} 個字` : '今日複習', s: due ? '答錯或不熟的字，到期了' : '今天的都複習完了 👍', go: () => App.go('review') }
         : cardTask(1),
-      { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read') },
+      { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read', { sec: 'art' }) },
       kanaFirst
         ? (total ? cardTask(3) : { id: 'kq', n: 3, done: ld.kana === App.today(), b: '五十音小練習', s: '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) })
         : { id: 'chal', n: 3, done: ld.chal === App.today(), b: `${String(p.lv || 'n5').toUpperCase()} 挑戰一輪`, s: ld.chal === App.today() ? '今天挑戰過了 👍' : '仿 JLPT 題型，10 題', go: () => App.go('challenge') }
