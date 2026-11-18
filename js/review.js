@@ -110,7 +110,9 @@
   function romajiMatch(input, expected) {
     const a = normRomaji(input);
     if (!a) return false;
-    return String(expected || '').split(/[\/／|｜,，、;；]|\bor\b/).some(e => { const b = normRomaji(e); return b && a === b; });
+    // 整句（含逗號）先比；助詞 wa／e／o 也接受照字面打 ha／he／wo
+    const ex = String(expected || ''), alt = e => [e, e.replace(/\bwa\b/g, 'ha').replace(/\be\b/g, 'he').replace(/\bo\b/g, 'wo')];
+    return [ex].concat(ex.split(/[\/／|｜,，、;；]|\bor\b/)).flatMap(alt).some(e => { const b = normRomaji(e); return b && a === b; });
   }
 
   // 假名 → 羅馬拼音（item 沒有 romaji 時的備援）
@@ -137,7 +139,13 @@
     }
     return out.trim();
   }
-  const romajiOf = it => (isKana(it) && it.romaji ? cleanRom(it.romaji) : it.romaji) || (it.kana ? kanaToRomaji(it.kana) : '') || (/^[぀-ヿ・ー\s]+$/.test(it.jp || '') ? kanaToRomaji(String(it.jp).split('・')[0]) : '');
+  // 句子／單字的羅馬字一律走 Phrase.romaji（分詞、助詞 wa／e／o、數字分段），與冒險、手冊同一套；五十音卡用卡上的讀音
+  const PR = (k, jp) => { try { return W.Phrase && W.Phrase.romaji ? W.Phrase.romaji(k, jp) : ''; } catch (e) { return ''; } };
+  const romajiOf = it => {
+    if (isKana(it)) return (it.romaji ? cleanRom(it.romaji) : '') || kanaToRomaji(String(it.kana || it.jp || '').split('・')[0]);
+    const kanaJp = /^[぀-ヿ・ー\s、。！？〜]+$/.test(it.jp || '') ? String(it.jp).split('・')[0] : '';
+    return (it.kana ? PR(it.kana, it.jp) : '') || (kanaJp ? PR(kanaJp, kanaJp) : '') || it.romaji || (it.kana ? kanaToRomaji(it.kana) : '');
+  };
 
   /* ---------------- UI 狀態（換頁保留） ---------------- */
   const ui = { src: '', q: '', sort: 'new', showMastered: false, scope: 'due', count: '10', cmode: 'mix' };

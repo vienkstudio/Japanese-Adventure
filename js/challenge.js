@@ -15,13 +15,17 @@
     { id: 'listen', ic: '🎧', name: '聽解', desc: '聽單字・聽句子後選答案' },
     { id: 'mock', ic: '📝', name: '綜合模擬', desc: '30 題四大題・合格判定' }
   ];
+  // 首頁「今日任務」用的綜合 10 題（不列在選單）
+  const MIX = { id: 'mix', ic: '🎯', name: '綜合', desc: '單字・文法・讀解各幾題' };
+  const typeOf = t => t === 'mix' ? MIX : TYPES.find(x => x.id === t);
   const SEC = { vocab: '文字・語彙', grammar: '文法', reading: '讀解', listen: '聽解' };
   const PASS = { N5: 44, N4: 50, N3: 53, N2: 50, N1: 55 };   // 合格線（總分 %，參考 JLPT 合格點／總分）；另每大題需 ≥ 1/3
   const PLAN = {
     vocab: [['kanji', 3], ['spell', 2], ['ctx', 3], ['mean', 2]],
     grammar: [['form', 6], ['order', 4]],
     reading: [['daily', 2], ['para', 3], ['sent', 5]],
-    listen: [['lword', 4], ['ljp', 2], ['lsent', 3], ['lpara', 1]]
+    listen: [['lword', 4], ['ljp', 2], ['lsent', 3], ['lpara', 1]],
+    mix: [['kanji', 2], ['mean', 2], ['form', 2], ['order', 1], ['sent', 2], ['para', 1]]
   };
   const MOCK = [
     ['vocab', [['kanji', 2], ['spell', 2], ['ctx', 2], ['mean', 2]]],
@@ -49,6 +53,33 @@
     const k = arr.indexOf(i);
     if (ok && k < 0) arr.push(i);
     if (!ok && k >= 0) arr.splice(k, 1);
+    const ST = kbState(); kbMark(L, kind, i, ok, ST); kbSave(ST);
+  }
+  /* 挑戰成績回寫知識庫（與 kb.js／mind3d.js 共用 jpq.mind.v1）：答對→已掌握；答錯→學習中 */
+  const MK = 'jpq.mind.v1';
+  function kbState() {
+    const M = window.MIND || (window.MIND = { lex: {}, gram: [] });
+    if (!M.ST) { try { M.ST = JSON.parse(App.store.get(MK) || '{}'); } catch (e) { M.ST = {}; } }
+    const ST = M.ST; ST.learned = ST.learned || {}; ST.ing = ST.ing || {};
+    return ST;
+  }
+  function kbId(L, kind, i) {
+    if (kind === 'w') return 'w:' + L + ':' + i;
+    const g = ((window.MIND && MIND.gram) || []).filter(x => x.lv === L)[i];
+    return g ? g.id : null;
+  }
+  function kbMark(L, kind, i, ok, ST) {
+    const id = kbId(L, kind, i); if (!id) return;
+    if (ok) { delete ST.ing[id]; ST.learned[id] = 1; }
+    else { delete ST.learned[id]; ST.ing[id] = 1; }
+  }
+  const kbSave = ST => { try { App.store.set(MK, JSON.stringify(ST)); } catch (e) { } };
+  // 舊存檔：挑戰已掌握但知識庫沒有的，補上（每級一次即可，重複也無害）
+  function kbSync(L) {
+    const m = mastery(L); if (!m.w.length && !m.g.length) return;
+    const ST = kbState(); let ch = 0;
+    [['w', m.w], ['g', m.g]].forEach(([k, a]) => a.forEach(i => { const id = kbId(L, k, i); if (id && !ST.learned[id]) { delete ST.ing[id]; ST.learned[id] = 1; ch = 1; } }));
+    if (ch) kbSave(ST);
   }
   const starsOf = (L, t) => (App.state.cleared || {})['chal:' + L + ':' + t] || 0;
   const lvKey = () => { const p = App.profile().lv; return p && p !== 'zero' ? p.toUpperCase() : 'N5'; };
@@ -412,7 +443,7 @@
   let selLv = null;
   function renderMenu(el) {
     el.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>';
-    need(null).then(() => { if (el.isConnected) drawMenu(el); }).catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
+    need(null).then(() => { LVS.forEach(kbSync); if (el.isConnected) drawMenu(el); }).catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
   function drawMenu(el) {
     const L = selLv || (selLv = lvKey());
@@ -451,9 +482,10 @@
   function renderPlay(el, params) {
     stopTimer();
     const L = LVS.includes(params && params.lv) ? params.lv : lvKey();
-    const t = TYPES.some(x => x.id === (params && params.t)) ? params.t : 'vocab';
+    const t = typeOf(params && params.t) ? params.t : 'vocab';
     el.innerHTML = '<p class="center muted" style="margin:48px 0">出題中…</p>';
     need(L).then(() => {
+      kbSync(L);
       if (!el.isConnected) return;
       const qs = makeRound(L, t);
       if (!qs.length) { el.innerHTML = '<div class="panel center"><p>😵 這個等級暫時出不了題</p></div>'; return; }
@@ -463,9 +495,9 @@
   function voiceState() { try { return App.voiceOK ? App.voiceOK() : null; } catch (e) { return null; } }
   function play(el, G) {
     stopTimer();
-    const q = G.qs[G.i], n = G.qs.length, T = TYPES.find(x => x.id === G.t);
+    const q = G.qs[G.i], n = G.qs.length, T = typeOf(G.t);
     const listen = !!q.say, noVoice = listen && voiceState() === false;
-    const secName = G.t === 'mock' ? SEC[q.sec] : T.name;
+    const secName = G.t === 'mock' ? SEC[q.sec] : G.t === 'mix' ? LABEL[q.k] || T.name : T.name;
     el.innerHTML = `<section class="ch ch-play">
       <div class="ch-top"><span class="pill">${G.L}・${esc(secName)}</span><span class="ch-n">${G.i + 1}／${n}</span><span class="ch-ok">✓ ${G.ok}</span></div>
       <div class="bar"><div style="width:${G.i / n * 100}%"></div></div>
@@ -535,18 +567,21 @@
         secs.map(x => `${esc(SEC[x.s])} ${x.ok}／${x.n}${x.good ? '' : ' <span class="ch-low">未達基準</span>'}`).join('　') +
         '<br><small class="muted">每大題至少答對 1/3，且總分達合格線才算合格</small>';
     } else {
-      title = stars ? `${G.L} ${TYPES.find(x => x.id === G.t).name} 過關！` : '再試一次';
+      title = stars ? `${G.L} ${typeOf(G.t).name} 過關！` : '再試一次';
       note = `答對率 ${pct}%${stars ? '' : '（70% 以上得星）'}`;
     }
     if (c.best[key] == null || pct > c.best[key]) { c.best[key] = pct; if (pct) note += '　🏅 新紀錄'; }
+    if (!App.state.lastDone || typeof App.state.lastDone !== 'object') App.state.lastDone = {};
+    App.state.lastDone.chal = App.today();   // 首頁「今日 3 件事」：做完一輪就算（不論得星）
     App.save();
     const r = App.reward('chal:' + key, stars, G.L + ' 挑戰');
-    const nextLv = LVS[LVS.indexOf(G.L) - 1];
+    const nextLv = LVS[LVS.indexOf(G.L) + 1];
+    selLv = G.L;   // N5→N4…；N1 沒有下一級
     App.showResult({
       title, stars, correct: G.ok, total: n, gained: r.gained, wrong: G.wrong, note,
       retry: () => App.go('challenge-play', { lv: G.L, t: G.t }),
-      back: { label: '挑戰選單' },
-      next: stars && nextLv && G.t !== 'mock' ? { label: `挑戰 ${nextLv} ➜`, route: 'challenge-play', params: { lv: nextLv, t: G.t } } : null
+      back: { label: nextLv ? '挑戰選單' : '換題型', route: G.t === 'mix' ? 'challenge' : undefined },
+      next: stars && nextLv && G.t !== 'mock' && G.t !== 'mix' ? { label: `挑戰 ${nextLv} ➜`, route: 'challenge-play', params: { lv: nextLv, t: G.t } } : null
     });
   }
 

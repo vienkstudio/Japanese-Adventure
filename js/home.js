@@ -17,9 +17,26 @@
       if (n && n.route) return n;
     }
     const at = (App.state.world || {}).at;
-    if (at && at.d) return { label: at.label || '回到上次的位置', route: 'play', params: { r: at.r, d: at.d, s: at.s || undefined } };
-    return { label: '東京・成田機場出發', route: 'play', params: { r: 'tokyo' } };
+    if (at && at.d) return { label: '繼續冒險', sub: at.label || '回到上次的位置', route: 'play', params: { r: at.r, d: at.d, s: at.s || undefined } };
+    return { label: '開始冒險', sub: '東京・成田機場出發', route: 'play', params: { r: 'tokyo' } };
   }
+  /* ---------- 今日 3 件事：當天第一次決定就固定（存在 daily.tasks），不因到期字數變化而換題 ---------- */
+  function dayRec() {
+    if (window.Game && has(Game, 'daily')) { const d = safe(() => Game.daily(), null); if (d) return d; }
+    const S = App.state, t = App.today();
+    if (!S.daily || S.daily.date !== t) S.daily = { date: t, ok: 0, quests: 0, clear: 0, review: 0, claimed: {} };
+    return S.daily;
+  }
+  function todayTasks(lv, due, kanaFirst) {
+    const d = dayRec();
+    if (!Array.isArray(d.tasks) || d.tasks.length !== 3 || d.tasksLv !== lv) {
+      d.tasks = [due ? 'rev' : 'cards', 'read', kanaFirst ? (due ? 'cards' : 'kq') : 'chal'];
+      d.tasksLv = lv;
+      App.save();
+    }
+    return d.tasks;
+  }
+  const chalLv = lv => lv && lv !== 'zero' ? String(lv).toUpperCase() : 'N5';
   const kanaLearned = () => (((App.state.kanaL || {}).h) || []).length;
   const KANA_N = window.KANA ? KANA.length : 46;
   const goKana = () => App.go('trip', { kana: 1 });
@@ -35,38 +52,37 @@
     const p = App.profile();
     if (!p.placed) return onboard(el);
     const due = Tracker.dueCount(), total = Tracker.count(), sk = App.streakInfo();
-    const d = window.Game && has(Game, 'daily') ? safe(() => Game.daily(), null) : null;
     const nx = Object.assign({}, worldNext()), kl = kanaLearned();
-    if (!nx.sub && /^繼續冒險/.test(nx.label || '')) nx.sub = '從上次的位置繼續';   // 副標不和主按鈕標題重複
+    if (!nx.label) nx.label = '開始冒險';
+    if (!nx.sub && /^繼續冒險/.test(nx.label)) nx.sub = '從上次的位置繼續';   // 副標不和主按鈕標題重複
     const kanaFirst = p.lv === 'zero' && kl < KANA_N;
     const main = kanaFirst
       ? { ic: '🔰', b: kl ? '繼續學五十音' : '從五十音開始', s: `平假名 ${kl}／${KANA_N}・每次 5 個字，先教再考`, go: goKana }
-      : { ic: '▶', b: '繼續冒險', s: nx.sub || nx.label, go: () => App.go(nx.route, nx.params) };
-    // 今天練過任何題目（答對、複習、店內完成、其他過關）
-    const practiced = !!(d && ((d.ok || 0) + (d.review || 0) + (d.quests || 0) + (d.clear || 0) > 0));
-    const kanaToday = App.state.kanaDay === App.today();
-    const rd = readDone();
-    const cd = App.state.cardDay || {}, cardsN = cd.d === App.today() ? cd.n || 0 : 0, ld = App.state.lastDone || {};
-    const cardTask = n => ({ id: 'cards', n, done: cardsN >= 10, b: kanaFirst ? '翻 10 張五十音字卡' : '翻 10 張字卡', s: cardsN >= 10 ? '今天翻完了 👍' : `今天已翻 ${cardsN}／10 張`, go: () => App.go('cards', kanaFirst ? { deck: 'hira' } : {}) });
-    const tasks = [
-      due
-        ? { id: 'rev', n: 1, done: false, b: `複習 ${due} 個字`, s: '答錯或不熟的字，到期了', go: () => App.go('review') }
-        : cardTask(1),
-      { id: 'read', n: 2, done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read', { sec: 'art' }) },
-      kanaFirst
-        ? (due ? cardTask(3) : { id: 'kq', n: 3, done: ld.kana === App.today(), b: '五十音小練習', s: '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) })
-        : { id: 'chal', n: 3, done: ld.chal === App.today(), b: `${String(p.lv || 'n5').toUpperCase()} 挑戰一輪`, s: ld.chal === App.today() ? '今天挑戰過了 👍' : '仿 JLPT 題型，10 題', go: () => App.go('challenge') }
-    ];
+      : { ic: '▶', b: nx.label, s: nx.sub || '', go: () => App.go(nx.route, nx.params) };
+    const today = App.today(), rd = readDone();
+    const cd = App.state.cardDay || {}, cardsN = cd.d === today ? cd.n || 0 : 0, ld = App.state.lastDone || {};
+    const kqDone = ld.kana === today || App.state.kanaDay === today;   // 五十音小練習或課程小考都算
+    const cl = chalLv(p.lv), chDone = ld.chal === today;
+    const DEF = {
+      rev: { done: !due, b: due ? `複習 ${due} 個字` : '複習完成', s: due ? '答錯或不熟的字，到期了' : '今天到期的都複習完了 👍', go: () => App.go('review') },
+      cards: { done: cardsN >= 10, b: kanaFirst ? '翻 10 張五十音字卡' : '翻 10 張字卡', s: cardsN >= 10 ? '今天翻完了 👍' : `今天已翻 ${cardsN}／10 張`, go: () => App.go('cards', kanaFirst ? { deck: 'hira' } : {}) },
+      read: { done: rd, b: '今日短文', s: rd ? '今天讀完了 👍' : '一則簡單日文，附讀音與中文', go: () => App.go('read', { sec: 'art' }) },
+      kq: { done: kqDone, b: '五十音小練習', s: kqDone ? '今天練過了 👍' : '聽音選字、看字選音，10 題', go: () => App.go('phrasebook', { tab: 'kana', sub: 'quiz' }) },
+      chal: { done: chDone, b: `${cl} 挑戰一輪`, s: chDone ? '今天挑戰過了 👍' : '單字・文法・讀解綜合 10 題', go: () => App.go('challenge-play', { lv: cl, t: 'mix' }) }
+    };
+    const tasks = todayTasks(p.lv, due, kanaFirst).map((id, i) => Object.assign({ id, n: i + 1 }, DEF[id] || DEF.read));
+    const travel = (p.goals || []).includes('travel'), adv = ['n3', 'n2', 'n1'].includes(p.lv);
     const doneN = tasks.filter(t => t.done).length;
     const lastSong = (window.Songs && Songs.last && Songs.last()) || App.state.songLast || null;
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}${sk.days ? `　<span class="hm-streak">🔥 連續 ${sk.days} 天${sk.risk ? '・今天練一題就能保住' : ''}</span>` : ''}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${main.ic}</span><span><b>${esc(main.b)}</b><small>${esc(main.s)}</small></span></button>
+      ${travel ? '<button type="button" class="hm-quick" data-go="quick"><span aria-hidden="true">📖</span><span><b>旅遊快查</b><small>緊急・問路・點餐，要用時馬上找</small></span><span class="go" aria-hidden="true">›</span></button>' : ''}
       <p class="hm-sec">今日 3 件事<small>${doneN}／3 完成</small></p>
       <div class="hm-today">${tasks.map(t => `<button type="button" class="hm-task${t.done ? ' done' : ''}" data-t="${t.id}"><span class="n">${t.done ? '✓' : t.n}</span><span class="t"><b>${esc(t.b)}</b><small>${esc(t.s)}</small></span><span class="go" aria-hidden="true">›</span></button>`).join('')}</div>
       <div class="hm-more">
-        ${kanaFirst ? '' : '<button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>'}
-        <button type="button" data-go="phrasebook"><span aria-hidden="true">📖</span>手冊</button>
+        ${kanaFirst || adv ? '' : '<button type="button" data-go="kana"><span aria-hidden="true">あ</span>五十音</button>'}
+        ${travel ? '' : '<button type="button" data-go="phrasebook"><span aria-hidden="true">📖</span>手冊</button>'}
         <button type="button" data-go="cards"><span aria-hidden="true">🎴</span>字卡</button>
         <button type="button" data-go="challenge"><span aria-hidden="true">🏆</span>N5–N1 挑戰</button>
         <button type="button" data-go="song"><span aria-hidden="true">🎵</span>${lastSong ? '繼續唱' : '歌曲'}</button>
@@ -74,7 +90,7 @@
     </section>`;
     el.querySelector('#hm-main').onclick = main.go;
     el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => tasks.find(t => t.id === b.dataset.t).go());
-    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : b.dataset.go === 'song' ? (lastSong && lastSong.id ? App.go('song', { id: lastSong.id }) : App.go('songs')) : App.go(b.dataset.go));
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => b.dataset.go === 'kana' ? App.go('phrasebook', { tab: 'kana' }) : b.dataset.go === 'quick' ? App.go('phrasebook', { cat: 'emer' }) : b.dataset.go === 'song' ? (lastSong && lastSong.id ? App.go('song', { id: lastSong.id }) : App.go('songs')) : App.go(b.dataset.go));
     const det = el.querySelector('#hm-map');
     if (det) det.addEventListener('toggle', () => {
       const box = det.querySelector('.mapbox');
@@ -108,13 +124,27 @@
       <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt" data-lv="${id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
       <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？最多 6 題幫你判斷</button>
     </section>`;
-    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => choose(b.dataset.lv));
+    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => choose(b.dataset.lv, el));
     el.querySelector('#ob-quiz').onclick = () => quiz(el, 0);
   }
-  function choose(lv) {
+  function choose(lv, el) {
+    const first = !App.profile().placed;
     App.setProfile({ lv });
     App.toast(`程度：${App.LV_NAMES[lv]}${lv === 'zero' ? '・先從五十音開始' : ''}`, 'ok');
+    if (first && el) return fontAsk(el);
     App.go('home');
+  }
+  // 首次開啟第二題：字級（存 App.state.ui.fs；之後在 ⚙️ 設定也能改）
+  function fontAsk(el) {
+    document.body.classList.add('ob-mode');
+    const cur = (App.state.ui || {}).fs || 'm';
+    const FS = [['m', '標準', 100], ['l', '大', 125], ['xl', '特大', 150]];
+    el.innerHTML = `<section class="ob">
+      <h1>字要大一點嗎？</h1>
+      <p class="lead">選一個看得最舒服的（之後隨時能在 ⚙️ 設定改）</p>
+      <div class="ob-list">${FS.map(([v, n, pc]) => `<button type="button" class="ob-opt ob-fs${cur === v ? ' on' : ''}" data-fs="${v}" aria-pressed="${cur === v}"><span><b style="font-size:${pc}%">${n}</b><small class="jp" lang="ja" style="font-size:${pc}%">こんにちは・你好</small></span></button>`).join('')}</div>
+    </section>`;
+    el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); App.go('home'); });
   }
   function quiz(el, i) {
     if (i >= QUIZ.length) return result(el, 'n1');
@@ -136,7 +166,7 @@
       <button type="button" class="btn primary block" id="ob-ok">就這個，開始！</button>
       <button type="button" class="btn ghost block" id="ob-back">我自己選</button>
     </section>`;
-    el.querySelector('#ob-ok').onclick = () => choose(lv);
+    el.querySelector('#ob-ok').onclick = () => choose(lv, el);
     el.querySelector('#ob-back').onclick = () => onboard(el, App.profile().placed);
   }
 

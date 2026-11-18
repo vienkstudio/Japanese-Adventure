@@ -42,6 +42,8 @@
     }
     return out;
   }
+  // 全站統一：有 Phrase.romaji（js/phrase.js）就用它，否則退回本檔的逐字轉法
+  function R2(kana, jp) { try { if (window.Phrase && Phrase.romaji) { const r = Phrase.romaji(kana, jp || kana); if (r) return r; } } catch (e) { } return romaji(kana); }
   function romajiAt(s, i) {
     const c = s[i], n = s[i + 1];
     if (c == null) return { r: '', len: 0 };
@@ -439,7 +441,7 @@
     });
   }
   function register(e, sf, rd, cost, viaKana) {
-    const add = (s, r, form, c) => addKey(s, { e, form, r, cost: c + (form && form !== 'dict' ? .05 : 0), kana: !!viaKana });
+    const add = (s, r, form, c) => addKey(s, { e, form, r, cost: c + (form === 'stem' ? .15 : form && form !== 'dict' ? .05 : 0), kana: !!viaKana });
     add(sf, rd, 'dict', cost);
     if (e.pos === 'v' && window.MIND && MIND.conjugate) {
       verbForms(sf, e.grp, rd).forEach(([s, r, form]) => add(s, r, form, cost));
@@ -449,7 +451,7 @@
       verbForms(sf + 'する', 3, rd + 'する').forEach(([s, r, form]) => add(s, r, 'suru:' + form, cost));
     }
   }
-  const FORM_ZH = { masu: 'ます形', te: 'て形', ta: '過去', nai: '否定', pot: '可能', pass: '被動', caus: '使役', cpass: '使役被動', vol: '意向', imp: '命令', ba: '假定', tara: 'たら', stem: '連用形', masen: '否定（禮貌）', mashita: '過去（禮貌）', maseNdeshita: '過去否定（禮貌）', mashou: '邀請', tai: '想要', nakatta: '過去否定', nakute: '否定て形', naide: '不要…', nakereba: '如果不', teru: '正在', tari: '又…又' };
+  const FORM_ZH = { masu: 'ます形', te: 'て形', ta: '過去', nai: '否定', pot: '可能', pass: '被動', caus: '使役', cpass: '使役被動', vol: '意向', imp: '命令', ba: '假定', tara: 'たら', stem: '連用形', masen: '否定（禮貌）', mashita: '過去（禮貌）', maseNdeshita: '過去否定（禮貌）', mashou: '邀請', tai: '想要', nakatta: '過去否定', nakute: '否定て形', naide: '不要…', nakereba: '如果不', teru: '正在', tari: '又…又', chau: '〜てしまう（口語）', cha: '〜ては（口語）', toku: '〜ておく（口語）' };
   function verbForms(w, grp, rd) {
     const f = MIND.conjugate(w, grp), fr = rd && rd !== w ? MIND.conjugate(rd, grp) : f;
     if (!f || !fr) return [];
@@ -467,10 +469,16 @@
     [['nakatta', 'かった'], ['nakute', 'くて'], ['naide', 'いで'], ['nakereba', 'ければ'], ['nakereba', 'きゃ'], ['nakereba', 'くちゃ'], ['nai', 'くても']].forEach(([k, x]) => P(k, nb + x, nr + x));
     [['teru', 'る'], ['teru', 'た'], ['teru', 'ます'], ['te', 'も'], ['te', 'は']].forEach(([k, x]) => P(k, f.te + x, fr.te + x));
     P('tari', f.ta + 'り', fr.ta + 'り');
+    // 口語縮約：〜ちゃう／〜ちゃ（てしまう、ては）、〜とく（ておく）、〜らんない（られない）
+    const tb = f.te.slice(0, -1), trb = fr.te.slice(0, -1), dz = /で$/.test(f.te);
+    const CH = dz ? 'じゃ' : 'ちゃ', TO = dz ? 'ど' : 'と';
+    ['う', 'った', 'って', 'います', 'いました', ''].forEach(x => P(x ? 'chau' : 'cha', tb + CH + x, trb + CH + x));
+    ['く', 'いて', 'いた', 'きます'].forEach(x => P('toku', tb + TO + x, trb + TO + x));
+    if (String(grp) === '2') { P('pot', st + 'らんない', sr + 'らんない'); P('pot', st + 'らんねえ', sr + 'らんねえ'); }
     // 可能／被動／使役形本身是二類動詞，再展開常用形
     ['pot', 'pass', 'caus'].forEach(k => {
       const g = MIND.conjugate(f[k], 2), gr = MIND.conjugate(fr[k], 2); if (!g || !gr) return;
-      ['masu', 'te', 'ta', 'nai'].forEach(x => P(k, g[x], gr[x]));
+      ['masu', 'te', 'ta', 'nai', 'vol'].forEach(x => P(k, g[x], gr[x]));
       P(k, g.masu.replace(/ます$/, 'ません'), gr.masu.replace(/ます$/, 'ません'));
       P(k, g.masu.replace(/ます$/, 'ました'), gr.masu.replace(/ます$/, 'ました'));
       P(k, g.nai.replace(/い$/, 'かった'), gr.nai.replace(/い$/, 'かった'));
@@ -630,13 +638,25 @@
       if (USER_KEYS.size) for (let L = Math.min(MAXL, N - i); L >= 1; L--) { const k = text.substr(i, L); if (USER[k]) { relax(i, i + L, .7, { t: 'user', s: k }); break; } }
       // 漢字連續段：單一漢字詞夾在漢字之間（米国→米＋国、半導体→…体）多半是拆錯，加成本；
       // 段長 ≥3 時，常見前後綴（〜人、〜的、全〜、新〜…）不加
+      // 人名＋敬稱（田中様、山田さん、佐藤氏）：整組不拆、不入單字表
+      if (sc === 'k' && !(i > 0 && (isKanji(text[i - 1]) || /[おご]/.test(text[i - 1])))) {
+        let b = i; while (b < N && isKanji(text[b]) && KNUM[text[b]] == null) b++;
+        let run = text.slice(i, b), hon = '';
+        const tail = text.slice(b).match(/^(さま|さん|くん|ちゃん|先生)/);
+        if (tail) hon = tail[1];
+        else if (run.length >= 3 && /[様氏君殿]$/.test(run)) { hon = run.slice(-1); run = run.slice(0, -1); }
+        if (hon && run.length >= 2 && run.length <= 4) {
+          const dc = DICT.get(run);
+          if (!(dc && dc.some(c => c.e.pos !== 'name'))) relax(i, i + run.length + hon.length, .6, { t: 'hon', hon });
+        }
+      }
       let kRun = 0, kPos = 0;
       if (sc === 'k') { let a = i; while (a > 0 && isKanji(text[a - 1]) && KNUM[text[a - 1]] == null) a--; let b = i; while (b < N && isKanji(text[b]) && KNUM[text[b]] == null) b++; kRun = b - a; kPos = i - a; }
       for (let L = 1; L <= MAXL && i + L <= N; L++) {
         const cands = DICT.get(text.substr(i, L));
         if (!cands) continue;
         let b = cands[0];
-        for (const c of cands) if (c.cost < b.cost) b = c;
+        for (const c of cands) if (c.cost < b.cost - 1e-9 || (Math.abs(c.cost - b.cost) < 1e-9 && c.form === 'dict' && b.form === 'stem')) b = c;
         let cost = b.cost;
         if (L === 1 && kRun >= 2 && KNUM[ch] == null && !(kRun >= 3 && AFFIX.test(ch)) && !/^(suf|ctr)$/.test(b.e.pos)) cost += 2.2;
         relax(i, i + L, cost, { t: 'w', c: b, all: cands });
@@ -655,10 +675,23 @@
       const last = out[out.length - 1];
       // 連續未知漢字合併
       if (info.t === 'unk' && last && last.pos === 'unk' && info.sc === 'k' && last.sc === 'k') { last.s += s; last.base = last.s; continue; }
-      out.push(mkToken(s, i, info));
+      const tk = mkToken(s, i, info);
+      // 動詞／形容詞後面黏著的 1–2 個假名（ちゃ、くら、らん…）多半是活用或口語殘片，不給字典意思
+      if (last && tk.known && tk.viaKana && isKanaStr(s) && s.length <= 2 && !/^(part|aux|cop|suf|int|conj)$/.test(tk.pos) && !FORMAL.test(s) && (/^(v|i)$/.test(last.pos) || last.form)) {
+        Object.assign(tk, { zh: '', pos: 'unk', known: false, unreg: false, frag: true, alts: [] });
+      }
+      // 〜ていただく／ご〜いただく：補助動詞（請您…、承蒙…），不是「開動了／收下」
+      if (last && /^(いただく|頂く)$/.test(tk.base) || last && /^いただ/.test(s) && tk.pos === 'exp') {
+        if ((last.form && /[てで]$/.test(last.s)) || /[てで]$/.test(last.s) && /^(v|aux)$/.test(last.pos) || (/^(n|na)$/.test(last.pos) && (/^[ごお御]/.test(last.s) || /^[ごお御]$/.test((out[out.length - 2] || {}).s || '')))) {
+          Object.assign(tk, { base: 'いただく', bkana: 'いただく', pos: 'v', zh: '（謙讓補助動詞）請您…；承蒙您…', aux2: true });
+        }
+      }
+      out.push(tk);
     }
     return out;
   }
+  const FORMAL = /^(ほう|こと|もの|とき|ため|よう|まま|うち|わけ|はず|ところ|とこ|つもり|ごろ|ころ|ほど|だけ|くらい|ぐらい|さえ|すら|あと|まえ|なか|ため|せい|おかげ|かた|ばかり)$/;
+  const HON_ZH = { '様': '敬稱：先生／女士', 'さま': '敬稱：先生／女士', 'さん': '先生／小姐', '氏': '書面敬稱：先生', 'くん': '對男性晚輩', '君': '對男性晚輩', 'ちゃん': '親暱稱呼', '殿': '公文敬稱', '先生': '老師／醫生' };
   const USER_KEYS = new Set(Object.keys(USER));
   const AFFIX = /[人的性化者家店屋円年月日時分秒中内外前後間用型製式率費代料長都道府県市区町村線駅港社省庁局部課室所場館院会員生君様氏側権法案制界産品物類語版号便系層隊団党派州島山川湖寺宮城園橋口目回度位件点歳倍割名台本枚個杯匹冊階番各全新旧元現再非不無未第約総両超大小高低同当毎来今昨翌初最副主諸対反準真半]/;
   function kanjiNum(s) {
@@ -676,24 +709,25 @@
     if (info.t === 'num') {
       const r = info.ctr ? ctrRead(info.n, info.ctr) : numRead(info.n);
       const zh = info.ctr ? info.n + ' ' + CTR[info.ctr][1] : String(info.n);
-      return { s, base: s, kana: r, bkana: r, romaji: romaji(r), zh, pos: 'num', lv: 'N5', i, known: true };
+      return { s, base: s, kana: r, bkana: r, romaji: R2(r, s), zh, pos: 'num', lv: 'N5', i, known: true };
     }
+    if (info.t === 'hon') return { s, base: s, kana: '', bkana: '', romaji: '', zh: `人名＋${info.hon}（${HON_ZH[info.hon] || '敬稱'}）`, pos: 'name', lv: null, i, known: true, hon: info.hon };
     if (info.t === 'user') return { s, base: s, kana: '', bkana: '', romaji: '', zh: USER[s], pos: 'n', lv: null, i, known: true, user: true };
     if (info.t === 'w') {
       const c = info.c, e = c.e;
       const tk = {
-        s, base: e.jp, kana: isKanaStr(s) ? s : toHira(c.r), bkana: toHira(e.kana || e.jp), romaji: '', zh: e.zh, pos: e.pos, lv: e.lv === 'x' ? (LVOF.get(e.jp) || null) : e.lv, i, known: true,
+        s, base: e.jp, kana: isKanaStr(s) ? s : toHira(c.r), bkana: toHira(e.kana || e.jp), romaji: '', zh: e.zh, pos: e.pos, lv: e.lv === 'x' ? (LVOF.get(e.jp) || null) : e.lv, i, known: true, viaKana: !!c.kana || (hasKanji(e.jp) && !hasKanji(s)),
         form: c.form && c.form !== 'dict' ? c.form : '', alts: info.all.filter(x => x.e !== e).map(x => ({ jp: x.e.jp, kana: x.e.kana, zh: x.e.zh, lv: x.e.lv })).slice(0, 3)
       };
       if (/^suru:/.test(tk.form)) { tk.base = e.jp + 'する'; tk.bkana = toHira(e.kana || e.jp) + 'する'; tk.pos = 'v'; tk.form = tk.form.slice(5); }
       if (e.ext && LVOF.has(e.jp)) tk.lv = LVOF.get(e.jp);
       if (/^(nai|nakatta|nakute|naide|nakereba|masen|maseNdeshita)$/.test(tk.form)) tk.neg = true;
-      tk.romaji = tk.pos === 'part' && /^[はへを]$/.test(s) ? { 'は': 'wa', 'へ': 'e', 'を': 'o' }[s] : romaji(tk.kana);
+      tk.romaji = tk.pos === 'part' && /^[はへを]$/.test(s) ? { 'は': 'wa', 'へ': 'e', 'を': 'o' }[s] : R2(tk.kana, s);
       return tk;
     }
     const kana = isKanaStr(s) ? s : '';
     // 字典沒有的漢字詞：保留整詞、標「未收錄」（讀音可由原文振假名補上）
-    return { s, base: s, kana, bkana: kana, romaji: kana ? romaji(s) : '', zh: '', pos: 'unk', lv: null, i, known: false, sc: info.sc, unreg: info.sc === 'k' || hasKanji(s) };
+    return { s, base: s, kana, bkana: kana, romaji: kana ? R2(s) : '', zh: '', pos: 'unk', lv: null, i, known: false, sc: info.sc, unreg: info.sc === 'k' || hasKanji(s) };
   }
 
   /* ---------------- 讀音標註 ---------------- */
@@ -748,7 +782,15 @@
   /* ---------------- 文法偵測 ---------------- */
   let GRAM = null;
   // 句型的其他寫法（斷詞成一個詞的敬體／書面形）
-  const GRAM_ALIAS = { 'gram:〜によると／〜によれば': ['によりますと', 'によれば'] };
+  // 字串＝整個 token；陣列＝依序的片段（可從活用形詞中間開始，例：延期させて＋いただきます）
+  const IDK = ['いただきます', 'いただけます', 'いただけません', 'いただけませんか', 'いただきたい', 'いただきたく', 'いただいて', 'いただいた', 'いただければ', 'いただけない', 'いただく', 'いただき'];
+  const GRAM_ALIAS = {
+    'gram:〜によると／〜によれば': ['によりますと', 'によれば'],
+    'gram:〜について': ['につきまして', 'につきましては'],
+    'gram:〜させていただく': IDK.map(x => ['させて', x]),
+    'gram:〜ていただく': IDK.map(x => ['て', x]).concat(IDK.map(x => ['で', x])),
+    'gram:〜わけではない': [['わけ', 'ではありません'], ['わけ', 'ではない'], ['わけ', 'じゃない'], ['わけ', 'ではなく']]
+  };
   function buildGram() {
     if (GRAM || !(window.MIND && MIND.gram)) return;
     const seen = new Set(), LVO = { N5: 0, N4: 1, N3: 2, N2: 3, N1: 4 };
@@ -772,7 +814,7 @@
           alts.push({ segs, lead, p: !!(c0 && c0.some(x => /^(part|cop)$/.test(x.e.pos))) });
         });
       });
-      (GRAM_ALIAS[g.id] || []).forEach(x => alts.push({ segs: [x], lead: true, p: true }));
+      (GRAM_ALIAS[g.id] || []).forEach(x => alts.push(Array.isArray(x) ? { segs: x, lead: true, p: false } : { segs: [x], lead: true, p: true }));
       if (!alts.length) return;
       const sig = alts.map(a => (a.lead ? '~' : '') + a.segs.join('~')).sort().join('|');
       if (seen.has(sig)) return; seen.add(sig);
@@ -795,9 +837,20 @@
     'gram:〜からある': p => !!p && p.pos === 'num',
     'gram:〜からする': p => !!p && p.pos === 'num',
     'gram:〜も（數量強調）': p => !!p && p.pos === 'num',
-    // 〜まで（甚至）：「から…まで」的まで不算
-    'gram:〜まで（甚至）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0,
-    'gram:〜まで（極端）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0,
+    // 〜まで（甚至）：「から…まで」「までに（期限）」的まで不算
+    'gram:〜まで（甚至）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0 && sn[idx + 2] !== 'に',
+    'gram:〜まで（極端）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0 && sn[idx + 2] !== 'に',
+    // 〜(よ)うと（不管）：後面接 する／思う／考える…是「〜ようとする」「〜ようと思う」
+    'gram:〜(よ)うと': (p, sn, idx, ct, x) => !/^(する|した|して|し[てたなま]|せず|思|おも|考|決|努|試)/.test(sn.slice(idx + x.seg.length)),
+    // 〜として（作為）：「守ろうとして」是〜ようとする
+    'gram:〜として': p => !(p && p.form === 'vol'),
+    // 〜につき：「につきまして」＝について的敬語
+    'gram:〜につき': (p, sn, idx, ct, x) => !/^まし/.test(sn.slice(idx + x.seg.length)),
+    // 〜もの（理由）／〜もの・もん：「ものの」「というもの」不算
+    'gram:〜もの（理由）': (p, sn, idx, ct, x) => !/^の/.test(sn.slice(idx + x.seg.length)),
+    'gram:〜もの／〜もん': (p, sn, idx, ct, x) => !/^の/.test(sn.slice(idx + x.seg.length)),
+    // 〜によって（行為者）：同一句後面要有被動形；「見直しによって減った」「観光によって生まれる」是原因／手段
+    'gram:〜によって（行為者）': (p, sn, idx, ct, x) => { for (let k = x.end; k < x.sEnd; k++) { const t = x.cov[k]; if (!t) continue; if (/[。！？]/.test(t.s)) break; if (/^(pass|cpass)$/.test(t.form || '')) return true; } return false; },
     // 〜(ら)れる：所在的詞要真的是被動／可能形（「訪れる」「流れる」不算）；自發只限 思う、感じる 這類動詞
     'gram:〜（ら）れる（可能）': RARE, 'gram:〜（ら）れる（被動）': RARE, 'gram:〜（ら）れる（受害被動）': RARE, 'gram:〜（ら）れる（尊敬）': RARE,
     'gram:〜(ら)れる（自發）': (p, sn, idx, ct) => RARE(p, sn, idx, ct) && /^(思う|感じる|思い出す|考える|案じる|偲ぶ|待つ|悔やむ|感ずる)$/.test(ct.base)
@@ -829,6 +882,7 @@
       if (!lvKeep(G.g.lv, u)) continue;
       const EX = GRAM_EXCL[G.g.id];
       let found = null, count = 0;
+      const spans = [];
       for (const sn of sents) {
         for (const a of G.alts) {
           let from = 0, ok = true, first = -1, lastEnd = -1;
@@ -838,7 +892,7 @@
             while (idx >= 0) {
               const abs = sn.i + idx, end = abs + seg.length;
               let startOK = k > 0 ? true : a.lead ? idx > 0 && (starts.has(abs) || (!a.p && midOK(abs))) : starts.has(abs);
-              if (startOK && k === 0 && EX) { const pv = starts.has(abs) ? cov[abs - 1] : null; startOK = !!EX(pv && pv.sym ? null : pv, sn.s, idx, cov[abs]); }
+              if (startOK && k === 0 && EX) { const pv = starts.has(abs) ? cov[abs - 1] : null; startOK = !!EX(pv && pv.sym ? null : pv, sn.s, idx, cov[abs], { seg, cov, abs, end, sEnd: sn.i + sn.s.length }); }
               if (startOK && ends.has(end) && (k === 0 || idx - from <= 14)) { good = idx; break; }
               idx = sn.s.indexOf(seg, idx + 1);
             }
@@ -846,14 +900,18 @@
             if (k === 0) first = good;
             lastEnd = good + seg.length; from = lastEnd;
           }
-          if (ok) { count++; if (!found) found = { sent: sn.s.trim(), at: sn.i + first, a: first, b: lastEnd, raw: sn.s }; break; }
+          if (ok) { count++; spans.push([sn.i + first, sn.i + lastEnd, lastEnd - first === a.segs.join('').length]); if (!found) found = { sent: sn.s.trim(), at: sn.i + first, a: first, b: lastEnd, raw: sn.s }; break; }
         }
       }
       if (found) {
         const lead = found.raw.length - found.raw.trimStart().length;
-        hits.push({ id: G.g.id, pat: G.g.pat, lv: G.g.lv, zh: G.g.zh, conn: G.g.conn, ex: G.g.ex, note: G.g.note, sent: found.sent, hl: [found.a - lead, found.b - lead], count, at: found.at, o: G.o });
+        hits.push({ id: G.g.id, pat: G.g.pat, lv: G.g.lv, zh: G.g.zh, conn: G.g.conn, ex: G.g.ex, note: G.g.note, sent: found.sent, hl: [found.a - lead, found.b - lead], count, at: found.at, o: G.o, spans });
       }
     }
+    // 長句型優先：短句型每次出現都落在某個較長（連續）句型裡面，就不列（とはいうものの → 不再算 ものの／もの）
+    const inside = (s, h) => h.spans.some(y => y[2] && y[0] <= s[0] && s[1] <= y[1] && (y[1] - y[0]) > (s[1] - s[0]));
+    for (let k = hits.length - 1; k >= 0; k--) { const x = hits[k]; if (x.spans.every(s => hits.some(h => h !== x && inside(s, h)))) hits.splice(k, 1); }
+    hits.forEach(h => delete h.spans);
     hits.sort((x, y) => lvRank(x.lv, u) - lvRank(y.lv, u) || x.o - y.o);
     return hits.slice(0, max || 12);
   }
@@ -893,9 +951,11 @@
       let k = text.indexOf(p.key);
       while (k >= 0 && !starts.has(k)) k = text.indexOf(p.key, k + 1);
       if (k < 0 || cover.has(k)) continue;
+      // 補助動詞（〜ていただきます、〜てください）不當成獨立片語
+      if (isKanaStr(p.key) && k > 0 && /[てで]/.test(text[k - 1])) { const pt = tokens.find(t => t.i < k && t.i + t.s.length === k); if (pt && (pt.form || /^(v|aux)$/.test(pt.pos))) continue; }
       seen.add(p.jp);
       tokens.forEach(t => { if (t.i >= k && t.i < k + p.key.length) cover.add(t.i); });
-      out.push({ jp: p.jp, kana: p.kana || '', romaji: p.romaji || romaji(p.kana || p.jp), zh: p.zh, src: p.src, sent: sentOf(k), key: p.key });
+      out.push({ jp: p.jp, kana: p.kana || '', romaji: p.romaji || R2(p.kana || p.jp, p.jp), zh: p.zh, src: p.src, sent: sentOf(k), key: p.key });
       if (out.length >= max) return out;
     }
     // 名詞＋を／に／が／で＋動詞 → 搭配
@@ -903,17 +963,20 @@
       const a = tokens[i], b = tokens[i + 1], c = tokens[i + 2];
       if (!(a.known && /^(n|name)$/.test(a.pos) && b.pos === 'part' && /^[をにがで]$/.test(b.s) && c.known && c.pos === 'v')) continue;
       if (/^(こと|もの|ところ|とき|ため|よう|前|後|中|上|下|時|方|ほう|うち|間)$/.test(a.s) || cover.has(a.i) || /^(いる|ある|する|なる|くる|来る)$/.test(c.base)) continue;
+      // 複合助詞（における、について、によって、に対して…）不是「に＋動詞」；被動形不還原成「X が Y」
+      if (b.s === 'に' && /^(おけ|おい|つい|つき|とっ|とり|よっ|よる|より|よれ|よら|対|関|際|伴|向|沿|基|わた|かけ|当た|応じ|先立)/.test(c.s)) continue;
+      if ((/^(pass|cpass)$/.test(c.form || '') && /^[がに]$/.test(b.s)) || (c.form === 'pot' && /られ/.test(c.s) && b.s === 'が')) continue;
       const jp = a.base + b.s + c.base;
       if (seen.has(jp)) continue; seen.add(jp);
       const kana = (a.bkana || a.kana || a.s) + b.s + (c.bkana || c.base);
-      out.push({ jp, kana, romaji: romaji(kana), zh: `${short(a.zh)}＋${b.s}＋${short(c.zh)}`, src: '搭配', sent: sentOf(a.i), key: a.s + b.s + c.s });
+      out.push({ jp, kana, romaji: R2(kana, jp), zh: `${short(a.zh)}＋${b.s}＋${short(c.zh)}`, src: '搭配', sent: sentOf(a.i), key: a.s + b.s + c.s });
     }
     return out;
   }
   const short = z => String(z || '').split(/[；;，,]/)[0];
 
   window.JPText = {
-    ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser, userLv, lvRank, lvKeep,
+    ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji: R2, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser, userLv, lvRank, lvKeep,
     POS_ZH, FORM_ZH, esc, numRead,
     get size() { return DICT.size; },
     get levels() { return [...builtLv]; },

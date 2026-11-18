@@ -65,7 +65,7 @@
     return null;
   }
   const needFor = id => id && id.startsWith('w:') ? loadLv(id.split(':')[1]) : Promise.resolve();
-  const romaji = k => { try { return window.ReviewAPI && /^[ぁ-ゟ゠-ヿー・\s]+$/.test(k) ? ReviewAPI.kanaToRomaji(k) : ''; } catch (e) { return ''; } };
+  const romaji = k => { try { if (!/^[ぁ-ゟ゠-ヿー・\s]+$/.test(k)) return ''; if (window.Phrase && Phrase.romaji) return Phrase.romaji(k); return window.ReviewAPI ? ReviewAPI.kanaToRomaji(k) : ''; } catch (e) { return ''; } };
   const isVerb = w => w.pos === 'v' || w.grp === 's';
   const trackItem = it => it.kind === 'word' ? { id: 'word:' + it.jp, jp: it.jp, kana: it.kana, zh: it.zh, source: '知識庫 ' + it.lv }
     : { id: 'gram:' + it.jp, jp: it.jp, zh: it.zh, source: '知識庫 ' + (it.lv || '') + ' 文法' };

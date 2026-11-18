@@ -260,7 +260,13 @@ input,textarea,select{background:var(--card);color:var(--text);border:1px solid 
 .hm-task .t b{display:block;font-size:var(--fs-md)}
 .hm-task .t small{display:block;color:var(--muted);font-size:var(--fs-sm);line-height:1.35}
 .hm-task .go{color:var(--pri);font-weight:800;flex:none}
-.hm-more{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--sp-2)}
+.hm-more{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--sp-2)}
+.hm-quick{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:2px solid var(--acc);border-radius:var(--r-m);background:var(--card);color:var(--text);padding:var(--sp-3);min-height:60px;font:inherit;text-align:left;cursor:pointer}
+.hm-quick>span:first-child{font-size:1.6em;flex:none}
+.hm-quick>span:nth-child(2){flex:1;min-width:0}
+.hm-quick b{display:block;font-size:var(--fs-md)}
+.hm-quick small{display:block;color:var(--muted);font-size:var(--fs-sm);line-height:1.35}
+.hm-quick .go{color:var(--acc);font-weight:800;flex:none}
 .hm-more button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;border-radius:var(--r-m);background:var(--chip);color:var(--text);min-height:68px;padding:var(--sp-2) 2px;font:inherit;font-size:var(--fs-sm);font-weight:700;cursor:pointer}
 .hm-more button span{font-size:1.5em;line-height:1.1}
 .hm-map{border-radius:var(--r-l);background:var(--card);box-shadow:var(--shadow);overflow:hidden}
@@ -345,3 +351,8 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 .pb-og,.kb-og,.loan{display:block;font-size:var(--fs-xs);color:var(--acc-d);font-style:italic;line-height:1.35}
 .rv-row2{display:flex;gap:var(--sp-2);justify-content:center;flex-wrap:wrap}
 .rv-cards{margin-top:var(--sp-2)}
+
+/* 大字級（大／特大）：手冊句卡的按鈕移到下一行，句子才有寬度（phrasebook.js 的 .pb-row 是三欄） */
+:root[data-fs=l] .pb-row,:root[data-fs=xl] .pb-row{flex-wrap:wrap}
+:root[data-fs=l] .pb-row .pb-t,:root[data-fs=xl] .pb-row .pb-t{flex:1 1 0;min-width:0}
+:root[data-fs=l] .pb-row .pb-act,:root[data-fs=xl] .pb-row .pb-act{flex:1 0 100%;flex-direction:row;justify-content:flex-end;align-items:center}

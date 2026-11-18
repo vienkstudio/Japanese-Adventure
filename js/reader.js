@@ -336,13 +336,13 @@
       <div class="rd-big" lang="ja">${JPText.ruby(t.s, t.kana)}</div>
       <div class="rd-kana" lang="ja">${esc(t.kana || '')}${t.romaji ? ' ・ ' + esc(t.romaji) : ''}</div>
       ${base !== t.s ? `<div class="rd-base">原形：<b lang="ja">${esc(base)}</b>${bk && bk !== base ? `（${esc(bk)}）` : ''}${esc(form)}</div>` : ''}
-      <div class="rd-mean">${t.zh ? (t.neg ? '<span class="chip">否定</span> ' : '') + esc(t.zh) : t.unreg ? `<span class="muted">未收錄：字典還沒有「${esc(t.s)}」這個詞${t.kana ? (t.src ? '，讀音取自原文' : '') : '，讀音未知'}。可在下面自己填中文。</span>` : '<span class="muted">字典沒有這個詞</span>'}</div>
+      <div class="rd-mean">${t.frag ? '<span class="muted">這是前一個詞的活用或口語語尾（例：〜ちゃ＝〜ては、〜とく＝〜ておく），不是獨立的單字，請點前一個詞看意思。</span>' : t.zh ? (t.neg ? '<span class="chip">否定</span> ' : '') + esc(t.zh) : t.unreg ? `<span class="muted">未收錄：字典還沒有「${esc(t.s)}」這個詞${t.kana ? (t.src ? '，讀音取自原文' : '') : '，讀音未知'}。可在下面自己填中文。</span>` : '<span class="muted">字典沒有這個詞</span>'}</div>
       ${window.Loan && Loan.label(t.s, 1) ? `<div class="rd-loan">${esc(Loan.label(t.s, 1))}</div>` : window.Loan && Loan.isKata(t.s) && t.s.length > 2 && !(window.LOAN[t.s] && LOAN[t.s][0] === 'ja') ? `<div class="rd-loan muted">🌐 外來語（字典尚未收錄原文，讀音：${esc(t.romaji || '')}）</div>` : ''}
       <div class="chips rd-chips">${t.lv ? lvBadge(t.lv) : ''}${t.pos && JPText.POS_ZH[t.pos] ? `<span class="chip">${esc(JPText.POS_ZH[t.pos])}</span>` : ''}</div>
       ${t.alts && t.alts.length ? `<div class="rd-alts muted">也可能是：${t.alts.map(a => `${esc(a.jp)}（${esc(String(a.zh).split(/[；;]/)[0])}）`).join('、')}</div>` : ''}
-      ${!t.known || t.user ? `<div class="rd-user"><input class="rd-in" id="rdUz" placeholder="自己填中文意思" value="${esc(t.user ? t.zh : '')}"><button type="button" class="btn sm" id="rdUs">存</button></div>` : ''}
+      ${(!t.known && !t.frag) || t.user ? `<div class="rd-user"><input class="rd-in" id="rdUz" placeholder="自己填中文意思" value="${esc(t.user ? t.zh : '')}"><button type="button" class="btn sm" id="rdUs">存</button></div>` : ''}
       ${ctx.sentence ? `<div class="rd-sent" lang="ja">「${esc(ctx.sentence)}」</div>` : ''}
-      <div class="rd-row rd-card-btns"><button type="button" class="btn sm" id="rdSay">🔊 聽</button>${App.trackBtn(item)}</div>
+      <div class="rd-row rd-card-btns"><button type="button" class="btn sm" id="rdSay">🔊 聽</button>${t.frag || t.hon ? '' : App.trackBtn(item)}</div>
       ${sent ? `<div class="rd-row rd-card-btns"><span class="muted">整句：</span>${App.trackBtn(sent, true)}<button type="button" class="btn sm" id="rdSayS">🔊 整句</button></div>` : ''}
     </div>`;
     App.modal(html, [{ label: '關閉', onClick: ctx.onClose }]);
