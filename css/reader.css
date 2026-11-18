@@ -93,6 +93,9 @@ input[type=file].rd-in{padding:8px}
 .rd-doc:not(.y) rt{display:none}
 .rd-ro,.rd-gl{display:none;font-size:var(--fs-xs);line-height:1.25;color:var(--muted);white-space:nowrap;font-weight:400}
 .rd-doc.r .rd-ro{display:block}
+/* 羅馬字跟著全站字級（rem）放大，最小 0.9rem；只看羅馬字的人也讀得清楚 */
+.rd-ro{font-size:max(.9rem,.62em);letter-spacing:.01em}
+.rd-gl{font-size:max(var(--fs-xs),.6em)}
 .rd-doc.z.mine .rd-gl{display:block;color:var(--acc-d)}
 .sg-lyr.z .sg-line:not(.nozh) .rd-gl{display:none}
 .rd-say{flex:none;min-width:44px;min-height:44px;border:none;background:transparent;border-radius:var(--r-pill);cursor:pointer;font-size:var(--fs-md);vertical-align:middle;color:var(--text)}
@@ -259,3 +262,9 @@ input[type=file].rd-in{padding:8px}
 /* 閱讀頁頂部分頁：新聞／文章／歌曲 */
 .rd-sects{position:sticky;top:var(--topH,56px);z-index:5;background:var(--bg);margin:0 0 var(--sp-3);padding:var(--sp-1) 0}
 .rd-sects button{flex:1;min-height:44px;font-weight:800}
+
+/* ---------- 歌曲：翻唱者、版本、時間軸提示 ---------- */
+.sg-sub{margin:0 0 var(--sp-2);font-size:var(--fs-sm)}
+.sg-ver{font-size:var(--fs-xs);color:var(--acc-d);font-weight:700}
+.sg-warnt{color:var(--warn);font-weight:700}
+.sg-twarn{margin:var(--sp-2) 0}

@@ -215,7 +215,8 @@
     return { track: name, artist: author };
   }
 
-  async function youtube(id) {
+  // duration：影片長度（秒，可無），用來挑時間軸長度相符的 LRC 版本
+  async function youtube(id, duration) {
     const address = 'https://www.youtube.com/watch?v=' + id;
     const endpoint = 'https://www.youtube.com/oembed?' + new URLSearchParams({ url: address, format: 'json' });
     const meta = await request(endpoint, 'application/json', 5000).catch(() => null);
@@ -239,7 +240,7 @@
     let found = null;
     for (const [t, ar] of tries) {
       if (!t) continue;
-      const r = await lyrics(t, ar).catch(() => null);
+      const r = await lyrics(t, ar, duration).catch(() => null);
       // 查到的歌名必須和這次查詢的歌名相符（翻唱影片不採用名稱不符的歌詞）
       if (!r || !sameSong(r.track, t)) continue;
       if (!found || r.score > found.score) found = r;
@@ -247,7 +248,11 @@
     }
     if (found) Object.assign(result, found);
     if (cover) {
-      result.cover = true; result.want = track;
+      // 翻唱者：標題【】裡的名字（不是原曲名、不是 cover 字樣）＞頻道名
+      const tags = [...title.matchAll(/[【\[]([^】\]]{1,20})[】\]]/g)].map(m => m[1].trim()).filter(x => x && !COVER.test(x) && !/mv|pv|official|full|lyrics|歌詞|字幕/i.test(x) && !(found && sameSong(found.track, x)) && !(track && sameSong(track, x)));
+      const by = (tags[0] || String(meta.author_name || '').replace(/\s*(?:official|channel|チャンネル|ちゃんねる)\s*$/i, '')).trim().slice(0, 24);
+      result.cover = true; result.want = track; result.coverBy = by;
+      if (found) { result.origTitle = found.title; result.title = `${found.track}（${by ? by + ' 翻唱' : '翻唱'}・原唱 ${found.artist}）`; }
       if (!found) result.note = `翻唱影片：找不到和「${track || title}」相符的歌詞，只匯入影片。可以按 ✏️ 編輯，用歌名手動搜尋歌詞。`;
     }
     return result;
@@ -295,15 +300,24 @@
       else if (singer.length >= 2 && !key(track + artist).includes(a)) s -= 2;
       if (/\b(?:live|remix|acoustic|instrumental|ver\.?|version)\b|ライブ|弾き語り/i.test(r.trackName + ' ' + (r.albumName || '')) && !/live|ver/i.test(track)) s -= 3;
       if (r.syncedLyrics) s += 3;
-      if (duration && r.duration && Math.abs(r.duration - duration) < 4) s += 2;
+      // 影片長度相符的版本優先；差太多（例：紅蓮華 5 分半的版本配 3 分 55 秒的 MV）扣分；最後一句超過影片長度也扣分
+      if (duration && r.duration) { const d = Math.abs(r.duration - duration); s += d < 4 ? 4 : d < 10 ? 1 : d > 20 ? -5 : -2; }
+      if (duration && r.syncedLyrics) { const m = [...r.syncedLyrics.matchAll(/\[(\d{1,2}):(\d{1,2}(?:\.\d+)?)\]/g)].pop(); if (m && +m[1] * 60 + +m[2] > duration + 1) s -= 6; }
       return s;
     };
     const best = [...seen.values()].map(r => [score(r), r]).filter(x => x[0] >= 4).sort((a, b) => b[0] - a[0])[0];
     if (!best) return null;
-    const r = best[1];
+    return lrcResult(best[1], best[0]);
+  }
+  // 指定 LRCLIB 版本（熱門精選固定版本，避免挑到長度不符的時間軸）
+  async function lyricsById(id) {
+    const r = await request('https://lrclib.net/api/get/' + encodeURIComponent(id), 'application/json', 7000).catch(() => null);
+    return r && r.id != null && hasJapanese(r.syncedLyrics || r.plainLyrics, 8) ? lrcResult(r, 20) : null;
+  }
+  function lrcResult(r, score) {
     const timed = r.syncedLyrics ? parseLRC(r.syncedLyrics) : [];
     const lines = timed.length >= 4 ? timed : tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
-    return { title: `${r.trackName}（${r.artistName}）`, track: r.trackName, artist: r.artistName, lines, timed: timed.length >= 4, score: best[0] };
+    return { title: `${r.trackName}（${r.artistName}）`, track: r.trackName, artist: r.artistName, lines, timed: timed.length >= 4, score, id: r.id, dur: r.duration ? Math.round(r.duration) : 0 };
   }
 
   // 近三天新聞：Yahoo!ニュース各分類 RSS（經代讀取得）＋ MATCHA 簡單日文（附振假名）
@@ -353,5 +367,5 @@
     return items;
   }
 
-  window.LinkImport = { NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, parseLRC, songTitle };
+  window.LinkImport = { NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, lyricsById, parseLRC, songTitle };
 })();

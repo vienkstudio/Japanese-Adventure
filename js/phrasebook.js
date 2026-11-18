@@ -20,7 +20,7 @@
   const hasKana = () => !!window.KanaLesson;
   const cats = () => CATS.filter(c => c[0] !== 'kana' || hasKana());
 
-  /* ---------- ⭐ 必備句（旅遊最常用；romaji 用長音符號） ---------- */
+  /* ---------- ⭐ 必備句（旅遊最常用；羅馬字一律由 Phrase.romaji 產生） ---------- */
   const MUST = [
     ['shop', 'これはいくらですか。', 'これはいくらですか', 'kore wa ikura desu ka', '這個多少錢？', '指著商品問價錢'],
     ['shop', '全部でいくらですか。', 'ぜんぶでいくらですか', 'zenbu de ikura desu ka', '全部多少錢？', '結帳前確認總金額'],
@@ -63,6 +63,28 @@
     ['emer', 'ここに書いてください。', 'ここにかいてください', 'koko ni kaite kudasai', '請寫在這裡。', '聽不懂時請對方寫下來（漢字常看得懂）']
   ].map(([cat, jp, kana, romaji, zh, use]) => ({ cat, jp, kana, romaji, zh, use, src: '⭐ 必備' }));
 
+  /* ---------- 🆘 緊急：號碼卡＋求救句（緊急分類最上方） ---------- */
+  const TEL = [['110', '🚓', '警察', '事故、竊盜、遇到危險'], ['119', '🚑', '救護車・消防', '急病、受傷、火災（免費）']];
+  const HOTLINE = ['050-3816-2787', 'Japan Visitor Hotline（24 小時，可說中文）'];
+  const EMER = [
+    ['警察を呼んでください。', 'けいさつをよんでください', '請叫警察。', '遇到危險、被偷、發生事故'],
+    ['救急車を呼んでください。', 'きゅうきゅうしゃをよんでください', '請叫救護車。', '有人昏倒、受重傷、急病'],
+    ['助けてください！', 'たすけてください', '請救救我！', '遇到危險時大聲說'],
+    ['病院に連れて行ってください。', 'びょういんにつれていってください', '請帶我去醫院。', '身體不舒服，請別人帶路'],
+    ['〜が痛いです。', '〜がいたいです', '〜很痛。', '按 📢 可填部位，例：頭、お腹'],
+    ['〜をなくしました。', '〜をなくしました', '我把〜弄丟了。', '按 📢 可填東西，例：財布、パスポート'],
+    ['〜を盗まれました。', '〜をぬすまれました', '我的〜被偷了。', '到交番（派出所）報案'],
+    ['交番はどこですか。', 'こうばんはどこですか', '派出所在哪裡？', '東西遺失、迷路時找警察'],
+    ['道に迷いました。', 'みちにまよいました', '我迷路了。', '把地址或地圖給對方看'],
+    ['中国語を話せる人はいますか。', 'ちゅうごくごをはなせるひとはいますか', '有會說中文的人嗎？', '醫院、警察局']
+  ].map(([jp, kana, zh, use]) => ({ cat: 'emer', jp, kana, zh, use, src: '🆘 緊急' }));
+  function telCard() {
+    return `<div class="pb-tel" role="group" aria-label="緊急電話">
+      ${TEL.map(([n, i, name, use]) => `<a class="pb-call" href="tel:${n}"><span class="i" aria-hidden="true">${i}</span><b>${n}</b><span class="n">${esc(name)}</span><small>${esc(use)}</small></a>`).join('')}
+      <a class="pb-hot" href="tel:${HOTLINE[0].replace(/-/g, '')}">☎️ ${esc(HOTLINE[0])}<small>${esc(HOTLINE[1])}</small></a>
+      <p class="pb-tel-tip">點號碼就能撥打。撥通後先說「<span lang="ja">救急です</span>」（叫救護車）或「<span lang="ja">事件です</span>」（找警察），再說地點。</p></div>`;
+  }
+
   /* ---------- 同義詞：查其中一個，其他也一起找 ---------- */
   const SYN = [
     ['儲值', '加值', '充值', 'チャージ', 'charge', 'chaji', 'chāji'],
@@ -88,7 +110,9 @@
     ['推薦', 'おすすめ', 'osusume'],
     ['拍照', '照相', '写真', 'しゃしん', 'shashin'],
     ['入住', 'チェックイン', 'checkin'],
-    ['退房', 'チェックアウト', 'checkout']
+    ['退房', 'チェックアウト', 'checkout'],
+    ['警察', '叫警察', '報警', '110', 'けいさつ', 'keisatsu', 'police', '交番', '派出所'],
+    ['救護車', '叫救護車', '急救', '119', '救急車', 'きゅうきゅうしゃ', 'kyuukyuusha', 'ambulance', '消防']
   ];
   const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[\s'’\-・]/g, '');
   const SYN_N = SYN.map(g => g.map(norm));
@@ -115,28 +139,16 @@
   }
   const bare = s => String(s || '').replace(/[、。！？!?\s「」]/g, '');
   const kanaOf = w => { const k = kataKana(w.jp, w.kana); return k && bare(k) !== bare(w.jp) ? k : ''; };
-  // 助詞讀音與斷詞（簡易）：を→o、常見位置的は→wa／へ→e，句尾「です・ください」前加空格，讓羅馬字好念
-  function particles(k) {
-    return String(k)
-      .replace(/を/g, ' お ')
-      .replace(/(.)は(?=あり|ない|どこ|いくら|なん|なに|おもち|つかえ|ごりよう|いりません|だいじょうぶ|できます|こちら|これ|ここ|、|どう|いつ|もう|すこし|ちょっと)/g, '$1 わ ')
-      .replace(/(.)へ(?=は|いき|の|どう)/g, '$1 え ')
-      .replace(/(.)(ください|ですか|です|ありますか|ありません|ますか|でしょうか)(?=[、。！？\s]|$)/g, '$1 $2')
-      .replace(/(です|ます)か(?=[、。！？\s]|$)/g, '$1 か')
-      .replace(/(.)もいい/g, '$1 も いい')
-      .replace(/([でにが])(?=お[ねかしもま])/g, '$1 ')
-      .replace(/([ァ-ヺー])(?=[ぁ-ゖ])/g, '$1 ')     // 片假名→平假名交界（外來語＋助詞）
-      .replace(/([ぁ-ゖ])(?=[ァ-ヺ])/g, '$1 ');
-  }
+  // 羅馬字：全站統一用 Phrase.romaji（分詞、助詞 wa／e／o、數字分段、長音 ou／uu／aa）
+  const MACRON = { ā: 'aa', ī: 'ii', ū: 'uu', ē: 'ei', ō: 'ou' };
   function romOf(w) {
-    if (w.romaji) return w.romaji;
     if (w._r != null) return w._r;
     let r = '';
     try {
-      const K = window.ReviewAPI && ReviewAPI.kanaToRomaji;
       const src = w.kana || (/^[぀-ヿー、。！？\s〜]+$/.test(w.jp || '') ? w.jp : '');
-      if (K && src) r = particles(src).split('〜').map(x => K(x)).join(' ~ ');
+      if (src && window.Phrase && Phrase.romaji) r = Phrase.romaji(src, w.jp);
     } catch (e) { r = ''; }
+    if (!r && w.romaji) r = String(w.romaji).replace(/[āīūēō]/g, c => MACRON[c]);
     return (w._r = r.replace(/\s+/g, ' ').trim());
   }
   const showRom = () => { const p = App.profile(); return p.lv === 'zero' || p.assist === 'full'; };
@@ -178,6 +190,15 @@
 .pb-full .rr{font-size:1.3rem;color:var(--acc-d);font-weight:700;margin-top:6px}
 .pb-full .zz{font-size:1.3rem;color:var(--muted);margin-top:18px}
 .pb-full .x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line2);background:var(--card);color:var(--text);font-size:1.3em;cursor:pointer}
+.pb-tel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}
+.pb-call{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:var(--r-m);background:var(--err);color:var(--on-pri);text-decoration:none;box-shadow:var(--shadow);min-height:44px;text-align:center}
+.pb-call .i{font-size:1.5em;line-height:1}.pb-call b{font-size:var(--fs-2xl);line-height:1.1}.pb-call .n{font-weight:800;font-size:var(--fs-md)}.pb-call small{font-size:var(--fs-xs);opacity:.92}
+.pb-hot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;padding:10px 12px;border-radius:var(--r-m);background:var(--card);color:var(--text);border:1px solid var(--line2);text-decoration:none;font-weight:800;min-height:44px}
+.pb-hot small{font-weight:400;color:var(--muted);font-size:var(--fs-xs)}
+.pb-tel-tip{grid-column:1/-1;margin:2px 0 0;color:var(--muted);font-size:var(--fs-sm)}
+.pb-fill{display:flex;flex-direction:column;gap:6px;width:min(100%,520px);margin-bottom:18px;text-align:left;font-size:var(--fs-sm);color:var(--muted)}
+.pb-fill input{font:inherit;font-size:var(--fs-lg);padding:10px 14px;border-radius:var(--r-m);border:2px solid var(--pri);background:var(--card);color:var(--text);min-height:48px}
+.pb-full .pb-fsay{margin-top:16px;min-height:48px}
 .pb-full .tip{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:var(--fs-sm);color:var(--muted)}`;
     document.head.appendChild(s);
   })();
@@ -193,7 +214,7 @@
     const ids = Object.keys(W.shops);
     if (WIDX && WN === ids.length) return WIDX;
     WIDX = []; WN = ids.length;
-    const seen = new Set(MUST.map(w => bare(w.jp)));
+    const seen = new Set(MUST.concat(EMER).map(w => bare(w.jp)));
     const regName = id => { const r = (W.regions || []).find(x => x.id === id); return r ? r.name : ''; };
     ids.forEach(id => {
       const s = W.shops[id]; if (!s) return;
@@ -246,6 +267,7 @@
     const seen = new Set(), ph = [], vo = [];
     const add = (arr, w, src) => { const id = bare(w.jp); if (!id || seen.has(id)) return; seen.add(id); arr.push(src ? Object.assign({}, w, { src: w.src || src }) : w); };
     MUST.filter(hit).forEach(w => add(ph, w));
+    EMER.filter(hit).forEach(w => add(ph, w));
     scenes().forEach(sc => (sc.phrases || []).filter(hit).forEach(w => add(ph, w, '💬 ' + sc.name)));
     worldIdx().filter(w => w.kind !== 'item').filter(hit).forEach(w => add(ph, w));
     worldIdx().filter(w => w.kind === 'item').filter(hit).forEach(w => add(ph, w));
@@ -267,22 +289,47 @@
     }
     const cat = CATS.find(c => c[0] === UI.cat) || CATS[0];
     const must = MUST.filter(w => cat[0] === 'must' || w.cat === cat[0]);
-    return (must.length ? `<h2>⭐ 必備句</h2>${must.map(w => row(w, '⭐ 必備')).join('')}` : '') +
+    const mustH = must.length ? `<h2>⭐ 必備句</h2>${must.map(w => row(w, '⭐ 必備')).join('')}` : '';
+    // 緊急：號碼卡與求救句置頂，必備句放最後
+    const seenE = new Set(EMER.map(w => bare(w.jp)));
+    const emerH = cat[0] === 'emer' ? `<h2>🆘 緊急電話</h2>${telCard()}<h2>🆘 求救</h2>${EMER.map(w => row(w, '🆘 緊急')).join('')}` : '';
+    return (emerH || mustH) +
       cat[2].map(sceneOf).filter(Boolean).map(sc => `<h2>${esc(sc.icon || '')} ${esc(sc.name)}</h2>
-      ${(sc.phrases || []).map(w => row(w, sc.name)).join('')}
-      <details><summary>📚 常用單字 ${(sc.vocab || []).length} 個</summary><div class="pb-voc">${(sc.vocab || []).map(vocab).join('')}</div></details>`).join('');
+      ${(sc.phrases || []).filter(w => !emerH || !seenE.has(bare(w.jp))).map(w => row(w, sc.name)).join('')}
+      <details><summary>📚 常用單字 ${(sc.vocab || []).length} 個</summary><div class="pb-voc">${(sc.vocab || []).map(vocab).join('')}</div></details>`).join('') + (emerH ? mustH : '');
   }
 
   function showBig(w) {
     const d = document.createElement('div');
     d.className = 'pb-full';
+    const fill = /[〜~～]/.test(w.jp);
+    const kn0 = kanaOf(w), rm0 = showRom() ? romOf(w) : '';
     // 字數少就放到最大：依字數算字級（手機橫寬約可放 6～7 字一行）
-    const len = String(w.jp).length, kn = kanaOf(w), rm = showRom() ? romOf(w) : '';
-    d.style.setProperty('--pbz', `min(${len <= 4 ? 22 : len <= 8 ? 15 : len <= 14 ? 11 : 8.5}vw, ${len <= 4 ? 9 : 6}rem)`);
-    d.innerHTML = `<button type="button" class="x" aria-label="關閉">✕</button><div class="big" lang="ja">${esc(w.jp)}</div>${kn ? `<div class="kk" lang="ja">${esc(kn)}</div>` : ''}${rm ? `<div class="rr">${esc(rm)}</div>` : ''}<div class="zz">${esc(w.zh)}</div><div class="tip">點一下或按返回鍵關閉${App.voiceOK && App.voiceOK() === false ? '' : '・🔊 已播放'}</div>`;
+    const size = jp => { const len = String(jp).length; d.style.setProperty('--pbz', `min(${len <= 4 ? 22 : len <= 8 ? 15 : len <= 14 ? 11 : 8.5}vw, ${len <= 4 ? 9 : 6}rem)`); };
+    size(w.jp);
+    d.innerHTML = `<button type="button" class="x" aria-label="關閉">✕</button>
+      ${fill ? `<label class="pb-fill"><span>✏️ 在「〜」填入地名、品名或部位</span><input type="text" lang="ja" placeholder="例：浅草、財布、頭" autocomplete="off"></label>` : ''}
+      <div class="big" lang="ja">${esc(w.jp)}</div>${kn0 ? `<div class="kk" lang="ja">${esc(kn0)}</div>` : ''}${rm0 ? `<div class="rr">${esc(rm0)}</div>` : ''}<div class="zz">${esc(w.zh)}</div>
+      ${fill ? `<button type="button" class="btn pb-fsay">🔊 唸給對方聽</button>` : ''}
+      <div class="tip">${fill ? '按 ✕ 或返回鍵關閉' : '點一下或按返回鍵關閉'}${App.voiceOK && App.voiceOK() === false ? '' : '・🔊 已播放'}</div>`;
     const close = App.layer ? App.layer(d) : (document.body.appendChild(d), () => d.remove());
-    d.onclick = () => close();
-    App.speak(String(w.kana || w.jp).replace(/〜/g, ''));
+    const inp = d.querySelector('.pb-fill input');
+    const sub = (t, v) => String(t || '').replace(/[〜~～]/g, v || '〜');
+    const spoken = () => sub(w.kana || w.jp, inp ? inp.value.trim() : '').replace(/〜/g, '');
+    if (fill) {
+      d.querySelector('.x').onclick = () => close();
+      d.querySelector('.pb-fsay').onclick = () => App.speak(spoken());
+      inp.oninput = () => {
+        const v = inp.value.trim(), jp = sub(w.jp, v);
+        size(jp);
+        d.querySelector('.big').textContent = jp;
+        const kk = d.querySelector('.kk'); if (kk) kk.textContent = sub(kn0, v);
+        // 填入假名才算得出羅馬字；有漢字時那一段保留「~」
+        const rr = d.querySelector('.rr');
+        if (rr) rr.textContent = v && /^[぀-ヿー]+$/.test(v) && window.Phrase && Phrase.conv ? rm0.replace(/~/g, Phrase.conv(v)) : rm0;
+      };
+    } else d.onclick = () => close();
+    App.speak(spoken());
   }
 
   // 參數 cat 可以是分類 id，也可以是場景 id（如 konbini）
@@ -308,7 +355,7 @@
     const paint = () => {
       if (!String(UI.q || '').trim() && UI.cat === 'kana' && hasKana()) { KEYS = []; KanaLesson.render(box, kanaOpen); kanaOpen = null; }
       else box.innerHTML = list();
-      el.querySelectorAll('[data-cat]').forEach(b => { const on = !UI.q && b.dataset.cat === UI.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+      el.querySelectorAll('[data-cat]').forEach(b => { const on = !UI.q && b.dataset.cat === UI.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); if (on) { const bar = b.parentNode; bar.scrollLeft = Math.max(0, b.offsetLeft - bar.offsetLeft - 16); } });
     };
     const ensureWorld = () => {
       if (wDone || !String(UI.q || '').trim()) return;

@@ -36,7 +36,7 @@
     s.at = Date.now();
     await App.idb.set('song:' + s.id, s);
     const idx = (await songIndex()).filter(x => x.id !== s.id);
-    idx.unshift({ id: s.id, title: s.title, at: s.at, n: s.lines.length, src: s.src.type, timed: s.lines.filter(l => l.t != null).length });
+    idx.unshift({ id: s.id, title: s.title, at: s.at, n: s.lines.length, src: s.src.type, timed: s.lines.filter(l => l.t != null).length, warn: !!s.timeWarn, synced: !!s.synced, by: s.cover ? s.cover.by || '' : '', yt: s.src.yt || '' });
     await App.idb.set('songs:index', idx);
   }
   // 新抓到的歌詞併入舊歌：沒歌詞就整份套用；歌詞相同只補時間（保留手動校時與中文）；不同則保留舊的
@@ -85,15 +85,37 @@
   });
 
   // 熱門精選：一鍵匯入（YouTube 官方影片＋LRCLIB 逐句時間歌詞）
-  const HOT = [["アイドル","YOASOBI","ZRtdQ81jPUQ"],["夜に駆ける","YOASOBI","by4SYYWlhEs"],["Bling-Bang-Bang-Born","Creepy Nuts","mLW35YMzELE"],["ライラック","Mrs. GREEN APPLE","QjrkrVmC-8M"],["ケセラセラ","Mrs. GREEN APPLE","Jy-QS27q7lA"],["怪獣の花唄","Vaundy","UM9XNpgrqVk"],["Lemon","米津玄師","SX_ViT4Ra7k"],["KICK BACK","米津玄師","M2cckDmNLMI"],["新時代","Ado","1FliVTcX8bQ"],["唱","Ado","pgXpM4l_MwI"],["Pretender","Official髭男dism","TQ8WlA2GXbk"],["Subtitle","Official髭男dism","hN5MBlGv2Ac"],["水平線","back number","iqEr3P78fz8"],["SPECIALZ","King Gnu","fhzKLBZJC3w"],["はいよろこんで","こっちのけんと","jzi6RNVEOtA"],["晩餐歌","tuki.","oZpYEEcvu5I"],["ドライフラワー","優里","kzZ6KXDM1RI"],["紅蓮華","LiSA","x1FV6IrjZCY"],["群青","YOASOBI","Y4nEEZwckuU"],["ベテルギウス","優里","cbqvxDTLMps"],["青と夏","Mrs. GREEN APPLE","-MKfbxHy_NA"],["オトノケ","Creepy Nuts","tRwHpyOq4P4"],["さよーならまたいつか！","米津玄師","-wb2PAx6aEs"]];
-  async function importHot(t, a, yt) {
+  // [歌名, 歌手, YouTube id, 影片秒數, LRCLIB id]：固定和這支 MV 長度相符的時間軸版本（2026-11 逐首核對：最後一句不超過影片長度）
+  const HOT = [["アイドル","YOASOBI","ZRtdQ81jPUQ",226,7159727],["夜に駆ける","YOASOBI","by4SYYWlhEs",261,9203852],["Bling-Bang-Bang-Born","Creepy Nuts","mLW35YMzELE",172,8248862],["ライラック","Mrs. GREEN APPLE","QjrkrVmC-8M",303,24754735],["ケセラセラ","Mrs. GREEN APPLE","Jy-QS27q7lA",314,16310136],["怪獣の花唄","Vaundy","UM9XNpgrqVk",233,19912792],["Lemon","米津玄師","SX_ViT4Ra7k",274,8948466],["KICK BACK","米津玄師","M2cckDmNLMI",227,10451203],["新時代","Ado","1FliVTcX8bQ",237,29694107],["唱","Ado","pgXpM4l_MwI",189,20169960],["Pretender","Official髭男dism","TQ8WlA2GXbk",336,29363557],["Subtitle","Official髭男dism","hN5MBlGv2Ac",322,36160284],["水平線","back number","iqEr3P78fz8",312,34777897],["SPECIALZ","King Gnu","fhzKLBZJC3w",241,8426482],["はいよろこんで","こっちのけんと","jzi6RNVEOtA",163,33555395],["晩餐歌","tuki.","oZpYEEcvu5I",220,36140303],["ドライフラワー","優里","kzZ6KXDM1RI",288,20605926],["紅蓮華","LiSA","x1FV6IrjZCY",235,29931709],["群青","YOASOBI","Y4nEEZwckuU",262,8996513],["ベテルギウス","優里","cbqvxDTLMps",291,39334885],["青と夏","Mrs. GREEN APPLE","-MKfbxHy_NA",273,20430644],["オトノケ","Creepy Nuts","tRwHpyOq4P4",196,15897258],["さよーならまたいつか！","米津玄師","-wb2PAx6aEs",208,36434512]];
+  async function importHot(t, a, yt, dur, lrc) {
     const id = 'yt:' + yt, old = await getSong(id);
-    if (old && old.lines.length) return id;
-    const L = await LinkImport.lyrics(t, a).catch(() => null);
+    // 已有歌詞：自己對過時的不動；舊版自動匯入、時間軸超過影片長度（挑錯版本）的才換成固定版本
+    if (old && old.lines.length && (old.synced || !(lastT(old) > dur + 1 || (old.lrc && old.lrc.id !== lrc)))) return id;
+    const L = (lrc && await LinkImport.lyricsById(lrc).catch(() => null)) || await LinkImport.lyrics(t, a, dur).catch(() => null);
     const s = old || { id, title: `${t}（${a}）`, src: { type: 'yt', yt }, lines: [] };
-    if (L && L.lines.length) mergeLyrics(s, L.lines);
+    s.src.dur = dur;
+    if (L && L.lines.length) {
+      if (old && old.lines.length && L.timed) retime(s, L.lines);
+      else mergeLyrics(s, L.lines);
+      if (L.timed) { s.auto = true; s.lrc = { id: L.id, dur: L.dur }; }
+    }
+    s.timeWarn = timeWarn(s);
     await putSong(s);
     return id;
+  }
+  // 時間軸工具
+  function lastT(s) { let m = -1; (s.lines || []).forEach(l => { if (l.t != null && l.t > m) m = l.t; }); return m < 0 ? null : m; }
+  // 最後一句晚於影片結尾 → 時間軸版本不符；翻唱用原曲時間軸也不保證準
+  function timeWarn(s) {
+    if (s.synced || !(s.lines || []).some(l => l.t != null)) return false;
+    const d = s.src && s.src.dur, L = lastT(s);
+    return !!((d && L != null && L > d + 1) || (s.cover && s.auto) || (d && s.lrc && s.lrc.dur && Math.abs(s.lrc.dur - d) > 10));
+  }
+  // 換一份時間軸：歌詞相同就逐句換時間；不同就整份換（保留已填的中文）
+  function retime(s, lines) {
+    if (s.lines.length === lines.length && s.lines.every((l, i) => norm(l.jp) === norm(lines[i].jp))) { s.lines.forEach((l, i) => { l.t = lines[i].t; }); return; }
+    const zh = new Map(s.lines.filter(l => l.zh).map(l => [norm(l.jp), l.zh]));
+    s.lines = lines.map(l => ({ jp: l.jp, zh: zh.get(norm(l.jp)) || l.zh || '', t: l.t }));
   }
   function listView(el) {
     el.innerHTML = `<div class="sg-home">
@@ -117,9 +139,9 @@
     el.querySelector('#sgNew').onclick = () => App.go('songs', { mode: 'new' });
     el.querySelectorAll('[data-hot]').forEach(b => b.onclick = async () => {
       if (b.disabled) return;
-      const [t, a, yt] = HOT[+b.dataset.hot], sm = b.querySelector('small'), old = sm.textContent;
+      const [t, a, yt, dur, lrc] = HOT[+b.dataset.hot], sm = b.querySelector('small'), old = sm.textContent;
       b.disabled = true; sm.textContent = '匯入歌詞中…';
-      try { const id = await importHot(t, a, yt); if (b.isConnected) App.go('song', { id }); }
+      try { const id = await importHot(t, a, yt, dur, lrc); if (b.isConnected) App.go('song', { id }); }
       catch (e) { if (b.isConnected) { sm.textContent = '匯入失敗，請稍後再試'; setTimeout(() => { if (sm.isConnected) sm.textContent = old; }, 4000); } }
       finally { b.disabled = false; }
     });
@@ -140,8 +162,10 @@
           if (!yt && audio) { const f = LinkImport.songTitle(audio.title, ''); const L = await LinkImport.lyrics(f.track, f.artist).catch(() => null); if (L) data = Object.assign({}, data, L); }
           if (!form.isConnected) return;
           const src = yt ? { type: 'yt', yt } : { type: 'url', url: audio.href };
-          if (!existing) await putSong({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines });
-          else if (data.lines.length) { mergeLyrics(existing, data.lines); await putSong(existing); }
+          const meta = { auto: !!data.timed, lrc: data.timed ? { id: data.id, dur: data.dur } : null, cover: data.cover ? { by: data.coverBy || '', orig: data.origTitle || '' } : null };
+          if (!existing) { const ns = Object.assign({ id, title: data.title.trim().slice(0, 60) || '網路音訊', src, lines: data.lines }, meta); ns.timeWarn = timeWarn(ns); await putSong(ns); }
+          else if (data.lines.length) { if (mergeLyrics(existing, data.lines) && !existing.synced) Object.assign(existing, meta); existing.timeWarn = timeWarn(existing); await putSong(existing); }
+          if (data.cover && data.lines.some(l => l.t != null)) toast('🎤 翻唱版：時間軸來自原曲，可能對不上，建議到「⏱ 對時」重新對時');
           if (data.note) toast(esc(data.note));
         }
         if (form.isConnected) App.go('song', { id });
@@ -154,7 +178,12 @@
       const box = el.querySelector('#sgMine'); if (!box) return;
       if (!idx.length) { box.innerHTML = '<p class="muted rd-tip">還沒有歌曲。可以用網址、音檔或歌詞新增一首。</p>'; return; }
       const cl = App.state.cleared || {};
-      box.innerHTML = idx.map(s => `<div class="rd-item rd-mine"><button type="button" class="rd-open" data-song="${esc(s.id)}"><span class="rd-ic" aria-hidden="true">🎵</span><span class="rd-it"><b lang="ja">${esc(s.title)}</b><small class="muted">${s.n} 句・${esc(SRC_NAME[s.src] || '')}${s.src !== 'tts' ? `・已對時 ${s.timed || 0}/${s.n}` : ''}</small></span>${cl['song:' + s.id] ? '<span class="rd-done">✔</span>' : ''}</button><button type="button" class="rd-del" data-del="${esc(s.id)}" aria-label="刪除">✕</button></div>`).join('');
+      // 同一首歌有好幾個版本（原唱＋翻唱）：副標寫出是哪個版本，避免三首一模一樣
+      const base = t => norm(String(t || '').replace(/（.*$/, ''));
+      const cnt = new Map(); idx.forEach(s => cnt.set(base(s.title), (cnt.get(base(s.title)) || 0) + 1));
+      const tl = s => s.src === 'tts' ? '' : !s.timed ? '・還沒對時' : s.warn ? '・<span class="sg-warnt">⚠️ 時間軸可能不準，建議對時</span>' : s.synced || s.timed === s.n ? `・已對時 ${s.timed}/${s.n}` : `・對時 ${s.timed}/${s.n}`;
+      const ver = s => s.by ? `🎤 ${esc(s.by)} 翻唱` : cnt.get(base(s.title)) > 1 ? `同名的另一版・${/^yt:/.test(s.id) ? '影片 ' + esc(s.id.slice(3, 9)) : esc(SRC_NAME[s.src] || '')}` : '';
+      box.innerHTML = idx.map(s => `<div class="rd-item rd-mine"><button type="button" class="rd-open" data-song="${esc(s.id)}"><span class="rd-ic" aria-hidden="true">${s.by ? '🎤' : '🎵'}</span><span class="rd-it"><b lang="ja">${esc(s.title)}</b>${ver(s) ? `<small class="sg-ver">${ver(s)}</small>` : ''}<small class="muted">${s.n} 句・${esc(SRC_NAME[s.src] || '')}${tl(s)}</small></span>${cl['song:' + s.id] ? '<span class="rd-done">✔</span>' : ''}</button><button type="button" class="rd-del" data-del="${esc(s.id)}" aria-label="刪除">✕</button></div>`).join('');
       box.querySelectorAll('[data-song]').forEach(b => b.onclick = () => App.go('song', { id: b.dataset.song }));
       box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => App.modal('<h2>刪除這首歌？</h2><p class="muted">歌詞、對時與音檔都會從這台裝置刪除，無法復原。</p>', [{ label: '取消' }, { label: '刪除', cls: 'primary', onClick: () => delSong(b.dataset.del).then(() => listView(el)) }]));
     });
@@ -348,7 +377,9 @@
     const hasRec = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     el.innerHTML = `<div class="sg-page">
       <div class="sg-head"><h2 class="rd-h2" lang="ja">${esc(s.title)}</h2>${s.demo ? '' : '<button type="button" class="btn ghost sg-edit" aria-label="編輯">✏️</button>'}</div>
+      ${s.cover ? `<p class="sg-sub muted" lang="ja">🎤 翻唱：${esc(s.cover.by || '（未知）')}${s.cover.orig ? `・原曲 ${esc(s.cover.orig)}` : ''}</p>` : ''}
       <div class="sg-media"></div>
+      <p class="rd-warn sg-twarn" role="status" hidden></p>
       <div class="tabs sg-modes" role="tablist" ${hasLyrics ? '' : 'hidden'}>
         <button type="button" data-mode="sing" class="on" role="tab">🎤 跟唱</button>
         ${s.src.type === 'tts' ? '' : '<button type="button" data-mode="mark" role="tab">⏱ 對時</button>'}
@@ -436,6 +467,9 @@
           s.lines = L.lines.map(l => ({ jp: l.jp, zh: '', t: l.t })); r = 'all';
         }
         if (/^YouTube・/.test(s.title) || s.src.type !== 'yt') s.title = L.title.slice(0, 60);
+        if (L.timed && r === 'all') { s.auto = true; s.lrc = { id: L.id, dur: L.dur }; s.synced = false; }
+        if (dur) s.src.dur = dur;
+        s.timeWarn = timeWarn(s);
         await putSong(s);
         App.toast(L.timed ? '✅ 已套用歌詞與逐句時間' : '✅ 已套用歌詞（這版沒有時間軸，可用「⏱ 對時」手動標）', 'ok');
         cleanup(V); songView(el, s.id);
@@ -443,6 +477,7 @@
       finally { if (b.isConnected) b.disabled = false; }
     };
     drawVocab(V);
+    showWarn(V);
 
     if (hasLyrics) setMode(V, 'sing');
     else $('.sg-help').textContent = '音源已匯入。點上方「編輯」即可加入日文歌詞。';
@@ -475,6 +510,7 @@
     if (!V.root.isConnected) { cleanup(V); return; }
     const P2 = V.P2;
     if (!P2.timed) return;
+    if (!V.tck && P2.dur() > 0) checkTiming(V);
     const t = P2.time();
     const tm = V.$('.sg-time'); if (tm) tm.textContent = fmt(t);
     if (V.mode !== 'mark') setCur(V, curFromTime(V, t));
@@ -486,6 +522,36 @@
     }
     if (V.rec && V.rec.end != null && t >= V.rec.end) stopRec(V);
     syncPlay(V);
+  }
+
+  // 拿到影片長度後檢查時間軸：自動匯入、還沒自己對時的歌，用影片長度重挑 LRC 版本；仍超過影片長度就提示去對時
+  async function checkTiming(V) {
+    V.tck = true;
+    const s = V.s, d = Math.round(V.P2.dur());
+    if (!s.lines.some(l => l.t != null) || s.demo) { showWarn(V); return; }
+    const was = s.src.dur; s.src.dur = d;
+    let bad = timeWarn(s);
+    if (bad && s.auto && !s.synced && !s.cover && navigator.onLine !== false) {
+      const g = guessTitle(s);
+      const L = await LinkImport.lyrics(g.track, g.artist, d).catch(() => null);
+      if (V.dead) return;
+      const lt = L && L.timed ? L.lines[L.lines.length - 1].t : null;
+      if (L && L.timed && lt != null && lt <= d + 1 && (!s.lrc || L.id !== s.lrc.id) && LinkImport.sameSong(L.track, g.track)) {
+        retime(s, L.lines); s.lrc = { id: L.id, dur: L.dur };
+        V.tokens = s.lines.map(l => JPText.tokenize(l.jp)); V.dict = null;
+        drawLines(V); drawVocab(V);
+        toast('⏱ 已依影片長度換成相符的時間軸', 'ok');
+        bad = timeWarn(s);
+      }
+    }
+    if (bad !== !!s.timeWarn || was !== d) { s.timeWarn = bad; putSong(s); }
+    showWarn(V);
+  }
+  function showWarn(V) {
+    const w = V.$('.sg-twarn'), s = V.s; if (!w) return;
+    const on = !!s.timeWarn && !s.synced;
+    w.hidden = !on;
+    if (on) w.textContent = s.cover ? '🎤 這是翻唱版：時間軸來自原曲，可能對不上。建議按「⏱ 對時」自己對一次。' : '⚠️ 時間軸可能不準（最後一句晚於影片結尾），建議按「⏱ 對時」重新對時。';
   }
 
   function syncPlay(V) {
@@ -509,8 +575,13 @@
     mark: '先按 ▶ 播放，每一句「開始唱」的瞬間按下方大按鈕。按錯可以用每句旁的 −／＋ 微調 0.2 秒，或點句號從那句重來。',
     dict: '聽歌，把空格裡的詞用假名填進去，再按「對答案」。填錯的詞會自動加入不會清單。'
   };
-  function setMode(V, m) {
+  function setMode(V, m, ok) {
     if (m === 'mark' && !V.P2.timed) m = 'sing';
+    // 已經有完整時間軸（且沒被判定不準）：先確認，避免一按大按鈕就蓋掉
+    if (m === 'mark' && !ok && V.mode !== 'mark' && V.s.lines.length && V.s.lines.every(l => l.t != null) && !V.s.timeWarn) {
+      App.modal(`<h2>這首已經對好時了</h2><p class="muted">${V.s.synced ? '你已經自己對過時。' : '這首已有逐句時間軸。'}重新對時會從第 1 句開始覆蓋原本的時間，要繼續嗎？</p>`, [{ label: '不用了' }, { label: '重新對時', cls: 'primary', onClick: () => setMode(V, 'mark', true) }]);
+      return;
+    }
     V.mode = m;
     V.root.querySelectorAll('[data-mode]').forEach(b => { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-selected', b.dataset.mode === m); });
     V.$('.sg-help').textContent = HELP[m] + (m === 'sing' && V.P2.timed && !V.s.lines.some(l => l.t != null) ? '　※ 還沒對時：先到「⏱ 對時」標記每句開始時間，才會逐句高亮。' : '');
@@ -554,7 +625,7 @@
     if (ad) {
       const [i, d] = ad.dataset.adj.split(':'); const l = V.s.lines[+i];
       if (l.t == null) { toast('這句還沒標記'); return; }
-      l.t = Math.max(0, Math.round((l.t + +d) * 10) / 10); V.dirty = true; saveSoon(V);
+      l.t = Math.max(0, Math.round((l.t + +d) * 10) / 10); V.s.synced = true; V.s.timeWarn = false; showWarn(V); V.dirty = true; saveSoon(V);
       ad.parentNode.querySelector('.sg-t').textContent = fmt(l.t);
       if (V.P2.timed) { V.P2.seek(l.t); if (!V.P2.playing()) V.P2.play(); }
       return;
@@ -566,7 +637,10 @@
     V.root.querySelectorAll('.rd-w.sel').forEach(x => x.classList.remove('sel'));
     w.classList.add('sel');
     const line = V.s.lines[li];
-    Reader.wordCard(t, { title: V.s.title, sentence: line.jp, zh: line.zh, source: '🎵 歌曲', onClose: () => { w.classList.remove('sel'); markTracked(V); } });
+    // 查詞時先暫停音樂（歌詞也就不會在背後一直捲），關掉再接著播
+    let wasOn = V.P2.playing();
+    if (wasOn) V.P2.pause();
+    Reader.wordCard(t, { title: V.s.title, sentence: line.jp, zh: line.zh, source: '🎵 歌曲', onClose: () => { w.classList.remove('sel'); markTracked(V); if (wasOn && !V.dead) { wasOn = false; V.P2.play(); setTimeout(() => syncPlay(V), 60); } } });
   }
   function lineItem(V, i) {
     const l = V.s.lines[i];
@@ -615,7 +689,7 @@
     if (!P2.playing()) { P2.play(); toast('先播放，聽到這句開始再按'); return; }
     if (V.mark >= V.s.lines.length) return;
     const t = Math.max(0, Math.round((P2.time() - 0.1) * 10) / 10);
-    V.s.lines[V.mark].t = t;
+    V.s.lines[V.mark].t = t; V.s.synced = true; V.s.timeWarn = false; showWarn(V);
     // 後面的時間如果比這句早，代表要重標 → 清掉
     for (let k = V.mark + 1; k < V.s.lines.length; k++) if (V.s.lines[k].t != null && V.s.lines[k].t <= t) V.s.lines[k].t = null;
     V.dirty = true; saveSoon(V);

@@ -722,7 +722,7 @@
     const eat = S.kind === 'eat' && z.type === 'menu';
     const el = sheet(`${tabs && tabs.length > 1 ? `<div class="wd-tabs">${tabs.map(k => `<button type="button" data-tab="${esc(k)}" class="${k === key ? 'on' : ''}">${esc(zone(k).icon)} <span lang="ja">${esc(zone(k).jp)}</span></button>`).join('')}</div>` : ''}
       <div class="wd-zh"><span class="wd-zi">${esc(z.icon || '')}</span>${tx(z)}<button type="button" class="wd-spk" id="wd-zs" aria-label="聽">🔊</button></div>
-      <div class="wd-items">${list.map((it, i) => `<button type="button" class="wd-it${it.soldOut ? ' sold' : ''}" data-i="${i}"><span class="e">${esc(it.emoji)}</span><b class="jp" lang="ja">${esc(it.jp)}</b>${showKana() && it.kana !== it.jp ? `<i lang="ja">${esc(it.kana)}</i>` : ''}<i class="z">${esc(it.zh)}</i><span class="p">${it.soldOut ? '<s>' + yen(it.price) + '</s> <b lang="ja">売り切れ</b>' : it.price ? yen(it.price) : '無料'}</span><em hidden></em></button>`).join('')}</div>
+      <div class="wd-items">${list.map((it, i) => `<button type="button" class="wd-it${it.soldOut ? ' sold' : ''}" data-i="${i}"><span class="e">${esc(it.emoji)}</span><b class="jp" lang="ja">${esc(it.jp)}</b>${showKana() && it.kana !== it.jp ? `<i lang="ja">${esc(it.kana)}</i>` : ''}${zero() && romaOf(it) ? `<i class="wd-r">${esc(romaOf(it))}</i>` : ''}<i class="z">${esc(it.zh)}</i><span class="p">${it.soldOut ? '<s>' + yen(it.price) + '</s> <b lang="ja">売り切れ</b>' : it.price ? yen(it.price) : '無料'}</span><em hidden></em></button>`).join('')}</div>
       <div class="wd-foot"><div class="wd-sel" hidden></div>
       <div class="wd-acts wd-order"><span id="wd-on"></span>${eat ? `<button type="button" class="btn primary" id="wd-call">🙋 すみません！<small>叫店員點餐</small></button>` : z.type === 'shelf' ? `<button type="button" class="btn primary" id="wd-pay">🧾 去結帳</button>` : ''}</div></div>`);
     el.querySelector('#wd-zs').onclick = () => App.speak(z.jp);
@@ -743,7 +743,7 @@
         App.speak(line.jp); return;
       }
       box.innerHTML = `<div class="wd-sel-t"><span class="e">${esc(it.emoji)}</span><div>${tx(it, true)}</div>${App.trackBtn(item(it, S.name), true)}</div>
-        <div class="wd-sel-a"><button type="button" class="wd-qb" data-q="-1" aria-label="減少">−</button><span class="wd-qn"><b lang="ja">${esc(cnt.jp)}</b><i lang="ja">${esc(cnt.kana)}</i></span><button type="button" class="wd-qb" data-q="1" aria-label="增加">＋</button>
+        <div class="wd-sel-a"><button type="button" class="wd-qb" data-q="-1" aria-label="減少">−</button><span class="wd-qn"><b lang="ja">${esc(cnt.jp)}</b><i lang="ja">${esc(cnt.kana)}</i>${zero() ? `<i class="wd-r">${esc(roma(cnt.kana, cnt.jp))}</i>` : ''}</span><button type="button" class="wd-qb" data-q="1" aria-label="增加">＋</button>
         <button type="button" class="btn primary" id="wd-add">${KIND_BTN[z.type] || '選這個'}</button></div>`;
       box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (+b.dataset.q > 0 && n >= (it.max || 5)) return App.toast(lim(it)); n = Math.max(1, Math.min(it.max || 5, n + +b.dataset.q)); show(); App.speak(Phrase.count(it.c, n).kana); });
       box.querySelector('#wd-add').onclick = () => {

@@ -56,8 +56,8 @@
 :root[data-palette=mono],.st-dot[data-pal=mono]{--pri-l:#222;--acc-l:#c62f28;--bg-l:#fff;--pri-k:#eee;--acc-k:#ff7b73;--bg-k:#0c0c0c;--card-k:#1a1a1a;--chip-k:#262626}
 
 /* --- 字級大小 --- */
-:root[data-fs=l]{font-size:112.5%}
-:root[data-fs=xl]{font-size:125%}
+:root[data-fs=l]{font-size:125%}
+:root[data-fs=xl]{font-size:150%}
 
 /* --- 深色：手動 data-theme=dark，或未指定淺色時跟隨系統 --- */
 :root[data-theme=dark]{
