@@ -318,7 +318,7 @@
     const prev = S.cleared[id] || 0;
     if (!stars) return { stars, prevStars: prev, gained: 0, levelUp: false, firstClear: false };
     if (!S.lastDone || typeof S.lastDone !== 'object') S.lastDone = {};
-    S.lastDone[String(id).split(':')[0]] = today();
+    S.lastDone[String(id).split(':')[0]] = dayKey();
     let xp = 3;
     if (stars > prev) { xp = XPS[stars] - XPS[prev] + (stars === 3 ? 10 : 0); S.cleared[id] = stars; }
     save();
