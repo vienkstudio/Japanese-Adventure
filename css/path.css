@@ -8,8 +8,8 @@
 .pa-note{font-size:var(--fs-sm);color:var(--muted);margin:var(--sp-1) 0 var(--sp-2)}
 .pa-lv{display:flex;align-items:center;gap:var(--sp-2);margin:0 0 var(--sp-2);font-weight:800;font-size:var(--fs-sm)}
 .pa-lv select{flex:1;min-height:44px;border:1px solid var(--line2);background:var(--card);color:var(--text);border-radius:var(--r-pill);font:inherit;font-weight:800;padding:0 var(--sp-3)}
-.pa-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2)}
-.pa-grid.one{grid-template-columns:1fr}
+.pa-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp-2)}
+.pa-grid.one{grid-template-columns:minmax(0,1fr)}
 .pa-card{position:relative;display:flex;align-items:flex-start;gap:var(--sp-2);text-align:left;min-height:44px;padding:var(--sp-3);border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:var(--r-m);box-shadow:var(--shadow);font:inherit;cursor:pointer}
 .pa-card:active{transform:scale(.98)}
 .pa-card.next{border:2px solid var(--pri);background:var(--pri-t);grid-column:1/-1;padding-top:calc(var(--sp-3) + 14px)}
@@ -41,7 +41,7 @@
 .pa-more-d .kn{padding-bottom:var(--sp-3)}
 .pa-h{font-size:var(--fs-md);margin:var(--sp-4) 0 var(--sp-2)}
 .pa-items{list-style:none;padding:0;margin:0;background:var(--card);border-radius:var(--r-m);border:1px solid var(--line)}
-.pa-items li{display:grid;grid-template-columns:20px 1fr 1fr;gap:var(--sp-2);align-items:center;padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--line)}
+.pa-items li{display:grid;grid-template-columns:20px minmax(0,1fr) minmax(0,1fr);gap:var(--sp-2);align-items:center;padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--line)}
 .pa-items li:first-child{border-top:none}
 .pa-jp{display:flex;flex-direction:column;min-width:0}
 .pa-jp b{font-size:var(--fs-md);word-break:break-all}
@@ -57,3 +57,4 @@
 .kn-ub .r{font-size:var(--fs-sm);font-weight:800;color:var(--pri-d)}
 .kn-ub .x{font-size:var(--fs-xs);color:var(--muted)}
 .kn-umem{margin:var(--sp-3) 0;padding-left:1.2em;font-size:var(--fs-sm);line-height:1.6}
+.pa-card{min-width:0;overflow-wrap:anywhere}
