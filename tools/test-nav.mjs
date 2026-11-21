@@ -41,7 +41,7 @@ N.TOOLS.filter(t => t.need === 'pack').forEach(t => {
 // 2) 推薦
 const rec = (lv, goals, placed = true) => { state.profile = { lv, goals, placed }; state.nav = {}; return N.forMe(4).map(t => t.id); };
 const CASES = [
-  ['零基礎旅客', 'zero', ['travel'], ['kana-table', 'kana-quiz', 'kana-battle', 'phrasebook']],
+  ['零基礎旅客', 'zero', ['travel'], ['kana-guide', 'kana-drill', 'kana-table', 'phrasebook']],
   ['N5 旅客', 'n5', ['travel'], ['phrasebook', 'dialog', 'menu']],
   ['N3 日檢', 'n3', ['exam'], ['gram', 'dict', 'chal']],
   ['N1 日檢', 'n1', ['exam'], ['chal', 'gram', 'kb']],
@@ -65,7 +65,7 @@ const Q = [
   ['醫院', 'emer'], ['翻唱', 'songs'], ['cover', 'songs'], ['歌詞', 'songs'], ['卡拉OK', 'songs'], ['YouTube', 'songs'], ['JLPT', 'ex-path'], ['N2', 'ex-path'],
   ['模擬考', 'chal'], ['文法', 'gram'], ['语法', 'gram'], ['單字', 'dict'], ['敬語', 'keigo'], ['email', 'biz'], ['開會', 'biz'], ['字太小', 'settings'], ['字太大', 'settings'],
   ['深色', 'settings'], ['夜間', 'settings'], ['備份', 'backup'], ['換手機', 'backup'], ['心智圖', 'mind3d'], ['3D', 'mind3d'], ['網址', 'url'], ['新聞', 'news'],
-  ['複習', 'review'], ['忘記了', 'review'], ['我想看五十音表', 'kana-table'], ['御朱印', 'goshuin'], ['特訓', 'boot']
+  ['複習', 'review'], ['忘記了', 'review'], ['我想看五十音表', 'kana-table'], ['御朱印', 'goshuin'], ['特訓', 'boot'], ['講義', 'kana-guide'], ['零基礎', 'kana-guide'], ['訓練表', 'kana-drill'], ['書寫', 'kana-drill'], ['列印', 'kana-drill']
 ];
 Q.forEach(([q, want]) => { const s = N.search(q), first = (s.top[0] || s.more[0] || {}).id; ok(first === want, `搜「${q}」第一筆 ${first}，預期 ${want}`); });
 ok(N.search('Lemon').top.length === 0, '「Lemon」不該有置頂功能（歌名先出）');

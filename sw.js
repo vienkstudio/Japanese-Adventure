@@ -1,7 +1,7 @@
 // 離線快取：改版時請把 VERSION 加 1。外殼預快取＋執行期快取。個別檔案下載失敗不影響安裝（新檔還沒上線時也能裝）。只快取同網域、成功（r.ok）的回應；只清掉本站舊版（jpq-v 開頭）快取。
-const VERSION = 'jpq-v45';
+const VERSION = 'jpq-v46';
 // 預快取只放外殼（約 160KB）；其他檔案（模組、資料、CSS、3D 函式庫）第一次用到時由下方 fetch 執行期快取
-const FILES = ['./', './index.html', './css/tokens.css', './css/app.css', './js/core.js', './js/learn.js', './js/game.js', './js/home.js',
+const FILES = ['./', './index.html', './css/tokens.css', './css/app.css', './js/core.js', './js/learn.js', './js/game.js', './js/home.js', './js/kana-guide.js', './日文講義.html', './50音訓練表.html', './kana-data.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/logo.svg', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => Promise.all(FILES.map(f => c.add(encodeURI(f)).catch(() => { })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('jpq-v') && k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

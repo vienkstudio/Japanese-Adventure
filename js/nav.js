@@ -21,6 +21,8 @@
   const classic = () => window.PathExtra ? Promise.resolve() : App.loadScript('js/classic.js');
   const T = (id, cat, icon, name, desc, kw, o) => Object.assign({ id, cat, icon, name, desc, kw }, o);
   const TOOLS = [
+    T('kana-guide', 'kana', '📖', '入門講義', '三種文字、母音、圖解＋諧音、易混淆字', ['講義', '入門', '入門講義', '教學', '零基礎', '從頭學', '怎麼開始', '諧音', '圖解'], { route: 'kana-guide' }),
+    T('kana-drill', 'kana', '🎯', '50 音訓練表', '總表背誦、閃卡、測驗、書寫練習紙', ['訓練表', '50音訓練表', '五十音訓練', '書寫', '寫字', '練習紙', '列印', '閃卡', '背五十音'], { route: 'kana-drill' }),
     T('kana-table', 'kana', '🔤', '五十音表', '平假名・片假名，點字聽發音、進單元', ['五十音', '50音', '五十音表', '五十音图', '假名', '假名表', '平假名', '片假名', 'あいうえお', 'アイウエオ', 'aiueo', 'hiragana', 'katakana', 'kana', '注音'], { route: 'path', params: { tab: 'kana' } }),
     T('kana-quiz', 'kana', '✏️', '50 音小考', '聽音選字、看字選音，10 題', ['小考', '假名測驗', '五十音測驗', 'quiz'], { route: 'kana-quiz' }),
     T('kana-battle', 'kana', '⚔️', '假名戰鬥', '答對就攻擊，闖關記假名', ['戰鬥', '闖關', '假名遊戲', 'battle'], { run: () => classic().then(() => { const x = PathExtra.list('kana', 'kana')[0]; if (x) x.go(); else App.go('quest', { id: 'h-a', free: true }); }) }),
@@ -66,7 +68,7 @@
 
   /* ---------- 推薦（固定）：☆ ＞ 身分預設；第 4 格＝上次用的 ---------- */
   const PRESET = {
-    zero: ['kana-table', 'kana-quiz', 'kana-battle'],
+    zero: ['kana-guide', 'kana-drill', 'kana-table'],
     travel: ['phrasebook', 'dialog', 'menu'],
     examLo: ['gram', 'dict', 'chal'], examHi: ['chal', 'gram', 'kb'],
     work: ['biz', 'keigo', 'biz-read'],

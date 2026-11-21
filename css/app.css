@@ -418,3 +418,19 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 .ob-q .ob-n,h1 .ob-n{font-size:var(--fs-md)}
 /* toast 排隊：一次一個 */
 .toast.q{animation:pop .25s}
+
+/* 初學者引導（js/kana-guide.js KanaPrep）：先講義、訓練表，再分行 */
+.kp-wrap{max-width:720px;margin:0 auto;padding:var(--sp-3) var(--sp-2)}
+.kp-box{display:flex;flex-direction:column;gap:var(--sp-2);background:var(--pri-t);border-radius:var(--r-m);padding:var(--sp-3);margin:var(--sp-2) 0 var(--sp-3)}
+.kp-box>b{font-size:var(--fs-md)}
+.kp-step{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:none;border-radius:var(--r-m);background:var(--card);color:var(--text);box-shadow:var(--shadow);padding:var(--sp-3);min-height:64px;font:inherit;text-align:left;cursor:pointer}
+.kp-step>span:first-child{font-size:1.6em;flex:none}
+.kp-step>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}
+.kp-step small{color:var(--muted);font-size:var(--fs-xs)}
+.kp-step i{font-style:normal;color:var(--ok, var(--pri));font-weight:700;font-size:1.3em}
+.kp-step.ok{opacity:.75}
+.kp-skip{align-self:flex-end;border:none;background:none;color:var(--muted);font:inherit;font-size:var(--fs-sm);min-height:44px;cursor:pointer;text-decoration:underline}
+/* 講義、訓練表頁（內容在 Shadow DOM，保留原檔紙本配色） */
+.kg{max-width:1000px;margin:0 auto;padding:var(--sp-2) var(--sp-1) var(--sp-6)}
+.kg-next{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-3)}
+@media print{#top,#nav,.kg-next{display:none!important}}

@@ -507,7 +507,7 @@
     const T = tabs();
     if (params.goal && !params.tab) params = Object.assign({}, params, { tab: params.goal });   // 相容 {goal}
     if (params.tab && T.all.some(t => t[0] === params.tab)) UI.tab = params.tab;
-    if (!UI.tab || !T.all.some(t => t[0] === UI.tab)) UI.tab = (T.main.find(t => t[0] !== 'kana') || T.main[0])[0];
+    if (!UI.tab || !T.all.some(t => t[0] === UI.tab)) UI.tab = zeroKana() ? 'kana' : (T.main.find(t => t[0] !== 'kana') || T.main[0])[0];   // 零基礎預設停在五十音（先講義、訓練表）
     if (params.lv) UI.lv = String(params.lv).toUpperCase();
     const inRest = T.rest.some(t => t[0] === UI.tab), open = UI.open || inRest;
     const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}">${ic} ${esc(n)}</button>`;
@@ -592,9 +592,10 @@
         const rg = region();
         html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 自由逛日本（冒險地圖）</button>`;
       }
-      if (tab === 'kana') html = '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
+      if (tab === 'kana') html = (window.KanaPrep && KanaPrep.need() ? KanaPrep.box('') : '') + '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
     }
     body.innerHTML = html;
+    if (tab === 'kana' && window.KanaPrep) KanaPrep.bind(body, '', () => App.render());
     if (tab === 'kana') extras(body, 'kana', 'kana', true);
     else if (tab === 'exam') extras(body, 'exam', lv.toLowerCase());
   }
@@ -629,6 +630,7 @@
     }
     el.innerHTML = `<div class="pa pa-unit">
       <div class="pa-uh"><span class="pa-ic" aria-hidden="true">${esc(u.icon)}</span><div><h1>${esc(u.title)}</h1><p class="muted">${esc(u.sub)}</p></div>${st ? `<span class="pa-st" aria-label="${st} 星">${starTxt(st)}</span>` : ''}</div>
+      ${u.kind === 'kana' && window.KanaPrep && KanaPrep.need() ? KanaPrep.box(u.id) : ''}
       <div class="pa-prog"><span>${esc(pr)}</span><span class="pa-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></div>
       <p class="pa-note pa-flow">${esc(steps)}・約 ${Math.max(2, Math.round(u.steps.length * 1.5))} 分鐘</p>
       ${shops}
@@ -642,6 +644,7 @@
       ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
     </div>`;
     const root = el.querySelector('.pa-unit');
+    if (window.KanaPrep) KanaPrep.bind(root, u.id, () => drawUnit(el, u));   // 初學者：先講義、訓練表
     root.querySelector('#pa-start').onclick = () => start(u, nxt, complete);
     root.addEventListener('click', e => {
       const s = e.target.closest('[data-ks]'); if (s) { App.speak(s.dataset.ks); return; }
