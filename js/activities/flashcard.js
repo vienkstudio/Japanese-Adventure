@@ -36,7 +36,16 @@
         let i = 0;
         const bind = it => {
           const b = el.querySelector('.ac-say'); if (b) b.onclick = () => ctx.say(it);
-          el.querySelectorAll('[data-g]').forEach(x => x.onclick = () => { ctx.mark(it, +x.dataset.g, { self: true }); i++; show(); });
+          // 自評：記得（≥1）＝小音效＋彈跳，停 0.2 秒讓彈跳看得到；忘了＝溫和、不懲罰
+          let busy = false;
+          el.querySelectorAll('[data-g]').forEach(x => x.onclick = () => {
+            if (busy) return; busy = true;
+            const g = +x.dataset.g;
+            ctx.mark(it, g, { self: true });
+            if (ctx.self) ctx.self(g >= 1, x);
+            const go = () => { i++; show(); };
+            if (g >= 1 && !(ctx.reduced && ctx.reduced())) setTimeout(go, 200); else go();
+          });
         };
         const show = () => {
           if (!ctx.alive()) return resolve({ results: ctx.results });

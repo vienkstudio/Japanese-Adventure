@@ -194,15 +194,129 @@
     return /^[\w-]{11}$/.test(id || '') ? id : '';
   }
 
-  const COVER = /歌ってみた|歌わせていただきました|弾いてみた|叩いてみた|カバー|カラオケ|\b(?:covers?|covered|karaoke)\b|翻唱/i;
-  function coverClean(title) {
-    return String(title || '')
-      .replace(/[【\[（(〔『]([^】\]）)〕』]*)[】\]）)〕』]/g, (m, x) => COVER.test(x) || /mv|pv|official|full|lyrics|歌詞|字幕/i.test(x) ? ' ' : m)
-      .replace(/\s*(?:covered|cover|sung)\s+by\s+.*$/i, '')
-      .replace(/(?:を)?(?:歌ってみた|歌わせていただきました|弾いてみた|カバー|カラオケ|翻唱|\bcovers?\b|\bkaraoke\b)/gi, ' ')
-      .replace(/[\s　]*[|｜#].*$/, '')
-      .replace(/[【\[]([^】\]]{1,20})[】\]]/g, ' ／ $1 ')
-      .replace(/\s{2,}/g, ' ').replace(/^[\s\-–—\/／:：]+|[\s\-–—\/／:：]+$/g, '').trim();
+  // ---------- 影片標題解析（翻唱／歌ってみた／カバー／弾き語り／翻唱…）：純函式，tools/test-cover.mjs 離線測試 ----------
+  const COVER = /歌ってみた|歌わせて(?:いただ|頂)きました|歌いました|弾いてみた|弾き語り|叩いてみた|吹いてみた|演奏してみた|替え歌|カバー|カラオケ|翻唱|\bcover(?:s|ed)?\b|\bkaraoke\b|\bsung\s+by\b/i;
+  const COVER_RM = /(?:を|で)?(?:本気で|全力で|ガチで)?(?:歌ってみた|歌わせて(?:いただ|頂)きました|歌いました|弾いてみた|弾き語り|叩いてみた|吹いてみた|演奏してみた|替え歌で?|カバー|カラオケ|翻唱|\b(?:acoustic\s+|girls?\s+rock\s+|rock\s+|piano\s+|collaboration\s+)?cover(?:s|ed)?\b\.?|\bkaraoke\b|\bcollaboration\b)/gi;
+  const NOISE_RM = /\bofficial\b(?:\s+(?:music\s+)?video|\s+audio|\s+mv|\s+youtube)?|\bmusic\s*(?:video|clip)\b|\blyrics?(?:\s*video)?\b|\b(?:full|tv|short)\s*(?:size|ver(?:sion)?)\b\.?|\bmv\b|\bpv\b|\bfull\b|\bhd\b|\b4k\b|\baudio\b|\bop\b|\bed\b|\bopening\b|\bending\b|フル(?:バージョン)?|歌詞付き?|歌詞|字幕|中字|和訳|コード|ギター|初心者向け|簡単|オープニング(?:テーマ)?|エンディング(?:テーマ)?|主題歌|挿入歌|女性が歌う|男性が歌う|原曲キー|\S*ver(?:sion)?\.(?=\s|$)|\S+\s+ver(?:sion)?\.?(?=\s|$)|\bfeat\.?\s.*$|\bft\.\s.*$/gi;
+  const SEP = /\s*(?:[\/|¦┃│]+|\s[-–—~〜]+\s|[–—]+|:\s)\s*/;
+  const JP = /[ぁ-ゖァ-ヺ一-龯々]/;
+  // 常見原唱歌手（熱門歌單以外也認得出「誰的歌」）
+  const ARTISTS = ['あいみょん', 'YOASOBI', 'Ado', 'LiSA', '米津玄師', 'Kenshi Yonezu', '優里', 'Vaundy', 'King Gnu', 'Official髭男dism', 'Mrs. GREEN APPLE', 'back number', 'RADWIMPS', 'Aimer', 'ヨルシカ', 'ずっと真夜中でいいのに。', 'ずとまろ', 'Creepy Nuts', 'tuki.', 'Eve', 'Uru', '藤井風', 'Fujii Kaze', '星野源', 'スピッツ', 'Mr.Children', 'ONE OK ROCK', 'SEKAI NO OWARI', 'Saucy Dog', 'マカロニえんぴつ', 'imase', 'Tani Yuuki', 'なとり', 'natori', 'Ayase', 'milet', 'Eill', 'wacci', 'DISH//', 'BUMP OF CHICKEN', 'サカナクション', '宇多田ヒカル', '椎名林檎', '中島みゆき', 'MISIA', 'Superfly', 'いきものがかり', 'GReeeeN', '西野カナ', '平井堅', '秦基博', '緑黄色社会', 'Novelbright', 'ハンバート ハンバート', 'Number_i', 'こっちのけんと', '川崎鷹也', '森山直太朗', '中森明菜', '竹内まりや', '松任谷由実', 'Hump Back', 'yama', 'reGretGirl', 'りりあ。', '幾田りら', 'Lilas', 'ちゃんみな', 'XG', 'BE:FIRST', 'King & Prince', 'Snow Man', '嵐', 'AKB48', '乃木坂46', '櫻坂46', '日向坂46', 'あいみょん', 'ClariS', 'Kalafina', '藍井エイル', 'ReoNa', 'Eve', 'まふまふ', 'DECO*27', 'ハチ', 'ピノキオピー', 'じん', 'kemu', 'wowaka'];
+  const latinDesc = x => !JP.test(x) && /^[\x20-\x7e]+$/.test(x) && x.trim().split(/\s+/).length >= 3;
+  const trimSym = x => String(x || '').replace(/^[\s\-–—~〜:・,.。!！?？&＆#＃*＊_]+|[\s\-–—~〜:・,。&＆#＃*＊_]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+  const authorName = a => String(a || '').replace(/\s*(?:-\s*topic|official(?:\s+youtube)?(?:\s+channel)?|channel|チャンネル|ちゃんねる|\bch\.?)\s*$/i, '').trim();
+  // 和熱門清單比對：key 相同＝確定；歌名包含熱門歌名（拉丁字母要整個單字、長度比 ≥ .5）＝候選
+  function hotMatch(k, hot) {
+    let exact = null, part = null;
+    (hot || []).forEach(h => {
+      const hk = key(h[0]); if (!hk || !k) return;
+      if (hk === k) { exact = exact || h; return; }
+      if (hk.length < 3 || !k.includes(hk) || hk.length / k.length < .5) return;
+      if (/^[a-z0-9]+$/.test(hk) && !new RegExp('(^|[^a-z0-9])' + hk + '($|[^a-z0-9])').test(k)) return;
+      part = part || h;
+    });
+    return { exact, part };
+  }
+  // 回傳 { cover, by, track, artist, hot, cands:[{track, artists[], prior, hot}], pieces }
+  function coverParse(title, author, hot) {
+    let s = String(title || '').normalize('NFKC').replace(/[​-‏﻿]/g, '');
+    const cover = COVER.test(s);
+    let by = '';
+    const take = re => { s = s.replace(re, (m, x) => { if (!by && x && trimSym(x)) by = trimSym(x); return ' ¦ '; }); };
+    // 翻唱者明寫：covered by X／cover by X／sung by X／歌：X／Vo. X／/ ver. X／Xが（本気で）「曲」歌ってみた
+    take(/(?:full\s+)?(?:covered|cover|sung)\.?\s*by\s*:?\s*([^\[\]【】()「」『』\/|¦┃│]+?)(?=\s*(?:[\[\]【】()「」『』\/|¦┃│]|\s[-–—]\s|$))/gi);
+    take(/(?:^|[\s¦])(?:vo\.|vocal|歌|唄|歌い手)\s*[:]\s*([^\[\]【】()「」『』\/|¦┃│]+?)(?=\s*(?:[\[\]【】()「」『』\/|¦┃│]|$))/gi);
+    if (cover) take(/(?:^|[\s\/|¦])ver\.\s*([^\s\-~)\]】\/|¦][^\[\]【】()\/|¦]*)/i);
+    if (cover) take(/([^\s¦\[\]【】()「」『』\/|]{2,15}?)が(?=[^「」『』¦]{0,10}?[「『]|(?:本気で|全力で)?歌ってみた)/);
+    // 引號（'Lemon'、“…”）統一成「」；再把「」『』【】[]() 換成佔位符，保留在標題裡的位置
+    s = s.replace(/(^|\s)'([^']{1,40})'(?=\s|$)/g, '$1「$2」').replace(/“([^”]{1,60})”/g, '「$1」');
+    const store = [];
+    const hold = (re, k) => { let prev; do { prev = s; s = s.replace(re, (m, x) => '\u0001' + (store.push({ x, k }) - 1) + '\u0002'); } while (s !== prev); };
+    hold(/[「『]([^「」『』]*)[」』]/g, 'q'); hold(/[【\[]([^【】\[\]]*)[】\]]/g, 'b'); hold(/\(([^()]*)\)/g, 'p');
+    const raw = [];
+    const split = (str, kind) => str.split(/(\u0001\d+\u0002)/).forEach(part => {
+      const m = part.match(/^\u0001(\d+)\u0002$/);
+      if (m) { const st = store[+m[1]]; split(st.x, kind === 'q' || st.k === 'q' ? 'q' : kind === 't' ? st.k : kind); raw.push(null); return; }
+      part.split(SEP).forEach(p => raw.push({ raw: p, k: kind }));
+    });
+    split(s, 't');
+    // 每段清掉翻唱字樣、雜訊（MV、Full、ver.、OP…），記下「這段原本帶翻唱字樣」（多半是翻唱者名）
+    const pieces = [];
+    raw.forEach(r => {
+      if (!r) return;
+      let x = r.raw.replace(/¦/g, ' ');
+      const mark = COVER_RM.test(x); COVER_RM.lastIndex = 0;
+      x = trimSym(x.replace(COVER_RM, ' ').replace(NOISE_RM, ' '));
+      if (!x || !/[\p{L}\p{N}]/u.test(x) || key(x).length < 1) { let j = pieces.length - 1; while (j > 0 && pieces[j].k === 'p') j--; const lp = pieces[j]; if (mark && lp && r.k === 't' && lp.k === 't' && !/[\/|¦┃│]/.test(r.raw)) lp.mark = true; return; }   // 「高橋李依（アイ役）cover.」：只剩翻唱字樣的段，標記給前一段
+      pieces.push({ text: x, k: r.k, mark: mark && r.k !== 'q', i: pieces.length });
+    });
+    const au = key(authorName(author));
+    const isAuthor = p => au.length >= 2 && (key(p.text) === au || (key(p.text).length >= 3 && (au.includes(key(p.text)) || key(p.text).includes(au))));
+    const hotArtists = (hot || []).map(h => key(h[1])).concat(ARTISTS.map(key)).filter(x => x.length >= 2);
+    const knownArtist = p => { const k = key(p.text); return k.length >= 2 && hotArtists.some(a => a === k || (k.length >= 3 && (k.includes(a) || a.includes(k)))); };
+    const hasJP = pieces.some(p => JP.test(p.text));
+    const byKey = key(by);
+    // 歌名候選：引號 ＞ 一般段 ＞ 括號；越前面越優先；拉丁長句（英文翻譯／說明）、韓文、太長的段扣分
+    const cands = [];
+    const addCand = (track, prior, src, hotRow) => {
+      track = trimSym(track); const k = key(track);
+      if (!k || (byKey && k === byKey)) return;
+      const old = cands.find(c => key(c.track) === k);
+      if (old) { if (prior > old.prior) Object.assign(old, { prior, src }); if (hotRow && !old.hot) old.hot = hotRow; return; }
+      cands.push({ track, prior, src, hot: hotRow || null, artists: [] });
+    };
+    pieces.forEach((p, n) => {
+      if (isAuthor(p) && p.k !== 'q') return;
+      let prior = 50 - n * 4 + (p.k === 'q' ? 30 : p.k === 'b' ? -25 : p.k === 'p' ? -18 : 0);
+      if (hasJP && !JP.test(p.text)) prior -= latinDesc(p.text) ? 30 : 4;
+      if (/[가-힯]/.test(p.text)) prior -= 30;
+      if (knownArtist(p)) prior -= 35;
+      if (p.text.length > 25) prior -= 20;
+      const hm = hotMatch(key(p.text), hot);
+      if (hm.exact) addCand(hm.exact[0], prior + 100, p, hm.exact);
+      else {
+        if (hm.part) addCand(hm.part[0], prior + 35, p, hm.part);
+        addCand(p.text, prior, p);
+      }
+      // 沒有分隔符號的「あいみょん マリーゴールド」：空白切開的子段也當候選
+      const words = p.text.split(/\s+/);
+      if (words.length >= 2 && words.length <= 4 && JP.test(p.text) && !latinDesc(p.text)) words.forEach(w => {
+        const wm = hotMatch(key(w), hot);
+        if (wm.exact) addCand(wm.exact[0], prior + 95, p, wm.exact);
+        else if (key(w).length >= 2) addCand(w, prior - 10 + (knownArtist({ text: w }) ? -40 : words.some(o => o !== w && knownArtist({ text: o })) ? 25 : 0), p);
+      });
+    });
+    cands.sort((a, b) => b.prior - a.prior);
+    // 每個候選配原唱：熱門歌原唱 ＞ 標題中已知歌手 ＞ 緊接在歌名後的（）＞ 相鄰段
+    cands.forEach(c => {
+      const at = c.src ? pieces.indexOf(c.src) : -1, list = [];
+      if (c.hot) list.push(c.hot[1]);
+      pieces.filter(knownArtist).forEach(p => list.push(p.text));
+      if (c.src) c.src.text.split(/\s+/).filter(w => knownArtist({ text: w })).forEach(w => list.push(w));   // 「あいみょん マリーゴールド」同一段裡的歌手
+      const nx = pieces[at + 1], pv = pieces[at - 1];
+      if (nx && nx.k === 'p') list.push(nx.text);
+      [nx, pv].forEach(p => { if (p && p.k !== 'b' && (!cover || !isAuthor(p)) && key(p.text) !== byKey && !latinDesc(p.text)) list.push(p.text); });
+      c.artists = [...new Set(list.map(trimSym).filter(a => a && key(a) !== key(c.track)))].slice(0, 4);
+    });
+    const best = cands[0] || null;
+    const p = { cover, by, explicitBy: by, cands, pieces, author: String(author || ''), track: best ? best.track : '', artist: best ? best.artists[0] || '' : '', hot: best && best.hot && best.prior >= 100 ? best.hot : null };
+    p.by = cover ? coverBy(p, p.track, p.artist) : '';
+    return p;
+  }
+  // 翻唱者：明寫（covered by…）＞ 和頻道名相同的段 ＞ 原本帶「cover／歌ってみた」字樣的段 ＞ 歌名後面的一般段 ＞ 歌名前面的一般段 ＞ 歌名後面的【】 ＞ 頻道名
+  function coverBy(p, track, artist) {
+    const fix = x => trimSym(x).slice(0, 24);
+    if (p.explicitBy) return p.explicitBy;
+    const tk = key(baseTitle(track)), ak = key(artist), au = key(authorName(p.author));
+    const at = p.pieces.findIndex(x => tk && (key(x.text) === tk || key(x.text).includes(tk) || (key(x.text).length >= 2 && tk.includes(key(x.text)))));
+    const ok = x => { const k = key(x.text); return k && k !== tk && !(tk && k.includes(tk)) && !(ak && (k === ak || (k.length >= 2 && (ak.includes(k) || k.includes(ak))))) && !latinDesc(x.text) && x.k !== 'q'; };
+    const marked = p.pieces.some(x => ok(x) && x.mark);
+    const pick = p.pieces.find((x, n) => ok(x) && !(marked && x.k === 'b' && n < at) && au.length >= 2 && (key(x.text) === au || au.includes(key(x.text)) || key(x.text).includes(au)) && key(x.text).length >= 2)
+      || p.pieces.find(x => ok(x) && x.mark)
+      || p.pieces.find((x, n) => ok(x) && x.k === 't' && n > at)
+      || p.pieces.find((x, n) => ok(x) && x.k === 't' && n < at && at >= 0)
+      || p.pieces.filter((x, n) => ok(x) && x.k === 'b' && n > at).pop();
+    return fix(pick ? pick.text : authorName(p.author));
   }
   function songTitle(title, author) {
     let name = String(title || '').replace(/\s*[（(【\[]?(?:Official\s+(?:Music\s+)?Video|Music Video|Official Audio|公式MV)[）)】\]]?\s*$/i, '').trim();
@@ -214,8 +328,12 @@
     if (pair) return { track: pair[2].trim(), artist: pair[1].trim() || author };
     return { track: name, artist: author };
   }
+  const hotList = () => (window.Songs && Array.isArray(window.Songs.HOT) ? window.Songs.HOT : []);
+  // 翻唱影片的標題：「歌名（X 翻唱・原唱 Y）」
+  function coverTitle(found, by) { return `${found.track}（${by ? by + ' 翻唱' : '翻唱'}・原唱 ${found.artist}）`; }
 
   // duration：影片長度（秒，可無），用來挑時間軸長度相符的 LRC 版本
+  // 回傳 {title, lines, track, artist, timed, id, dur, cover, coverBy, want, origTitle, note, choices:[{id, track, artist, dur, timed}]}
   async function youtube(id, duration) {
     const address = 'https://www.youtube.com/watch?v=' + id;
     const endpoint = 'https://www.youtube.com/oembed?' + new URLSearchParams({ url: address, format: 'json' });
@@ -223,40 +341,44 @@
     const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
     const result = { title, lines: [] };
     if (!meta || /\b(?:reaction|shorts)\b/i.test(title)) return result;
-    // 翻唱／歌ってみた／カラオケ：去掉標記後用原曲名查歌詞；翻唱者不是原唱，所以不做歌名／歌手對調，
-    // 而且查到的歌名必須和影片標題裡的原曲名相符才採用，否則只匯入影片
-    const cover = COVER.test(title);
-    let track, tries;
-    if (cover) {
-      // 標題切段（／、 - ），去掉【翻唱者】與頻道名，剩下的段落逐一當歌名查
-      const skip = [...title.matchAll(/[【\[]([^】\]]{1,20})[】\]]/g)].map(m => key(m[1])).concat(key(meta.author_name || ''));
-      const segs = [...new Set(coverClean(title).split(/\s*(?:[／\/|｜]|\s[-–—]\s)\s*/).map(baseTitle).filter(x => x && !skip.includes(key(x))))];
-      track = segs[0] || ''; tries = segs.map(x => [x, '']);
-    } else {
-      const st = songTitle(title, meta.author_name || '');
-      track = st.track; tries = [[st.track, st.artist]];
-      if (st.artist) tries.push([st.artist, st.track], [st.track, '']);
+    const p = coverParse(title, meta.author_name || '', hotList());
+    let found = null, choices = [];
+    // 1) 熱門歌：用固定的 LRCLIB 版本（影片長度差很多時改用長度相符的版本）
+    if (p.hot) {
+      const [t, a, , hd, lrc] = p.hot;
+      if (duration && hd && Math.abs(hd - duration) > 10) found = await lyrics(t, a, duration).catch(() => null);
+      if (!found && lrc) found = await lyricsById(lrc).catch(() => null);
+      if (!found) found = await lyrics(t, a, duration).catch(() => null);
     }
-    let found = null;
-    for (const [t, ar] of tries) {
-      if (!t) continue;
-      const r = await lyrics(t, ar, duration).catch(() => null);
-      // 查到的歌名必須和這次查詢的歌名相符（翻唱影片不採用名稱不符的歌詞）
-      if (!r || !sameSong(r.track, t)) continue;
-      if (!found || r.score > found.score) found = r;
-      if (found && found.score >= 14) break;
+    // 2) 多個歌名候選平行查 LRCLIB：查到的歌名要和候選歌名相符；分數＝歌詞分數＋候選先後
+    if (!found && p.cands.length) {
+      const top = p.cands.filter(c => c.prior > -20).slice(0, 4);
+      const lists = await Promise.all(top.map((c, n) => lyricsRank(c.track, c.artists, duration).then(list => list.filter(x => sameSong(x.r.trackName, c.track)).map(x => ({ s: x.s + Math.max(-4, Math.min(4, c.prior / 15)) - n, r: x.r, sc: x.s }))).catch(() => [])));
+      const bySong = new Map();
+      lists.flat().forEach(x => { const k = key(baseTitle(x.r.trackName)); const o = bySong.get(k); if (!o || x.s > o.s) bySong.set(k, x); });
+      const list = [...bySong.values()].sort((a, b) => b.s - a.s);
+      const same = (a, b) => b && sameSong(a.r.trackName.replace(/[【\[][^】\]]*[】\]]/g, ''), b.r.trackName.replace(/[【\[][^】\]]*[】\]]/g, '')) && key(a.r.artistName) === key(b.r.artistName);   // 「【Ado】うっせぇわ」與「うっせぇわ」同一首
+      if (list[0] && (!list[1] || list[0].s - list[1].s >= 3 || (same(list[0], list[1]) && (!list[2] || same(list[0], list[2]) || list[0].s - list[2].s >= 3)))) found = lrcResult(list[0].r, list[0].sc);
+      else choices = list.slice(0, 3).map(x => pickRow(x.r));
+    }
+    // 3) 都對不上：用清理後的標題整句搜尋，給使用者挑
+    if (!found && !choices.length && p.cands.length) {
+      const q = p.cands.slice(0, 2).map(c => c.track).concat(p.artist ? [p.artist] : []).join(' ');
+      const rows = await request(LYRICS + '?' + new URLSearchParams({ q }), 'application/json', 7000).catch(() => []);
+      const seen = new Set();
+      choices = (Array.isArray(rows) ? rows : []).filter(r => r && !r.instrumental && hasJapanese(r.syncedLyrics || r.plainLyrics, 8) && !seen.has(key(r.trackName) + key(r.artistName)) && seen.add(key(r.trackName) + key(r.artistName))).slice(0, 3).map(pickRow);
     }
     if (found) Object.assign(result, found);
-    if (cover) {
-      // 翻唱者：標題【】裡的名字（不是原曲名、不是 cover 字樣）＞頻道名
-      const tags = [...title.matchAll(/[【\[]([^】\]]{1,20})[】\]]/g)].map(m => m[1].trim()).filter(x => x && !COVER.test(x) && !/mv|pv|official|full|lyrics|歌詞|字幕/i.test(x) && !(found && sameSong(found.track, x)) && !(track && sameSong(track, x)));
-      const by = (tags[0] || String(meta.author_name || '').replace(/\s*(?:official|channel|チャンネル|ちゃんねる)\s*$/i, '')).trim().slice(0, 24);
-      result.cover = true; result.want = track; result.coverBy = by;
-      if (found) { result.origTitle = found.title; result.title = `${found.track}（${by ? by + ' 翻唱' : '翻唱'}・原唱 ${found.artist}）`; }
-      if (!found) result.note = `翻唱影片：找不到和「${track || title}」相符的歌詞，只匯入影片。可以按 ✏️ 編輯，用歌名手動搜尋歌詞。`;
+    if (p.cover) {
+      result.cover = true; result.want = found ? found.track : p.track;
+      result.coverBy = found ? coverBy(p, found.track, found.artist) : p.by;
+      if (found) { result.origTitle = found.title; result.title = coverTitle(found, result.coverBy); }
     }
+    if (!found && choices.length) { result.choices = choices; result.note = `${p.cover ? '翻唱影片：' : ''}找到幾首可能的原曲，請選一首。`; }
+    else if (!found && p.cover) result.note = `翻唱影片：找不到和「${p.track || title}」相符的歌詞，只匯入影片。可以按 ✏️ 編輯，用歌名手動搜尋歌詞。`;
     return result;
   }
+  const pickRow = r => ({ id: r.id, track: r.trackName, artist: r.artistName, dur: r.duration ? Math.round(r.duration) : 0, timed: !!r.syncedLyrics });
   // 歌名比對：去掉「-Arrange ver.-」「(TV size)」這類版本標記後，歌名要相同或互相包含
   const VER = /[\s　]*(?:[-－~〜～][^-－~〜～]*?\b(?:ver(?:sion)?|arrange|remix|edit|size)\b\.?[^-－~〜～]*[-－~〜～]?|[（(【\[][^）)】\]]*?\b(?:ver(?:sion)?|arrange|remix|size|edit)\b[^）)】\]]*[）)】\]])/gi;
   function baseTitle(t) { return String(t || '').replace(VER, ' ').replace(/\s{2,}/g, ' ').trim(); }
@@ -282,22 +404,29 @@
   const key = value => String(value || '').normalize('NFKC').toLowerCase().replace(/\(.*?\)|（.*?）/g, '').replace(/[\s\p{P}\p{S}]/gu, '');
   // 依歌名（＋歌手）在 LRCLIB 找歌詞；優先有時間軸的版本。回傳 {title, artist, lines, timed} 或 null
   async function lyrics(track, artist, duration) {
-    track = String(track || '').trim(); artist = String(artist || '').trim();
-    if (!track) return null;
-    const singer = key(artist).replace(/official(?:channel)?$/, '').replace(/topic$/, '').replace(/vevo$/, '');
-    const queries = [{ track_name: track, ...(singer.length >= 2 && { artist_name: artist.replace(/\s*-\s*Topic$/i, '') }) }, { track_name: track }, { q: (track + ' ' + artist).trim() }];
+    const best = (await lyricsRank(track, artist, duration))[0];
+    return best ? lrcResult(best.r, best.s) : null;
+  }
+  // 排名版：artist 可為字串或多個候選原唱；回傳 [{s, r}]（分數 ≥ 4，高到低）
+  async function lyricsRank(track, artist, duration) {
+    track = String(track || '').trim();
+    if (!track) return [];
+    const artists = (Array.isArray(artist) ? artist : [artist]).map(a => String(a || '').replace(/\s*-\s*Topic$/i, '').trim()).filter(Boolean);
+    const singers = artists.map(a => key(a).replace(/official(?:channel)?$/, '').replace(/topic$/, '').replace(/vevo$/, '')).filter(x => x.length >= 2);
+    const queries = [{ track_name: track }, { q: (track + ' ' + (artists[0] || '')).trim() }];
+    if (singers.length) queries.unshift({ track_name: track, artist_name: artists[0] });
     const seen = new Map();
-    for (const q of queries) {
-      const rows = await request(LYRICS + '?' + new URLSearchParams(q), 'application/json', 7000).catch(() => []);
-      if (Array.isArray(rows)) rows.forEach(r => r && r.id != null && !seen.has(r.id) && seen.set(r.id, r));
-    }
+    const get = q => request(LYRICS + '?' + new URLSearchParams(q), 'application/json', 7000);
+    const res = await Promise.all(queries.map(q => get(q).catch(() => new Promise(r => setTimeout(r, 900)).then(() => get(q)).catch(() => []))));   // 失敗（限流、逾時）重試一次
+    res.forEach(rows => { if (Array.isArray(rows)) rows.forEach(r => r && r.id != null && !seen.has(r.id) && seen.set(r.id, r)); });
+    const all = key(track + artists.join(''));
     const score = r => {
       if (!hasJapanese(r.syncedLyrics || r.plainLyrics, 8) || r.instrumental) return -1;
       const a = key(r.artistName), t = key(r.trackName), k = key(track);
       let s = t === k ? 6 : (t.includes(k) || k.includes(t)) && Math.min(t.length, k.length) >= 2 ? 3 : 0;
       if (!s) return -1;
-      if (singer.length >= 2 && a.length >= 2 && (singer.includes(a) || a.includes(singer))) s += 5;
-      else if (singer.length >= 2 && !key(track + artist).includes(a)) s -= 2;
+      if (a.length >= 2 && singers.some(g => g.includes(a) || a.includes(g))) s += 5;
+      else if (singers.length && !all.includes(a)) s -= 2;
       if (/\b(?:live|remix|acoustic|instrumental|ver\.?|version)\b|ライブ|弾き語り/i.test(r.trackName + ' ' + (r.albumName || '')) && !/live|ver/i.test(track)) s -= 3;
       if (r.syncedLyrics) s += 3;
       // 影片長度相符的版本優先；差太多（例：紅蓮華 5 分半的版本配 3 分 55 秒的 MV）扣分；最後一句超過影片長度也扣分
@@ -305,9 +434,7 @@
       if (duration && r.syncedLyrics) { const m = [...r.syncedLyrics.matchAll(/\[(\d{1,2}):(\d{1,2}(?:\.\d+)?)\]/g)].pop(); if (m && +m[1] * 60 + +m[2] > duration + 1) s -= 6; }
       return s;
     };
-    const best = [...seen.values()].map(r => [score(r), r]).filter(x => x[0] >= 4).sort((a, b) => b[0] - a[0])[0];
-    if (!best) return null;
-    return lrcResult(best[1], best[0]);
+    return [...seen.values()].map(r => ({ s: score(r), r })).filter(x => x.s >= 4).sort((a, b) => b.s - a.s);
   }
   // 指定 LRCLIB 版本（熱門精選固定版本，避免挑到長度不符的時間軸）
   async function lyricsById(id) {
@@ -367,5 +494,5 @@
     return items;
   }
 
-  window.LinkImport = { NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverClean, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, lyricsById, parseLRC, songTitle };
+  window.LinkImport = { NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverParse, coverBy, coverTitle, lyricsRank, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, lyricsById, parseLRC, songTitle };
 })();

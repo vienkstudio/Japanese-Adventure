@@ -118,10 +118,11 @@
           draw();
           const check = () => {
             const ok = judge(picked.map(b => b.t), q.accept);
-            ctx.sfx(ok); ctx.mark(it, ok ? (q.second ? 1 : 2) : 0);
+            ctx.mark(it, ok ? (q.second ? 1 : 2) : 0);
             if (!ok && retry && !q.second) qs.push(Object.assign({}, q, { second: true }));
             ansEl.classList.add(ok ? 'ok' : 'ng');
             ansEl.querySelectorAll('button').forEach(x => x.disabled = true);
+            ctx.sfx(ok, ansEl, { big: true });   // 排完自動檢查的完成特效（粒子較多）
             bankEl.innerHTML = '';
             const ro = ctx.showRo(it) ? ctx.romaji(it) : '', kn = ctx.showKana() ? ctx.kana(it) : '';
             const fb = el.querySelector('.ac-fb');

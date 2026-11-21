@@ -100,3 +100,31 @@
 .ac-chip{display:inline-flex;flex-direction:column;align-items:center;gap:0;line-height:1.25}
 .ac-chip-ro{font-size:var(--fs-xs);font-weight:600;color:var(--muted)}
 .ac-chip.on .ac-chip-ro{color:var(--pri-d)}
+
+/* v13：打擊感（答對彈跳綠光、答錯搖晃紅框、整卡輕晃、正解高亮、連擊計數、結算星星） */
+.ac-combo{flex:none;padding:2px 10px;border-radius:var(--r-pill);background:var(--acc-t);color:var(--acc-d);font-weight:800;font-size:var(--fs-sm);white-space:nowrap;transition:opacity .4s,transform .4s}
+.ac-combo[hidden]{display:none}
+.ac-combo.out{opacity:0;transform:translateY(-6px)}
+.ac-combo.pop{animation:acPop .35s ease-out}
+.ac-pop{animation:acPop .4s ease-out}
+.ac-opts .btn.ok.ac-pop,.ac-wb-ans.ok.ac-pop{box-shadow:0 0 0 3px var(--ok-t),0 0 16px var(--ok)}
+.ac-wob{animation:acWob .4s}
+.ac-opts .btn.ng{border-width:2px}
+.ac-shk{animation:shake .35s}
+.ac-glow{animation:acGlow .9s ease-out 2}
+@keyframes acPop{0%{transform:scale(1)}35%{transform:scale(1.08)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+@keyframes acWob{0%,100%{transform:none}20%{transform:translateX(-7px) rotate(-1deg)}40%{transform:translateX(6px) rotate(1deg)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes acGlow{0%{box-shadow:0 0 0 0 var(--ok)}60%{box-shadow:0 0 0 6px var(--ok-t)}100%{box-shadow:0 0 0 0 transparent}}
+.ac-stars{display:flex;justify-content:center;gap:var(--sp-2);font-size:2.6em;line-height:1;min-height:1.2em}
+.ac-star{display:inline-block;color:var(--muted);opacity:.5}
+.ac-star.on{opacity:1;animation:acStar .55s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(.25s + var(--i) * .38s)}
+@keyframes acStar{0%{transform:translateY(-80px) scale(.4) rotate(-40deg);opacity:0}60%{transform:translateY(6px) scale(1.25) rotate(8deg);opacity:1}100%{transform:none;opacity:1}}
+.ac-gold .ac-stars{filter:drop-shadow(0 0 10px var(--fx1)) drop-shadow(0 0 22px var(--fx1))}
+.ac-gold .ac-big,.ac-gold .td-big{text-shadow:0 0 18px var(--fx1)}
+.ac-best{margin:0;font-weight:700;color:var(--acc-d);font-size:var(--fs-md)}
+.ac-xp.pop{animation:acPop .4s ease-out}
+.ac-xpn{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){
+  .ac-pop,.ac-wob,.ac-shk,.ac-glow,.ac-combo.pop,.ac-xp.pop,.ac-star.on{animation:none}
+  .ac-combo{transition:none}
+}

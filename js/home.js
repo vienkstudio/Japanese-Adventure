@@ -394,6 +394,7 @@
       <button type="button" class="btn block" id="tdHome">回首頁</button>
       </div>
     </section>`;
+    { const ts = el.querySelector('.td-sum'); if (ts && R.sm && window.Activity && Activity.celebrate) { const h = document.createElement('div'); ts.after(h); Activity.celebrate(h, R.sm, el.querySelector('.xpgain')); } }   // 星星、煙火、XP 往上跳
     const ap = el.querySelector('#tdApply');
     if (ap) ap.onclick = () => {
       const d = dayRec();

@@ -278,6 +278,8 @@
     const order = phraseFirst ? ['phrases', 'vocab'] : ['vocab', 'phrases'];
     for (const k of order) for (const s of sc) { arr(s[k]).forEach(w => push(w, k === 'vocab' ? 'vocab' : 'phrase', s.name)); if (out.length >= n) return out; }
     const W = window.WORLD;
+    const X = window.SCENE_SHOP;   // 旅遊包店家品項（data/scene-ext.js）
+    if (X) for (const k in X) { arr(X[k].vocab).forEach(w => push(w, 'vocab', '🧳 店家品項')); if (out.length >= n) return out; }
     if (W && W.shops) for (const sid in W.shops) { arr(W.shops[sid].items).forEach(it => push(it, 'vocab', W.shops[sid].name || '冒險')); if (out.length >= n) break; }
     return out;
   }
@@ -371,6 +373,8 @@
     const B = window.BIZ; if (!B) return [];
     if (Array.isArray(B)) return B;
     if (Array.isArray(B.items)) return B.items;
+    // data/biz/units-*.js：依單元順序取 單字 → 句子（路線未載入時的今日課新學來源）
+    if (Array.isArray(B.units)) return [].concat(...B.units.map(u => arr(u.vocab).map(v => Object.assign({ type: 'vocab', lv: u.lv, source: '💼 ' + u.title }, v)).concat(arr(u.phrases).map(v => Object.assign({ type: 'phrase', lv: u.lv, hint: v.when || '', source: '💼 ' + u.title }, v)))));
     const o = []; Object.keys(B).forEach(k => { const v = B[k]; if (Array.isArray(v)) o.push(...v); else if (v && Array.isArray(v.items)) o.push(...v.items); });
     return o;
   }

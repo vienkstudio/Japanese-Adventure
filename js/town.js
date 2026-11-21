@@ -548,11 +548,14 @@
           <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
           <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>
         <div class="panel" id="tPane"></div>`;
-      const home = params.trip ? { label: '本站下一步 ➜', route: 'trip-stop' } : params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
+      const FP = params.from === 'path';   // 從路線旅遊包「更多練習」進來：返回＝回路線（頂列 ←），頁內不放返回鍵
+      const home = FP ? { label: '回路線' } : params.trip ? { label: '本站下一步 ➜', route: 'trip-stop' } : params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
       const saveSit = st => { if (params.sit && window.PracticeAPI) PracticeAPI.setSit(params.sit, st); };
       el.querySelector('#tBack').textContent = params.trip ? '🗺️ 回地圖' : params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
       if (params.trip) home.back = 1;
-      el.querySelector('#tBack').onclick = () => params.trip ? App.go('trip') : App.go(home.route, home.params);
+      el.querySelector('#tBack').onclick = () => params.trip ? App.go('trip') : home.route ? App.go(home.route, home.params) : App.back();
+      if (FP) el.querySelector('#tBack').remove();
+      const toHome = () => home.route ? App.go(home.route, home.params) : App.back();
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
       if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {
@@ -565,8 +568,8 @@
           App.save();
           const r = App.reward('drill:' + kind + ':' + list.map(s => s.id).join(',') + ':' + (params.dialog != null ? params.dialog : 'r'), stars, KN[kind].replace(/^\S+\s/, ''));
           pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>練習完成</h3><p>一次答對 ${res.first} / ${res.total}</p>
-            <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`;
-          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params);
+            <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">${esc(home.label)}</button></div>`;
+          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = toHome;
           App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: home });
         }, { mic: kind === 'speak', shadow: kind === 'shadow' });
         return;
@@ -575,7 +578,7 @@
       if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
       quizRun(pane, P, {
         count: params.count || 10, reason: (KN[kind] || '⚡ 測驗').replace(/^\S+\s/, ''), id: 'drill:' + kind + ':' + list.map(s => s.id).join(','), onStars: saveSit,
-        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">🎯 練習選單</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = () => App.go(home.route, home.params); },
+        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">${esc(home.label)}</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = toHome; },
         retry: again, back: home
       });
     }

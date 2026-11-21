@@ -326,10 +326,19 @@
 
   // 狀況題：支援物件格式 {scene, prompt, translation, answers, explanation, reading}；舊的位置陣列自動轉換
   const evObj = e => Array.isArray(e) ? { scene: e[0], prompt: e[1], translation: e[2], answers: e[3], explanation: e[4], reading: e[5] } : e;
-  function renderEncounter(el) {
-    const level = selectedLevel();
-    const run = level && tripRun(level), stop = run && stopAt(run.tile);
-    if (!stop || !stop.events[level.id]) { App.go('trip'); return; }
+  // {stop, from:'path'}：路線旅遊包「更多練習」直接進某站狀況題（不動 13 站旅程存檔，返回＝回路線）
+  function renderEncounter(el, params) {
+    params = params || {};
+    const FP = params.from === 'path' && params.stop;
+    let level = selectedLevel(), run, stop;
+    if (FP) {
+      stop = stops.find(s => s.id === params.stop);
+      if (stop && !stop.events[level.id]) level = levels.find(l => stop.events[l.id]) || level;
+      if (!stop || !stop.events[level.id]) { App.back(); return; }
+    } else {
+      run = level && tripRun(level); stop = run && stopAt(run.tile);
+      if (!stop || !stop.events[level.id]) { App.go('trip'); return; }
+    }
     const events = stop.events[level.id];
     const G = window.Game || { sfx() { }, floatText() { }, burst() { }, shake() { } };
     let at = 0, correct = 0, hearts = 3, combo = 0, best = 0, wrongItems = [];
@@ -339,12 +348,12 @@
       return `<div class="trip-map-header"><div><p class="trip-eyebrow">${esc(tagOf(level))}・${esc(level.label)}</p>
         <h1>${stop.icon} ${esc(stop.name)}</h1></div>
         <div class="trip-hud"><span class="trip-hearts">${'❤️'.repeat(hearts)}${'🖤'.repeat(3 - hearts)}</span>${combo >= 2 ? `<span class="trip-combo">🔥${combo}</span>` : ''}</div>
-        <button class="trip-secondary" type="button" id="trip-back">🗺️ 地圖</button></div>`;
+        ${FP ? '' : '<button class="trip-secondary" type="button" id="trip-back">🗺️ 地圖</button>'}</div>`;
     }
 
     function begin(rendered) {
       el.innerHTML = `<section class="trip-shell trip-event">${makeHeader()}${rendered}</section>`;
-      el.querySelector('#trip-back').onclick = () => App.go('trip');
+      const tb = el.querySelector('#trip-back'); if (tb) tb.onclick = () => App.go('trip');
     }
     const restart = () => { at = 0; correct = 0; hearts = 3; combo = 0; best = 0; wrongItems = []; showQuestion(true); };
 
@@ -352,6 +361,18 @@
       const n = events.length;
       const stars = hearts <= 0 ? 0 : correct === n ? 3 : correct >= n - 1 ? 2 : correct * 2 >= n ? 1 : 0;
       const passed = stars > 0;
+      if (FP) {
+        const gained = App.reward('trip-ev:' + stop.id + ':' + level.id, stars, stop.name + '・狀況題').gained;
+        App.showResult({
+          title: hearts <= 0 ? '💔 愛心用完了' : passed ? `${stop.icon} ${stop.name} 狀況題通過！` + (best >= 2 ? `（最高 ${best} 連擊）` : '') : '再試一次',
+          stars, correct, total: n, gained, wrong: wrongItems, retry: restart, back: { label: '回路線' }
+        });
+        begin(`<div class="trip-result"><p class="trip-eyebrow">${correct}／${n} 題答對</p>
+          <h2 tabindex="-1" id="trip-summary">${passed ? '通過！' : '再試一次'} ${starStr(stars)}</h2>
+          <button type="button" class="trip-secondary" id="trip-retry">再玩一次</button></div>`);
+        el.querySelector('#trip-retry').onclick = restart;
+        return;
+      }
       const prevStop = stopStars(level, run, stop);
       const prevEv = (run.stars && run.stars[stop.id]) || 0;
       if (correct > (run.scores[stop.id] || 0)) run.scores[stop.id] = correct;

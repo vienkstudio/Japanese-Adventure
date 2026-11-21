@@ -211,7 +211,7 @@
           const ok = +b.dataset.o === q.ans;
           el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (+x.dataset.o === q.ans) x.classList.add('ok'); });
           if (!ok) b.classList.add('ng');
-          ctx.sfx(ok);
+          ctx.sfx(ok, b);
           if (it) ctx.mark(it, ok ? (cur.second ? 1 : 2) : 0);
           if (!ok && retry && !cur.second) qs.push({ q: Object.assign({}, q), second: true });
           const fb = el.querySelector('.ac-fb');
@@ -264,7 +264,7 @@
             const ok = +b.dataset.o === q.ansI;
             el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (+x.dataset.o === q.ansI) x.classList.add('ok'); });
             if (!ok) b.classList.add('ng');
-            ctx.sfx(ok);
+            ctx.sfx(ok, b);
             ctx.mark(it, ok ? (cur.second ? 1 : 2) : 0);
             if (!ok && retry && !cur.second) queue.push({ it, i: cur.i, second: true, mode: q.mode });
             const fb = el.querySelector('.ac-fb');

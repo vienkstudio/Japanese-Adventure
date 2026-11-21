@@ -139,6 +139,63 @@
   const sayText = it => typeof it === 'string' ? it : it.say || (it.type === 'kana' ? (it.kana || it.jp) : it.kana && isKanaStr(it.kana) ? it.kana : it.jp);
   const say = it => { try { App.speak(sayText(it)); } catch (e) { } };
   const sfx = ok => { if (window.Game && has(Game, 'sfx')) try { Game.sfx(ok ? 'ok' : 'ng'); } catch (e) { } };
+
+  /* ---------------- 打擊感（每個 session 一份；音效／震動交給 Game，尊重 Game.sfxOn 與 prefers-reduced-motion） ----------------
+     hit(ok, target, opt)：答對＝音效（3 連起 combo 升調）＋輕震＋按鈕彈跳綠光＋粒子＋浮字 +1／🔥n＋上方連擊計數
+                          答錯＝錯誤音＋雙震＋按鈕搖晃紅框＋整卡輕晃＋正解高亮，連擊歸零
+     self(good, target)：字卡自評（記得＝小音效＋彈跳；忘了＝溫和的點擊音，不扣連擊） */
+  const reducedMotion = () => { try { if (window.Game && has(Game, 'reduced')) return Game.reduced(); return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
+  const gcall = (n, ...a) => { if (window.Game && has(Game, n)) try { return Game[n](...a); } catch (e) { } return undefined; };
+  const later = (f, ms) => { try { return setTimeout(f, ms); } catch (e) { return 0; } };
+  function bounce(el, cls) {
+    if (!el || !el.classList) return;
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+    later(() => { try { el.classList.remove(cls); } catch (e) { } }, 700);
+  }
+  function makeFX(root) {
+    let combo = 0, best = 0, hideT = 0;
+    const hud = () => root && root.querySelector ? root.querySelector('.ac-combo') : null;
+    const showHud = () => {
+      const h = hud(); if (!h) return;
+      clearTimeout(hideT);
+      if (combo >= 2) {
+        h.textContent = '🔥 ' + combo + ' 連擊'; h.hidden = false; h.classList.remove('out');
+        bounce(h, 'pop');
+      } else if (!h.hidden) {
+        h.classList.add('out');
+        hideT = later(() => { h.hidden = true; h.classList.remove('out'); }, 450);
+      }
+    };
+    const cardOf = t => (t && t.closest && t.closest('.ac-stage') ? t.closest('.ac-stage').querySelector('.ac-card') : null) || (root && root.querySelector ? root.querySelector('.ac-stage .ac-card') : null);
+    return {
+      get combo() { return combo; }, get best() { return best; },
+      hit(ok, target, opt) {
+        opt = opt || {};
+        if (ok) {
+          combo++; if (combo > best) best = combo;
+          gcall('sfx', combo >= 3 ? 'combo' : 'ok', combo); gcall('vibrate', 15);
+          if (target) {
+            bounce(target, 'ac-pop');
+            gcall('burst', target, opt.big ? 20 : 12);
+            gcall('floatText', target, combo >= 3 ? '🔥' + combo : '+1');
+          }
+          gcall('bump', 'ok');   // 每日任務「答對 20 題」
+        } else {
+          combo = 0;
+          gcall('sfx', 'ng'); gcall('vibrate', [60, 40, 60]);
+          if (target) { bounce(target, 'ac-wob'); gcall('floatText', target, '✗', true); }
+          if (!reducedMotion()) bounce(cardOf(target), 'ac-shk');
+          const right = root && root.querySelectorAll ? [...root.querySelectorAll('.ac-opts .btn.ok')] : [];
+          right.forEach(b => bounce(b, 'ac-glow'));
+        }
+        showHud();
+      },
+      self(good, target) {
+        if (good) { gcall('sfx', 'soft'); gcall('vibrate', 10); if (target) { bounce(target, 'ac-pop'); gcall('floatText', target, '✓'); } }
+        else gcall('sfx', 'tap');
+      }
+    };
+  }
   const profLv = () => { try { return App.profile().lv || 'zero'; } catch (e) { return 'zero'; } };
   // N3 以上：作答前不附中文
   const hideZh = it => { const l = (it && it.lv) || String(profLv()).toUpperCase(); return ['N3', 'N2', 'N1'].includes(String(l).toUpperCase()); };
@@ -194,7 +251,7 @@
   /* ---------------- runner ---------------- */
   function frameHTML(title) {
     return `<section class="ac" aria-label="${esc(title)}">
-      <div class="ac-top"><div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div></div></div><span class="ac-n" aria-live="polite"></span></div>
+      <div class="ac-top"><div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div></div></div><span class="ac-combo" aria-hidden="true" hidden></span><span class="ac-n" aria-live="polite"></span></div>
       <p class="ac-t"></p>
       <div class="ac-stage"></div>
     </section>`;
@@ -211,6 +268,7 @@
       const exKey = s => String(s || '').replace(/<[^>]*>/g, '').replace(/[\s　。．.！!？?、，,「」『』（）()〜～_＿]/g, '');
       el.innerHTML = frameHTML(title);
       const root = el.querySelector('.ac'), bar = el.querySelector('.ac-bar'), stage = el.querySelector('.ac-stage');
+      const fx = makeFX(root);
       const setBar = (k, i, n) => {
         const f = steps.length ? (k + (n ? Math.min(i, n) / n : 0)) / steps.length : 1;
         bar.firstElementChild.style.width = Math.round(f * 100) + '%'; bar.setAttribute('aria-valuenow', Math.round(f * 100));
@@ -218,7 +276,7 @@
       };
       const finish = quit => {
         if (closed) return null; closed = true;
-        const s = Object.assign(summarize(all, byId), { title, quit: !!quit, meta: metas, due: dueTomorrow(), xp: 0, unfinished: unfinished || '' });
+        const s = Object.assign(summarize(all, byId), { title, quit: !!quit, meta: metas, due: dueTomorrow(), xp: 0, unfinished: unfinished || '', combo: fx.best });
         // 已學會（隔天以上還記得）用 Learn 的判定，不用本次答對數
         try { if (has(Learn, 'isLearned')) s.learned = [...new Set(all.map(r => r.id))].filter(id => Learn.isLearned(id)).length; } catch (e) { }
         if (unfinished) s.stars = 0;
@@ -291,7 +349,10 @@
               return r;
             },
             progress: (i, n) => setBar(k, i, n),
-            say, sayText, romaji, kana: kanaOf, hideZh, sfx, item, itemsOf, showRo, showKana, assist,
+            say, sayText, romaji, kana: kanaOf, hideZh, item, itemsOf, showRo, showKana, assist,
+            // 作答回饋：sfx(ok, 按到的元素, {big}) ＝ 全套打擊感；self(good, 元素) ＝ 字卡自評的小回饋
+            sfx: (ok, target, o) => fx.hit(!!ok, target, o), hit: (ok, target, o) => fx.hit(!!ok, target, o), self: (good, target) => fx.self(good, target),
+            reduced: reducedMotion,
             // 例句去重：useEx(jp) 登記；exUsed(jp) 是否已出現過；dupText(text) 題目文字（含挖空）是否和已出現的例句重複
             useEx: jp => { const x = exKey(jp); if (x.length >= 4 && !exUsed.has(x)) { exUsed.add(x); exRaw.push(String(jp)); } },
             usedEx: () => exRaw.slice(),
@@ -338,7 +399,8 @@
   }
   function endScreen(root, s, opts, leave) {
     const nx = s.unfinished ? null : opts.next;
-    root.className = 'ac ac-end';
+    const showStars = !s.unfinished && s.total > 0;
+    root.className = 'ac ac-end' + (showStars && s.stars >= 3 ? ' ac-gold' : '');
     root.innerHTML = `<p class="ac-big" aria-hidden="true">${s.unfinished ? '🏪' : !s.total ? '🙂' : s.rate >= 70 ? '🎉' : '💪'}</p>
       <h1>${esc(s.unfinished ? `「${s.unfinished}」還沒完成，下次從這裡繼續` : s.total ? (s.rate >= 70 ? '完成了！' : '完成！再複習一次會更熟') : '這一組沒有題目')}</h1>
       <div class="ac-sum">
@@ -347,7 +409,8 @@
         <div><b>${s.due}</b><small>明天到期</small></div>
         <div><b>🔥${s.streak}</b><small>連勝天數</small></div>
       </div>
-      ${s.xp ? `<p class="ac-xp">+${s.xp} XP</p>` : ''}
+      ${showStars ? starsHTML(s) : ''}
+      ${s.xp ? `<p class="ac-xp">+<span class="ac-xpn">${s.xp}</span> XP</p>` : ''}
       ${s.wrong.length ? `<div class="ac-wrong"><p>要再記一下（已排進複習）</p><ul>${s.wrong.slice(0, 6).map(w => `<li><span class="jp" lang="ja">${esc(w.type === 'kana' ? (w.kana || w.jp) : w.jp)}</span><small>${esc(w.type === 'kana' ? romaji(w) : w.zh)}</small></li>`).join('')}</ul></div>` : ''}
       <div class="ac-btns">
         ${nx && nx.route ? `<button type="button" class="btn primary block" id="acNext">${esc(nx.label || '下一步 ▶')}</button>` : ''}
@@ -355,6 +418,37 @@
       </div>`;
     const b = root.querySelector('#acNext'); if (b) b.onclick = () => App.go(nx.route, nx.params || {});
     root.querySelector('#acDone').onclick = leave;
+    if (showStars) endFX(root, s);
+  }
+  const starsHTML = s => `<div class="ac-stars" role="img" aria-label="${s.stars || 0} 顆星">${[0, 1, 2].map(i => `<span class="ac-star${i < s.stars ? ' on' : ''}" style="--i:${i}" aria-hidden="true">${i < s.stars ? '⭐' : '☆'}</span>`).join('')}</div>
+      ${s.combo >= 2 && s.total ? `<p class="ac-best">🔥 最佳連擊 <b>${s.combo}</b></p>` : ''}`;
+  // 給自己畫結算的頁面（例：今日課 end:false）：在 host 開頭插入星星＋最佳連擊並播放同一套演出；xpEl 給了就做 XP 跳數
+  function celebrate(host, s, xpEl) {
+    if (!host || !s || !s.total || s.unfinished) return;
+    if (host.classList && s.stars >= 3) host.classList.add('ac-gold');
+    try { host.insertAdjacentHTML('afterbegin', starsHTML(s)); } catch (e) { return; }
+    if (xpEl && s.xp && !(xpEl.querySelector && xpEl.querySelector('.ac-xpn'))) xpEl.innerHTML = `+<span class="ac-xpn">${+s.xp}</span> XP`;
+    endFX(host, s);
+  }
+  // 結算演出：星星逐顆落下＋音效 → ≥2 星煙火（3 星加金色光暈＝CSS .gold）→ XP 數字往上跳
+  function endFX(root, s) {
+    const red = reducedMotion(), n = s.stars || 0, gap = red ? 0 : 380;
+    for (let i = 0; i < n; i++) later(() => gcall('sfx', 'star', i), 250 + i * gap);
+    later(() => {
+      if (n >= 2) { gcall('sfx', 'win'); gcall('vibrate', [30, 50, 30]); gcall('confetti', 30 + n * 20); }
+      else if (n === 1) gcall('sfx', 'coin');
+    }, 250 + n * gap);
+    const x = root.querySelector ? root.querySelector('.ac-xpn') : null, to = +s.xp || 0;
+    if (!x || !to || red || typeof requestAnimationFrame !== 'function') return;
+    x.textContent = '0';
+    const t0 = Date.now() + 250 + n * gap, dur = Math.min(900, 300 + to * 15);
+    const step = () => {
+      if (!x.isConnected) return;
+      const f = Math.max(0, Math.min(1, (Date.now() - t0) / dur));
+      x.textContent = String(Math.round(to * (1 - Math.pow(1 - f, 3))));
+      if (f < 1) requestAnimationFrame(step); else { gcall('sfx', 'coin'); bounce(x.parentNode, 'pop'); }
+    };
+    requestAnimationFrame(step);
   }
   function run(el, opts) {
     opts = opts || {};
@@ -432,7 +526,7 @@
   }
 
   window.Activity = {
-    register, run, session, need, get: t => DEFS[t] || null, types: () => Object.keys(DEFS), card,
+    register, run, session, need, get: t => DEFS[t] || null, types: () => Object.keys(DEFS), card, celebrate,
     item, items: itemsOf, resolve, loadCSS, romaji, kanaOf, say, summarize, hideZh, isKanaStr, showRo, showKana, unMacron,
     _test: { typeOfId, exNorm }
   };

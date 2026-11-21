@@ -603,12 +603,12 @@
     params = params || {};
     { const host = el; el = document.createElement('div'); host.appendChild(el); }   // 換頁時舊計時器能偵測到自己已脫離畫面
     const id = params.id, mi = +params.m || 0, ms = menusOf(id), m = ms[mi], sc = findScene(id);
-    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => App.go('practice-map'); return; }
-    const LV = params.lv || '', TRIP = !!params.trip;
+    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => params.from === 'path' ? App.back() : App.go('practice-map'); return; }
+    const LV = params.lv || '', TRIP = !!params.trip, FP = params.from === 'path';   // FP：從路線旅遊包「更多練習」進來，返回＝回路線
     // 依程度調整：耐心秒數、中文看板、讀音提示、小意外次數
     const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: App.profile().assist !== 'none', inc: 1 };
     if (LV) GOPT.zh = DIFF.zh;
-    const back = TRIP ? { label: '本站下一步 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
+    const back = FP ? { label: '回路線' } : TRIP ? { label: '本站下一步 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
     const key = id + ':m' + mi + (LV ? '@' + LV : ''), G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
     const N = m.type === 'qa' && m.seq ? Math.min(8, m.qs.length) : 5, PAT = DIFF.pat;   // 旅伴人數；依序對答的情境＝每個流程一位
     // 真實小意外：每局必出一次（店員講太快要請他重說／品項賣完）
@@ -627,7 +627,7 @@
       <div class="g-opt"${LV ? ' style="display:none"' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
       <div class="panel${GOPT.zh ? '' : ' m-noz'}${DIFF.aid ? '' : ' t-noaid'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
-    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.go(TRIP ? 'trip' : back.route, TRIP ? null : back.params) }]);
+    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => FP ? App.back() : App.go(TRIP ? 'trip' : back.route, TRIP ? null : back.params) }]);
     $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
     $('#gZh').onchange = e => { GOPT.zh = e.target.checked; pane.classList.toggle('m-noz', !GOPT.zh); };
     $('#gHelp').onclick = () => guide(true);
@@ -1044,11 +1044,11 @@
       const xp = !stars ? 0 : stars > prevSt ? XPS[stars] - XPS[prevSt] + (stars === 3 ? 10 : 0) : 3;
       const r = xp ? App.addXP(xp, stars === 3 && prevSt < 3 ? '情境挑戰・首次三星' : '情境挑戰') : { gained: 0 };
       if (stars) { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[id] = true; App.save(); }
-      const nx = TRIP ? back : mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: { id, m: mi + 1 } } : back;
+      const nx = TRIP ? back : mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: Object.assign({}, params, { id, m: mi + 1 }) } : back;
       pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💀'}</div><h3>${stars ? '任務完成！' : '旅伴們生氣了…'}</h3><p>💯 ${S.score} 分・最高 🔥${S.best} 連擊</p>
         <button class="btn" id="mAg">🔄 再玩一次</button><button class="btn primary" id="mSt">${back.label}</button></div>`;
       pane.querySelector('#mAg').onclick = () => App.go('menu', params);
-      pane.querySelector('#mSt').onclick = () => App.go(back.route, back.params);
+      pane.querySelector('#mSt').onclick = () => back.route ? App.go(back.route, back.params) : App.back();
       App.showResult({
         title: (stars ? `${m.name} 完成！` : '挑戰失敗，再試一次！') + `（💯 ${S.score}）`, stars, correct: S.ok, total: S.tot, gained: r.gained, wrong: S.wrong,
         retry: () => App.go('menu', params), back: TRIP ? { label: '🗺️ 回地圖', route: 'trip' } : back, next: stars ? nx : null

@@ -1,4 +1,4 @@
-/* 我的（路由 me，導覽 4）：今日到期與複習（→ review）、已學會統計（Learn 狀態）、連勝與成就、御朱印帳、設定、🏯 經典練習、備份。
+/* 我的（路由 me，導覽 4）：今日到期與複習（→ review）、已學會統計（Learn 狀態）、連勝與成就、御朱印帳、設定、備份（經典練習已拆進路線各旅遊包與五十音分頁）。
    只讀 Learn／App／Game 的狀態，不另存資料；成就由現有進度即時計算。樣式 css/lookup.css（前綴 my-）。
    今天到期＝Learn.due(15)（與首頁今日課同一函式、同一上限）。
    「學會」＝Learn.stats().known（review 以上、隔天以上還記得；與複習頁同一函式）。 */
@@ -83,7 +83,6 @@
       <div class="my-rows">
         ${hasGos ? `<button type="button" class="st-row" data-a="gos">⛩️ 御朱印帳<small>${stampN()} 間店 ›</small></button>` : ''}
         <button type="button" class="st-row" data-go="settings">⚙️ 設定<small>程度、目的、外觀、語音 ›</small></button>
-        <button type="button" class="st-row" data-go="classic">🏯 經典練習<small>舊版旅程、關卡、小遊戲 ›</small></button>
         <button type="button" class="st-row" data-a="bk">💾 備份／還原<small>${App.saveStatus === 'cloud' ? '已雲端存檔' : '存在這台裝置'}</small></button>
       </div>
     </section>`;

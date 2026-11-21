@@ -35,9 +35,14 @@
     win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, i === 3 ? 0.4 : 0.12, 'triangle', 0.15)),
     lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, i * 0.15, 0.2, 'triangle', 0.12)),
     lvup: () => [523, 587, 659, 784, 880, 1047, 1319].forEach((f, i) => tone(f, i * 0.07, 0.14, 'square', 0.06)),
-    combo: () => { tone(880, 0, 0.06, 'square', 0.05); tone(1175, 0.06, 0.06, 'square', 0.05); tone(1568, 0.12, 0.12, 'square', 0.05); }
+    // combo(n)：連擊越高音越高（3 連起每連升半音，最多升 12 個半音）
+    combo: n => { const k = Math.pow(2, Math.min(12, Math.max(0, (n || 3) - 3)) / 12); tone(880 * k, 0, 0.06, 'square', 0.05); tone(1175 * k, 0.06, 0.06, 'square', 0.05); tone(1568 * k, 0.12, 0.12, 'square', 0.05); },
+    soft: () => { tone(784, 0, 0.06, 'triangle', 0.09); tone(1175, 0.05, 0.1, 'triangle', 0.08); },
+    star: i => { const f = [784, 988, 1319][Math.max(0, Math.min(2, i || 0))]; tone(f, 0, 0.08, 'square', 0.06); tone(f * 1.5, 0.07, 0.18, 'triangle', 0.1); }
   };
-  function sfx(name) { if (!sfxOn) return; try { SFX[name] && SFX[name](); } catch (e) { } }
+  function sfx(name, arg) { if (!sfxOn) return; try { SFX[name] && SFX[name](arg); } catch (e) { } }
+  // 系統「減少動態效果」：不放粒子、煙火、搖晃（浮字與音效照常）
+  function reduced() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
   function vibrate(p) { if (sfxOn && navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) try { navigator.vibrate(p); } catch (e) { } }
 
   /* ---------------- 特效 ---------------- */
@@ -51,6 +56,7 @@
     fx().appendChild(d); setTimeout(() => d.remove(), 950);
   }
   function burst(el, n) {
+    if (reduced() || !el) return;
     const c = center(el), cols = [1, 2, 3, 4, 5].map(i => 'var(--fx' + i + ')');
     for (let i = 0; i < (n || 14); i++) {
       const s = document.createElement('div'); s.className = 'fx-spark';
@@ -61,6 +67,7 @@
     }
   }
   function confetti(n) {
+    if (reduced()) return;
     const cols = [1, 2, 3, 4, 5, 6].map(i => 'var(--fx' + i + ')');
     for (let i = 0; i < (n || 60); i++) {
       const s = document.createElement('div'); s.className = 'fx-conf';
@@ -71,6 +78,7 @@
     }
   }
   function shake() {
+    if (reduced()) return;
     document.body.classList.remove('fx-shake', 'fx-flash'); void document.body.offsetWidth;
     document.body.classList.add('fx-shake', 'fx-flash');
     setTimeout(() => document.body.classList.remove('fx-shake', 'fx-flash'), 400);
@@ -229,7 +237,7 @@
   Tracker.mark = function (id, ok) { const r = _mark(id, ok); bump('review'); return r; };
 
   window.Game = {
-    sfx, vibrate, floatText, burst, confetti, shake, fly,
+    sfx, vibrate, floatText, burst, confetti, shake, fly, reduced,
     sfxOn: () => sfxOn,
     toggleSfx() { sfxOn = !sfxOn; App.store.set(SFX_KEY, sfxOn ? '1' : '0'); if (sfxOn) sfx('coin'); },
     DAILY, daily, bump, prog, avatar, pickAvatar, AVATARS

@@ -1,14 +1,16 @@
 /* =========================================================
    路線 path.js（G2）：路由 path（導覽 2）、path-unit {id}
    單元在執行時由現有內容組出（不新增店家、地區）；每單元 ≤10 張新卡＋≤5 題（目標 ≤25 次點擊、≤5 分鐘）：
-     旅遊 14 場景包（必備句 ≤8 → 排句子 2 句 → 進店；實戰店依地區挑同包的店）
-     日檢 N5–N1 每課 8 詞＋2 文法（MIND，依 core 排序；詞庫只收本級、低級已有的詞與文法同形詞剔除）→ 字卡 → 小考 5 題
+     旅遊 14 場景包：第 1 課必備句 ≤8 → 排句子 2 句 → 進店（實戰店依地區挑同包的店）；
+       另有「單字 n」（SCENES vocab＋SCENE_SHOP 店家品項，每課 ≤8 → 選選看 ≤5）與「第 2 課起」進階句（必備句以外，每課 ≤8 → 排句子＋選選看）
+     日檢 N5–N1 每課 8 詞＋2 文法（MIND，依 core 排序；低級已有的詞在低級學）→ 字卡 → 小考 5 題；
+       寒暄／感嘆詞、與文法同形的詞、2 字平假名片段放「補充 n」（每課 ≤8 詞，小考 ≤5 題），詞庫每個詞都在某一課
      五十音 每課 ≤10 字（KanaLesson.units）→ 字卡 → 聽音 5 題
      商務 每個 BIZ 單元拆成 單字 1／單字 2／句子 1／句子＋句型（各 ≤10 張＋≤5 題）＋對話與 Email（進 biz-unit）
      歌曲新聞 依程度的短文路線（read-article）＋熱門歌單元（song）＋近三天新聞
    資料用 App.loadScript 依分頁需要才載入。
    對外 window.Path：
-     units(goal) -> [{id, icon, title, sub, total, done, stars, complete, route?, params?}]   // goal：travel|exam|work|fun|kana
+     units(goal, {lv?, all?, subs?}) -> [{id, icon, title, sub, total, done, stars, complete, route?, params?}]   // goal：travel|exam|work|fun|kana；travel＋all／subs：含各包小單元
      load(goal) -> Promise                       // 先載入該目的需要的資料
      unit(id) -> {id, kind, icon, title, sub, items:[Learn.view 格式], steps:[{type, items, params, title}]}|null
      loadUnit(id) -> Promise<unit>
@@ -127,6 +129,9 @@
     const sh = shopFor(pack);
     if (sh && sh !== baseShop(pack)) { const o = shopItems(pack, sh); if (o && o.length) { putCache(pack.id + '@' + sh, o.map(x => x.id)); return o; } }
     if (pack.src) { const o = shopPhrases(pack).slice(0, 8); if (o.length) putCache(pack.id, o.map(x => x.id)); return o; }
+    return sceneBase(pack);
+  }
+  function sceneBase(pack) {
     const o = [], per = pack.scenes.length > 1 ? [5, 3] : [8];
     pack.scenes.forEach((sid, k) => {
       const s = sceneOf(sid); if (!s) return;
@@ -139,6 +144,32 @@
   }
   const packIds = pack => { const sh = shopFor(pack); if (sh && sh !== baseShop(pack) && cache[pack.id + '@' + sh]) return cache[pack.id + '@' + sh]; return pack.src ? (cache[pack.id] || null) : (window.SCENES ? packItems(pack).map(x => x.id) : null); };
   // 實戰店所在地區的資料檔（店家句子要用）
+  /* ---- 旅遊包小單元：單字（SCENES vocab＋SCENE_SHOP 店家品項）、進階句（第 1 課以外的句子，第 2 課起） ---- */
+  const chunk = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+  const shopExt = pack => (window.SCENE_SHOP || {})[pack.id.slice(3)] || {};
+  const SUBC = {};
+  function packSubs(pack) {
+    if (!window.SCENES || !window.SCENE_SHOP) return null;
+    if (SUBC[pack.id]) return SUBC[pack.id];
+    const V = [], P = [], seen = new Set();
+    const addV = w => { const jp = String(w && w.jp || '').trim(); if (!jp || !w.zh) return; const id = 'v:' + jp0(jp); if (seen.has(id)) return; seen.add(id); V.push({ id, type: 'vocab', jp, kana: w.kana || '', romaji: w.romaji || '', zh: w.zh, hint: w.hint || '', emoji: w.emoji || '', lv: 'N5', source: '🧳 ' + pack.name + '・單字' }); };
+    pack.scenes.forEach(sid => arr((sceneOf(sid) || {}).vocab).forEach(addV));
+    arr(shopExt(pack).vocab).forEach(addV);
+    const base = new Set(pack.src ? [] : sceneBase(pack).map(x => x.id));
+    const addP = (w, hint) => { if (!w || !w.jp) return; const it = phraseItem(w.jp, w.kana, w.zh, { romaji: w.romaji || '', hint: hint || '' }, pack); if (base.has(it.id)) return; base.add(it.id); P.push(it); };
+    if (pack.src) arr(shopExt(pack).phrases).forEach(w => addP(w, w.hint));
+    else pack.scenes.forEach(sid => arr((sceneOf(sid) || {}).phrases).forEach(w => addP(w, w.use || w.hint)));
+    const w = chunk(V, W_PER).map((items, k) => ({ id: pack.id + '-w' + (k + 1), icon: '🔤', title: pack.name + '：單字 ' + (k + 1), sub: items.slice(0, 3).map(x => x.jp).join('・') + (items.length > 3 ? '…' : ''), items }));
+    const s = chunk(P, W_PER).map((items, k) => ({ id: pack.id + '-s' + (k + 2), icon: '💬', title: pack.name + '：第 ' + (k + 2) + ' 課', sub: '進階句 ' + items.length + ' 句', items }));
+    return (SUBC[pack.id] = { V, P, w, s });
+  }
+  // 一個包的全部課：第 1 課（必備句＋進店）→ 單字 1..n → 第 2 課起
+  function packRows(p) {
+    const sh = shopFor(p), S = packSubs(p);
+    const sub = S ? '・另有單字 ' + S.w.length + ' 課、句子 ' + S.s.length + ' 課' : '';
+    const first = row(p.id, p.icon, p.name, (window.WORLD ? '第 1 課・實戰：' + shopLabel(sh) : '第 1 課必備句＋進店') + sub, packIds(p), { hasShop: true, pack: p.id });
+    return [first].concat(S ? S.w.concat(S.s).map(x => row(x.id, x.icon, x.title, x.sub, x.items.map(i => i.id), { pack: p.id, isSub: true })) : []);
+  }
   function shopFiles(id) { const W = window.WORLD, R = W && arr(W.regions).find(r => arr(r.shops).some(x => x[1] === id)); return R && !(W.shops && W.shops[id]) ? arr(R.files).map(f => 'data/world/' + f + '.js') : []; }
 
   /* ---------------- 日檢：MIND 詞庫 → 每課 8 詞＋2 文法 ---------------- */
@@ -161,18 +192,21 @@
     // 排序：N5–N3 本站常用詞先學；N2／N1 不看 core（core 多是旅遊用語），一般詞先、常用詞後、接頭接尾詞最後
     const keep = lex.filter(r => !basic(r));
     const order = hi ? keep.filter(r => !r[7] && !affix(r)).concat(keep.filter(r => r[7] && !affix(r)), keep.filter(affix)) : keep.filter(r => r[7]).concat(keep.filter(r => !r[7]));
+    // 低級已有的詞在低級課學；寒暄、文法同形詞（つもり）、N2／N1 的 2 字平假名片段（ごと、さす）不進主課，放「補充」課
+    const mk = (r, jp) => ({ id: 'v:' + jp, type: 'vocab', jp, kana: String(r[1] || '').split(/;\s*/)[0].replace(/\s*[（(].*?[）)]/g, '') || jp, romaji: '', zh: r[2], hint: '', lv: L });
+    const extra = [];
     order.forEach(r => {
-      const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp) || gw.has(jp)) return;
-      if (lvI(L) >= 3 && /^[ぁ-ゟ]{1,2}$/.test(jp)) return;   // N2／N1 的 2 字平假名多是接尾或片段（ごと、さす、いち），不當單字課
+      const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp)) return;
       seen.add(id);
-      words.push({ id, type: 'vocab', jp, kana: String(r[1] || '').split(/;\s*/)[0].replace(/\s*[（(].*?[）)]/g, '') || jp, romaji: '', zh: r[2], hint: '', lv: L });
+      if (gw.has(jp) || (lvI(L) >= 3 && /^[ぁ-ゟ]{1,2}$/.test(jp))) extra.push(mk(r, jp)); else words.push(mk(r, jp));
     });
+    lex.filter(basic).forEach(r => { const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp)) return; seen.add(id); extra.push(mk(r, jp)); });
     const grams = M.gram.filter(g => g.lv === L).sort((a, b) => (a.ord || 0) - (b.ord || 0)).map(g => ({
       id: 'g:' + String(g.id).replace(/^gram:/, ''), type: 'grammar', jp: g.pat, kana: '', romaji: '', zh: g.zh, hint: g.conn ? '接續：' + g.conn : '',
       ex: g.ex && g.ex[0] ? [{ jp: g.ex[0], zh: g.ex[1] || '' }] : [], lv: L
     }));
     const units = Math.max(1, Math.ceil(words.length / W_PER), Math.ceil(grams.length / G_PER));
-    return (EXB[L] = { sig, L, words, grams, units });
+    return (EXB[L] = { sig, L, words, grams, units, extra, sup: Math.ceil(extra.length / W_PER) });
   }
   /* ---- 例句：以詞為單位（JPText 斷詞後比對原形／表層），例句來源的等級 ≤ 單元等級 ---- */
   const EXI = {};
@@ -206,10 +240,10 @@
     if (!it || it.type !== 'vocab') return null;
     return exFor(it, L, null);
   }
-  function examItems(L, i) {
-    const B = examBank(L); if (!B || i < 0 || i >= B.units) return null;
-    const src = '📝 JLPT ' + L + ' 第 ' + (i + 1) + ' 課';
-    const out = B.grams.slice(i * G_PER, i * G_PER + G_PER).concat(B.words.slice(i * W_PER, i * W_PER + W_PER)).map(x => Object.assign({}, x, { source: src }));
+  function examItems(L, i, sup) {
+    const B = examBank(L); if (!B || i < 0 || i >= (sup ? B.sup : B.units)) return null;
+    const src = '📝 JLPT ' + L + (sup ? ' 補充 ' + (i + 1) : ' 第 ' + (i + 1) + ' 課');
+    const out = (sup ? B.extra.slice(i * W_PER, i * W_PER + W_PER) : B.grams.slice(i * G_PER, i * G_PER + G_PER).concat(B.words.slice(i * W_PER, i * W_PER + W_PER))).map(x => Object.assign({}, x, { source: src }));
     // 同一課例句不重複（文法卡的例句先佔）；找不到就不配（ex:[]，首頁也不會再用子字串補）
     const used = new Set(out.filter(x => x.type === 'grammar' && x.ex[0]).map(x => x.ex[0].jp));
     out.forEach(x => { if (x.type !== 'vocab') return; const e = exFor(x, L, used); x.ex = e || []; if (e && e[0]) used.add(e[0].jp); });
@@ -258,8 +292,10 @@
   function parse(id) {
     id = String(id || '');
     let m;
+    if ((m = id.match(/^tr-([a-z]+)-([ws])(\d+)$/))) return { kind: 'travel', pack: packOf('tr-' + m[1]), sub: m[2], id };
     if (id.startsWith('tr-')) return { kind: 'travel', pack: packOf(id), id };
     if ((m = id.match(/^(n[1-5])-u(\d+)$/))) return { kind: 'exam', L: m[1].toUpperCase(), i: +m[2] - 1, id };
+    if ((m = id.match(/^(n[1-5])-x(\d+)$/))) return { kind: 'exam', L: m[1].toUpperCase(), i: +m[2] - 1, sup: true, id };
     if ((m = id.match(/^(n[1-5])-(\d+)$/))) { const i = Math.floor((+m[2] - 1) * 20 / W_PER); return { kind: 'exam', L: m[1].toUpperCase(), i, id: m[1] + '-u' + (i + 1) }; }
     if ((m = id.match(/^kana-(k1[12])$/))) return { kind: 'kana', k: m[1] + '-1', id: 'kana-' + m[1] + '-1' };
     if ((m = id.match(/^kana-(k\d+(?:-\d)?)$/))) return { kind: 'kana', k: m[1], id };
@@ -270,13 +306,28 @@
   function unit(id) {
     const P = parse(id); if (!P) return null;
     id = P.id;
+    if (P.kind === 'travel' && P.pack && P.sub) {
+      const p = P.pack, S = packSubs(p), part = S && S[P.sub].find(x => x.id === id); if (!part) return null;
+      const items = part.items.map(x => Object.assign({}, x)), sh = a => App.shuffle ? App.shuffle(a.slice()) : a.slice();
+      const steps = [{ type: 'flashcard', items, title: part.title, learn: true }];
+      if (P.sub === 'w') steps.push({ type: 'choice', items: sh(items).slice(0, Q_N), params: { retry: false, pool: S.V }, title: part.title + '：選選看' });
+      else {
+        const wl = s => String(s).replace(/[。、！？!?\s]/g, '').length;
+        const wb = items.slice().sort((a, b) => Math.abs(wl(a.jp) - 12) - Math.abs(wl(b.jp) - 12)).slice(0, 2);
+        steps.push({ type: 'wordbank', items: wb, params: { max: 5, retry: false }, title: part.title + '：排句子' });
+        const rest = sh(items.filter(x => !wb.includes(x))).slice(0, Q_N - wb.length);
+        if (rest.length) steps.push({ type: 'choice', items: rest, params: { retry: false, pool: S.P }, title: part.title + '：選選看' });
+      }
+      const qn = steps.slice(1).reduce((n, s) => n + s.items.length, 0);
+      return { id, kind: 'travel', icon: part.icon, title: part.title, sub: (P.sub === 'w' ? items.length + ' 個單字' : items.length + ' 句') + '・' + qn + ' 題', items, pack: p.id, steps };
+    }
     if (P.kind === 'travel' && P.pack) {
       const p = P.pack, items = packItems(p), shop = shopFor(p);
       // 排句子挑中等長度（約 12 字）的句子：太短只切得出 1–2 塊，等於不用想
       const wl = s => String(s).replace(/[。、！？!?\s]/g, '').length;
       const wb = items.slice().sort((a, b) => Math.abs(wl(a.jp) - 12) - Math.abs(wl(b.jp) - 12)).slice(0, 2);
       return {
-        id, kind: 'travel', icon: p.icon, title: p.name, sub: '必備句 ' + items.length + ' 句・實戰：' + shopLabel(shop), items, shop, shops: p.shops, hasShop: true,
+        id, kind: 'travel', icon: p.icon, title: p.name, sub: '第 1 課・必備句 ' + items.length + ' 句・實戰：' + shopLabel(shop), items, shop, shops: p.shops, hasShop: true, pack: p.id,
         steps: [
           { type: 'flashcard', items, title: p.name + '：必備句', learn: true },
           { type: 'wordbank', items: wb, params: { max: 5 }, title: p.name + '：排句子' },
@@ -285,13 +336,13 @@
       };
     }
     if (P.kind === 'exam') {
-      const items = examItems(P.L, P.i); if (!items) return null;
-      const ids = items.map(x => x.id), t = P.L + ' 第 ' + (P.i + 1) + ' 課', ng = items.filter(x => x.type === 'grammar').length;
+      const items = examItems(P.L, P.i, P.sup); if (!items) return null;
+      const ids = items.map(x => x.id), t = P.L + (P.sup ? ' 補充 ' + (P.i + 1) : ' 第 ' + (P.i + 1) + ' 課'), ng = items.filter(x => x.type === 'grammar').length;
       return {
         id, kind: 'exam', icon: '📝', title: t, sub: (items.length - ng) + ' 個單字' + (ng ? '＋' + ng + ' 個文法' : '') + '・小考 ' + Q_N + ' 題', items, lv: P.L,
         steps: [
           { type: 'flashcard', items, title: t + '：字卡', learn: true },
-          { type: 'choice', items, params: { lv: P.L, kind: ng ? ['form', 'mean', 'kanji', 'form', 'ctx'] : ['mean', 'kanji', 'ctx', 'mean', 'spell'], n: Q_N, ids, quiz: true, retry: false, avoid: quizAvoid(items) }, title: t + '：小考' }
+          { type: 'choice', items, params: { lv: P.L, kind: ng ? ['form', 'mean', 'kanji', 'form', 'ctx'] : ['mean', 'kanji', 'ctx', 'mean', 'spell'], n: Math.min(Q_N, ids.length), ids, quiz: true, retry: false, avoid: quizAvoid(items) }, title: t + '：小考' }
         ]
       };
     }
@@ -329,7 +380,7 @@
   function loadUnit(id) {
     const P = parse(id); if (!P) return Promise.resolve(null);
     let pr = Promise.resolve();
-    if (P.kind === 'travel' && P.pack) pr = seq(['data/world/index.js']).catch(() => { }).then(() => P.pack.src ? seq(['data/world/' + P.pack.src[0] + '.js']) : seq(SC))
+    if (P.kind === 'travel' && P.pack) pr = seq(['data/world/index.js']).catch(() => { }).then(() => seq(SC)).then(() => P.pack.src && !P.sub ? seq(['data/world/' + P.pack.src[0] + '.js']) : 0)
       .then(() => { const sh = shopFor(P.pack); return sh && sh !== baseShop(P.pack) ? seq(shopFiles(sh)).catch(() => { }) : 0; });
     else if (P.kind === 'exam') pr = examNeed(P.L);
     else if (P.kind === 'kana') pr = seq(KN);
@@ -350,7 +401,10 @@
   const zeroKana = () => App.profile().lv === 'zero' && kanaDone() < 46;
   function units(goal, opt) {
     opt = opt || {};
-    if (goal === 'travel') return PACKS.map(p => { const sh = shopFor(p); return row(p.id, p.icon, p.name, (window.WORLD ? '實戰：' + shopLabel(sh) : '必備句＋進店'), packIds(p), { hasShop: true }); });
+    if (goal === 'travel') {
+      const rs = PACKS.map(packRows);
+      return opt.all ? [].concat(...rs) : opt.subs ? rs.map(r => r[0]).concat(...rs.map(r => r.slice(1))) : rs.map(r => r[0]);
+    }
     if (goal === 'kana') {
       if (!window.KanaLesson || !KanaLesson.units) return [];
       return KanaLesson.units().map(u => row('kana-' + u.id, '🔤', u.title, u.chars.slice(0, 5).join(' ') + (u.chars.length > 5 ? '…' : ''), u.chars.map(c => 'kana:' + c)));
@@ -362,6 +416,10 @@
       for (let i = 0; i < B.units; i++) {
         const gs = B.grams.slice(i * G_PER, i * G_PER + G_PER), ws = B.words.slice(i * W_PER, i * W_PER + W_PER);
         out.push(row(L.toLowerCase() + '-u' + (i + 1), '📝', L + ' 第 ' + (i + 1) + ' 課', ws.slice(0, 3).map(x => x.jp).concat(gs.slice(0, 1).map(x => x.jp)).join('・'), gs.concat(ws).map(x => x.id)));
+      }
+      for (let i = 0; i < B.sup; i++) {
+        const ws = B.extra.slice(i * W_PER, i * W_PER + W_PER);
+        out.push(row(L.toLowerCase() + '-x' + (i + 1), '📎', L + ' 補充 ' + (i + 1), '寒暄・語氣・接尾等：' + ws.slice(0, 3).map(x => x.jp).join('・'), ws.map(x => x.id), { sup: true }));
       }
       out.push(row(L.toLowerCase() + '-mock', '🏁', L + ' 模擬考', '計時・分科配分・合格判定', null, { route: 'challenge-play', params: { lv: L, t: 'mock' }, stars: App.stars ? App.stars('chal:' + L + ':mock') : 0, noNext: true }));
       return out;
@@ -399,11 +457,17 @@
       goal = goal || (App.profile().goals || [])[0] || 'travel';
       if (goal === 'travel' && zeroKana()) goal = 'kana';
       if (!['travel', 'exam', 'kana', 'work'].includes(goal)) return null;
-      const list = units(goal).filter(u => !u.route);
-      const u0 = nextOf(list); if (!u0) return null;
-      const u = unit(u0.id); if (!u) return null;
-      const items = u.items.filter(x => fresh(x.id)).slice(0, 8);
-      return items.length ? { id: u.id, title: u.title, items } : null;
+      // 第一個還有新卡的單元（建議單元優先；旅遊：各包第 1 課 → 各包單字與進階句；最多看 40 個）
+      const list = units(goal, { subs: true }).filter(u => !u.route);
+      const first = nextOf(list), can = list.filter(u => !u.noNext && !u.complete && u !== first);
+      if (first) can.unshift(first);
+      for (const u0 of can.slice(0, 40)) {
+        if (u0.total != null && u0.done >= u0.total) continue;
+        const u = unit(u0.id); if (!u) continue;
+        const items = u.items.filter(x => fresh(x.id)).slice(0, 8);
+        if (items.length) return { id: u.id, title: u.title, items };
+      }
+      return null;
     } catch (e) { return null; }
   }
   function prepare(goal) {
@@ -475,6 +539,20 @@
     const from = Math.max(0, Math.min(at - 1, list.length - SHOW)), to = Math.min(list.length, from + SHOW * (k + 1));
     return { shown: list.slice(from, to), from, more: to < list.length ? `<button type="button" class="btn block pa-more" data-more="${key}">顯示更多（還有 ${list.length - to} 個）</button>` : '' };
   }
+  // 「更多練習」：B 組 window.PathExtra（js/classic.js）提供；沒載入就延遲載入，失敗或沒有項目就不顯示
+  function extras(host, goal, key, kana) {
+    const run = () => {
+      const X = window.PathExtra; if (!host.isConnected || !X) return;
+      const kt = kana && host.querySelector('.pa-kt');
+      if (kt && typeof X.kanaTable === 'function' && !kt.dataset.on) { kt.dataset.on = '1'; try { X.kanaTable(kt); } catch (e) { kt.innerHTML = ''; } }
+      const box = host.querySelector('.pa-x'); if (!box || typeof X.list !== 'function') return;
+      let L = []; try { L = arr(X.list(goal, key)).filter(x => x && typeof x.go === 'function'); } catch (e) { L = []; }
+      if (!L.length) { box.innerHTML = ''; return; }
+      box.innerHTML = `<h2 class="pa-h">🎮 更多練習</h2><div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
+      box.querySelectorAll('[data-px]').forEach(b => b.onclick = e => { e.stopPropagation(); try { L[+b.dataset.px].go(); } catch (er) { } });
+    };
+    if (window.PathExtra) run(); else App.loadScript('js/classic.js').then(run, () => { });
+  }
   const grid = (list, nx, one) => `<div class="pa-grid${one ? ' one' : ''}">${list.map(u => card(u, nx && u.id === nx.id)).join('')}</div>`;
   function paint(body, tab) {
     const lv = (UI.lv || lvNow()).toUpperCase();
@@ -487,9 +565,10 @@
       const mock = list[list.length - 1], lessons = list.slice(0, -1), w = windowed(lessons, nx, 'exam' + lv);
       const doneN = lessons.filter(u => u.complete).length;
       html = `<label class="pa-lv"><span>等級</span><select data-lvsel aria-label="日檢等級">${LVS.map(L => `<option value="${L}"${L === lv ? ' selected' : ''}>${L}${L === lvNow() ? '（我的程度）' : ''}</option>`).join('')}</select></label>
-        <p class="pa-note">每課 8 個單字＋2 個文法，小考 5 題・已完成 ${doneN}／${lessons.length} 課${w.from > 0 ? `・已跳到第 ${w.from + 1} 課` : ''}</p>
+        <p class="pa-note">每課 8 個單字＋2 個文法，小考 5 題；寒暄、語氣詞等在「補充」課・已完成 ${doneN}／${lessons.length} 課${w.from > 0 ? `・已跳到第 ${w.from + 1} 課` : ''}</p>
         ${grid(w.shown, nx)}${w.more}${grid([mock], null, true)}
-        <details class="pa-more-d"><summary>🏆 ${lv} 分科挑戰題</summary><div class="pa-chal">${CHAL.map(([t, ic, n]) => `<button type="button" class="btn" data-go="challenge-play" data-lv="${lv}" data-t="${t}">${ic} ${n}</button>`).join('')}</div></details>`;
+        <details class="pa-more-d"><summary>🏆 ${lv} 分科挑戰題</summary><div class="pa-chal">${CHAL.map(([t, ic, n]) => `<button type="button" class="btn" data-go="challenge-play" data-lv="${lv}" data-t="${t}">${ic} ${n}</button>`).join('')}</div></details>
+        <div class="pa-x"></div>`;
     } else if (tab === 'work') {
       const cur = nx ? nx.group : list[0].group, open = UI.bz == null ? cur : UI.bz;
       html = '<p class="pa-note">每個情境拆成幾個小單元（10 張卡＋5 題），最後做對話與 Email。</p>';
@@ -511,10 +590,13 @@
       html = grid(w.shown, nx) + w.more;
       if (tab === 'travel') {
         const rg = region();
-        html = `<p class="pa-note">每包 8 句必備句＋排 2 句，再進店用一次${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 自由逛日本（冒險地圖）</button>`;
+        html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 自由逛日本（冒險地圖）</button>`;
       }
+      if (tab === 'kana') html = '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
     }
     body.innerHTML = html;
+    if (tab === 'kana') extras(body, 'kana', 'kana', true);
+    else if (tab === 'exam') extras(body, 'exam', lv.toLowerCase());
   }
 
   /* ---------------- 單元頁 ---------------- */
@@ -531,13 +613,17 @@
     if (!u || !u.items.length) { el.innerHTML = '<div class="pa"><p class="center pa-load">找不到這個單元</p></div>'; return; }
     const ids = u.items.map(x => x.id), d = ids.filter(learned).length, st = stored(u.id);
     const pct = Math.round(d / ids.length * 100);
-    const list = units(goalOf(u), { lv: u.lv }), k = list.findIndex(x => x.id === u.id), after = list.slice(k + 1).filter(x => !x.noNext);
+    const list = units(goalOf(u), { lv: u.lv, all: true }), k = list.findIndex(x => x.id === u.id), after = list.slice(k + 1).filter(x => !x.noNext);
     const nxt = u.kind === 'biz' ? after[0] : (after.find(x => !x.route && !x.complete) || after[0]);
     const complete = st > 0 || (!u.hasShop && d >= ids.length);
     const steps = u.steps.map(s => s.params && s.params.quiz ? '小考' : STEP[s.type] || s.type).join(' → ');
     const pr = u.hasShop && !complete && d >= ids.length ? `句子 ${d}／${ids.length}・還差：進店用出來` : `已學 ${d}／${ids.length}`;
-    let shops = '';
-    if (u.kind === 'travel') {
+    let shops = '', sibs = '';
+    if (u.kind === 'travel' && u.pack) {
+      const ps = list.filter(x => x.pack === u.pack);
+      if (ps.length > 1) sibs = `<h2 class="pa-h">這包的全部課 <small>${ps.filter(x => x.complete).length}／${ps.length}</small></h2><div class="pa-grid pa-sib">${ps.map(x => card(x, false).replace('class="pa-card', 'class="pa-card' + (x.id === u.id ? ' cur' : ''))).join('')}</div>`;
+    }
+    if (u.kind === 'travel' && u.hasShop) {
       const rs = [...new Set(u.shops.map(REGION))];
       shops = `<div class="pa-rg"><span>實戰地點</span>${rs.length > 1 ? rs.map(r => `<button type="button" class="btn sm${REGION(u.shop) === r ? ' on' : ''}" data-rg="${r}" aria-pressed="${REGION(u.shop) === r}">${esc(RG[r])}</button>`).join('') : ''}<small>${esc(shopLabel(u.shop))}</small></div>`;
     }
@@ -552,6 +638,8 @@
       ${u.kind !== 'kana' ? `<h2 class="pa-h">這課會學到</h2><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul>` : ''}
       ${u.kind === 'biz' && !(nxt && nxt.route) ? `<button type="button" class="btn block pa-next" data-biz="${esc(u.biz)}">💬 對話演練＋Email（${esc(bizUnit(u.biz).title)}）›</button>` : ''}
       ${nxt ? `<button type="button" class="btn block pa-next" data-u="${esc(nxt.id)}">下一單元：${esc(nxt.title)} ›</button>` : ''}
+      ${sibs}
+      ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
     </div>`;
     const root = el.querySelector('.pa-unit');
     root.querySelector('#pa-start').onclick = () => start(u, nxt, complete);
@@ -559,8 +647,10 @@
       const s = e.target.closest('[data-ks]'); if (s) { App.speak(s.dataset.ks); return; }
       const r = e.target.closest('[data-rg]'); if (r) { setRegion(r.dataset.rg); loadUnit(u.id).then(v => { if (el.isConnected) drawUnit(el, v); }); return; }
       const z = e.target.closest('[data-biz]'); if (z) { App.go('biz-unit', { id: z.dataset.biz, sec: 'dlg' }); return; }
-      const n = e.target.closest('.pa-next[data-u]'); if (n) { if (nxt && nxt.route) App.go(nxt.route, nxt.params || {}); else App.go('path-unit', { id: n.dataset.u }); }
+      const n = e.target.closest('.pa-next[data-u]'); if (n) { if (nxt && nxt.route) App.go(nxt.route, nxt.params || {}); else App.go('path-unit', { id: n.dataset.u }); return; }
+      const c = e.target.closest('.pa-card[data-u]'); if (c && c.dataset.u !== u.id) App.go('path-unit', { id: c.dataset.u });
     });
+    if (u.kind === 'travel' && u.pack) extras(root, 'travel', u.pack);
   }
   // 開始：交給 G1 的 act 路由（Activity.session 跑全部步驟、統一結算）；做完才給星（reward path:<id>），中途離開不給
   // 已學過的卡不再出現在字卡步驟（今日課學過的不重來）；「再練一次」才全部重看

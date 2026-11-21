@@ -1,6 +1,6 @@
 /* 旅遊會話手冊：依情境分類、中日文／羅馬字搜尋（含同義詞）、每句語音、全螢幕「給店員看」。
    路由：phrasebook（nav:false，navParent lookup，從「查」或店內 📖 進入）。參數：App.go('phrasebook', {q:'關鍵字'}) 或 {cat:'eat'}（cat 也可給場景 id，如 'konbini'）。
-   🔤 五十音分頁：改為導到五十音路線 App.go('path', {goal:'kana'})（唯一的五十音入口）；舊連結 {tab:'kana'} 也轉過去。
+   五十音不在手冊（五十音表在路線五十音分頁）；舊連結 {tab:'kana'} 轉到 App.go('path', {goal:'kana'})。
    對外 window.Phrasebook：MUST、SYN、terms、search(q)、loadWorld、kataKana、showBig(w) 全螢幕大字、romOf、kanaOf、showRom（「查」頁共用）。
    資料：⭐ 必備句（本檔 MUST）＋ SCENES 的 phrases / vocab ＋ 冒險世界 WORLD 各店（搜尋時才載入全部地區）。
    零基礎或提示「全部顯示」時，每句加羅馬字；kana 欄保留片假名。 */
@@ -9,7 +9,6 @@
   const esc = App.esc;
   const CATS = [
     ['must', '⭐ 必備', []],
-    ['kana', '🔤 五十音', []],
     ['emer', '🆘 緊急', ['emergency']],
     ['move', '🚃 交通', ['airport', 'station', 'directions']],
     ['eat', '🍜 點餐', ['ramen', 'izakaya', 'yakiniku', 'cafe']],
@@ -18,7 +17,6 @@
     ['see', '⛩️ 觀光', ['shrine']]
   ];
   const UI = { cat: 'must', q: '' };
-  const hasKana = () => !!window.KanaLesson;
   const cats = () => CATS;
   // 五十音：唯一入口是五十音路線。先把目前這筆歷史的參數清掉，返回時才不會又被轉走
   function toKana() {
@@ -292,10 +290,9 @@
     const q = String(UI.q || '').trim();
     if (q) {
       const { ph, vo } = search(q);
-      const kh = hasKana() ? KanaLesson.search(q, norm) : { n: 0, html: '' };
       const loading = !wDone ? `<p class="pb-load">⏳ 正在載入冒險世界各店的句子…</p>` : '';
-      if (!ph.length && !vo.length && !kh.n) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
-      return kh.html + (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(w => row(w)).join('') + (ph.length > 60 ? `<p class="pb-more">只列前 60 句，再多打幾個字縮小範圍</p>` : '') : '') +
+      if (!ph.length && !vo.length) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
+      return (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(w => row(w)).join('') + (ph.length > 60 ? `<p class="pb-more">只列前 60 句，再多打幾個字縮小範圍</p>` : '') : '') +
         (vo.length ? `<h2>📚 單字（${vo.length}）</h2><div class="pb-voc">${vo.slice(0, 60).map(vocab).join('')}</div>` : '') + loading;
     }
     const cat = CATS.find(c => c[0] === UI.cat) || CATS[0];
@@ -359,7 +356,7 @@
     if (UI.cat === 'kana') UI.cat = 'must';
     el.innerHTML = `<section class="pb">
       <h1>📖 旅遊會話手冊</h1>
-      <input class="pb-search" type="search" placeholder="搜尋：多少錢、退稅、儲值、ikura、促音、か…" value="${esc(UI.q)}" aria-label="搜尋會話">
+      <input class="pb-search" type="search" placeholder="搜尋：多少錢、退稅、儲值、ikura…" value="${esc(UI.q)}" aria-label="搜尋會話">
       <div class="pb-cats">${cats().map(([id, n]) => `<button type="button" data-cat="${id}" class="${id === 'emer' ? 'emer ' : ''}${!UI.q && UI.cat === id ? 'on' : ''}" aria-pressed="${!UI.q && UI.cat === id}">${n}</button>`).join('')}</div>
       <div id="pb-list"></div>${App.voiceHTML ? App.voiceHTML() : ''}</section>`;
     const box = el.querySelector('#pb-list');
@@ -375,14 +372,11 @@
       const s = e.target.closest('[data-say]'), b = e.target.closest('[data-show]');
       if (s) { const w = KEYS[+s.dataset.say]; if (w) App.speak(String(w.kana || w.jp).replace(/〜/g, '')); }
       if (b) { const w = KEYS[+b.dataset.show]; if (w) showBig(w); }
-      const ks = e.target.closest('[data-ks]'), kg = e.target.closest('[data-kgo]');
-      if (ks) App.speak(ks.dataset.ks);
-      if (kg) toKana();
     };
     const inp = el.querySelector('.pb-search');
     let t = null;
     inp.oninput = () => { UI.q = inp.value; clearTimeout(t); t = setTimeout(() => { paint(); ensureWorld(); }, 120); };
-    el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { if (b.dataset.cat === 'kana') return toKana(); UI.cat = b.dataset.cat; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); });
+    el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { UI.cat = b.dataset.cat; UI.q = ''; inp.value = ''; paint(); window.scrollTo(0, 0); });
     paint(); ensureWorld();
   }
 

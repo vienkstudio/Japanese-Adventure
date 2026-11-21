@@ -239,7 +239,8 @@
 
   /* ---------- 一輪 10 題 ---------- */
   function renderPlay(el, params) {
-    const mode = (params && params.m) || 'clerk', f = (params && params.f) || '';
+    params = params || {};   // {m, f, from:'path'}：從路線「更多練習」進來時返回＝回路線
+    const mode = params.m || 'clerk', f = params.f || '';
     const M = MODES[mode]; if (!M) { App.go('boot'); return; }
     const qs = M.build(f);
     if (!qs.length) { App.go('boot'); return; }
@@ -271,8 +272,8 @@
       App.showResult({
         title: stars ? `${M.icon} ${M.name} 完成！` : '再練一次',
         stars, correct: R.pts, total: R.max, gained, wrong: R.wrong,
-        retry: () => App.go('boot-play', { m: mode, f }),
-        back: { label: '回特訓', route: 'boot' }
+        retry: () => App.go('boot-play', params.from === 'path' ? { m: mode, f, from: 'path' } : { m: mode, f }),
+        back: params.from === 'path' ? { label: '回路線' } : { label: '回特訓', route: 'boot' }
       });
     }
     show();

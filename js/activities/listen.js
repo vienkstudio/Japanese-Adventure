@@ -109,7 +109,7 @@
             const ok = q.opts[+b.dataset.o] === q.ans;
             el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (q.opts[+x.dataset.o] === q.ans) x.classList.add('ok'); });
             if (!ok) b.classList.add('ng');
-            ctx.sfx(ok);
+            ctx.sfx(ok, b);
             ctx.mark(it, ok ? (q.second ? 1 : 2) : 0);
             if (!ok && !q.second && p.retry !== false) qs.push(Object.assign({}, q, { second: true, opts: shuf(q.opts) }));
             const ro = ctx.showRo(it) ? ctx.romaji(it) : '', kn = q.num ? it.kana : ctx.showKana() ? ctx.kana(it) : '';
