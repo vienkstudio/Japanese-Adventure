@@ -4,6 +4,8 @@
      mix：假名→kana、文法→form（不能挖空→jp2zh）、其他輪流 jp2zh／zh2jp
    干擾項：同型別同等級（再放寬到同型別）、唯一正解（中文不同義、日文不互相包含、不同音）；N3 以上作答前不附中文
    答錯的在最後重考一次：第一次答對 2、答錯 0；重考答對 1
+   答對 0.6 秒自動下一題；答錯才停下、顯示正解與「繼續 ▶」（固定在底部導覽之上）
+   例句去重：同一 session 已出現的例句（字卡、其他題）不再拿來挖空／出句意題
    params：{mode?, pool?:[item…] 額外干擾來源, retry?:bool（預設 true）} */
 (function () {
   'use strict';
@@ -162,7 +164,7 @@
     return `<p class="ac-jp jp${String(it.jp).length > 10 ? ' long' : ''}" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p>${kn}`;
   }
   function explainHTML(it, ctx) {
-    const esc = ctx.esc, ro = ctx.romaji(it), kn = ctx.kana(it);
+    const esc = ctx.esc, ro = ctx.showRo(it) ? ctx.romaji(it) : '', kn = ctx.showKana() ? ctx.kana(it) : '';
     return `<div class="ac-exp"><span class="jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</span>${kn && it.type !== 'kana' ? `<small class="jp" lang="ja">${esc(kn)}</small>` : ''}${ro ? `<small>${esc(ro)}</small>` : ''}<span>${esc(it.zh)}</span></div>`;
   }
 
@@ -175,8 +177,21 @@
       .then(() => Promise.all([window.Challenge && typeof Challenge.need === 'function' ? Challenge.need(LV) : 0, Activity.loadCSS ? Activity.loadCSS('css/challenge.css') : 0]));
     return pre.then(() => new Promise(resolve => {
       let qs = [];
-      try { qs = Challenge.makeQuestions(LV, p.kind || 'mix', p.n || (ids ? ids.length : 10), ids ? { ids } : {}) || []; } catch (e) { console.warn('makeQuestions', e); }
-      qs = qs.filter(q => q && Array.isArray(q.opts) && q.ans >= 0).map(q => ({ q, second: false }));
+      const N = p.n || (ids ? ids.length : 10);
+      const avoid = (Array.isArray(p.avoid) ? p.avoid : []).concat(ctx.usedEx ? ctx.usedEx() : []);
+      const mk = () => { try { return (Challenge.makeQuestions(LV, p.kind || 'mix', N, ids ? { ids, avoid } : { avoid }) || []).filter(q => q && Array.isArray(q.opts) && q.ans >= 0); } catch (e) { console.warn('makeQuestions', e); return []; } };
+      // 和本 session 已出現的例句重複的題目：再出一輪換題（題型隨機），還是重複就拿掉；全部重複才保留原題
+      // 只看題目裡的日文句子（.ch-sent／.ch-passage），不含下方中文翻譯
+      const jpOf = b => { const m = String(b || '').match(/class="ch-(?:sent|passage)[^"]*">([\s\S]*?)<\/div>/); return m ? m[1] : String(b || '').replace(/<p[^>]*>[\s\S]*?<\/p>/g, ''); };
+      const dup = q => ctx.dupText && (ctx.dupText(jpOf(q.body)) || (q.say && ctx.dupText(q.say)));
+      const first = mk(), fresh = first.filter(q => !dup(q));
+      if (fresh.length < first.length) {
+        const have = new Set(fresh.map(q => q.k + '|' + q.key));
+        for (const q of mk()) { if (fresh.length >= N) break; if (!dup(q) && !have.has(q.k + '|' + q.key) && !fresh.some(x => x.id && x.id === q.id)) { have.add(q.k + '|' + q.key); fresh.push(q); } }
+      }
+      qs = (fresh.length ? fresh : first).slice(0, N);
+      qs.forEach(q => { if (ctx.useEx) { const t = jpOf(q.body).replace(/<[^>]*>/g, ''); if (!/（\s*）|（　+）/.test(t)) ctx.useEx(t); if (q.say) ctx.useEx(q.say); } });
+      qs = qs.map(q => ({ q, second: false }));
       let n = 0;
       const show = () => {
         if (!ctx.alive()) return resolve({ results: ctx.results });
@@ -201,9 +216,8 @@
           if (!ok && retry && !cur.second) qs.push({ q: Object.assign({}, q), second: true });
           const fb = el.querySelector('.ac-fb');
           fb.className = 'ac-fb ' + (ok ? 'ok' : 'ng');
-          fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + esc(q.opts[q.ans])}</p>${q.explain ? `<div class="ac-exp ac-chal-exp">${q.explain}</div>` : ''}<button type="button" class="btn primary block ac-go">繼續 ▶</button>`;
-          try { fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { }
-          fb.querySelector('.ac-go').onclick = () => { n++; show(); };
+          fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + esc(q.opts[q.ans])}</p>${!ok && q.explain ? `<div class="ac-exp ac-chal-exp">${q.explain}</div>` : ''}`;
+          ctx.advance(ok, el, () => { n++; show(); });
         });
       };
       show();
@@ -215,7 +229,13 @@
     start(el, ctx) {
       if (ctx.params.kind || ctx.params.quiz || (!ctx.items.length && Array.isArray(ctx.params.ids))) return chalStart(el, ctx);
       if (!ctx.items.length) return Promise.resolve({ results: [] });
-      const items = ctx.items.slice(), p = ctx.params, want = p.mode || 'mix', retry = p.retry !== false;
+      const p = ctx.params, want = p.mode || 'mix', retry = p.retry !== false;
+      // 例句去重：用過的例句往後排；全部用過就不出挖空題（改看日文選中文）
+      const items = ctx.items.map(it => {
+        if (!it.ex || !it.ex.length || !ctx.exUsed) return it;
+        const ex = it.ex.filter(e => e && e.jp && !ctx.exUsed(e.jp));
+        return ex.length === it.ex.length ? it : Object.assign({}, it, { ex });
+      });
       return prepare(items).then(() => new Promise(resolve => {
         const extra = (Array.isArray(p.pool) ? p.pool.map(x => ctx.item(x)).filter(Boolean) : []).concat(extraPool(items));
         const pool = items.concat(extra);
@@ -239,6 +259,7 @@
           const play = el.querySelector('.ac-play'); if (play) play.onclick = () => ctx.say(it);
           const sb = el.querySelector('.ac-say'); if (sb) sb.onclick = () => ctx.say(it);
           if (q.mode === 'listen' && !noVoice) ctx.say(it);
+          if (q.mode === 'form' && ctx.useEx) { const f = formable(it); if (f) ctx.useEx(f.s); }
           el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
             const ok = +b.dataset.o === q.ansI;
             el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (+x.dataset.o === q.ansI) x.classList.add('ok'); });
@@ -248,10 +269,9 @@
             if (!ok && retry && !cur.second) queue.push({ it, i: cur.i, second: true, mode: q.mode });
             const fb = el.querySelector('.ac-fb');
             fb.className = 'ac-fb ' + (ok ? 'ok' : 'ng');
-            fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + ctx.esc(q.ans)}</p>${explainHTML(it, ctx)}<button type="button" class="btn primary block ac-go">繼續 ▶</button>`;
-            if (q.mode !== 'form') ctx.say(it);
-            try { fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { }
-            const go = fb.querySelector('.ac-go'); go.onclick = () => { n++; show(); }; try { go.focus({ preventScroll: true }); } catch (e) { }
+            fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + ctx.esc(q.ans)}</p>${ok ? '' : explainHTML(it, ctx)}`;
+            if (q.mode !== 'form' && !ok) ctx.say(it);
+            ctx.advance(ok, el, () => { n++; show(); });
           });
         };
         show();

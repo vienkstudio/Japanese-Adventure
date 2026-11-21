@@ -1,7 +1,7 @@
 /* 路線 path（G2）：前綴 pa-；五十音單元格 kn-unit／kn-ub（由 kana-lesson.js 產生） */
 .pa{max-width:720px;margin:0 auto;padding:0 0 var(--sp-6)}
 .pa-load{margin:48px 0}
-.pa-pin{display:flex;flex-direction:column;gap:2px;background:var(--pri-t);color:var(--text);border-radius:var(--r-m);padding:var(--sp-3) var(--sp-4);margin:var(--sp-2) 0 0}
+.pa-pin{display:flex;flex-direction:column;gap:2px;width:100%;min-height:44px;border:none;text-align:left;font:inherit;cursor:pointer;background:var(--pri-t);color:var(--text);border-radius:var(--r-m);padding:var(--sp-3) var(--sp-4);margin:var(--sp-2) 0 0}
 .pa-pin b{color:var(--pri-d);font-size:var(--fs-md)}
 .pa-pin span{font-size:var(--fs-sm);color:var(--muted)}
 .pa-tabs{margin:var(--sp-2) 0}
@@ -58,3 +58,21 @@
 .kn-ub .x{font-size:var(--fs-xs);color:var(--muted)}
 .kn-umem{margin:var(--sp-3) 0;padding-left:1.2em;font-size:var(--fs-sm);line-height:1.6}
 .pa-card{min-width:0;overflow-wrap:anywhere}
+/* v10：分頁「更多」、商務群組、實戰地點、分科挑戰 */
+.pa-tabs .pa-mt{background:transparent;box-shadow:none;border:1px dashed var(--line2);color:var(--muted)}
+.pa-tabs .pa-mt.on2{border-style:solid;color:var(--text)}
+.pa-rest{margin-top:0}
+.pa-rest button{font-size:var(--fs-sm)}
+.pa-h small{font-size:var(--fs-xs);color:var(--muted);font-weight:700;margin-left:var(--sp-1)}
+.pa-grp{display:flex;align-items:center;gap:var(--sp-2);width:100%;min-height:48px;margin:var(--sp-2) 0;padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:var(--r-m);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.pa-grp.on{border-color:var(--pri);background:var(--pri-t)}
+.pa-grp b{flex:1;min-width:0;font-size:var(--fs-md);overflow-wrap:anywhere}
+.pa-grp small{flex:none;font-size:var(--fs-xs);color:var(--muted);font-weight:700}
+.pa-grp .pa-st{font-size:var(--fs-xs)}
+.pa-chal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp-2);padding-bottom:var(--sp-3)}
+.pa-chal .btn{min-height:44px}
+.pa-rg{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);margin:0 0 var(--sp-3);font-size:var(--fs-sm);font-weight:800}
+.pa-rg .btn{min-height:44px;min-width:56px}
+.pa-rg .btn.on{background:var(--pri);color:var(--on-pri)}
+.pa-rg small{flex-basis:100%;font-size:var(--fs-xs);color:var(--muted);font-weight:700}
+.pa-flow{margin:var(--sp-2) 0}

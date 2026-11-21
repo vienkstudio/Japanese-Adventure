@@ -44,7 +44,7 @@
 
 /* ===== 舞台 ===== */
 .route-play #main,main.route-play{padding-bottom:0}
-.wd{position:relative;display:flex;flex-direction:column;gap:6px;max-width:900px;margin:0 auto;padding:0 8px;overflow:hidden}
+.wd{position:relative;display:flex;flex-direction:column;gap:6px;width:100%;min-width:0;box-sizing:border-box;max-width:900px;margin:0 auto;padding:0 8px;overflow:hidden}
 .wd-hud{display:flex;align-items:center;gap:6px;flex:none}
 .wd-loc{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow);color:var(--text);font:inherit;min-height:48px;padding:4px 10px;cursor:pointer;text-align:left}
 .wd-loc>span:first-child{font-size:1.5em}
@@ -152,8 +152,8 @@
 .wd-tabs{display:flex;gap:6px;overflow-x:auto;margin:0 40px 8px 0;padding-bottom:2px}
 .wd-tabs button{flex:none;border:none;border-radius:999px;background:var(--chip);color:var(--text);font:inherit;font-weight:700;min-height:44px;padding:0 14px;cursor:pointer;white-space:nowrap}
 .wd-tabs button.on{background:var(--pri);color:var(--on-pri)}
-.wd-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
-.wd-it{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;border:2px solid var(--line2);border-radius:14px;background:var(--card);color:var(--text);font:inherit;min-height:88px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.25}
+.wd-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(104px,100%),1fr));gap:6px}
+.wd-it{position:relative;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:center;gap:1px;border:2px solid var(--line2);border-radius:14px;background:var(--card);color:var(--text);font:inherit;min-height:88px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.25}
 .wd-it .e{font-size:1.6em}.wd-it b{font-size:.9em}.wd-it .z{color:var(--acc-d)}
 .wd-it .p,.wd-br .p{font-size:13px;font-weight:800;color:var(--pri)}
 .wd-it.on{border-color:var(--pri);background:var(--pri-t)}
@@ -239,7 +239,8 @@
 @media (max-width:480px){
   .wd{padding:0 4px}
   .wd-hb{font-size:.76em;padding:0 6px}
-  .wd-items{grid-template-columns:repeat(3,1fr)}
+  .wd-items{grid-template-columns:repeat(3,minmax(0,1fr))}
+  :root[data-fs=l] .wd-items,:root[data-fs=xl] .wd-items{grid-template-columns:repeat(2,minmax(0,1fr))}
   .wd-sheet{max-height:62%}
   .jp-node{min-width:52px;min-height:52px;padding:2px 6px;border-radius:12px;font-size:.88em}
 }
@@ -405,3 +406,9 @@
 .wd-sim-done{text-align:center;padding:18px 8px}
 .wd-sim-done h3{margin:6px 0}
 .wd-sim-st{margin:0;font-size:var(--fs-2xl);color:var(--gold);letter-spacing:4px}
+/* v10：shopSim 375px 不溢出；主要按鈕（下一步、繼續、說出來）固定在面板底部，第一屏可見、不被底部導覽擋 */
+.wd-sim .wd-in{min-width:0}
+.wd-sim .wd-in>.wd-acts:last-child,.wd-sim .wd-in>.wd-build>.wd-acts:last-child{position:sticky;bottom:calc(-14px - env(safe-area-inset-bottom,0px));z-index:1;margin:8px -14px calc(-14px - env(safe-area-inset-bottom,0px));padding:8px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line2)}
+.wd-sim .wd-in>.wd-build>.wd-acts:last-child{margin-left:-14px;margin-right:-14px}
+.wd-sim .wd-hud{min-height:44px}
+.wd-miss-l{margin:6px 0;font-size:var(--fs-md);font-weight:800;color:var(--pri)}

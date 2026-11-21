@@ -112,20 +112,27 @@
       need.forEach(it => {
         try {
           let ok = true;
-          const k = JPText.tokenize(it.jp).map(t => { if (t.sym) return t.s; if (t.kana && !KJ.test(t.kana)) return t.kana; if (!KJ.test(t.s)) return t.s; ok = false; return t.s; }).join('');
+          const k = JPText.tokenize(it.jp).map(t => { if (t.sym || !KJ.test(t.s)) return t.s; if (t.kana && !KJ.test(t.kana)) return t.kana; ok = false; return t.s; }).join('');
           if (ok && k && k !== it.jp) it.kana = k;
         } catch (e) { }
       });
     }).catch(() => { });
   }
   const kanaOf = it => it.type === 'kana' ? (it.kana || it.jp) : (it.kana && it.kana !== it.jp ? it.kana : '');
+  // 長音一律雙寫（kaado、toukyou、suuji）：資料裡的長音符號 ā ī ū ē ō 轉成 aa ii uu ee ou
+  const MAC = { 'ā': 'aa', 'ī': 'ii', 'ū': 'uu', 'ē': 'ee', 'ō': 'ou', 'â': 'aa', 'î': 'ii', 'û': 'uu', 'ê': 'ee', 'ô': 'ou', 'Ā': 'Aa', 'Ī': 'Ii', 'Ū': 'Uu', 'Ē': 'Ee', 'Ō': 'Ou' };
+  const unMacron = s => String(s || '').replace(/[āīūēōâîûêôĀĪŪĒŌ]/g, c => MAC[c]);
+  // 全站同一套羅馬字：有讀音就用 Phrase.romaji（同店內、手冊），沒有才用資料的 romaji
   function romaji(it) {
     if (!it) return '';
-    if (it.romaji) return it.romaji;
     const k = it.kana || (isKanaStr(it.jp) ? it.jp : '');
-    if (!k || !isKanaStr(k)) return '';
-    try { return window.Phrase && has(Phrase, 'romaji') ? Phrase.romaji(k, it.jp) || '' : ''; } catch (e) { return ''; }
+    if (k && isKanaStr(k)) { try { const r = window.Phrase && has(Phrase, 'romaji') ? Phrase.romaji(k, it.type === 'kana' ? k : it.jp) : ''; if (r) return r; } catch (e) { } }
+    return unMacron(it.romaji);
   }
+  // 提示依 App.profile().assist（同 biz／手冊）：讀音 assist≠none；羅馬字 full 或零基礎；假名卡永遠給羅馬字
+  const assist = () => { try { const p = App.profile(); return { kana: p.assist !== 'none' || p.lv === 'zero', ro: p.assist === 'full' || p.lv === 'zero' || !p.assist }; } catch (e) { return { kana: true, ro: true }; } };
+  const showRo = it => (it && it.type === 'kana') || assist().ro;
+  const showKana = () => assist().kana;
   const sayText = it => typeof it === 'string' ? it : it.say || (it.type === 'kana' ? (it.kana || it.jp) : it.kana && isKanaStr(it.kana) ? it.kana : it.jp);
   const say = it => { try { App.speak(sayText(it)); } catch (e) { } };
   const sfx = ok => { if (window.Game && has(Game, 'sfx')) try { Game.sfx(ok ? 'ok' : 'ng'); } catch (e) { } };
@@ -156,17 +163,28 @@
     for (const id in L) { const e = L[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) < tmr) m++; }
     return m;
   }
-  // 純計算：results（依作答順序）→ 統計；第一次作答 ≥1 算答對、最後一次 ≥1 算學會
+  // 純計算：results（依作答順序）→ 統計
+  //   答對率：每個項目取「最後一個正式作答的活動」裡的第一次作答（同活動內重考不洗白；小考答錯就是錯）
+  //   字卡自評（r.self）不佔答對；整組只有自評時（例：複習字卡）才用自評算
+  //   學會：最後一次 ≥1
   function summarize(results, items) {
-    const first = new Map(), last = new Map();
-    (results || []).forEach(r => { if (!r || !r.id) return; if (!first.has(r.id)) first.set(r.id, r.grade); last.set(r.id, r.grade); });
-    const total = first.size;
+    const last = new Map(), formal = new Map(), self = new Map();
+    (results || []).forEach(r => {
+      if (!r || !r.id) return;
+      last.set(r.id, r.grade);
+      const st = r.step == null ? 0 : r.step;
+      if (r.self) { if (!self.has(r.id)) self.set(r.id, r.grade); return; }
+      const f = formal.get(r.id);
+      if (!f || f.step !== st) formal.set(r.id, { step: st, g: r.grade });
+    });
+    const scored = formal.size ? [...formal].map(([id, f]) => [id, f.g]) : [...self];
+    const total = scored.length;
     let correct = 0, learned = 0; const wrong = [];
-    first.forEach((g, id) => { if (g >= 1) correct++; else { const it = items && items[id]; if (it) wrong.push(it); } });
+    scored.forEach(([id, g]) => { if (g >= 1) correct++; else { const it = items && items[id]; if (it) wrong.push(it); } });
     last.forEach(g => { if (g >= 1) learned++; });
     const rate = total ? Math.round(correct / total * 100) : 0;
     const stars = !total ? 0 : rate >= 90 ? 3 : rate >= 70 ? 2 : 1;
-    return { results: (results || []).map(r => ({ id: r.id, grade: r.grade, type: r.type || typeOfId(r.id) })), total, correct, rate, learned, wrong, stars };
+    return { results: (results || []).map(r => Object.assign({ id: r.id, grade: r.grade, type: r.type || typeOfId(r.id) }, r.self ? { self: true } : {})), total, correct, rate, learned, wrong, stars };
   }
 
   /* ---------------- runner ---------------- */
@@ -185,19 +203,31 @@
     return new Promise(done => {
       let closed = false;
       const all = [], recorded = new Set(), byId = {}, metas = [];
+      // 同一 session 的例句只出現一次（新學卡、選選看、排句子、小考共用）
+      const exUsed = new Set(), exRaw = [];
+      const exKey = s => String(s || '').replace(/<[^>]*>/g, '').replace(/[\s　。．.！!？?、，,「」『』（）()〜～_＿]/g, '');
       el.innerHTML = frameHTML(title);
       const root = el.querySelector('.ac'), bar = el.querySelector('.ac-bar'), stage = el.querySelector('.ac-stage');
       const setBar = (k, i, n) => {
         const f = steps.length ? (k + (n ? Math.min(i, n) / n : 0)) / steps.length : 1;
         bar.firstElementChild.style.width = Math.round(f * 100) + '%'; bar.setAttribute('aria-valuenow', Math.round(f * 100));
-        el.querySelector('.ac-n').textContent = n ? (steps.length > 1 ? `${k + 1}／${steps.length}・` : '') + `${Math.min(i + 1, n)}／${n}` : '';
+        el.querySelector('.ac-n').textContent = n ? `${Math.min(i + 1, n)}／${n}` : '';
       };
       const finish = quit => {
         if (closed) return null; closed = true;
-        const s = Object.assign(summarize(all, byId), { title, quit: !!quit, meta: metas, due: dueTomorrow(), xp: 0 });
-        if (!quit && s.total) {
+        const s = Object.assign(summarize(all, byId), { title, quit: !!quit, meta: metas, due: dueTomorrow(), xp: 0, unfinished: unfinished || '' });
+        // 已學會（隔天以上還記得）用 Learn 的判定，不用本次答對數
+        try { if (has(Learn, 'isLearned')) s.learned = [...new Set(all.map(r => r.id))].filter(id => Learn.isLearned(id)).length; } catch (e) { }
+        if (unfinished) s.stars = 0;
+        if (!quit && !unfinished && s.total) {
           if (opts.reward) { try { const r = App.reward(opts.reward, s.stars, title); s.xp = r.gained || 0; } catch (e) { console.warn(e); } }
-          else { s.xp = 3 + s.correct * 2; App.addXP(s.xp, title); }
+          else {
+            s.xp = 3 + s.correct * 2; App.addXP(s.xp, title);
+            // 沒有 reward（五十音、複習…）也算「做完一次」：首頁應用判斷看 lastDoneAt（同 App.reward／kana-lesson）
+            try { const S = App.state; if (!S.lastDone || typeof S.lastDone !== 'object') S.lastDone = {}; S.lastDone.act = App.today ? App.today() : ''; S.lastDoneAt = Date.now(); App.save(); } catch (e) { }
+          }
+          s.done = true; s.doneAt = Date.now();
+          try { document.dispatchEvent(new CustomEvent('activitydone', { detail: { title, rate: s.rate, total: s.total } })); } catch (e) { }
         }
         s.streak = (App.streakInfo ? App.streakInfo() : { days: 0 }).days || 0;
         return s;
@@ -221,7 +251,7 @@
           Learn.record(id, g, { src, item: m, type: it && it.type, retryAt: g ? 0 : tomorrow() });
         } catch (e) { console.warn('Learn.record', e); }
       };
-      let k = 0;
+      let k = 0, unfinished = '';
       const next = () => {
         if (closed || !root.isConnected) return;
         if (k >= steps.length) return end();
@@ -242,19 +272,43 @@
               const it = typeof x === 'string' ? (byId[Learn.idOf(x)] || null) : x;
               const id = typeof x === 'string' ? x : x && x.id;
               if (!id) return null;
-              const r = Object.assign({ id, grade }, extra || {});
+              const r = Object.assign({ id, grade, step: k }, extra || {});
               local.push(r); record(r, it && it.jp ? it : null, src);
               return r;
             },
             progress: (i, n) => setBar(k, i, n),
-            say, sayText, romaji, kana: kanaOf, hideZh, sfx, item, itemsOf,
-            alive: () => !closed && root.isConnected
+            say, sayText, romaji, kana: kanaOf, hideZh, sfx, item, itemsOf, showRo, showKana, assist,
+            // 例句去重：useEx(jp) 登記；exUsed(jp) 是否已出現過；dupText(text) 題目文字（含挖空）是否和已出現的例句重複
+            useEx: jp => { const x = exKey(jp); if (x.length >= 4 && !exUsed.has(x)) { exUsed.add(x); exRaw.push(String(jp)); } },
+            usedEx: () => exRaw.slice(),
+            exUsed: jp => { const x = exKey(jp); return x.length >= 4 && exUsed.has(x); },
+            dupText: text => {
+              const t = String(text || '').replace(/<[^>]*>/g, ''), parts = t.split(/[（(][\s　]*[）)]|_{2,}|＿+/).map(exKey).filter(p => p.length >= 3);
+              if (!parts.length) return false;
+              const len = parts.join('').length;
+              for (const s of exUsed) if (parts.every(p => s.includes(p)) && len >= Math.min(6, s.length * 0.5)) return true;
+              return false;
+            },
+            alive: () => !closed && root.isConnected,
+            // 作答後：答對 ms 毫秒（預設 600）自動下一題；答錯停下，在 host 底部放固定的「繼續 ▶」
+            advance(ok, host, go, ms) {
+              let gone = false;
+              const g = () => { if (gone || closed || !root.isConnected) return; gone = true; go(); };
+              if (ok) { setTimeout(g, ms || 600); return; }
+              const d = document.createElement('div'); d.className = 'ac-act ac-dock';
+              d.innerHTML = '<button type="button" class="btn primary block ac-go">繼續 ▶</button>';
+              host.appendChild(d);
+              const b = d.querySelector('.ac-go'); b.onclick = g;
+              try { b.focus({ preventScroll: true }); } catch (e) { }
+            }
           };
           return Promise.resolve().then(() => def.start(stage, ctx)).then(r => {
-            (r && Array.isArray(r.results) ? r.results : []).forEach(x => { const it = x && x.item && typeof x.item === 'object' ? item(Object.assign({ id: x.id }, x.item)) : null; if (x) delete x.item; record(x, it, src); });
+            (r && Array.isArray(r.results) ? r.results : []).forEach(x => { if (x && x.step == null) x.step = k; const it = x && x.item && typeof x.item === 'object' ? item(Object.assign({ id: x.id }, x.item)) : null; if (x) delete x.item; record(x, it, src); });
             if (r && r.meta) metas.push(Object.assign({ type: st.type }, r.meta));
+            // 店家練習沒做完（done:false 或還有 meta.left）：這一步不算完成，後面的步驟不跑、不給完成星
+            if (r && st.type === 'shop' && (r.done === false || (r.meta && (r.meta.done === false || (+r.meta.left || (Array.isArray(r.meta.left) && r.meta.left.length)))))) unfinished = st.title || '店家練習';
           });
-        }).catch(e => { console.warn('activity', st.type, e); }).then(() => { k++; next(); });
+        }).catch(e => { console.warn('activity', st.type, e); }).then(() => { if (unfinished) return end(); k++; next(); });
       };
       const end = () => {
         const s = finish(false); if (!s) return;
@@ -267,12 +321,12 @@
     });
   }
   function endScreen(root, s, opts, leave) {
-    const nx = opts.next;
+    const nx = s.unfinished ? null : opts.next;
     root.className = 'ac ac-end';
-    root.innerHTML = `<p class="ac-big" aria-hidden="true">${!s.total ? '🙂' : s.rate >= 70 ? '🎉' : '💪'}</p>
-      <h1>${esc(s.total ? (s.rate >= 70 ? '完成了！' : '完成！再複習一次會更熟') : '這一組沒有題目')}</h1>
+    root.innerHTML = `<p class="ac-big" aria-hidden="true">${s.unfinished ? '🏪' : !s.total ? '🙂' : s.rate >= 70 ? '🎉' : '💪'}</p>
+      <h1>${esc(s.unfinished ? `「${s.unfinished}」還沒完成，下次從這裡繼續` : s.total ? (s.rate >= 70 ? '完成了！' : '完成！再複習一次會更熟') : '這一組沒有題目')}</h1>
       <div class="ac-sum">
-        <div><b>${s.learned}</b><small>學會</small></div>
+        <div><b>${s.correct}／${s.total}</b><small>答對</small></div>
         <div><b>${s.rate}%</b><small>答對率</small></div>
         <div><b>${s.due}</b><small>明天到期</small></div>
         <div><b>🔥${s.streak}</b><small>連勝天數</small></div>
@@ -328,7 +382,7 @@
 
   window.Activity = {
     register, run, session, need, get: t => DEFS[t] || null, types: () => Object.keys(DEFS),
-    item, items: itemsOf, resolve, loadCSS, romaji, kanaOf, say, summarize, hideZh, isKanaStr,
+    item, items: itemsOf, resolve, loadCSS, romaji, kanaOf, say, summarize, hideZh, isKanaStr, showRo, showKana, unMacron,
     _test: { typeOfId, exNorm }
   };
 })();

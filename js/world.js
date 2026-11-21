@@ -568,8 +568,11 @@
   }
   function askQ(a, want, npc) {
     const line = variant(a);
-    const opts = App.shuffle(a.a.map(x => Object.assign({ ok: 1 }, x)).concat(a.bad.map(x => Object.assign({ ok: 0 }, x))));
-    const wantA = want != null ? a.a.find(x => x.val === String(want)) : null;
+    // shopSim：剛學的單元句優先當正解（例：温めてください 取代 はい、お願いします）
+    const alt = SIM && SIM.alt && SIM.alt[a.id];
+    const ans = alt ? a.a.map(x => x.val === alt.val ? Object.assign({}, x, alt.line) : x) : a.a;
+    const opts = App.shuffle(ans.map(x => Object.assign({ ok: 1 }, x)).concat(a.bad.filter(x => !alt || x.jp !== alt.line.jp).map(x => Object.assign({ ok: 0 }, x))));
+    const wantA = want != null ? ans.find(x => x.val === String(want)) : null;
     return step(`${bubble(npc, line)}${wantA ? `<p class="wd-need">📋 旅伴想要：<b>${esc(wantA.brief)}</b></p>` : ''}
       <div class="wd-opts">${opts.map((o, i) => `<button type="button" class="wd-opt" data-i="${i}">${tx(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
       App.speak(line.jp); bindSpk(el, line);
@@ -774,7 +777,7 @@
       box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (+b.dataset.q > 0 && n >= (it.max || 5)) return App.toast(lim(it)); n = Math.max(1, Math.min(it.max || 5, n + +b.dataset.q)); show(); App.speak(Phrase.count(it.c, n).kana); });
       box.querySelector('#wd-add').onclick = () => {
         if (z.type === 'machine') return vend(it, n, key);
-        if (z.type === 'counter') { addBasket(it, n, { toSay: true }); return checkout(key); }
+        if (z.type === 'counter') { addBasket(it, n, { toSay: true }); if (SIM && simMissing().length) { App.toast(`${esc(it.emoji)} <span lang="ja">${esc(it.jp)}</span> ×${n}`); return simNext(); } return checkout(key); }
         addBasket(it, n, { held: z.type === 'shelf', toSay: z.type !== 'shelf' });
         App.toast(`${esc(it.emoji)} <span lang="ja">${esc(it.jp)}</span> ×${n}`); marks();
       };
@@ -874,9 +877,20 @@
     paintBar();
     if (SIM) simCheck();
   }
+  // shopSim：任務品項還沒拿齊就結帳／點餐 → 提示「還差：綠茶」並帶回去拿
+  function simLack() {
+    if (!SIM) return false;
+    const m = simMissing(); if (!m.length) return false;
+    const el = sheet(`<div class="wd-note"><p class="wd-miss-l">還差：${m.map(n => `${esc(n.it.emoji)} ${esc(String(n.it.zh || '').replace(/（.*$/, ''))}${n.n - (SIM.got.get(n.it) || 0) - inB(n.it) > 1 ? ' ×' + (n.n - (SIM.got.get(n.it) || 0) - inB(n.it)) : ''}`).join('、')}</p>
+      <p>${m.map(n => `<span lang="ja">${esc(n.it.jp)}</span>`).join('、')}還沒放進${S.kind === 'eat' ? '點單' : '籃子'}，先回去拿。</p></div>
+      <div class="wd-acts"><button type="button" class="btn primary" id="wd-back">${S.kind === 'eat' ? '📖 回去點' : '🧺 回去拿'} ➜</button></div>`);
+    el.querySelector('#wd-back').onclick = () => itemsSheet(m[0].it.zone);
+    return true;
+  }
   const checkout = flow(async key => {
     const npc = staff(key);
     if (!RUN.basket.length) return clerkSheet(key);
+    if (simLack()) return;
     await Q.checkBasket();
     const sayL = RUN.basket.filter(b => b.toSay && !b.paid);
     await npcSay(npc, greetLine());
@@ -918,6 +932,7 @@
   const orderFlow = flow(async () => {
     const npc = staff();
     if (!RUN.basket.length) return App.toast('先選好要點的東西');
+    if (simLack()) return;
     await Q.checkBasket();
     const sayL = RUN.basket.filter(b => !b.paid);
     if (sayL.length) {
@@ -1101,7 +1116,34 @@
     const R = regionOfShop(id); if (!R) return Promise.reject(new Error('找不到店家 ' + id));
     return loadRegion(R.id).then(() => W.shops[id] || Promise.reject(new Error('找不到店家 ' + id)));
   }
-  function simGoal(s, goal, items) {
+  // 單元句 → 店員問句的回答：{問句id: {val, line:{jp,kana,zh}}}
+  // 只比對「句子開頭的主詞」（第一個漢字詞／片假名詞）＋肯定否定語氣，不另建字典；對不上就維持原本的回答
+  const strip = t => String(t || '').replace(/[。、！？!?\s]/g, '');
+  const head = t => (String(t || '').match(/[一-鿿々]+|[ァ-ヺー]{2,}/) || [''])[0];
+  const isQ = t => /[か？?]$/.test(strip(t)) || /[か？?][。]?$/.test(String(t || '').trim());
+  const isNeg = t => /(いりません|いらないです|要りません|結構です|大丈夫です)$/.test(strip(t));
+  const isPos = t => /(ください|お願いします|下さい)$/.test(strip(t));
+  function unitAlt(s, items) {
+    const out = {};
+    const list = (items || []).filter(i => i && i.jp && (!i.type || i.type === 'phrase') && !isQ(i.jp));
+    if (!list.length) return out;
+    const used = new Set();
+    s.asks.forEach(a => {
+      const yn = a.a.some(o => o.val === 'yes') || a.a.some(o => o.val === 'no');
+      const qh = head(a.v[0] && a.v[0][0]);
+      for (const it of list) {
+        if (used.has(it)) continue;
+        const ih = head(it.jp), neg = isNeg(it.jp);
+        // 1) 回答就在單元句裡（例：塩でお願いします ⊂ タンは塩でお願いします），或開頭主詞相同（例：窓側の席をお願いします）
+        let x = a.a.find(o => !isQ(o.jp) && isNeg(o.jp) === neg && ((strip(o.jp).length >= 4 && strip(it.jp).includes(strip(o.jp))) || (ih.length >= 2 && head(o.jp) === ih)));
+        // 2) 要／不要型的問句：問句主詞＝單元句主詞（温めますか ↔ 温めてください、袋はご利用ですか ↔ 袋はいりません）
+        if (!x && yn && qh && qh === ih) x = neg ? a.a.find(o => o.val === 'no') : isPos(it.jp) ? a.a.find(o => o.val === 'yes') : null;
+        if (x) { out[a.id] = { val: x.val, line: { jp: it.jp, kana: it.kana || '', zh: it.zh || x.zh } }; used.add(it); break; }
+      }
+    });
+    return out;
+  }
+  function simGoal(s, goal, items, alt) {
     const qs = s.quests || [], byId = id => s.items.find(i => i.id === id);
     const zt = it => (s.zones[it.zone] || {}).type;
     const ckAsks = s.asks.filter(a => a.phase === 'checkin');
@@ -1114,7 +1156,8 @@
       let cand = qs;
       if (items && items.length) {
         const txt = items.map(i => (i && (i.jp || '') + ' ' + (i.zh || '')) || '').join(' ');
-        const sc = x => x.items.filter(([id]) => { const it = byId(id); return it && (txt.includes(it.jp) || txt.includes(it.zh)); }).length;
+        const hit = x => { const tg = new Set(x.items.flatMap(([id]) => (byId(id) || {}).tags || [])); return s.asks.filter(a => alt && alt[a.id] && (a.when === 'always' || tg.has(String(a.when).slice(4)))).length; };
+        const sc = x => x.items.filter(([id]) => { const it = byId(id); return it && (txt.includes(it.jp) || txt.includes(it.zh)); }).length + hit(x);
         const best = Math.max(...qs.map(sc));
         if (best > 0) cand = qs.filter(x => sc(x) === best);
       }
@@ -1138,6 +1181,10 @@
     o.needs = o.needs.filter(n => n.it && !(s.kind === 'eat' && zt(n.it) === 'counter'));
     if (!o.needs.length && !o.checkin && ckAsks.length) o.checkin = 1;
     o.key = /^(q-|checkin$|rand$)/.test(o.id) ? `w:${s.id}:${o.id}` : '';
+    // 單元句對到的問句：旅伴的條件改成單元句那一邊（例：袋はいりません → 不要袋子）
+    let changed = false;
+    Object.keys(alt || {}).forEach(k => { if (o.prefs[k] != null && String(o.prefs[k]) !== String(alt[k].val)) changed = true; o.prefs[k] = alt[k].val; });
+    if (changed) { o.msg = '旅伴傳來清單：買齊下面的東西，店員問的時候用剛學的句子回答。'; o.jpMsg = null; }
     return o;
   }
   const simZones = () => [...new Set(SIM.goal.needs.map(n => n.it.zone))].filter(k => S.zones[k]);
@@ -1214,29 +1261,34 @@
         if (pending) { const r = pending; pending = null; r(ABORT); }
         if (window.speechSynthesis) speechSynthesis.cancel();
         focusMode(false);
-        const res = my.res.map(r => ({ id: r.id, grade: r.grade, item: r.item }));
-        const out = { results: res, meta: Object.assign({ shop: id, goal: my.goal.id, title: my.goal.title, mistakes: my.miss, done: false }, meta || {}) };
+        // 中途離開（✕ 離開、頂列 ←、換頁）：不回報任何結果、不算完成；任務完成後才交出結果
+        const ok = !!(my.done || (meta && meta.done));
+        const res = ok ? my.res.map(r => ({ id: r.id, grade: r.grade, item: r.item })) : [];
+        const out = { results: res, meta: Object.assign({ shop: id, goal: my.goal.id, title: my.goal.title, mistakes: my.miss }, meta || {}, { done: ok }) };
         if (SIM === my) { SIM = null; S = null; RUN = null; }
         resolve(out);
       };
+      if (SIM && SIM.finish) SIM.finish({ left: true });
       loadShop(id).then(shop => {
         if (!el.isConnected) return resolve({ results: [], meta: { shop: id, done: false } });
         const d = W.districts[(regionOfShop(id) || { shops: [] }).shops.find(x => x[1] === id)[0]] || Object.values(W.districts).find(x => x.region === shop.region) || { id: '', name: '', region: shop.region };
         S = shop; D = d; MAP = null; PARAMS = { r: shop.region, d: d.id, s: shop.id };
         RUN = { basket: [], vals: {}, entered: false, served: false, toPay: false, incident: false, greeted: false };
-        my = SIM = { goal: simGoal(shop, opt.goal, opt.items), res: [], miss: 0, got: new Map(), checked: false, served: false, done: false, closed: false, finish: m => finish(m) };
+        const alt = unitAlt(shop, opt.items);
+        my = SIM = { alt, goal: simGoal(shop, opt.goal, opt.items, alt), res: [], miss: 0, got: new Map(), checked: false, served: false, done: false, closed: false, finish: m => finish(m) };
         // 品項面板只列：目標品項＋每區 2 個干擾
         const show = new Set(SIM.goal.needs.map(n => n.it));
         simZones().forEach(k => itemsIn(k).filter(it => !show.has(it) && !it.soldOut).slice(0, 2).forEach(it => show.add(it)));
         SIM.show = show;
         Q.enter(S);
-        stage(el, `<div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name || '')}</small></div>
-          <button type="button" class="wd-hb" id="wd-sim-x" aria-label="離開這間店">✕</button>`, 'wd-shop wd-sim');
+        // 離開鍵只有一個：活動框架的「✕ 離開」（或頂列 ←）；店內不再放 ✕
+        stage(el, `<div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name || '')}</small></div>`, 'wd-shop wd-sim');
+        // 面板的 ✕ 在實戰裡只是「回任務清單」，改成 ↩ 免得和「✕ 離開」混淆
+        const wx = STAGE.querySelector('.wd-x'); wx.textContent = '↩'; wx.setAttribute('aria-label', '回任務清單'); wx.title = '回任務清單';
         const box = STAGE.querySelector('.wd-box');
         box.innerHTML = sceneHTML(S, simZones().filter(k => S.zones[k].type !== 'counter'));
         box.querySelectorAll('.wd-card').forEach(b => b.onclick = () => openZone(b.dataset.z));
         STAGE.querySelector('#wd-clerk').onclick = () => simNext();
-        STAGE.querySelector('#wd-sim-x').onclick = () => finish({ done: false, left: true });
         MAP = { pulse: SCN.pulse, pos: () => [0, 0], comps: [], goObj: openZone, fit() { }, stop() { } };
         STAGE._fit();
         tick = setInterval(() => { if (!STAGE || !STAGE.isConnected || SIM !== my) finish({ done: false, left: true }); }, 1000);
@@ -1367,7 +1419,7 @@
   }
   function renderDistrict(el, d) {
     D = d; S = null; RUN = null;
-    const w = st(); w.last[d.region] = d.id;
+    const w = st(); w.last[d.region] = d.id; w.lastRegion = d.region;
     stage(el, `<button type="button" class="wd-hb" id="wd-jp" aria-label="日本地圖">🗾</button>
       <div class="wd-title"><b lang="ja">${esc(d.jp)}</b><small>${esc(d.icon)} ${esc(regionOf(d.region).name)}・${esc(d.name)}</small></div>
       <button type="button" class="wd-hb" id="wd-cards" aria-label="我的句卡"></button><button type="button" class="wd-hb" id="wd-info" aria-label="這一區">ℹ️</button>`, 'wd-district');
@@ -1405,6 +1457,7 @@
   function render(el, params) {
     params = params || {};
     const w = st();
+    if (SIM && SIM.finish) SIM.finish({ left: true });   // 從實戰直接換到自由逛：先結束上一場（不回報結果）
     if (pending) { pending = null; }
     S = null; D = null; RUN = null; MAP = null;
     focusMode(false);
@@ -1428,6 +1481,7 @@
   App.register('play', { title: '冒險', icon: '🗾', nav: false, navParent: 'path', render });
 
   window.World = {
+    _test: { unitAlt: (s, items) => unitAlt(s, items) },
     st, lv, li, assist, prof, shopSim, shopsByType, shopPhrases, loadShop, SHOP_TYPES, showKana, showZh, zero, romaOf, loadRegion, loadEvents, regionOf, Q, tx, item, REC, cardCount, bgOf, clerkSVG, signHTML,
     X: {
       get S() { return S; }, get D() { return D; }, get RUN() { return RUN; }, get MAP() { return MAP; }, get PARAMS() { return PARAMS; }, get STAGE() { return STAGE; },

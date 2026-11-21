@@ -1,88 +1,59 @@
 /* =========================================================
-   日語冒險 — 不會清單 / 間隔複習 review.js
-   路由：review（nav:false，navParent me；從「我的」今日到期進入）；字卡→ act {type:'flashcard', ids}、空清單→ path
-   依賴：App、Tracker（core.js）；選用 KANA/DAKU/YOON、SCENES 作干擾項
+   日語冒險 — 間隔複習 review.js
+   路由：review（nav:false，navParent me；從「我的」今日到期進入）
+   複習一律走統一活動框架（act 路由：flashcard 自評 4 鍵／choice 四選一，由 runner 呼叫 Learn.record）；
+   今日到期＝Learn.due(15)（與首頁今日課同一函式）。清單、篩選、匯出入、列印收在「⋯ 更多」。
+   依賴：App、Learn、Tracker（core.js）
    ========================================================= */
 (function () {
   'use strict';
   const W = typeof window !== 'undefined' ? window : globalThis;
   const g = name => { try { return W[name] !== undefined ? W[name] : eval(name); } catch (e) { return undefined; } };
 
-  /* ---------------- 樣式 ---------------- */
+  /* ---------------- 樣式（只用 tokens.css 變數） ---------------- */
   const CSS = `
-.rv-stats{display:flex;gap:10px;flex-wrap:wrap}
-.rv-stat{flex:1;min-width:110px;text-align:center;background:var(--soft);border-radius:12px;padding:8px}
-.rv-stat b{display:block;font-size:1.8em;color:var(--red);line-height:1.2}
-.rv-chip{cursor:pointer;font-family:inherit}
-.rv-chip{min-height:44px;color:var(--text)}
-.rv-chip.rv-on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
-.rv-due{display:inline-block;font-size:.82em;border-radius:999px;padding:0 8px;background:var(--chip);color:var(--muted);margin-top:2px}
-.rv-due.now{background:var(--pri-t);color:var(--pri-d);font-weight:700}
-.rv-next{background:var(--acc-t);border-radius:14px;padding:10px 12px;margin:8px 0}
-.rv-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
-.rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:20px;font-family:inherit;font-size:1em;background:var(--card)}
-.rv-tools input[type=search]{flex:1;min-width:180px}
-.rv-list{display:flex;flex-direction:column;gap:8px}
-.rv-item{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;flex-wrap:wrap}
-.rv-item.rv-done{opacity:.6;background:var(--acc-t)}
-.rv-emo{font-size:1.9em;width:1.6em;text-align:center}
-.rv-main{flex:1;min-width:180px}
-.rv-jp{font-size:1.45em;cursor:pointer;font-weight:bold}
-.rv-jp:hover{color:var(--blue)}
-.rv-sub{color:var(--muted);font-size:.9em}
-.rv-zh{font-size:1.05em}
-.rv-hint{font-size:.85em;color:var(--pri-d)}
-.rv-meta{text-align:right;font-size:.85em;min-width:110px}
-.rv-dots{color:var(--green);letter-spacing:2px;font-size:1.05em}
-.rv-ops{display:flex;gap:4px}
-.rv-modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.rv-opt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
-.rv-opt .tabs{margin:0}
+.rv{max-width:720px;margin:0 auto}
 .rv-h{margin:0 0 var(--sp-2)}
-.rv-go{flex-direction:column;min-height:56px;font-size:var(--fs-lg)}
+.rv-stats{display:flex;gap:var(--sp-2);margin:0 0 var(--sp-3)}
+.rv-stat{flex:1;text-align:center;background:var(--chip);border-radius:var(--r-m);padding:var(--sp-2) 4px;font-size:var(--fs-sm)}
+.rv-stat b{display:block;font-size:var(--fs-xl);color:var(--pri-d);line-height:1.2}
+.rv-go{display:flex;flex-direction:column;align-items:center;min-height:56px;font-size:var(--fs-lg)}
 .rv-go small{font-weight:500;font-size:var(--fs-sm);color:var(--on-pri-2)}
-.rv-more{margin:var(--sp-2) 0}
-.rv-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--muted)}
-.rv-gap{margin-top:var(--sp-2)}
-.rv-info{font-size:var(--fs-sm)}
-.rv-center{justify-content:center;margin-top:14px}
-.rv-sp{flex:1}
-.rv-prog{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
-.rv-prog .bar{flex:1}
-.rv-card{perspective:1000px;max-width:460px;margin:10px auto;cursor:pointer;height:280px}
-.rv-card-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
-.rv-card.rv-flip .rv-card-in{transform:rotateY(180deg)}
-.rv-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;border:3px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
-.rv-back{transform:rotateY(180deg);background:var(--soft)}
-.rv-face .rv-fjp{font-size:3em;line-height:1.2;word-break:break-all}
-.rv-q{text-align:center;margin:10px 0}
-.rv-q .rv-qjp{font-size:2.6em;line-height:1.3;word-break:break-all}
-.rv-listen{font-size:3em;border:none;background:var(--soft);border-radius:50%;width:110px;height:110px;cursor:pointer}
-.rv-input{display:block;width:100%;max-width:420px;margin:10px auto;padding:12px 16px;font-size:1.3em;border:2px solid var(--line);border-radius:14px;text-align:center;font-family:inherit;background:var(--card);color:var(--text)}
-.rv-input.rv-ok{border-color:var(--green);background:var(--acc-t)}
-.rv-input.rv-ng{border-color:var(--red);background:var(--pri-t)}
-.rv-tools input[type=search],.rv-tools select{color:var(--text);min-height:44px}
-.rv-tools label{min-height:44px;display:inline-flex;align-items:center;gap:4px}
+.rv-alt{margin-top:var(--sp-2);min-height:48px}
+.rv-next{background:var(--acc-t);border-radius:var(--r-m);padding:var(--sp-2) var(--sp-3);margin:0 0 var(--sp-3);font-size:var(--fs-sm)}
+.rv-info{font-size:var(--fs-sm);color:var(--muted);margin:var(--sp-2) 0 0}
+.rv-more{margin:var(--sp-3) 0 0}
+.rv-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;font-weight:700;color:var(--muted);list-style:none}
+.rv-more>summary::-webkit-details-marker{display:none}
+.rv-tools{display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:center;margin:var(--sp-2) 0}
+.rv-tools input[type=search],.rv-tools select{padding:7px 12px;border:2px solid var(--line);border-radius:var(--r-pill);font:inherit;font-size:var(--fs-md);background:var(--card);color:var(--text);min-height:44px}
+.rv-tools input[type=search]{flex:1;min-width:160px}
+.rv-tools label{min-height:44px;display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-sm)}
+.rv-chip{cursor:pointer;font-family:inherit;min-height:44px;color:var(--text)}
+.rv-chip.rv-on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
+.rv-list{display:flex;flex-direction:column;gap:var(--sp-2)}
+.rv-item{display:flex;align-items:center;gap:var(--sp-2);background:var(--card);border:2px solid var(--line);border-radius:var(--r-m);padding:var(--sp-2) var(--sp-3)}
+.rv-item.rv-done{opacity:.6;background:var(--acc-t)}
+.rv-main{flex:1;min-width:0}
+.rv-jp{font-size:var(--fs-lg);font-weight:700}
+.rv-sub{color:var(--muted);font-size:var(--fs-sm);margin-left:6px}
+.rv-zh{font-size:var(--fs-sm)}
+.rv-meta{font-size:var(--fs-xs);color:var(--muted)}
+.rv-due{display:inline-block;font-size:var(--fs-xs);border-radius:var(--r-pill);padding:0 8px;background:var(--chip);color:var(--muted)}
+.rv-due.now{background:var(--pri-t);color:var(--pri-d);font-weight:700}
+.rv-ops{display:flex;gap:4px;flex:none}
+.rv-ops button{min-width:44px;min-height:44px}
 .rv-empty{text-align:center;padding:30px 16px}
-.rv-empty .rv-big{font-size:4em}
-.rv-result{text-align:center}
-.rv-result .rv-big{font-size:3.4em}
+.rv-big{font-size:4em}
 .rv-printhead{display:none}
-@media(max-width:640px){
-  .rv-meta{text-align:left;min-width:0}
-  .rv-item{gap:8px}
-  .rv-face .rv-fjp{font-size:2.3em}
-  .rv-q .rv-qjp{font-size:2em}
-  .rv-card{height:240px}
-}
 @media print{
-  body.rv-printing #main>*:not(.rv-printarea){display:none!important}
-  body.rv-printing .rv-printarea .rv-ops{display:none!important}
+  body.rv-printing #main>*:not(.rv){display:none!important}
+  body.rv-printing .rv>.panel:first-child,body.rv-printing .rv-ops,body.rv-printing .noprint{display:none!important}
   body.rv-printing .rv-printhead{display:block}
   .rv-item{break-inside:avoid;border:1px solid var(--line2)}
-  .rv-item.rv-done{opacity:1}
 }`;
-  if (typeof document !== 'undefined' && !document.getElementById('css-review')) {
+  if (typeof document !== 'undefined') {
+    const old = document.getElementById('css-review'); if (old) old.remove();
     const st = document.createElement('style');
     st.id = 'css-review';
     st.textContent = CSS;
@@ -148,27 +119,26 @@
   };
 
   /* ---------------- UI 狀態（換頁保留） ---------------- */
-  const ui = { src: '', q: '', sort: 'new', showMastered: false, every: false, scope: 'due', count: '10', cmode: 'mix' };
-  // 清單來源：預設＝不會清單（Tracker）；勾「全部學過的」＝統一進度裡所有學過的項目（字卡、挑戰、知識庫、冒險）
+  const ui = { src: '', q: '', sort: 'new', showMastered: false, every: false, open: false, shown: 10 };
+  // 清單來源：預設＝不會清單（Tracker）；勾「全部學過的」＝統一進度裡所有學過的項目
   const pool = inclM => ui.every ? Learn.views(e => e.s !== 'new' && (inclM || e.s !== 'mastered')).sort((a, b) => b.added - a.added) : Tracker.list(inclM);
-  // 到期資訊：今天到期／N 天後
   const DAY = 864e5;
+  const DUE_N = 15;   // 與首頁今日課相同：最多 15 個
   function dueText(t) {
-    if (t.mastered) return '';
+    if (t.mastered) return '🎓 已掌握';
     const d = (t.due || 0) - Date.now();
-    if (d <= 0) return '<span class="rv-due now">⏰ 今天要複習</span>';
+    if (d <= 0) return '<span class="rv-due now">⏰ 今天</span>';
     const n = Math.ceil(d / DAY);
-    return `<span class="rv-due">📅 ${n <= 1 ? '明天' : n + ' 天後'}複習</span>`;
+    return `<span class="rv-due">📅 ${n <= 1 ? '明天' : n + ' 天後'}</span>`;
   }
   function nextDue() {
-    const fut = Learn.views(e => e.s !== 'new' && (e.due || 0) > Date.now()).sort((a, b) => a.due - b.due);
-    return fut[0] || null;
+    const L = App.state.learn || {}, now = Date.now();
+    let best = null;
+    for (const id in L) { const e = L[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) > now && (!best || e.due < L[best].due)) best = id; }
+    return best ? Learn.view(best) : null;
   }
-  let session = null;
-
   const isKana = it => String(it.id || '').startsWith('kana:');
   const speakItem = it => App.speak(it.kana || String(it.jp || '').split('・')[0]);
-  const dots = n => { n = Math.min(3, n || 0); return '●'.repeat(n) + '○'.repeat(3 - n); };
 
   function filtered() {
     let arr = pool(ui.showMastered);
@@ -179,173 +149,137 @@
       arr = arr.filter(t => [t.jp, t.kana, t.romaji, t.zh, t.hint].some(v => String(v || '').toLowerCase().includes(q)) ||
         (qr && normRomaji(t.romaji || '').includes(qr)));
     }
-    const s = ui.sort;
     arr = arr.slice();
-    if (s === 'wrong') arr.sort((a, b) => (b.wrong || 0) - (a.wrong || 0) || (a.streak || 0) - (b.streak || 0));
-    else if (s === 'old') arr.sort((a, b) => (a.seen || 0) - (b.seen || 0) || (a.added || 0) - (b.added || 0));
+    if (ui.sort === 'wrong') arr.sort((a, b) => (b.wrong || 0) - (a.wrong || 0) || (a.streak || 0) - (b.streak || 0));
+    else if (ui.sort === 'old') arr.sort((a, b) => (a.seen || 0) - (b.seen || 0) || (a.added || 0) - (b.added || 0));
     else arr.sort((a, b) => (b.added || 0) - (a.added || 0));
     return arr;
   }
 
+  /* ---------------- 要複習的 id ---------------- */
+  // 到期：Learn.due(15)（首頁今日課同一函式）；沒有到期 → 提前複習：最快到期的 10 個（未掌握）
+  function runIds() {
+    const due = Learn.due(DUE_N);
+    if (due.length) return { ids: due, early: false };
+    const L = App.state.learn || {};
+    const ids = Object.keys(L).filter(id => { const e = L[id]; return e.s !== 'new' && e.s !== 'mastered' && (e.reps || e.star || e.lapses); })
+      .sort((a, b) => (L[a].due || 0) - (L[b].due || 0)).slice(0, 10);
+    return { ids, early: true };
+  }
+  function start(type) {
+    const r = runIds();
+    if (!r.ids.length) return App.go('path');
+    App.go('act', { type, ids: r.ids, title: type === 'choice' ? '複習・選擇題' : '複習', back: { route: 'review', params: {} } });
+  }
+
   /* ---------------- 主頁面 ---------------- */
   function render(el) {
-    session = null;
-    const all = Tracker.list(true);
-    if (!all.length && !Tracker.dueCount() && !Learn.stats().known) {
+    const st = Learn.stats();
+    if (!st.learning && !st.review && !st.mastered && !Tracker.list(true).length) {
       el.innerHTML = `<div class="panel rv-empty">
-        <div class="rv-big">📌</div>
-        <h2>不會清單還是空的</h2>
-        <p>闖關時答錯的字會<b>自動</b>加進來；看到不熟的字，也可以按「＋ 加入不會清單」。</p>
-        <p class="muted">連續答對 3 次就算「已掌握」🎓</p>
-        <div class="rv-row2"><button class="btn primary" data-go="path">🧭 去路線學新的</button></div>
-        <div class="rv-opt rv-center"><button class="btn sm ghost" data-act="import">📥 匯入清單</button></div>
+        <div class="rv-big" aria-hidden="true">📌</div>
+        <h2>還沒有要複習的</h2>
+        <p>上課、路線單元學過的字句，會照「答對越多次、隔越久」自動排進這裡。</p>
+        <button type="button" class="btn primary" data-go="path">🧭 去路線學新的</button>
       </div>`;
-      bindCommon(el);
+      el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
       return;
     }
-    if (ui.src && !all.some(t => (t.source || '其他') === ui.src)) ui.src = '';
-    el.innerHTML = `
-      <div class="panel noprint">
+    const r = runIds(), n = r.ids.length, nd = r.early ? nextDue() : null;
+    const when = nd ? (() => { const d = new Date(nd.due); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : '';
+    if (ui.src && !pool(true).some(t => (t.source || '其他') === ui.src)) ui.src = '';
+    el.innerHTML = `<div class="rv">
+      <div class="panel">
         <h2 class="rv-h">📌 複習</h2>
-        <button class="btn primary block rv-go" data-mode="flash">▶ 開始複習<small id="rvGoSub"></small></button>
-        <button class="btn block rv-cards" data-cards="1">🎴 字卡：翻不會清單</button>
-        <details class="rv-more"><summary>換題型、範圍、題數</summary>
-        <div class="rv-opt"><b>範圍：</b><div class="tabs" id="rvScope">
-          <button data-v="due">⏰ 今日到期</button><button data-v="all">提前複習全部</button><button data-v="filter">目前篩選結果</button></div></div>
-        <div class="rv-opt"><b>題數：</b><div class="tabs" id="rvCount">
-          <button data-v="10">10 題</button><button data-v="20">20 題</button><button data-v="all">全部</button></div></div>
-        <div class="rv-modes">
-          <div class="card click" data-mode="flash"><div class="icon">🃏</div><h3>閃卡</h3><div class="muted">看日文想意思，翻面對答案</div></div>
-          <div class="card click" data-mode="choice"><div class="icon">✏️</div><h3>選擇題</h3><div class="muted">日→中、中→日、🎧 聽音選字</div></div>
-          <div class="card click" data-mode="type"><div class="icon">⌨️</div><h3>拼音輸入</h3><div class="muted">看日文打出羅馬拼音</div></div>
-        </div>
-        <div class="rv-opt rv-gap"><b>選擇題題型：</b><div class="tabs" id="rvCmode">
-          <button data-v="mix">混合</button><button data-v="j2z">日→中</button><button data-v="z2j">中→日</button><button data-v="listen">🎧 聽音</button></div></div>
-        </details>
-        <div class="muted rv-info" id="rvScopeInfo"></div>
-        ${App.voiceHTML ? App.voiceHTML() : ''}
+        <div class="rv-stats"><div class="rv-stat"><b>${r.early ? 0 : n}</b>今天到期</div><div class="rv-stat"><b>${st.learning + st.review}</b>學習中</div><div class="rv-stat"><b>${st.mastered}</b>已掌握 🎓</div></div>
+        ${r.early ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個：<b class="jp" lang="ja">${esc(nd.jp)}</b>（${when}）` : ''}</div>` : ''}
+        ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：想一想→翻面→自評 4 級</small></button>
+        <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習</button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去路線學新的</button>`}
+        <p class="rv-info">答對越多次，隔越久再出現；上課、路線、店家學過的到期都會排進來。</p>
       </div>
-      <div class="panel noprint">
-        <div class="rv-stats" id="rvStats"></div>
-        <div class="chips" id="rvChips"></div>
-      </div>
-      <div class="panel rv-printarea">
+      <details class="panel rv-more"${ui.open ? ' open' : ''}><summary class="noprint">⋯ 更多：清單、篩選、匯出入、列印</summary>
         <div class="rv-printhead"><h2>📌 日語不會清單</h2><div class="muted" id="rvPrintInfo"></div></div>
         <div class="rv-tools noprint">
-          <input type="search" id="rvQ" placeholder="🔍 搜尋日文／假名／拼音／中文">
-          <select id="rvSort"><option value="new">最新加入</option><option value="wrong">錯最多</option><option value="old">最久未複習</option></select>
+          <input type="search" id="rvQ" placeholder="🔍 搜尋日文／假名／拼音／中文" aria-label="搜尋清單">
+          <select id="rvSort" aria-label="排序"><option value="new">最新加入</option><option value="wrong">錯最多</option><option value="old">最久未複習</option></select>
         </div>
         <div class="rv-tools noprint">
           <label><input type="checkbox" id="rvShowM"> 顯示已掌握</label>
           <label><input type="checkbox" id="rvEvery"> 全部學過的</label>
-          <span class="rv-sp"></span>
-          <button class="btn sm ghost" data-act="clearM">🧹 清除已掌握</button>
-          <button class="btn sm ghost" data-act="export">📤 匯出</button>
-          <button class="btn sm ghost" data-act="import">📥 匯入</button>
-          <button class="btn sm ghost" data-act="print">🖨️ 列印</button>
         </div>
+        <div class="chips noprint" id="rvChips"></div>
         <div class="rv-list" id="rvList"></div>
-      </div>`;
-
+        <div class="rv-tools noprint">
+          <button type="button" class="btn sm ghost" data-act="clearM">🧹 清除已掌握</button>
+          <button type="button" class="btn sm ghost" data-act="export">📤 匯出</button>
+          <button type="button" class="btn sm ghost" data-act="import">📥 匯入</button>
+          <button type="button" class="btn sm ghost" data-act="print">🖨️ 列印</button>
+        </div>
+      </details>
+      ${App.voiceHTML ? App.voiceHTML() : ''}
+    </div>`;
+    el.querySelectorAll('[data-run]').forEach(b => b.onclick = () => start(b.dataset.run));
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
+    const det = el.querySelector('.rv-more');
+    det.ontoggle = () => { ui.open = det.open; if (det.open) refresh(el); };
     const q = el.querySelector('#rvQ'); q.value = ui.q;
-    q.oninput = () => { ui.q = q.value; refresh(el); };
+    q.oninput = () => { ui.q = q.value; ui.shown = 10; refresh(el); };
     const so = el.querySelector('#rvSort'); so.value = ui.sort;
     so.onchange = () => { ui.sort = so.value; refresh(el); };
     const sm = el.querySelector('#rvShowM'); sm.checked = ui.showMastered;
     sm.onchange = () => { ui.showMastered = sm.checked; refresh(el); };
     const ev = el.querySelector('#rvEvery'); ev.checked = ui.every;
-    ev.onchange = () => { ui.every = ev.checked; ui.src = ''; refresh(el); };
-    tabs(el, '#rvScope', 'scope', () => refresh(el));
-    tabs(el, '#rvCount', 'count', () => refresh(el));
-    tabs(el, '#rvCmode', 'cmode');
-    el.querySelectorAll('[data-mode]').forEach(c => c.onclick = () => startSession(el, c.dataset.mode));
-    bindCommon(el);
-    refresh(el);
-  }
-
-  function tabs(el, sel, key, cb) {
-    const box = el.querySelector(sel);
-    const btns = box.querySelectorAll('button');
-    const paint = () => btns.forEach(b => b.classList.toggle('on', b.dataset.v === ui[key]));
-    btns.forEach(b => b.onclick = () => { ui[key] = b.dataset.v; paint(); cb && cb(); });
-    paint();
-  }
-
-  function bindCommon(el) {
-    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
-    // 字卡＝統一活動框架的 flashcard（act 路由）；不會清單空的就翻今天到期的，再沒有就去路線
-    el.querySelectorAll('[data-cards]').forEach(b => b.onclick = () => {
-      const ids = (Tracker.list(false).length ? Tracker.list(false) : Tracker.dueList()).map(t => t.id).slice(0, 20);
-      if (!ids.length) return App.go('path');
-      App.go('act', { type: 'flashcard', ids, title: '不會清單字卡', back: { route: 'review', params: {} } });
-    });
+    ev.onchange = () => { ui.every = ev.checked; ui.src = ''; ui.shown = 10; refresh(el); };
     el.querySelectorAll('[data-act]').forEach(b => {
       const a = b.dataset.act;
       if (a === 'export') b.onclick = doExport;
       else if (a === 'import') b.onclick = () => doImport(el);
-      else if (a === 'print') b.onclick = doPrint;
+      else if (a === 'print') b.onclick = () => { const s = ui.shown; ui.shown = 1e9; refresh(el); doPrint(() => { ui.shown = s; if (det.isConnected) refresh(el); }); };
       else if (a === 'clearM') b.onclick = () => {
         const n = Tracker.list(true).filter(t => t.mastered).length;
         if (!n) return App.toast('目前沒有已掌握的項目');
-        App.modal(`<h2>清除已掌握？</h2><p>將從清單移除 <b>${n}</b> 個已掌握的項目。</p>`,
+        App.modal(`<h2>清除已掌握？</h2><p>將從不會清單移除 <b>${n}</b> 個已掌握的項目。</p>`,
           [{ label: '取消' }, { label: '清除', cls: 'primary', onClick: () => { Tracker.clearMastered(); App.toast(`🧹 已清除 ${n} 項`, 'ok'); render(el); } }]);
       };
     });
+    if (ui.open) refresh(el);
   }
 
   function refresh(el) {
-    // 統計＝統一進度（字卡、挑戰、知識庫、冒險、複習同一份）
-    const st = Learn.stats();
-    el.querySelector('#rvStats').innerHTML =
-      `<div class="rv-stat"><b>${st.due}</b>今天到期</div><div class="rv-stat"><b>${st.learning + st.review}</b>學習中</div><div class="rv-stat"><b>${st.mastered}</b>已掌握 🎓</div>`;
-    // 來源分組
+    const chips = el.querySelector('#rvChips'); if (!chips) return;
     const by = {}, cur = pool(ui.showMastered);
     cur.forEach(t => { const s = t.source || '其他'; by[s] = (by[s] || 0) + 1; });
-    const chips = el.querySelector('#rvChips');
-    chips.innerHTML = `<button class="chip rv-chip ${ui.src ? '' : 'rv-on'}" data-src="">全部 ${cur.length}</button>` +
-      Object.keys(by).sort((a, b) => by[b] - by[a]).map(s => `<button class="chip rv-chip ${ui.src === s ? 'rv-on' : ''}" data-src="${esc(s)}">${esc(s)} ${by[s]}</button>`).join('');
-    chips.querySelectorAll('[data-src]').forEach(c => c.onclick = () => { ui.src = ui.src === c.dataset.src ? '' : c.dataset.src; refresh(el); });
-
-    const list = filtered();
+    const srcs = Object.keys(by).sort((a, b) => by[b] - by[a]);
+    chips.innerHTML = srcs.length > 1 ? `<button type="button" class="chip rv-chip ${ui.src ? '' : 'rv-on'}" data-src="">全部 ${cur.length}</button>` +
+      srcs.slice(0, 5).map(s => `<button type="button" class="chip rv-chip ${ui.src === s ? 'rv-on' : ''}" data-src="${esc(s)}">${esc(s)} ${by[s]}</button>`).join('') : '';
+    chips.querySelectorAll('[data-src]').forEach(c => c.onclick = () => { ui.src = ui.src === c.dataset.src ? '' : c.dataset.src; ui.shown = 10; refresh(el); });
+    const list = filtered(), show = list.slice(0, ui.shown);
     const box = el.querySelector('#rvList');
-    box.innerHTML = list.length ? list.map(itemHTML).join('') : `<div class="center muted" style="padding:20px">${ui.showMastered ? '沒有符合的項目' : '沒有符合的待複習項目（可勾選「顯示已掌握」）'}</div>`;
-    box.querySelectorAll('[data-say]').forEach(b => b.onclick = () => { const t = Tracker.get(b.dataset.say); if (t) speakItem(t); });
-    box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
-      const t = Tracker.get(b.dataset.del); if (!t) return;
-      App.modal(`<h2>移除這個項目？</h2><p class="jp" style="font-size:1.5em">${esc(t.jp)}</p><p>${esc(t.zh)}</p>`,
-        [{ label: '取消' }, { label: '🗑 移除', cls: 'primary', onClick: () => { Tracker.remove(t.id); App.toast('已移除'); Tracker.list(true).length ? refresh(el) : render(el); } }]);
-    });
-    const info = el.querySelector('#rvScopeInfo');
-    if (info) {
-      const n = scopeItems().length, nd = nextDue();
-      const when = nd ? (() => { const d = new Date(nd.due); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })() : '';
-      info.innerHTML = ui.scope === 'due' && !n
-        ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個到期：<b>${esc(nd.jp)}</b>（${when}）` : ''}<br><span class="muted">想多練可以選「提前複習全部」。</span></div>`
-        : `本次範圍共 ${n} 個項目${ui.scope === 'due' ? '（間隔排程：答對越多次，隔越久再出現；字卡、挑戰、冒險學過的到期也會出現）' : ''}`;
-      const gs = el.querySelector('#rvGoSub'); if (gs) gs.textContent = n ? `閃卡・${Math.min(n, ui.count === 'all' ? n : +ui.count)} 題` : '今天沒有到期的，可展開下方改範圍';
-    }
+    box.innerHTML = list.length ? show.map(itemHTML).join('') + (list.length > show.length ? `<button type="button" class="btn block ghost noprint" data-moreitems="1">再顯示 ${Math.min(10, list.length - show.length)} 個（共 ${list.length}）</button>` : '')
+      : `<p class="rv-info">${ui.every || ui.showMastered ? '沒有符合的項目' : '不會清單是空的（答錯的字會自動加入；勾「全部學過的」可看全部）'}</p>`;
+    box.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.moreitems) { ui.shown += 10; return refresh(el); }
+      if (b.dataset.say) { const t = Learn.view(b.dataset.say); if (t) speakItem(t); }
+      if (b.dataset.del) {
+        const t = Learn.view(b.dataset.del); if (!t) return;
+        App.modal(`<h2>從不會清單移除？</h2><p class="jp" lang="ja">${esc(t.jp)}</p><p>${esc(t.zh)}</p><p class="muted">學習進度保留，到期仍會出現在複習。</p>`,
+          [{ label: '取消' }, { label: '🗑 移除', cls: 'primary', onClick: () => { Tracker.remove(t.id); App.toast('已移除'); refresh(el); } }]);
+      }
+    };
     const pi = el.querySelector('#rvPrintInfo');
     if (pi) pi.textContent = `共 ${list.length} 項${ui.src ? '・來源：' + ui.src : ''}・${new Date().toLocaleDateString()}`;
   }
 
   function itemHTML(t) {
-    const rom = romajiOf(t);
+    const rom = isKana(t) ? '' : romajiOf(t), inL = Learn.inList ? Learn.inList(t.id) : false;
     return `<div class="rv-item ${t.mastered ? 'rv-done' : ''}">
-      <div class="rv-emo">${esc(t.emoji || (isKana(t) ? '🔤' : '💬'))}</div>
       <div class="rv-main">
-        <div><span class="rv-jp jp" data-say="${esc(t.id)}" title="點擊發音">${esc(t.jp)}</span>
-          ${t.kana && t.kana !== t.jp ? `<span class="rv-sub jp">${esc(t.kana)}</span>` : ''}
-          ${rom ? `<span class="rv-sub">${esc(rom)}</span>` : ''}</div>
+        <div><span class="rv-jp jp" lang="ja">${esc(t.jp)}</span>${t.kana && t.kana !== t.jp ? `<span class="rv-sub jp" lang="ja">${esc(t.kana)}</span>` : ''}${rom ? `<span class="rv-sub">${esc(rom)}</span>` : ''}</div>
         <div class="rv-zh">${esc(t.zh)}</div>
-        ${t.hint ? `<div class="rv-hint">💡 ${esc(t.hint)}</div>` : ''}
+        <div class="rv-meta">${esc(t.source || '其他')}・✅ ${t.right || 0} ❌ ${t.wrong || 0}・${dueText(t)}</div>
       </div>
-      <div class="rv-meta">
-        <div><span class="chip">${esc(t.source || '其他')}</span></div>
-        <div>✅ ${t.right || 0}・❌ ${t.wrong || 0}</div>
-        <div class="rv-dots" title="連對 ${t.streak || 0}/3">${t.mastered ? '🎓 已掌握' : dots(t.streak)}</div>
-        <div>${dueText(t)}</div>
-      </div>
-      <div class="rv-ops"><button class="btn sm ghost" data-say="${esc(t.id)}" title="發音">🔊</button><button class="btn sm ghost" data-del="${esc(t.id)}" title="移除">🗑</button></div>
+      <div class="rv-ops noprint"><button type="button" class="btn sm ghost" data-say="${esc(t.id)}" aria-label="發音">🔊</button>${inL ? `<button type="button" class="btn sm ghost" data-del="${esc(t.id)}" aria-label="從不會清單移除">🗑</button>` : ''}</div>
     </div>`;
   }
 
@@ -378,238 +312,17 @@
     };
     inp.click();
   }
-  function doPrint() {
+  function doPrint(after) {
     document.body.classList.add('rv-printing');
-    const off = () => { document.body.classList.remove('rv-printing'); W.removeEventListener && W.removeEventListener('afterprint', off); };
+    let done = false;
+    const off = () => { if (done) return; done = true; document.body.classList.remove('rv-printing'); W.removeEventListener && W.removeEventListener('afterprint', off); if (after) after(); };
     W.addEventListener && W.addEventListener('afterprint', off);
     W.print && W.print();
     setTimeout(off, 1500);
   }
 
-  /* ---------------- 複習流程 ---------------- */
-  function scopeItems() {
-    if (ui.scope === 'due') return Tracker.dueList();               // 只出到期的字
-    let arr = ui.scope === 'filter' ? filtered() : Tracker.list(false);
-    if (!arr.length && ui.scope === 'all') arr = Tracker.list(true);   // 全部掌握時仍可複習
-    return arr;
-  }
-  function pickItems(arr) {
-    // 優先：連對少、錯多、久未複習；再隨機
-    const r = new Map(arr.map(t => [t.id, Math.random()]));
-    const sorted = arr.slice().sort((a, b) => (a.streak || 0) - (b.streak || 0) || (b.wrong || 0) - (a.wrong || 0) || (a.seen || 0) - (b.seen || 0) || r.get(a.id) - r.get(b.id));
-    const n = ui.count === 'all' ? sorted.length : Math.min(sorted.length, +ui.count || 10);
-    return App.shuffle(sorted.slice(0, n));
-  }
-
-  function startSession(el, mode, items) {
-    let src = items || scopeItems();
-    if (mode === 'type') src = src.filter(t => romajiOf(t));
-    if (!src.length) return App.toast(mode === 'type' ? '範圍內沒有可拼音的項目' : ui.scope === 'due' && !items ? '🎉 今天沒有到期的字，可選「提前複習全部」' : '範圍內沒有項目');
-    const list = items ? App.shuffle(src) : pickItems(src);
-    session = { mode, list, i: 0, correct: 0, answered: 0, newly: [], wrongs: [], el, cmode: ui.cmode };
-    el.innerHTML = `<div class="panel" id="rvSess"></div>`;
-    W.scrollTo && W.scrollTo(0, 0);
-    showQ();
-  }
-
-  function markItem(it, ok) {
-    const s = session;
-    const t = Tracker.get(it.id); if (!t) return;
-    const was = !!t.mastered;
-    t.seen = Date.now();
-    const r = Tracker.mark(it.id, ok);
-    s.answered++;
-    if (ok) s.correct++; else s.wrongs.push(it);
-    if (r && r.mastered && !was) s.newly.push(it);
-  }
-
-  function header(s) {
-    const icons = { flash: '🃏 閃卡', choice: '✏️ 選擇題', type: '⌨️ 拼音輸入' };
-    return `<div class="rv-prog"><b>${icons[s.mode]}</b><div class="bar"><div style="width:${s.i / s.list.length * 100}%"></div></div>
-      <span>${s.i + 1}/${s.list.length}</span><button class="btn sm ghost" id="rvQuit">結束</button></div>`;
-  }
-
-  function showQ() {
-    const s = session; if (!s) return;
-    if (s.i >= s.list.length) return finish();
-    const box = s.el.querySelector('#rvSess');
-    const it = Tracker.get(s.list[s.i].id) || s.list[s.i];
-    if (s.mode === 'flash') qFlash(box, it);
-    else if (s.mode === 'choice') qChoice(box, it);
-    else qType(box, it);
-    const quit = box.querySelector('#rvQuit');
-    if (quit) quit.onclick = () => finish();
-  }
-  function next() { if (!session) return; session.i++; showQ(); }
-
-  function backHTML(it) {
-    const rom = romajiOf(it);
-    return `${it.emoji ? `<div style="font-size:2em">${esc(it.emoji)}</div>` : ''}
-      ${it.kana && it.kana !== it.jp ? `<div class="jp" style="font-size:1.6em">${esc(it.kana)}</div>` : ''}
-      ${rom ? `<div class="muted">${esc(rom)}</div>` : ''}
-      <div style="font-size:1.3em;margin:6px 0"><b>${esc(it.zh)}</b></div>
-      ${it.hint ? `<div class="rv-hint">💡 ${esc(it.hint)}</div>` : ''}`;
-  }
-
-  // a. 閃卡
-  function qFlash(box, it) {
-    box.innerHTML = header(session) + `
-      <div class="rv-card" id="rvCard"><div class="rv-card-in">
-        <div class="rv-face"><div class="rv-fjp jp">${esc(it.jp)}</div><div class="muted" style="margin-top:10px">👆 點卡片翻面</div></div>
-        <div class="rv-face rv-back">${backHTML(it)}</div>
-      </div></div>
-      <div class="center"><button class="btn sm ghost" id="rvSay">🔊 發音</button></div>
-      <div class="center" style="margin-top:8px"><button class="btn" id="rvNo">😵 還不會</button><button class="btn primary" id="rvYes">😊 會了</button></div>`;
-    const card = box.querySelector('#rvCard');
-    card.onclick = () => { card.classList.toggle('rv-flip'); if (card.classList.contains('rv-flip')) speakItem(it); };
-    box.querySelector('#rvSay').onclick = () => speakItem(it);
-    let done = false;
-    const ans = ok => { if (done) return; done = true; markItem(it, ok); next(); };
-    box.querySelector('#rvYes').onclick = () => ans(true);
-    box.querySelector('#rvNo').onclick = () => ans(false);
-  }
-
-  // b. 選擇題
-  function supplementPool(kana) {
-    const out = [];
-    if (kana) (g('KANA') || []).forEach(k => out.push(App.kanaItem(k)));
-    else (g('SCENES') || []).forEach(sc => {
-      (sc.vocab || []).forEach(w => out.push(App.wordItem(w, sc.name, 'word')));
-      (sc.phrases || []).forEach(w => out.push(App.wordItem(w, sc.name, 'phrase')));
-    });
-    return out;
-  }
-  function buildOptions(it, field, n) {
-    n = n || 4;
-    const ans = String(it[field] || '');
-    const seen = new Set([ans]);
-    const opts = [it];
-    const kana = isKana(it);
-    const tracked = Tracker.list(true).filter(t => t.id !== it.id);
-    const tiers = [
-      tracked.filter(t => isKana(t) === kana),
-      supplementPool(kana),
-      tracked.filter(t => isKana(t) !== kana),
-      supplementPool(!kana)
-    ];
-    for (const tier of tiers) {
-      for (const c of App.shuffle(tier)) {
-        if (opts.length >= n) break;
-        const v = String(c[field] || '');
-        if (!v || seen.has(v) || c.id === it.id) continue;
-        seen.add(v); opts.push(c);
-      }
-      if (opts.length >= n) break;
-    }
-    return App.shuffle(opts);
-  }
-  function qChoice(box, it) {
-    let type = session.cmode;
-    const noVoice = App.voiceOK && App.voiceOK() === false;
-    if (type === 'mix') type = (noVoice ? ['j2z', 'z2j'] : ['j2z', 'z2j', 'listen'])[Math.random() * (noVoice ? 2 : 3) | 0];
-    if (type === 'listen' && noVoice) type = 'kana';   // 沒有日文語音：聽音題改成「看讀音選字」
-    const field = type === 'j2z' ? 'zh' : 'jp';
-    const opts = buildOptions(it, field, 4);
-    let q;
-    if (type === 'j2z') q = `<div class="muted">這是什麼意思？</div><div class="rv-qjp jp" id="rvQjp" style="cursor:pointer">${esc(it.jp)}</div>`;
-    else if (type === 'z2j') q = `<div class="muted">日文怎麼說？</div><div style="font-size:1.8em">${esc(it.emoji || '')} <b>${esc(it.zh)}</b></div>`;
-    else if (type === 'kana') q = `<div class="muted">🔇 沒有日文語音，改看讀音：是哪一個？</div><div style="font-size:1.8em">${esc(romajiOf(it) || it.kana || it.zh)}</div>`;
-    else q = `<div class="muted">聽聽看，是哪一個？</div><button class="rv-listen" id="rvListen">🔊</button>`;
-    box.innerHTML = header(session) + `<div class="rv-q">${q}</div>
-      <div class="choices">${opts.map((o, k) => `<button class="choice ${field === 'jp' ? 'jp' : ''}" data-k="${k}">${esc(o[field])}</button>`).join('')}</div>
-      <div class="feedback" id="rvFb"></div><div class="center" id="rvNext"></div>`;
-    const qj = box.querySelector('#rvQjp'); if (qj) qj.onclick = () => speakItem(it);
-    const li = box.querySelector('#rvListen'); if (li) { li.onclick = () => speakItem(it); setTimeout(() => { if (session && session.list[session.i] && session.list[session.i].id === it.id) speakItem(it); }, 300); }
-    let done = false;
-    const btns = box.querySelectorAll('[data-k]');
-    btns.forEach(b => b.onclick = () => {
-      if (done) return; done = true;
-      const o = opts[+b.dataset.k], ok = o.id === it.id || String(o[field]) === String(it[field]);
-      btns.forEach(x => { const ox = opts[+x.dataset.k]; if (ox.id === it.id) x.classList.add('ok'); });
-      if (!ok) b.classList.add('ng');
-      markItem(it, ok);
-      speakItem(it);
-      box.querySelector('#rvFb').innerHTML = (ok ? '⭕ 答對了！' : '❌ 正確答案：') +
-        ` <span class="jp"><b>${esc(it.jp)}</b></span> ${it.kana && it.kana !== it.jp ? '（' + esc(it.kana) + '）' : ''} ＝ ${esc(it.zh)}`;
-      nextBtn(box);
-    });
-  }
-  function nextBtn(box) {
-    const nb = box.querySelector('#rvNext');
-    const last = session.i + 1 >= session.list.length;
-    nb.innerHTML = `<button class="btn primary" id="rvGo">${last ? '看結果 ➜' : '下一題 ➜'}</button>`;
-    const b = nb.querySelector('#rvGo');
-    b.onclick = next;
-    b.focus && b.focus();
-  }
-
-  // c. 拼音輸入
-  function qType(box, it) {
-    const rom = romajiOf(it);
-    box.innerHTML = header(session) + `<div class="rv-q">
-        <div class="muted">打出羅馬拼音（大小寫、空白、長音 ō/ou/oo 都不影響）</div>
-        <div class="rv-qjp jp" id="rvQjp" style="cursor:pointer">${esc(it.jp)}</div>
-        ${it.zh ? `<div class="muted">${esc(it.emoji || '')} ${esc(it.zh)}</div>` : ''}
-      </div>
-      <input class="rv-input" id="rvIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如：konnichiwa">
-      <div class="center"><button class="btn" id="rvSkip">🤔 不知道</button><button class="btn primary" id="rvOk">確定</button></div>
-      <div class="feedback" id="rvFb"></div><div class="center" id="rvNext"></div>`;
-    box.querySelector('#rvQjp').onclick = () => speakItem(it);
-    const inp = box.querySelector('#rvIn');
-    let done = false;
-    const submit = skip => {
-      if (done) return;
-      if (!skip && !inp.value.trim()) return inp.focus && inp.focus();
-      done = true;
-      const ok = !skip && romajiMatch(inp.value, rom);
-      inp.classList.add(ok ? 'rv-ok' : 'rv-ng');
-      inp.readOnly = true;
-      markItem(it, ok);
-      speakItem(it);
-      box.querySelector('#rvFb').innerHTML = (ok ? '⭕ 答對了！' : '❌ 正確拼音：') + ` <b>${esc(rom)}</b>　<span class="jp">${esc(it.kana || it.jp)}</span>`;
-      box.querySelector('#rvOk').disabled = true; box.querySelector('#rvSkip').disabled = true;
-      nextBtn(box);
-    };
-    box.querySelector('#rvOk').onclick = () => submit(false);
-    box.querySelector('#rvSkip').onclick = () => submit(true);
-    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault && e.preventDefault(); if (done) next(); else submit(false); } };
-    setTimeout(() => inp.focus && inp.focus(), 50);
-  }
-
-  /* ---------------- 結果 ---------------- */
-  const XP_PER = 3;
-  function finish() {
-    const s = session; if (!s) return;
-    session = null;
-    const el = s.el;
-    if (!s.answered) return render(el);
-    const xp = s.correct * XP_PER;
-    if (xp) App.addXP(xp, '複習');
-    const pct = s.correct / s.answered;
-    const face = pct >= 0.9 ? '🏆' : pct >= 0.6 ? '👍' : '💪';
-    const uniq = a => a.filter((x, i) => a.findIndex(y => y.id === x.id) === i);
-    const wrongs = uniq(s.wrongs);
-    el.innerHTML = `<div class="panel rv-result">
-      <div class="rv-big">${face}</div>
-      <h2>複習完成！</h2>
-      <p>答對 <b>${s.correct}</b> / ${s.answered}</p>
-      ${xp ? `<p class="xpgain">+${xp} XP</p>` : ''}
-      <p>本次掌握了 <b>${s.newly.length}</b> 個 🎓</p>
-      ${s.newly.length ? `<div class="chips" style="justify-content:center">${s.newly.map(w => `<span class="chip green jp">${esc(w.jp)}</span>`).join('')}</div>` : ''}
-      ${wrongs.length ? `<div class="muted">還要加油：</div><div class="chips" style="justify-content:center">${wrongs.map(w => `<span class="chip red"><span class="jp">${esc(w.jp)}</span> <small>${esc(w.zh)}</small></span>`).join('')}</div>` : ''}
-      <div style="margin-top:14px">
-        ${wrongs.length ? '<button class="btn" id="rvRetryW">🔁 只練錯的</button>' : ''}
-        <button class="btn" id="rvAgain">🔄 再來一輪</button>
-        <button class="btn primary" id="rvBack">📌 回清單</button>
-      </div></div>`;
-    el.querySelector('#rvAgain').onclick = () => startSession(el, s.mode);
-    el.querySelector('#rvBack').onclick = () => render(el);
-    const rw = el.querySelector('#rvRetryW');
-    if (rw) rw.onclick = () => startSession(el, s.mode, wrongs.map(w => Tracker.get(w.id)).filter(Boolean));
-  }
-
   App.register('review', { title: '複習', icon: '📌', nav: false, navParent: 'me', render });
 
   // 供測試／其他模組使用
-  W.ReviewAPI = { normRomaji, romajiMatch, kanaToRomaji, romajiOf };
+  W.ReviewAPI = { normRomaji, romajiMatch, kanaToRomaji, romajiOf, dueIds: () => Learn.due(DUE_N) };
 })();
