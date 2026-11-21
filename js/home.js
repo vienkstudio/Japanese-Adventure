@@ -96,6 +96,12 @@
     return { n, due, cap, min: Math.max(1, Math.ceil((due * 8 + n * 20 + ap) / 60)) };
   }
   const dueAllNow = () => window.Learn ? Learn.due(15).length : Tracker.dueCount();   // 與「我的」、導覽紅點同一個：Learn.due(15).length
+  // 一天新學量：讓明天到期 ≤20（Learn.freshBudget）；當天第一課至少 2 個，「再上一課」可以是 0（只複習）
+  function freshFor(g2, lv, dueAll) {
+    const base = freshN(lv), pd = plan(g2, lv, dueAll, base).due;
+    return window.Learn && Learn.freshBudget ? Learn.freshBudget(base, pd, dayRec().done ? 0 : 2) : base;
+  }
+  const kanaPh = () => kanaSeen() >= 10 ? 2 : 1;   // 零基礎＋旅遊：五十音之外混入的旅遊必備句數
   /* ---- 商務：依程度排單元（「適合你」等級 → 更高 → 較低的當選修複習） ---- */
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
   function bizOrder(lv) {
@@ -135,9 +141,9 @@
     if (!p.placed) return onboard(el);
     const sk = App.streakInfo(), d = dayRec();
     const km = kanaMode(p), goal = curGoal(p), g2 = km ? 'kana' : goal;
-    const dueAll = dueAllNow(), pl = plan(g2, p.lv, dueAll), n = pl.n, due = pl.due;
+    const dueAll = dueAllNow(), pl = plan(g2, p.lv, dueAll, freshFor(g2, p.lv, dueAll)), n = pl.n, due = pl.due;
     const pg = !d.done && d.prog && d.prog.goal === g2 && d.prog.done > 0 ? d.prog : null;
-    const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${kanaSeen() >= 10 && (p.goals || []).includes('travel') ? '＋2 句旅遊句' : ''}，先教再考`
+    const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${(p.goals || []).includes('travel') ? `＋${kanaPh()} 句旅遊句` : ''}，先教再考`
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
     applyDone(d);
     const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? `▶ 開始今天的課（約 ${pl.min} 分鐘）` : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
@@ -183,7 +189,6 @@
   };
   const fresh = id => { const e = Learn.get(id); return !e || (e.s === 'new' && !e.reps); };
   const hasKanji = s => /[一-鿿々〆ヶ]/.test(s || '');
-  const isSent = it => it.type === 'phrase' || /^p:/.test(it.id || '');
   // 句子卡讀音：沒有 kana 又有漢字 → 用 JPText 斷詞補讀音（有未收錄漢字就不補，避免錯讀）
   function fillReading(list) {
     const need = list.filter(it => it.type !== 'kana' && it.type !== 'grammar' && !/^g:/.test(it.id || '') && (!it.kana || hasKanji(it.kana)) && hasKanji(it.jp));
@@ -222,12 +227,50 @@
       Q.fresh.push({ id, type: t, jp: w.jp, kana: w.kana || '', zh: w.zh || '', hint: w.when || '', lv: u.lv || '', source: '💼 ' + (u.title || '商務') });
     }
   }
+  // 歌曲新聞：先載入歌曲模組（Songs.HOT／importHot／DEMO），Learn.prepare('fun') 才能取熱門歌歌詞詞
+  const SONG_JS = ['js/phrase.js', 'data/loan.js'].concat(SC, ['data/reading/daily.js', 'data/reading/biz.js', 'js/jp-text.js', 'js/link-import.js', 'js/reader.js', 'js/songs.js']);
+  const ACT_JS = ['js/phrase.js', 'js/activity.js', 'js/activities/flashcard.js', 'js/activities/choice.js', 'js/activities/wordbank.js', 'js/activities/listen.js'];
+  // 零基礎＋旅遊的「用出來」：剛學的旅遊句所在的旅遊單元；沒有就下一個五十音單元（直接進單元，不停在路線分頁）
+  function kanaApply(Q) {
+    const P = window.Path; if (!P || !has(P, 'unit')) return null;
+    const ph = Q.fresh.filter(x => x.type === 'phrase');
+    let tu = null;
+    if (ph.length && has(P, 'units')) {
+      try {
+        for (const r of P.units('travel')) {
+          const u = P.unit(r.id);
+          if (u && (u.items || []).some(it => ph.some(x => x.id === it.id))) { tu = u; break; }
+        }
+      } catch (e) { tu = null; }
+    }
+    if (tu) return { route: 'path-unit', params: { id: tu.id }, label: '旅遊單元：' + tu.title + '（剛學的句子）' };
+    let ku = null; try { ku = has(P, 'nextUnit') ? P.nextUnit('kana') : null; } catch (e) { ku = null; }
+    return ku ? { route: 'path-unit', params: { id: ku.id }, label: '五十音單元：' + ku.title, kana: 1 } : null;
+  }
+  // 零基礎＋旅遊：混入的旅遊句改用路線旅遊單元（便利商店起）的必備句，學了就能在那個單元用出來
+  function kanaTravelPh(k) {
+    const P = window.Path, out = [];
+    if (!P || !has(P, 'units') || !has(P, 'unit')) return out;
+    try {
+      for (const r of P.units('travel')) {
+        const u = P.unit(r.id);
+        for (const it of ((u && u.items) || [])) {
+          if (out.length >= k) return out;
+          if (it.type !== 'phrase' || !it.kana || !it.zh || String(it.jp).length > 10 || !fresh(it.id)) continue;
+          out.push(Object.assign({}, it, { source: '🧳 旅遊必備句・' + u.title }));
+        }
+      }
+    } catch (e) { }
+    return out;
+  }
   function prepLesson(goal) {
-    const p = App.profile(), n = freshN(p.lv);
-    const js = ['js/phrase.js'].concat(SRC[goal] || [], ['js/path.js']);
-    return needSrc(js).then(() => goal === 'work' && window.BIZ && has(BIZ, 'load') ? BIZ.load() : 0).then(() => Learn.prepare(goal)).then(Q => {
-      Q = Object.assign({}, Q, { goal, fresh: (Q.fresh || []).slice(0, 8), due: (Q.due || []).slice(0, 15) });
-      if (goal === 'kana') Q.apply = { route: 'path', params: { goal: 'kana' }, label: '五十音：下一個單元', kana: 1 };
+    const p = App.profile();
+    const js = ['js/phrase.js'].concat(SRC[goal] || [], ['js/path.js'], goal === 'fun' ? SONG_JS : []);
+    return needSrc(js).then(() => goal === 'work' && window.BIZ && has(BIZ, 'load') ? BIZ.load() : 0)
+      .then(() => goal === 'kana' && window.Path && has(Path, 'load') ? Promise.all([Path.load('kana'), (p.goals || []).includes('travel') ? Path.load('travel') : 0]).catch(() => { }) : 0)
+      .then(() => Learn.prepare(goal)).then(Q => {
+      const dueAll = (Q.due || []).length, n = freshFor(goal, p.lv, Math.min(15, dueAll));
+      Q = Object.assign({}, Q, { goal, fresh: (Q.fresh || []).slice(0, 12), due: (Q.due || []).slice(0, 15) });
       if (goal === 'travel') {
         // 旅遊：路線下一個場景包的「進店用出來」那一步（只做 1 個店內任務）
         let u = null;
@@ -236,11 +279,6 @@
         Q.apply = sh ? { route: 'act', params: { steps: [sh], title: '用出來：' + u.title, reward: 'apply:' + u.id, back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: '進店完成 1 個任務：' + u.title }
           : { world: 1, route: 'play', params: {}, label: '到冒險店家完成 1 個任務' };
       }
-      if (goal === 'exam') {
-        // 日檢：用今天新學的字與文法出 5 題
-        const ids = Q.fresh.filter(x => /^(v|g):/.test(x.id || '')).map(x => x.id), L = (p.lv && p.lv !== 'zero' ? p.lv : 'n5').toUpperCase();
-        Q.apply = { route: 'act', params: { steps: [{ type: 'choice', params: Object.assign({ lv: L, kind: ['mean', 'ctx', 'form'], n: 5, quiz: true }, ids.length >= 3 ? { ids } : {}), title: L + ' 日檢 5 題' }], title: L + ' 日檢 5 題', lv: L, reward: 'apply:exam', back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: L + ' 日檢 5 題' };
-      }
       if (goal === 'work') {
         const m = bizPick(p.lv);
         const keep = Q.fresh; Q.fresh = [];
@@ -248,160 +286,118 @@
         if (Q.fresh.length < n) keep.forEach(x => { if (Q.fresh.length < n && !Q.fresh.some(y => y.id === x.id)) Q.fresh.push(x); });
         Q.apply = m ? { route: 'biz-unit', params: { id: m.id }, label: `商務：${m.title}・做 1 小節（約 4 分）`, biz: m.id } : { route: 'biz', params: {}, label: '商務閱讀 1 篇' };
       }
-      Q.fresh = Q.fresh.slice(0, goal === 'kana' ? n + 3 : n);
+      if (goal === 'kana') {
+        // 五十音 n 個（預算不足時減少）＋旅遊必備句 1–2 句
+        const kn = Q.fresh.filter(x => x.type === 'kana'), ph0 = Q.fresh.filter(x => x.type !== 'kana');
+        const tp = ph0.length ? kanaTravelPh(ph0.length) : [];
+        const ph = (tp.length ? tp : ph0).slice(0, n ? 2 : 0);
+        Q.fresh = kn.slice(0, n >= 5 ? n : Math.max(0, n - ph.length)).concat(ph);
+      } else Q.fresh = Q.fresh.slice(0, n);
       Q.due = Q.due.slice(0, plan(goal, p.lv, Q.due.length, Q.fresh.length).due);
-      Q.fresh.forEach(it => { const ex = exOf(it); if (ex) it.ex = ex; });
+      if (goal === 'kana') Q.apply = kanaApply(Q) || { route: 'path', params: { goal: 'kana' }, label: '五十音下一個單元', kana: 1 };
+      if (goal === 'exam') {
+        // 日檢：用今天新學的字與文法出 5 題
+        const ids = Q.fresh.filter(x => /^(v|g):/.test(x.id || '')).map(x => x.id), L = (p.lv && p.lv !== 'zero' ? p.lv : 'n5').toUpperCase();
+        Q.apply = { route: 'act', params: { steps: [{ type: 'choice', params: Object.assign({ lv: L, kind: ['mean', 'ctx', 'form'], n: 5, quiz: true }, ids.length >= 3 ? { ids } : {}), title: L + ' 日檢 5 題' }], title: L + ' 日檢 5 題', lv: L, reward: 'apply:exam', back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: L + ' 日檢 5 題' };
+      }
+      Q.fresh.forEach(it => { const ex = exOf(it); if (ex && !it.ex) it.ex = ex; });
       return fillReading(Q.fresh.concat(Q.due)).then(() => Q);
     });
   }
-  let RUN = null;   // 進行中的今日課（離開再回來可接著上）
+  let RUN = null;   // 進行中的今日課（離開再回來可接著上）：{key, goal, Q, phase:'run'|'end', res:[], t0}
   function lesson(el, params) {
     params = params || {};
     const p = App.profile(), goal = params.goal || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
-    if (RUN && RUN.key === key && RUN.phase !== 'end') return step(el);
-    // 主課做完、應用還沒做：先回到結算頁（不重開一課）
     const d0 = dayRec(); applyDone(d0);
-    if (!params.more && RUN && RUN.key === key && RUN.phase === 'end') return step(el);   // 從應用回來：回到結算頁
+    if (!params.more && RUN && RUN.key === key) return RUN.phase === 'end' ? endView(el) : runLesson(el);
     const pend = !params.more && d0.done && !d0.applied;
     el.innerHTML = LOADING;
-    prepLesson(goal).then(Q => {
+    Promise.all([prepLesson(goal), needSrc(ACT_JS)]).then(([Q]) => {
       if (!curIs('today')) return;
-      RUN = { key, goal, Q, phase: 'rev', i: 0, quiz: [], retry: [], res: { rev: 0, revOk: 0, learned: new Set(), ok: 0 } };
-      if (pend) Object.assign(RUN, { phase: 'end', saved: 1, sum: { learned: d0.learned || 0, rev: d0.reviewed || 0 } });
-      if (!Q.due.length && RUN.phase === 'rev') RUN.phase = 'new';
-      if (RUN.phase === 'new' && !Q.fresh.length) RUN.phase = 'end';
-      step(el);
+      RUN = { key, goal, Q, phase: 'run', cnt: {}, qg: {}, t0: Date.now(), due: new Set(Q.due.map(x => x.id)), neu: new Set(Q.fresh.map(x => x.id)) };
+      if (pend) { Object.assign(RUN, { phase: 'end', saved: 1, sum: { learned: d0.learned || 0, rev: d0.reviewed || 0 } }); return endView(el); }
+      if (!Q.due.length && !Q.fresh.length) return finishLesson(el);
+      runLesson(el);
     }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日課載入失敗，請檢查網路後再試一次</p>'; });
   }
-  const say = it => App.speak(it.type === 'kana' ? (it.kana || it.jp) : (it.kana && isKanaStr(it.kana) ? it.kana : it.jp));
-  const answerOf = it => it.type === 'kana' ? romaOf(it) : (it.zh || '');
-  // 步驟編號：沒有複習時新學從 ① 開始
-  const NUM = ['①', '②', '③'];
-  const stepNo = ph => NUM[(RUN.Q.due.length ? 0 : -1) + ({ rev: 0, new: 1, quiz: 2 }[ph])];
-  function head(title, i, n) {
-    const tot = RUN.Q.due.length + RUN.Q.fresh.length * 2 + 1;
-    const done = RUN.phase === 'rev' ? i : RUN.phase === 'new' ? RUN.Q.due.length + i : RUN.phase === 'quiz' ? RUN.Q.due.length + RUN.Q.fresh.length + Math.min(i, RUN.Q.fresh.length) : tot;
-    saveProg(done, tot);
-    return `<div class="td-top"><div class="bar"><div style="width:${Math.round(done / tot * 100)}%"></div></div><p class="td-step">${esc(title)}${n ? `<small>${i + 1}／${n}</small>` : ''}</p></div>`;
+  // 已做過的：每個項目在今日課裡被記錄的次數（字卡在前、小測驗在後）→ 1 次＝字卡做過、新學 2 次＝小測驗也做過
+  //   用 learnchange 事件計（中途切到別頁、沒按 ✕ 也記得進度）
+  const doneSets = R => {
+    const fc = new Set(), qz = new Set();
+    for (const id in R.cnt) { if (R.cnt[id] >= 1) fc.add(id); if (R.neu.has(id) && R.cnt[id] >= 2) qz.add(id); }
+    return { fc, qz };
+  };
+  document.addEventListener('learnchange', ev => {
+    const R = RUN, id = ev.detail && ev.detail.id;
+    if (!R || R.phase !== 'run' || !id || !(R.due.has(id) || R.neu.has(id))) return;
+    R.cnt[id] = (R.cnt[id] || 0) + 1;
+    if (R.neu.has(id) && R.cnt[id] >= 2 && ev.detail.e) R.qg[id] = ev.detail.e.g;
+    dayRec().prog = progOf(R);
+  });
+  function progOf(R) {
+    const Q = R.Q, { fc, qz } = doneSets(R);
+    const rev = Q.due.filter(x => fc.has(x.id)).length, neu = Q.fresh.filter(x => fc.has(x.id)).length, qd = Q.fresh.filter(x => qz.has(x.id)).length;
+    return { goal: R.goal, done: rev + neu + qd, tot: Q.due.length + Q.fresh.length * 2, rev, revN: Q.due.length, neu, neuN: Q.fresh.length };
   }
-  // 今日進度（中途離開時首頁顯示真實進度）：d.prog = {goal, done, tot, rev, revN, neu, neuN}
-  function saveProg(done, tot) {
-    const R = RUN; if (!R || R.phase === 'end') return;
-    const d = dayRec(), Q = R.Q;
-    d.prog = { goal: R.goal, done, tot, rev: R.phase === 'rev' ? R.i : Q.due.length, revN: Q.due.length, neu: R.phase === 'rev' ? 0 : R.phase === 'new' ? R.i : Q.fresh.length, neuN: Q.fresh.length };
-    App.save();
+  // 今日課＝活動框架：①字卡（到期複習先考、新的先教）→ ②小測驗（四選一、不重考），結算由今日課自己畫
+  function runLesson(el) {
+    const R = RUN, Q = R.Q, { fc, qz } = doneSets(R);
+    const cards = Q.due.concat(Q.fresh).filter(x => !fc.has(x.id)), quiz = Q.fresh.filter(x => !qz.has(x.id));
+    const steps = [];
+    if (cards.length) steps.push({ type: 'flashcard', items: cards, title: Q.due.length && cards.some(x => Q.due.includes(x)) ? '① 複習＋新學' : '① 新學' });
+    if (quiz.length) steps.push({ type: 'choice', items: quiz, params: { mode: 'mix', retry: false }, title: '② 小測驗' });
+    if (!steps.length) return finishLesson(el);
+    const my = R.run = {};
+    Activity.session(el, steps, { title: '今日課', end: false, back: { route: 'home' } }).then(sm => {
+      if (RUN !== R || R.run !== my) return;
+      if (sm.quit) { dayRec().prog = progOf(R); App.save(); return; }
+      R.sm = sm;
+      finishLesson(el);
+    }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日課載入失敗，請重新整理再試一次</p>'; });
   }
-  function cardHTML(it, show) {
-    const ro = romaOf(it), kn = it.type === 'kana' ? '' : (it.kana && it.kana !== it.jp ? it.kana : ''), ex = show && it.ex && it.ex[0] ? (typeof it.ex[0] === 'object' ? [it.ex[0].jp, it.ex[0].zh] : it.ex) : null;   // 路線單元的 ex 是 [{jp,zh}]
-    return `<div class="td-card">
-      ${it.emoji ? `<div class="td-emo" aria-hidden="true">${esc(it.emoji)}</div>` : ''}
-      <p class="td-jp jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p>
-      ${show ? `${kn ? `<p class="td-kana jp" lang="ja">${esc(kn)}</p>` : ''}${ro ? `<p class="td-ro">${esc(ro)}</p>` : ''}<p class="td-zh">${esc(it.type === 'kana' ? (it.zh || '') : it.zh || '')}</p>${it.hint ? `<p class="td-hint">${esc(it.hint)}</p>` : ''}${ex ? `<p class="td-ex"><span class="jp" lang="ja">例：${esc(ex[0])}</span>${ex[1] ? `<small>${esc(ex[1])}</small>` : ''}</p>` : ''}` : `<p class="td-zh muted">${it.type === 'grammar' || /^g:/.test(it.id || '') ? '想一想：什麼意思？怎麼接？' : '想一想：怎麼念？什麼意思？'}</p>`}
-      <button type="button" class="td-say" id="tdSay" aria-label="播放發音">🔊</button>
-      ${it.source ? `<p class="td-src">${esc(it.source)}</p>` : ''}
-    </div>`;
-  }
-  // 答錯／忘了：不當下到期，排到明天（今天的課裡已經會再考一次）
-  const tomorrow = () => { const t = new Date(); t.setHours(24, 0, 0, 0); return t.getTime(); };
-  function rec(it, g) { try { const m = Object.assign({}, it); delete m.ex; Learn.record(it.id, g, { src: 'today', item: m, type: it.type, retryAt: tomorrow() }); } catch (e) { console.warn(e); } }
-  function step(el) {
+  function finishLesson(el) {
     const R = RUN, Q = R.Q;
-    if (R.phase === 'rev') {
-      const it = Q.due[R.i];
-      if (!it) { R.phase = 'new'; R.i = 0; if (!Q.fresh.length) R.phase = 'end'; return step(el); }
-      el.innerHTML = `<section class="td">${head(stepNo('rev') + ' 複習到期的', R.i, Q.due.length)}${cardHTML(it, false)}
-        <div class="td-act"><button type="button" class="btn primary block" id="tdShow">看答案</button></div></section>`;
-      el.querySelector('#tdSay').onclick = () => say(it);
-      el.querySelector('#tdShow').onclick = () => {
-        el.querySelector('.td-card').outerHTML = cardHTML(it, true);
-        el.querySelector('#tdSay').onclick = () => say(it); say(it);
-        el.querySelector('.td-act').innerHTML = `<p class="td-q">你剛剛記得嗎？</p><div class="td-grade">
-          <button type="button" class="btn" data-g="0">😵 忘了</button><button type="button" class="btn" data-g="2">🙂 記得</button><button type="button" class="btn" data-g="3">😊 很簡單</button></div>`;
-        el.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = +b.dataset.g; rec(it, g); R.res.rev++; if (g) R.res.revOk++; R.i++; step(el); });
-      };
-      return;
-    }
-    if (R.phase === 'new') {
-      const it = Q.fresh[R.i];
-      if (!it) { R.phase = 'quiz'; R.i = 0; R.quiz = App.shuffle(Q.fresh.slice()); return step(el); }
-      el.innerHTML = `<section class="td">${head(stepNo('new') + ' 新學', R.i, Q.fresh.length)}${cardHTML(it, true)}
-        <div class="td-act"><button type="button" class="btn primary block" id="tdNext">${R.i + 1 < Q.fresh.length ? '記住了，下一個 ▶' : '記住了，來小測驗 ▶'}</button></div></section>`;
-      el.querySelector('#tdSay').onclick = () => say(it); say(it);
-      el.querySelector('#tdNext').onclick = () => { R.i++; step(el); };
-      return;
-    }
-    if (R.phase === 'quiz') {
-      const it = R.quiz[R.i];
-      if (!it) {
-        if (R.retry.length) { R.quiz = R.retry; R.retry = []; R.i = 0; R.second = 1; return step(el); }
-        R.phase = 'end'; return step(el);
-      }
-      const ans = answerOf(it);
-      // 干擾項：同型別優先（假名配假名、句子配句子、單字配單字），不夠再用其他非假名
-      const isG = x => x.type === 'grammar' || /^g:/.test(x.id || '');
-      const kind = x => x.type === 'kana' ? 'k' : isG(x) ? 'g' : isSent(x) ? 's' : 'w', all = Q.fresh.concat(Q.due);
-      const ansOf = l => [...new Set(l.map(answerOf).filter(a => a && a !== ans))];
-      let pool = ansOf(all.filter(x => kind(x) === kind(it)));
-      if (pool.length < 3 && it.type !== 'kana') pool = pool.concat(ansOf(all.filter(x => x.type !== 'kana' && kind(x) !== kind(it) && (kind(x) === 'g') === (kind(it) === 'g'))).filter(a => !pool.includes(a)));   // 文法說明不混進單字選項
-      if (pool.length < 3 && isSent(it)) for (const sc of (window.SCENES || [])) for (const ph of (sc.phrases || [])) if (pool.length < 6 && ph && ph.zh && ph.zh !== ans && !pool.includes(ph.zh)) pool.push(ph.zh);
-      if (!ans || pool.length < 1) { rec(it, 2); R.res.learned.add(it.id); R.i++; return step(el); }
-      const opts = App.shuffle([ans].concat(App.shuffle(pool).slice(0, 3)));
-      el.innerHTML = `<section class="td">${head(stepNo('quiz') + ' 小測驗' + (R.second ? '・再一次' : ''), R.i, R.quiz.length)}
-        <div class="td-card"><p class="td-jp jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p><button type="button" class="td-say" id="tdSay" aria-label="播放發音">🔊</button>
-        <p class="td-q">${it.type === 'kana' ? '怎麼念？' : '是什麼意思？'}</p></div>
-        <div class="td-opts">${opts.map((o, k) => `<button type="button" class="btn block" data-o="${k}">${esc(o)}</button>`).join('')}</div><p class="td-fb" aria-live="polite"></p></section>`;
-      el.querySelector('#tdSay').onclick = () => say(it);
-      el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
-        const ok = opts[+b.dataset.o] === ans;
-        el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (opts[+x.dataset.o] === ans) x.classList.add('ok'); });
-        if (!ok) b.classList.add('ng');
-        if (window.Game && has(Game, 'sfx')) try { Game.sfx(ok ? 'ok' : 'ng'); } catch (e) { }
-        if (ok) { rec(it, R.second ? 1 : 2); R.res.learned.add(it.id); R.res.ok++; }
-        else { rec(it, 0); if (!R.second) R.retry.push(it); }
-        const fb = el.querySelector('.td-fb'); fb.className = 'td-fb ' + (ok ? 'ok' : 'ng');
-        fb.innerHTML = `${ok ? '✓ 答對了！' : '✗ 正確答案：' + esc(ans)}<button type="button" class="btn primary block" id="tdGo">繼續 ▶</button>`;
-        say(it);
-        el.querySelector('#tdGo').onclick = () => { R.i++; step(el); };
-      });
-      return;
-    }
-    // 結算
+    if (!R.saved && !Q.due.length && !Q.fresh.length) { R.saved = 1; R.sum = { learned: 0, rev: 0 }; Q.apply = dayRec().done ? null : Q.apply; }   // 空的一課（明天到期已滿）不算一堂
     if (!R.saved) {
       R.saved = 1;
+      const { fc } = doneSets(R);
+      R.sum = { learned: Q.fresh.filter(x => (R.qg[x.id] || 0) >= 1).length, rev: Q.due.filter(x => fc.has(x.id)).length };
       const d = dayRec();
       delete d.prog;
-      d.done = (d.done || 0) + 1; d.learned = (d.learned || 0) + R.res.learned.size; d.reviewed = (d.reviewed || 0) + R.res.rev;
+      d.done = (d.done || 0) + 1; d.learned = (d.learned || 0) + R.sum.learned; d.reviewed = (d.reviewed || 0) + R.sum.rev;
       if (Q.apply && Q.apply.label) d.apLabel = Q.apply.label;
-      const xp = R.res.ok * 2 + R.res.revOk + 5;
-      App.addXP(xp, '今日課');
-      R.xp = xp;
+      R.xp = R.sm ? R.sm.xp || 0 : 0;   // XP 由活動框架給（不重複加）
       App.save();
     }
-    const end = new Date(); end.setHours(0, 0, 0, 0); const tmr = end.getTime() + 2 * 864e5;
-    const L = App.state.learn || {}; let m = 0;
-    for (const id in L) { const e = L[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) < tmr) m++; }
+    R.phase = 'end';
+    if (curIs('today')) endView(el);
+  }
+  function endView(el) {
+    const R = RUN, Q = R.Q, sm = R.sum || { learned: 0, rev: 0 };
+    const m = window.Learn && Learn.dueTomorrow ? Learn.dueTomorrow() : 0;   // 各結算頁共用 Learn.dueTomorrow
     const sk = App.streakInfo(), A = Q.apply || {}, dd = dayRec();
     applyDone(dd);
-    const left = A.route && !dd.applied;
+    const left = A.route && !dd.applied, empty = !Q.due.length && !Q.fresh.length;
     el.innerHTML = `<section class="td td-end">
-      <p class="td-big" aria-hidden="true">${left ? '👍' : '🎉'}</p><h1>${left ? '主課完成，還差應用' : '今天的課完成！'}</h1>
-      ${left ? '<p class="td-left">複習＋新學做完了 ✓ 最後一步：把今天學的用出來</p>' : ''}
+      <p class="td-big" aria-hidden="true">${left ? '👍' : '🎉'}</p><h1>${empty ? '今天新學的量夠了' : left ? '主課完成，還差應用' : '今天的課完成！'}</h1>
+      ${empty ? `<p class="td-left">明天要複習的已經有 ${m} 個（上限 ${(window.Learn && Learn.DUE_CAP) || 20}），明天再學新的</p>` : left ? '<p class="td-left">複習＋新學做完了 ✓ 最後一步：把今天學的用出來</p>' : ''}
       <div class="td-sum">
-        <div><b>${R.sum ? R.sum.learned : R.res.learned.size}</b><small>新學答對</small></div>
-        <div><b>${R.sum ? R.sum.rev : R.res.rev}</b><small>複習</small></div>
+        <div><b>${sm.learned}</b><small>新學答對</small></div>
+        <div><b>${sm.rev}</b><small>複習</small></div>
         <div><b>${m}</b><small>明天到期</small></div>
         <div><b>🔥${sk.days}</b><small>連勝天數</small></div>
       </div>
       ${R.xp ? `<p class="xpgain center">+${R.xp} XP</p>` : ''}
-      ${A.route ? `<button type="button" class="btn ${left ? 'primary' : ''} block" id="tdApply">▶ 用出來：${esc(A.label || '應用')}${dd.applied ? ' ✓' : ''}</button>` : ''}
-      ${dd.applied ? `<button type="button" class="btn primary block" id="tdMore">▶ 再上一課</button>` : ''}
+      <div class="td-endbtns">
+      ${A.route ? `<button type="button" class="btn ${left ? 'primary' : ''} block" id="tdApply">▶ ${esc(A.label || '用出來')}${dd.applied ? ' ✓' : ''}</button>` : ''}
+      ${dd.applied && !empty ? `<button type="button" class="btn primary block" id="tdMore">▶ 再上一課</button>` : ''}
       <button type="button" class="btn block" id="tdHome">回首頁</button>
+      </div>
     </section>`;
-    R.phase = 'end';
     const ap = el.querySelector('#tdApply');
     if (ap) ap.onclick = () => {
       const d = dayRec();
-      if (!d.applied) { d.applyAt = Date.now(); d.apSnap = A.biz ? { biz: A.biz, n: bizDone(A.biz), st: bizStars(A.biz) } : A.kana ? { kana: kanaSeen() } : {}; }
+      if (!d.applied) { d.applyAt = Date.now(); d.apGoal = R.goal; d.apSnap = A.biz ? { biz: A.biz, n: bizDone(A.biz), st: bizStars(A.biz) } : A.kana ? { kana: kanaSeen() } : {}; }
       App.save();
       if (!A.world) return App.go(A.route, A.params || {});
       ap.disabled = true;
@@ -412,23 +408,33 @@
   }
 
   /* ---------- 首次開啟：直接選程度，或 3 題簡單定位 ---------- */
+  // 每級 2 題（第 1 題假名）：該級兩題都對才往上一級；答錯停在上一級（會 N3 題、不會 N2 題 → 日常會話≈N3）
   const QUIZ = [
-    { q: 'ね', sub: '這個假名怎麼念？', a: ['ne', 're', 'wa', 'nu'] },
-    { q: 'すみません、水をください。', sub: '這句是什麼意思？', a: ['不好意思，請給我水', '不好意思，水在哪裡？', '這瓶水多少錢？', '謝謝，我不要水'] },
-    { q: '雨が降ったら、タクシーで行きましょう。', sub: '這句是什麼意思？', a: ['如果下雨，就搭計程車去吧', '因為下雨，所以沒搭計程車', '雨停了，我們走路去吧', '下雨天計程車很貴'] },
-    { q: '忘れないように、手帳にメモしておきます。', sub: '這句是什麼意思？', a: ['為了不忘記，先記在手帳上', '忘了帶手帳，所以沒記下來', '我常常忘記看手帳', '手帳上的筆記不見了'] },
-    { q: '大雨にもかかわらず、会場には大勢の人が集まった。', sub: '這句是什麼意思？', a: ['儘管下大雨，會場還是來了很多人', '因為下大雨，會場沒什麼人', '大雨過後，大家才陸續到會場', '會場因大雨改到別的地方'] },
-    { q: '当店は本日をもって閉店いたします。', sub: '這句是什麼意思？', a: ['本店於今天結束營業', '本店今天休息一天', '本店從今天開始營業', '本店今天提早打烊'] }
+    { lv: 'kana', q: 'ね', sub: '這個假名怎麼念？', a: ['ne', 're', 'wa', 'nu'] },
+    { lv: 'n5', q: 'すみません、水をください。', sub: '這句是什麼意思？', a: ['不好意思，請給我水', '不好意思，水在哪裡？', '這瓶水多少錢？', '謝謝，我不要水'] },
+    { lv: 'n5', q: 'きのう、友だちと映画を見ました。', sub: '這句是什麼意思？', a: ['昨天和朋友看了電影', '明天要和朋友去看電影', '昨天一個人看了電影', '朋友昨天沒去看電影'] },
+    { lv: 'n4', q: '雨が降ったら、タクシーで行きましょう。', sub: '這句是什麼意思？', a: ['如果下雨，就搭計程車去吧', '因為下雨，所以沒搭計程車', '雨停了，我們走路去吧', '下雨天計程車很貴'] },
+    { lv: 'n4', q: '日本へ行ったことがありますか。', sub: '這句是什麼意思？', a: ['你去過日本嗎？', '你想去日本嗎？', '你什麼時候去日本？', '你現在在日本嗎？'] },
+    { lv: 'n3', q: '忘れないように、手帳にメモしておきます。', sub: '這句是什麼意思？', a: ['為了不忘記，先記在手帳上', '忘了帶手帳，所以沒記下來', '我常常忘記看手帳', '手帳上的筆記不見了'] },
+    { lv: 'n3', q: '彼は来るはずなのに、まだ来ていない。', sub: '這句是什麼意思？', a: ['他應該會來，卻還沒來', '他說不來，結果還是來了', '他可能不會來了，不用等', '他已經來過又走了'] },
+    { lv: 'n2', q: '大雨にもかかわらず、会場には大勢の人が集まった。', sub: '這句是什麼意思？', a: ['儘管下大雨，會場還是來了很多人', '因為下大雨，會場沒什麼人', '大雨過後，大家才陸續到會場', '會場因大雨改到別的地方'] },
+    { lv: 'n2', q: '努力したからこそ、合格できたのだ。', sub: '這句是什麼意思？', a: ['正因為努力了，才能考上', '雖然努力了，還是沒考上', '只要努力就一定能考上', '沒努力也考上了'] },
+    { lv: 'n1', q: '当店は本日をもって閉店いたします。', sub: '這句是什麼意思？', a: ['本店於今天結束營業', '本店今天休息一天', '本店從今天開始營業', '本店今天提早打烊'] },
+    { lv: 'n1', q: '雨が降ろうが槍が降ろうが、明日は必ず行く。', sub: '這句是什麼意思？', a: ['不管發生什麼事，明天一定去', '如果下雨，明天就不去了', '明天會下雨，記得帶傘', '天氣好的話明天才去'] }
   ];
-  const FAIL_AT = ['zero', 'n5', 'n5', 'n4', 'n3', 'n2'];   // 第 i 題答錯 → 程度；全對＝n1
+  // 某級題目答錯 → 程度：假名錯＝完全沒學過；N5 題錯＝會五十音(≈N5)；N4 錯＝≈N5；N3 錯＝≈N4；N2 錯＝≈N3；N1 錯＝≈N2；全對＝≈N1
+  const FAIL_AT = { kana: 'zero', n5: 'n5', n4: 'n5', n3: 'n4', n2: 'n3', n1: 'n2' };
+  // 程度選項旁標 JLPT 對照
+  const LV_N = { zero: '', n5: '≈N5', n4: '≈N4', n3: '≈N3', n2: '≈N2', n1: '≈N1' };
+  const lvName = id => esc(App.LV_NAMES[id]) + (LV_N[id] ? `<em class="ob-n">${LV_N[id]}</em>` : '');
   function onboard(el, retake) {
     // 首次選程度：隱藏底部導覽與頂列按鈕，必須先選（core.render 換頁時自動解除）
     if (!App.profile().placed) document.body.classList.add('ob-mode');
     el.innerHTML = `<section class="ob">
       <h1>${retake ? '重新選程度' : 'ようこそ！歡迎 👋'}</h1>
       <p class="lead">你的日文大概到哪裡？選一個最接近的（之後隨時能在「我的」→ 設定改，進度不會歸零）</p>
-      <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt" data-lv="${id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
-      <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？最多 6 題幫你判斷</button>
+      <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt" data-lv="${id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${lvName(id)}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
+      <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？做幾題幫你判斷（最多 ${QUIZ.length} 題）</button>
     </section>`;
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => choose(b.dataset.lv, el));
     el.querySelector('#ob-quiz').onclick = () => quiz(el, 0);
@@ -482,12 +488,12 @@
       <div class="ob-list">${opts.map(a => `<button type="button" class="ob-opt" data-a="${esc(a)}"><span><b>${esc(a)}</b></span></button>`).join('')}
         <button type="button" class="ob-opt" data-a=""><span><b>不知道</b></span></button></div>
     </section>`;
-    el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => b.dataset.a === Q.a[0] ? quiz(el, i + 1) : result(el, FAIL_AT[i]));
+    el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => b.dataset.a === Q.a[0] ? quiz(el, i + 1) : result(el, FAIL_AT[Q.lv]));
   }
   function result(el, lv) {
     el.innerHTML = `<section class="ob center">
       <p class="ob-q">${LV_ICON[lv]}<small>建議程度</small></p>
-      <h1>${esc(App.LV_NAMES[lv])}</h1>
+      <h1>${lvName(lv)}</h1>
       <p class="lead">${esc(App.LV_DESC[lv])}</p>
       <button type="button" class="btn primary block" id="ob-ok">就這個，開始！</button>
       <button type="button" class="btn ghost block" id="ob-back">我自己選</button>
@@ -536,7 +542,7 @@
     el.innerHTML = `<section class="st">
       <h1>⚙️ 設定</h1>
       <div class="st-box st-lv"><h2>📶 我的程度</h2>
-        <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt${p.lv === id ? ' on' : ''}" data-lv="${id}" aria-pressed="${p.lv === id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${esc(App.LV_NAMES[id])}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
+        <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt${p.lv === id ? ' on' : ''}" data-lv="${id}" aria-pressed="${p.lv === id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${lvName(id)}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
         <p class="st-lbl">提示（讀音、中文、答案提示）</p>${seg('assist', p.assist, [['full', '全部顯示'], ['some', '只給讀音'], ['none', '不要提示']])}
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>

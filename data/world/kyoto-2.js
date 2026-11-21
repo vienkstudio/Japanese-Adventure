@@ -42,7 +42,7 @@ WORLD.pack('kyoto', {
       },
       items: [
         { id: 'ichinichi', jp: '地下鉄・バス一日券', kana: 'ちかてつ・バスいちにちけん', zh: '地鐵・巴士一日券（大人）', emoji: '🎫', price: 1100, c: 'mai', zone: 'A', tags: ['pass'], say: { jp: '一日券', kana: 'いちにちけん' } },
-        { id: 'ichinichi-kodomo', jp: '小児用一日券', kana: 'しょうにちよういちにちけん', zh: '一日券（小孩）', emoji: '🎟️', price: 550, c: 'mai', zone: 'A', tags: ['pass'] },
+        { id: 'ichinichi-kodomo', jp: '小児用一日券', kana: 'しょうによういちにちけん', zh: '一日券（小孩）', emoji: '🎟️', price: 550, c: 'mai', zone: 'A', tags: ['pass'] },
         { id: 'chikatetsu-1day', jp: '地下鉄一日券', kana: 'ちかてついちにちけん', zh: '地鐵一日券（只能搭地鐵）', emoji: '🚇', price: 800, c: 'mai', zone: 'A', tags: ['pass'] },
         { id: 'shijo', jp: '四条', kana: 'しじょう', zh: '地鐵到四條', emoji: '🚇', price: 220, c: 'mai', zone: 'M', tags: ['dest'] },
         { id: 'karasuma-oike', jp: '烏丸御池', kana: 'からすまおいけ', zh: '地鐵到烏丸御池', emoji: '🚇', price: 220, c: 'mai', zone: 'M', tags: ['dest'] },

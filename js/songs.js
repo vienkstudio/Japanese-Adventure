@@ -87,6 +87,13 @@
   // 熱門精選：一鍵匯入（YouTube 官方影片＋LRCLIB 逐句時間歌詞）
   // [歌名, 歌手, YouTube id, 影片秒數, LRCLIB id]：固定和這支 MV 長度相符的時間軸版本（2026-11 逐首核對：最後一句不超過影片長度）
   const HOT = [["アイドル","YOASOBI","ZRtdQ81jPUQ",226,7159727],["夜に駆ける","YOASOBI","by4SYYWlhEs",261,9203852],["Bling-Bang-Bang-Born","Creepy Nuts","mLW35YMzELE",172,8248862],["ライラック","Mrs. GREEN APPLE","QjrkrVmC-8M",303,24754735],["ケセラセラ","Mrs. GREEN APPLE","Jy-QS27q7lA",314,16310136],["怪獣の花唄","Vaundy","UM9XNpgrqVk",233,19912792],["Lemon","米津玄師","SX_ViT4Ra7k",274,8948466],["KICK BACK","米津玄師","M2cckDmNLMI",227,10451203],["新時代","Ado","1FliVTcX8bQ",237,29694107],["唱","Ado","pgXpM4l_MwI",189,20169960],["Pretender","Official髭男dism","TQ8WlA2GXbk",336,29363557],["Subtitle","Official髭男dism","hN5MBlGv2Ac",322,36160284],["水平線","back number","iqEr3P78fz8",312,34777897],["SPECIALZ","King Gnu","fhzKLBZJC3w",241,8426482],["はいよろこんで","こっちのけんと","jzi6RNVEOtA",163,33555395],["晩餐歌","tuki.","oZpYEEcvu5I",220,36140303],["ドライフラワー","優里","kzZ6KXDM1RI",288,20605926],["紅蓮華","LiSA","x1FV6IrjZCY",235,29931709],["群青","YOASOBI","Y4nEEZwckuU",262,8996513],["ベテルギウス","優里","cbqvxDTLMps",291,39334885],["青と夏","Mrs. GREEN APPLE","-MKfbxHy_NA",273,20430644],["オトノケ","Creepy Nuts","tRwHpyOq4P4",196,15897258],["さよーならまたいつか！","米津玄師","-wb2PAx6aEs",208,36434512]];
+  // 對外：Songs.importHot(x)，x＝'yt:<id>'｜YouTube id｜歌名｜HOT 索引 → 匯入後回傳歌曲 id（不是熱門歌回傳 null）
+  function hotRow(x) {
+    if (typeof x === 'number') return HOT[x] || null;
+    const k = String(x || '').replace(/^yt:/, '');
+    return HOT.find(h => h[2] === k || h[0] === k) || null;
+  }
+  function importHotX(x) { const h = hotRow(x); return h ? importHot.apply(null, h) : Promise.resolve(null); }
   async function importHot(t, a, yt, dur, lrc) {
     const id = 'yt:' + yt, old = await getSong(id);
     // 已有歌詞：自己對過時的不動；舊版自動匯入、時間軸超過影片長度（挑錯版本）的才換成固定版本
@@ -360,8 +367,15 @@
   async function songView(el, id) {
     el.innerHTML = '<p class="center muted rd-load">🎵 準備歌詞中…</p>';
     const loading = el.firstElementChild;
-    const s = await getSong(id);
+    let s = await getSong(id);
     if (!loading.isConnected) return;
+    // 路線／首頁點到還沒匯入的熱門歌：自動匯入再開
+    if (!s && hotRow(id)) {
+      loading.textContent = '🎵 第一次開這首，匯入歌詞中…';
+      try { await importHotX(id); } catch (e) { console.warn('importHot', e); }
+      if (!loading.isConnected) return;
+      s = await getSong(id);
+    }
     if (!s) { el.innerHTML = '<div class="panel center"><p>找不到這首歌（可能已刪除）。</p><button class="btn primary" type="button">回歌曲清單</button></div>'; el.querySelector('button').onclick = () => App.go('songs'); return; }
     setLast(s);
     if (s.lines.length) await JPText.ready();
@@ -396,13 +410,13 @@
       ${s.demo || s.src.type === 'tts' || (hasLyrics && s.lines.every(l => l.t != null)) ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary sg-find">🔍 自動找${hasLyrics ? '時間軸' : '歌詞與時間軸'}</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></div>`}
       <div class="sg-vocab"></div>
       <div class="sg-recs"></div>
-      <div class="sg-dictbar" hidden><button type="button" class="btn" id="sgReDict">🔀 換一組</button><button type="button" class="btn primary" id="sgCheck">對答案</button></div>
-      <button type="button" class="btn primary block sg-finish" ${hasLyrics ? '' : 'hidden'}>✔ 練完這首</button>
       <div class="sg-ctl" role="toolbar" aria-label="播放控制">
+        <div class="sg-dictbar" hidden><button type="button" class="btn" id="sgReDict">🔀 換一組</button><button type="button" class="btn primary" id="sgCheck">對答案</button></div>
         <div class="sg-ctl-row">
           <button type="button" class="sg-b sg-play" aria-label="播放">▶</button>
           <span class="sg-time" aria-live="off">${s.src.type === 'tts' ? '' : '0:00.0'}</span>
           <div class="sg-rates" role="group" aria-label="速度">${RATES.map(r => `<button type="button" data-rate="${r}" class="${r === 1 ? 'on' : ''}">${r}×</button>`).join('')}</div>
+          <button type="button" class="btn primary sg-finish" ${hasLyrics ? '' : 'hidden'}>✔ 練完這首</button>
         </div>
         <div class="sg-ctl-row sg-row2" ${hasLyrics ? '' : 'hidden'}>
           <button type="button" class="sg-b" data-ab="A" aria-label="循環起點設在目前這句">A</button>
@@ -818,15 +832,18 @@
     if (!V.listened && !V.recs.length && !V.dictBest) { toast('先按 ▶ 聽一次，或做一下填空吧'); return; }
     const stars = Math.min(3, 1 + (V.recs.length ? 1 : 0) + (V.dictBest >= 0.7 ? 1 : 0));
     const r = App.reward('song:' + V.s.id, stars, '歌曲跟唱');
-    const tips = [];
+    const tips = [], d = App.state.today;
+    // 今日課的「用出來」來這裡唱：結果彈窗給「回今日課」
+    const fromToday = !!(d && d.date === App.today() && d.applyAt && d.apGoal === 'fun');
     if (!V.recs.length) tips.push('用 🎤 錄一句跟唱');
     if (V.dictBest < 0.7) tips.push('填空答對 7 成以上');
     App.showResult({
       title: '練完了！', stars, gained: r && r.gained,
       note: tips.length ? `<span class="muted">想拿更多星：${tips.join('、')}。</span>` : '<span class="muted">聽、唱、寫都完成了，很棒！</span>',
-      back: { label: '歌曲清單', route: 'songs' }, ok: '繼續練'
+      back: { label: '歌曲清單', route: 'songs' }, ok: '繼續練',
+      next: fromToday ? { label: '回今日課 ▶', route: 'today', params: { goal: 'fun' } } : null
     });
   }
 
-  window.Songs = { DEMO, ytId: LinkImport.youtubeID, list: songIndex, last };
+  window.Songs = { DEMO, HOT, importHot: importHotX, hotRow, get: getSong, ytId: LinkImport.youtubeID, list: songIndex, last };
 })();

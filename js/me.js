@@ -1,33 +1,20 @@
 /* 我的（路由 me，導覽 4）：今日到期與複習（→ review）、已學會統計（Learn 狀態）、連勝與成就、御朱印帳、設定、🏯 經典練習、備份。
    只讀 Learn／App／Game 的狀態，不另存資料；成就由現有進度即時計算。樣式 css/lookup.css（前綴 my-）。
    今天到期＝Learn.due(15)（與首頁今日課同一函式、同一上限）。
-   「學會」＝Learn 狀態 review 以上，且距第一次學到已隔 1 天以上（今天剛學的不算，與說明一致）。 */
+   「學會」＝Learn.stats().known（review 以上、隔天以上還記得；與複習頁同一函式）。 */
 (function () {
   'use strict';
   const esc = App.esc;
-  const KANA_N = 46, DUE_N = 15, GAP = 20 * 36e5;   // 隔天：容許 20 小時（晚上學、隔天早上複習）
+  const KANA_N = 46, DUE_N = 15;
   const stampN = () => Object.keys(((App.state.world || {}).stamps) || {}).length;
-  const dayStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
-  // 學會：review／mastered 且有「隔天以上」的證據
-  //   有第一次學到的時間（e.add／e.first）→ 最後一次答對距第一次 ≥ 20 小時
-  //   沒有（舊資料）→ 最後一次作答在今天以前（今天才答的、又沒有起始時間的不算）
-  function isKnown(e, t0) {
-    if (!e || (e.s !== 'review' && e.s !== 'mastered')) return false;
-    const first = e.add || e.first || 0, last = e.last || 0;
-    if (first) return last - first >= GAP && e.g !== 0;
-    return last > 0 && last < t0;
-  }
+  // 學會／學習中／已掌握：一律用 Learn.stats（與複習頁同一個函式，數字一致）
+  //   known＝Learn 的「學會」定義（review 以上、隔天以上還記得）；learning＝學過但還沒學會
   function counts() {
-    const L = App.state.learn || {}, t0 = dayStart();
-    const o = { v: { known: 0, learning: 0 }, p: { known: 0, learning: 0 }, g: { known: 0, learning: 0 }, kana: { known: 0, learning: 0 }, mastered: 0 };
-    for (const id in L) {
-      const e = L[id]; if (!e || e.s === 'new') continue;
-      const k = id.slice(0, id.indexOf(':')), b = o[k]; if (!b) continue;
-      if (isKnown(e, t0)) { b.known++; if (e.s === 'mastered') o.mastered++; }
-      else b.learning++;
-    }
-    return o;
+    const S = o => (window.Learn && Learn.stats ? Learn.stats(o) : { total: 0, new: 0, known: 0, mastered: 0 });
+    const b = t => { const s = S({ type: t }); return { known: s.known || 0, learning: Math.max(0, (s.total || 0) - (s.new || 0) - (s.known || 0)) }; };
+    const all = S();
+    return { v: b('v'), p: b('p'), g: b('g'), kana: b('kana'), known: all.known || 0, mastered: all.mastered || 0 };
   }
 
   // 成就：依目的與程度排序；與目的無關的（五十音給非零基礎、御朱印給非旅遊）不列
@@ -84,7 +71,7 @@
 
       <div class="my-box"><h2>📊 已學會</h2>
         <div class="my-tiles${tiles.length === 3 ? ' t3' : ''}">${tiles.join('')}</div>
-        <p class="my-note">「學會」＝答對、而且隔天以上還記得（今天剛學的先算「學習中」）；已完全掌握 ${C.mastered} 個 🎓</p>
+        <p class="my-note">「學會」＝答對、而且隔天以上還記得（今天剛學的先算「學習中」）；全部共學會 ${C.known} 個（與複習頁相同）</p>
       </div>
 
       <div class="my-box"><h2>🏆 連勝與成就<small>${got}／${ach.length}</small></h2>
@@ -114,5 +101,5 @@
   App.register('me', { title: '我的', icon: '👤', nav: true, navOrder: 4, render });
   // 學習進度變了（例如在別頁作答後返回）就重畫統計
   document.addEventListener('learnchange', () => { const m = document.getElementById('main'); if (m && m.className === 'route-me') { clearTimeout(render.t); render.t = setTimeout(() => { if (m.className === 'route-me') render(m); }, 300); } });
-  window.Me = { counts, isKnown };
+  window.Me = { counts, isKnown: id => !!(window.Learn && Learn.isLearned && Learn.isLearned(id)) };
 })();

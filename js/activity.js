@@ -6,8 +6,11 @@
    Activity.session(el?, steps, opts?) -> 依序跑多個活動，最後只顯示一次結算（el 省略＝#main）
    summary：{ title, results:[{id, grade, type}], total, correct, rate, learned, wrong:[item], due, streak, xp, stars, quit, meta:[] }
    規則：
-   - 一題一屏、頂部「✕ 離開」＋進度條；活動不得呼叫 Learn.record，一律 ctx.mark(item, grade)（或回傳 results）由 runner 記錄
-   - promise 在結算畫面出現時（或按 ✕ 離開時，quit:true）resolve；runner 不自己跳頁，只有使用者按「完成」／「✕ 離開」才走 back
+   - 一題一屏、頂部進度條；離開鍵只有頂列 ←（App.guardBack 攔截：作答過才問「要離開嗎？」）；活動不得呼叫 Learn.record，一律 ctx.mark(item, grade)（或回傳 results）由 runner 記錄
+   - promise 在結算畫面出現時（或離開／換頁時，quit:true）resolve；runner 不自己跳頁，只有使用者按「完成」／確認離開才走 back
+   - opts.back：{route, params, label} 回到該頁（上一頁就是它 → history.back，否則換掉目前這筆）；false＝不跳頁（呼叫端自己處理）；省略＝App.back()
+   - 結算後（act 路由）目前這筆歷史換成 back 頁：之後按 ← 或從下一頁回來都不會重開剛做完的活動
+   - Activity.card(item, {face:'front'|'back', zhFirst, ex, isNew, say, src}) → 全站統一卡片 HTML（.ac-card；🔊 是 .ac-say，呼叫端自己綁 Activity.say(item)）
    - Item 格式＝Learn.view：{id, type:'kana'|'vocab'|'phrase'|'grammar', jp, kana, zh, romaji?, ex?:[{jp,zh}], lv, source}
    依賴：App、Learn；選用 Phrase、JPText、Loan、KANA、SCENES、MIND、World、Game、Home
    ========================================================= */
@@ -158,6 +161,7 @@
   /* ---------------- 結算 ---------------- */
   const tomorrow = () => { const t = new Date(); t.setHours(24, 0, 0, 0); return t.getTime(); };
   function dueTomorrow() {
+    if (window.Learn && Learn.dueTomorrow) return Learn.dueTomorrow();   // 全站同一個算法
     const end = new Date(); end.setHours(0, 0, 0, 0); const tmr = end.getTime() + 2 * 864e5;
     const L = App.state.learn || {}; let m = 0;
     for (const id in L) { const e = L[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) < tmr) m++; }
@@ -190,8 +194,7 @@
   /* ---------------- runner ---------------- */
   function frameHTML(title) {
     return `<section class="ac" aria-label="${esc(title)}">
-      <div class="ac-top"><button type="button" class="ac-x" aria-label="離開練習">✕ 離開</button>
-        <div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div></div></div><span class="ac-n" aria-live="polite"></span></div>
+      <div class="ac-top"><div class="ac-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div></div></div><span class="ac-n" aria-live="polite"></span></div>
       <p class="ac-t"></p>
       <div class="ac-stage"></div>
     </section>`;
@@ -232,12 +235,23 @@
         s.streak = (App.streakInfo ? App.streakInfo() : { days: 0 }).days || 0;
         return s;
       };
-      const leave = () => { const b = opts.back; if (b && b.route) App.go(b.route, b.params || {}); else App.back(); };
-      el.querySelector('.ac-x').onclick = () => {
-        const out = () => { const s = finish(true); if (s) done(s); leave(); };
-        if (!all.length || closed) return out();
-        App.modal('<h3>要離開嗎？</h3><p>已作答的進度會保存。</p>', [{ label: '繼續練習', cls: 'primary' }, { label: '離開', onClick: out }]);
+      // 離開／完成後回到呼叫來源；上一頁就是來源 → history.back（不重複堆疊、返回不會回到活動）
+      const leave = () => {
+        release();
+        const b = opts.back;
+        if (b === false) return;
+        if (b && b.route) { if (has(App, 'backTo')) App.backTo(b.route, b.params || {}); else App.go(b.route, b.params || {}); }
+        else App.back();
       };
+      // 頂列 ← 與手機返回鍵＝唯一離開鍵：作答過才問；換頁（onDrop）＝以未完成結束，呼叫端的 promise 一定會 resolve
+      const out = () => { release(); const s = finish(true); if (s) done(s); leave(); };
+      const onBack = () => {
+        const q = document.querySelector('.ac-leave-q');
+        if (q) { const m = q.closest('.modal-bg'); if (m) m.remove(); return; }   // 確認窗開著時再按返回＝繼續練習
+        if (closed || !root.isConnected || !all.length) return out();
+        App.modal('<h3 class="ac-leave-q">要離開嗎？</h3><p>已作答的進度會保存，下次可以接著練。</p>', [{ label: '繼續練習', cls: 'primary' }, { label: '離開', onClick: out }]);
+      };
+      const release = has(App, 'guardBack') ? App.guardBack(onBack, () => { const s = finish(true); if (s) done(s); }) : () => { };
       const record = (r, it, src) => {
         if (!r || !r.id || recorded.has(r)) return;
         recorded.add(r);
@@ -312,7 +326,9 @@
       };
       const end = () => {
         const s = finish(false); if (!s) return;
+        release();
         setBar(steps.length, 0, 0);
+        if (opts.route && opts.back && opts.back.route && has(App, 'replaceEntry')) App.replaceEntry(opts.back.route, opts.back.params || {});
         if (opts.end === false) { done(s); return; }
         endScreen(root, s, opts, leave);
         done(s);
@@ -375,13 +391,48 @@
       el.innerHTML = '<p class="ac-load">載入中…</p>';
       const steps = Array.isArray(p.steps) && p.steps.length ? p.steps : p.type ? [{ type: p.type, ids: p.ids, items: p.items, params: p.params, title: p.title }] : [];
       if (!steps.length) { el.innerHTML = '<p class="ac-load">沒有要練習的內容</p>'; return; }
-      const opts = { title: p.title, back: p.back, next: p.next, reward: p.reward, lv: p.lv };
+      const opts = { title: p.title, back: p.back, next: p.next, reward: p.reward, lv: p.lv, route: true };
       Promise.all([needCSS(), load('js/phrase.js')]).then(() => session(el, steps, opts)).catch(e => { console.warn(e); el.innerHTML = '<p class="ac-load">😵 載入失敗，請檢查網路後再試一次</p>'; });
     }
   });
 
+  /* ---------------- 統一卡片（字卡、今日課、複習共用同一個樣式） ---------------- */
+  // face：'front' 只看題目（問句依型別：假名「怎麼念？」、文法「什麼意思？怎麼接？」、其他「還記得意思嗎？」）；'back' 答案面
+  // 答案面一律顯示讀音（「不要提示」也顯示，只在題目面隱藏）；羅馬字依 showRo；ex：例句物件／false 不顯示／省略取第一句
+  const jpOfCard = it => it.type === 'kana' ? (it.kana || it.jp) : it.jp;
+  function askOf(it, zhFirst) {
+    if (zhFirst) return it.type === 'kana' ? '是哪個假名？' : it.type === 'grammar' ? '是哪個文法？' : '日文怎麼說？';
+    return it.type === 'kana' ? '怎麼念？' : it.type === 'grammar' ? '什麼意思？怎麼接？' : '還記得意思嗎？';
+  }
+  function loanOf(it) {
+    if (!window.Loan || it.type === 'kana' || !has(Loan, 'label')) return '';
+    try { const l = Loan.label(it.jp, 1); return l ? `<p class="ac-loan">${esc(l)}</p>` : ''; } catch (e) { return ''; }
+  }
+  function card(x, o) {
+    o = o || {};
+    const it = x && x.id && x.type ? x : item(x);
+    if (!it) return '';
+    const face = o.face === 'front' ? 'front' : 'back', jp = jpOfCard(it), long = String(jp).length > 8 ? ' long' : '';
+    const emo = it.emoji ? `<div class="ac-emo" aria-hidden="true">${esc(it.emoji)}</div>` : '';
+    let body;
+    if (face === 'front' && o.zhFirst) body = `<p class="ac-zh-big">${esc(it.type === 'kana' ? romaji(it) : it.zh)}</p><p class="ac-ask">${esc(o.ask || askOf(it, true))}</p>`;
+    else if (face === 'front') body = `${emo}<p class="ac-jp jp${long}" lang="ja">${esc(jp)}</p><p class="ac-ask">${esc(o.ask || askOf(it, false))}</p>`;
+    else {
+      const kn = it.type === 'kana' ? '' : kanaOf(it), ro = showRo(it) ? romaji(it) : '';
+      const ex = o.ex === false ? null : o.ex && o.ex.jp ? o.ex : (it.ex || [])[0] || null;
+      body = `${emo}<p class="ac-jp jp${long}" lang="ja">${esc(jp)}</p>
+        ${kn ? `<p class="ac-kana jp" lang="ja">${esc(kn)}</p>` : ''}
+        ${ro ? `<p class="ac-ro">${esc(ro)}</p>` : ''}
+        <p class="ac-zh">${esc(it.zh)}</p>
+        ${loanOf(it)}
+        ${it.hint ? `<p class="ac-hint">${esc(it.hint)}</p>` : ''}
+        ${ex ? `<p class="ac-ex"><span class="jp" lang="ja">例：${esc(ex.jp)}</span>${ex.zh ? `<small>${esc(ex.zh)}</small>` : ''}</p>` : ''}`;
+    }
+    return `<div class="ac-card${face === 'back' ? ' flip' : ''}">${o.isNew ? '<p class="ac-new">新的</p>' : ''}${body}${o.say === false ? '' : '<button type="button" class="ac-say" aria-label="播放發音">🔊</button>'}${o.src !== false && it.source ? `<p class="ac-src">${esc(it.source)}</p>` : ''}</div>`;
+  }
+
   window.Activity = {
-    register, run, session, need, get: t => DEFS[t] || null, types: () => Object.keys(DEFS),
+    register, run, session, need, get: t => DEFS[t] || null, types: () => Object.keys(DEFS), card,
     item, items: itemsOf, resolve, loadCSS, romaji, kanaOf, say, summarize, hideZh, isKanaStr, showRo, showKana, unMacron,
     _test: { typeOfId, exNorm }
   };

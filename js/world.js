@@ -359,6 +359,9 @@
   let STAGE = null, MAP = null, S = null, D = null, RUN = null, PARAMS = null, fromDistrict = false;
   const ABORT = { abort: 1 };
   let pending = null;
+  // 只有「繼續」的店員台詞（いらっしゃいませ、お会計は…）不單獨佔一步：先記著，併進下一個需要回應的步驟
+  let LEAD = [];
+  const lead = (npc, line, extra) => { LEAD.push({ npc, line, extra: extra || '' }); };
   // SIM：shopSim 模式（活動框架的 shop 活動）；null = 自由逛
   let SIM = null;
   const mistake = () => { if (SIM) SIM.miss++; Q.mistake(); };
@@ -412,7 +415,7 @@
     if (was !== !!on && STAGE && STAGE._fit) STAGE._fit();
   }
   function closeSheet() {
-    focusMode(false);
+    focusMode(false); LEAD = [];
     if (!STAGE || !STAGE.isConnected) return;
     if (window.speechSynthesis) speechSynthesis.cancel();
     if (pending) { const r = pending; pending = null; r(ABORT); }
@@ -422,13 +425,16 @@
   }
   // 一個需要玩家回應的步驟；面板被關掉或換成別的就中止整段流程
   function step(html, bind, opt) {
+    const ld = LEAD; LEAD = [];
+    if (ld.length) { html = `<div class="wd-lead">${ld.map(l => bubble(l.npc, l.line, 'wd-lead1') + l.extra).join('')}</div>` + html; App.speak(ld.map(l => l.line.jp).join('')); }
     return new Promise((res, rej) => {
       const el = sheet(html, opt);
       pending = rej;
       bind(el, v => { if (pending === rej) pending = null; res(v); });
+      el.querySelectorAll('.wd-lead1 [data-spk]').forEach((b, i) => { b.onclick = () => App.speak(ld[i].line.jp); });
     });
   }
-  const flow = fn => (...a) => Promise.resolve().then(() => fn(...a)).catch(e => { if (e !== ABORT) { console.error(e); App.toast('😵 發生錯誤：' + esc(e.message || e)); } });
+  const flow = fn => (...a) => Promise.resolve().then(() => { LEAD = []; return fn(...a); }).catch(e => { if (e !== ABORT) { console.error(e); App.toast('😵 發生錯誤：' + esc(e.message || e)); } });
   function paintBar() {
     if (!STAGE || !STAGE.isConnected) return;
     const b = STAGE.querySelector('#wd-bar'), h = Q.bar();
@@ -491,6 +497,17 @@
 
   /* ---- 句子組裝：說法切換（普通／です・ます／敬語）＋提示要自己點 ---- */
   const mk = (intent, slots) => style => Phrase.make(intent, slots, { style, lv: lv() });
+  // 結帳說一句：です・ます時用單元教的「これください」當正解；これをください／これ(を)お願いします 也算對
+  function thisModel(style) {
+    const m = Phrase.make('this', {}, { style, lv: lv() });
+    if (style === 'plain' || style === 'keigo') return m;
+    const T = (jp, kana, zh) => ({ jp, kana: kana || jp, zh });
+    const kore = T('これ', '', '這個'), wo = T('を', '', '（受詞）'), kuda = T('ください', '', '請給我'), one = T('お願いします', 'おねがいします', '麻煩了');
+    const parts = li() === 0 ? [kore, wo, kuda] : [kore, wo, kuda, one];
+    const ends = parts.slice(2).map(p => p.jp);
+    const accept = ends.flatMap(e => [['これ', e], ['これ', 'を', e]]);
+    return { parts, accept, jp: 'これください。', kana: 'これください', zh: '我要這個（結帳）', extra: [], style: m.style, styles: m.styles };
+  }
   function build(src, opt) {
     opt = opt || {};
     const make = typeof src === 'function' ? src : () => src;
@@ -528,7 +545,8 @@
       const reset = () => {
         model = make(st().style);
         const gl = j => (window.Phrase && Phrase.GLOSS && Phrase.GLOSS[j]) || '';
-        tiles = App.shuffle(model.parts.map(p => ({ jp: p.jp, kana: p.kana, zh: p.zh || gl(p.jp) })).concat((model.extra || []).slice(0, nX).map(e => ({ jp: e.jp, kana: e.kana, zh: gl(e.jp) }))));
+        // 零基礎、N5：干擾詞不放「あげます」（太刁鑽）
+        tiles = App.shuffle(model.parts.map(p => ({ jp: p.jp, kana: p.kana, zh: p.zh || gl(p.jp) })).concat((model.extra || []).filter(e => li() > 1 || e.jp !== 'あげます').slice(0, nX).map(e => ({ jp: e.jp, kana: e.kana, zh: gl(e.jp) }))));
         seq = []; fb.textContent = ''; fb.className = 'wd-fb';
         el.querySelector('.wd-zhg').textContent = model.zh;
         mdl.hidden = true; mdl.innerHTML = `<small>參考答案</small>${tx({ jp: model.jp, kana: model.kana }, true)}`;
@@ -573,8 +591,13 @@
     const ans = alt ? a.a.map(x => x.val === alt.val ? Object.assign({}, x, alt.line) : x) : a.a;
     const opts = App.shuffle(ans.map(x => Object.assign({ ok: 1 }, x)).concat(a.bad.filter(x => !alt || x.jp !== alt.line.jp).map(x => Object.assign({ ok: 0 }, x))));
     const wantA = want != null ? ans.find(x => x.val === String(want)) : null;
-    return step(`${bubble(npc, line)}${wantA ? `<p class="wd-need">📋 旅伴想要：<b>${esc(wantA.brief)}</b></p>` : ''}
-      <div class="wd-opts">${opts.map((o, i) => `<button type="button" class="wd-opt" data-i="${i}">${tx(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
+    // shopSim：單元沒教過的問答，第一次出現時一律附讀音＋中文
+    const taught = new Set(((SIM && SIM.items) || []).map(i => strip(i && i.jp)));
+    const fresh = !!SIM && !alt && !ans.some(x => taught.has(strip(x.jp))) && !(SIM.seen || (SIM.seen = new Set())).has(a.id);
+    if (fresh) SIM.seen.add(a.id);
+    const T = o => tx(o, fresh);
+    return step(`${fresh ? '<p class="wd-new">🆕 單元沒教過的句子：先看中文和讀音再選</p>' : ''}<div class="wd-npc">${faceHTML(npc)}<div class="wd-bub"><small>${esc(npc.who || '')}</small>${T(Object.assign({}, line, { zh: line.zh || a.zh }))}<button type="button" class="wd-spk" data-spk aria-label="再聽一次">🔊</button></div></div>${wantA ? `<p class="wd-need">📋 旅伴想要：<b>${esc(wantA.brief)}</b></p>` : ''}
+      <div class="wd-opts">${opts.map((o, i) => `<button type="button" class="wd-opt" data-i="${i}">${T(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
       App.speak(line.jp); bindSpk(el, line);
       const fb = el.querySelector('.wd-fb');
       let wrong = 0;
@@ -850,13 +873,13 @@
     const alt = await pick('賣完了！改點哪一個？', alts, it => `<span class="e">${esc(it.emoji)}</span>${tx(it)}`, 'wd-items3');
     await say('instead', { items: [{ it: alt, n: b.n }] }, { title: '改點別的' });
     Q.swap(b.it, alt); b.it = alt; addDex(alt); paintHud(); paintBar();
-    await npcSay(npc, { jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' });
+    lead(npc, { jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' });
   }
   async function payTotal(npc) {
     const t = total();
     if (t > 0) {
       const y = Phrase.yen(t), line = { jp: `お会計は${y.jp}です。`, kana: `おかいけいは${y.kana}です`, zh: `一共 ${y.zh}。` };
-      if (li() === 0) await npcSay(npc, line, `<p class="wd-total">合計 <b>${yen(t)}</b></p>`);
+      if (li() === 0) lead(npc, line, `<p class="wd-total">合計 <b>${yen(t)}</b></p>`);
       else {
         const d = t >= 1000 ? [100, 1000] : [10, 100];
         const wrong = App.shuffle([t + d[0], Math.max(10, t - d[0]), t + d[1], t + d[0] * 3]).filter((x, i, a) => x !== t && a.indexOf(x) === i).slice(0, 2);
@@ -893,15 +916,15 @@
     if (simLack()) return;
     await Q.checkBasket();
     const sayL = RUN.basket.filter(b => b.toSay && !b.paid);
-    await npcSay(npc, greetLine());
+    if (!SIM || !RUN.greeted) lead(npc, greetLine());   // 實戰進店時已打過招呼，結帳不再重複
     if (sayL.length) {
       await say('want', { items: sayL }, { title: '跟店員說你要的' });
       await incident(sayL, npc);
-      await npcSay(npc, orderLine(RUN.basket.filter(b => b.toSay && !b.paid)));
+      lead(npc, orderLine(RUN.basket.filter(b => b.toSay && !b.paid)));
     } else if (RUN.basket.some(b => !b.paid)) {
       // 貨架拿的東西：把籃子放上櫃台，也要開口說一句
-      await say('this', {}, { title: '把籃子放上櫃台，跟店員說' });
-      await npcSay(npc, { jp: 'はい、お預かりします。', kana: 'はい、おあずかりします', zh: '好的，我來幫您結帳。' });
+      await build(thisModel, { title: '把籃子放上櫃台，跟店員說' });
+      lead(npc, { jp: 'はい、お預かりします。', kana: 'はい、おあずかりします', zh: '好的，我來幫您結帳。' });
     }
     if (SIM && S.kind !== 'eat') await runAsks('order', npc);   // 櫃台品項的追問（房號、送到房間、座位…）
     if (total() > 0) { await runAsks('pay', npc); await payTotal(npc); }
@@ -915,7 +938,7 @@
     if (S.kind !== 'eat') return facilitySheet(key);
     if (RUN.toPay) return note('🍽️ 已經吃飽了。按「入座點餐」旁的結帳，或點收銀台說「お会計」。');
     if (!RUN.entered) {
-      await npcSay(npc, { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' });
+      lead(npc, { jp: 'いらっしゃいませ。', kana: 'いらっしゃいませ', zh: '歡迎光臨。' });
       await runAsks('enter', npc);
       RUN.entered = true; Q.on('entered');
       await npcSay(npc, { jp: 'こちらのお席へどうぞ。', kana: 'こちらのおせきへどうぞ', zh: '這邊請坐。' });
@@ -937,13 +960,13 @@
     const sayL = RUN.basket.filter(b => !b.paid);
     if (sayL.length) {
       await say('call', {}, { title: '叫店員過來' });
-      await npcSay(npc, { jp: 'はい、ご注文をどうぞ。', kana: 'はい、ごちゅうもんをどうぞ', zh: '好的，請點餐。' });
+      lead(npc, { jp: 'はい、ご注文をどうぞ。', kana: 'はい、ごちゅうもんをどうぞ', zh: '好的，請點餐。' });
       await say('want', { items: sayL }, { title: '點餐' });
       await incident(sayL, npc);
-      await npcSay(npc, orderLine(RUN.basket.filter(b => !b.paid)));
-    } else await npcSay(npc, { jp: '食券をお預かりします。', kana: 'しょっけんをおあずかりします', zh: '收您的餐券。' });
+      lead(npc, orderLine(RUN.basket.filter(b => !b.paid)));
+    } else lead(npc, { jp: '食券をお預かりします。', kana: 'しょっけんをおあずかりします', zh: '收您的餐券。' });
     await runAsks('order', npc);
-    await npcSay(npc, { jp: '少々お待ちください。', kana: 'しょうしょうおまちください', zh: '請稍等。' });
+    lead(npc, { jp: '少々お待ちください。', kana: 'しょうしょうおまちください', zh: '請稍等。' });
     RUN.basket.forEach(b => addDex(b.it));
     await npcSay(npc, { jp: 'お待たせしました。ごゆっくりどうぞ。', kana: 'おまたせしました。ごゆっくりどうぞ', zh: '讓您久等了，請慢用。' }, `<p class="wd-serve">${RUN.basket.map(b => esc(b.it.emoji)).join(' ')}</p>`);
     RUN.served = true; if (SIM) SIM.served = true; Q.on('served');
@@ -960,7 +983,7 @@
   });
   const checkin = flow(async key => {
     const npc = staff(key);
-    await npcSay(npc, greetLine());
+    lead(npc, greetLine());
     for (const a of S.asks.filter(a => a.phase === 'checkin')) RUN.vals[a.id] = await askQ(a, pref(a.id), npc);
     // 車站類：問過目的地 → 最後報票價、付款
     const dest = RUN.vals.dest && S.items.find(i => i.id === RUN.vals.dest);
@@ -1275,7 +1298,7 @@
         S = shop; D = d; MAP = null; PARAMS = { r: shop.region, d: d.id, s: shop.id };
         RUN = { basket: [], vals: {}, entered: false, served: false, toPay: false, incident: false, greeted: false };
         const alt = unitAlt(shop, opt.items);
-        my = SIM = { alt, goal: simGoal(shop, opt.goal, opt.items, alt), res: [], miss: 0, got: new Map(), checked: false, served: false, done: false, closed: false, finish: m => finish(m) };
+        my = SIM = { alt, items: opt.items || [], seen: new Set(), goal: simGoal(shop, opt.goal, opt.items, alt), res: [], miss: 0, got: new Map(), checked: false, served: false, done: false, closed: false, finish: m => finish(m) };
         // 品項面板只列：目標品項＋每區 2 個干擾
         const show = new Set(SIM.goal.needs.map(n => n.it));
         simZones().forEach(k => itemsIn(k).filter(it => !show.has(it) && !it.soldOut).slice(0, 2).forEach(it => show.add(it)));

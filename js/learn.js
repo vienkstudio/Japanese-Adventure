@@ -168,6 +168,18 @@
     for (const id in LL) { const e = LL[id]; if (opt.type && !id.startsWith(opt.type + ':')) continue; if (opt.lv && !(e.m && e.m.lv === opt.lv)) continue; if (learnedE(e)) n++; }
     return n;
   }
+  // 「明天到期」：到明天結束前會到期的數量（含今天還沒複習的）；各結算頁共用這一個
+  function dueTomorrow() {
+    const end = new Date(); end.setHours(0, 0, 0, 0); const tmr = end.getTime() + 2 * DAY, LL = L(); let n = 0;
+    for (const id in LL) { const e = LL[id]; if (e.s !== 'new' && (e.reps || e.star || e.lapses) && (e.due || 0) < tmr) n++; }
+    return n;
+  }
+  // 一天新學量：讓明天到期 ≤ DUE_CAP。plannedDue＝今天會複習掉的到期數；新學每個約讓明天 +1
+  const DUE_CAP = 20;
+  function freshBudget(base, plannedDue, min) {
+    const left = DUE_CAP - Math.max(0, dueTomorrow() - (plannedDue || 0));
+    return Math.max(min || 0, Math.min(base, left));
+  }
   function due(n) {
     const now = Date.now(), LL = L();
     const ids = Object.keys(LL).filter(id => isDue(LL[id], now)).sort((a, b) => (LL[a].due || 0) - (LL[b].due || 0) || (LL[b].lapses || 0) - (LL[a].lapses || 0));
@@ -240,17 +252,23 @@
     if (lv === 'zero') { const k = kanaFresh(n); if (k.length) return k; }
     return sceneFresh(n, lv, push, out);
   }
-  // 零基礎＋旅遊：學滿 10 個假名後，每堂課混入 2–3 句旅遊必備句（短句、附讀音與羅馬字）
+  // 零基礎＋旅遊：五十音之外每堂混入 1–2 句旅遊必備句（短句、附讀音與羅馬字、中文）；學滿 10 個假名後 2 句
+  const KANA_PH_PREF = ['すみません', 'これください', 'ありがとうございます', 'トイレはどこですか', 'いくらですか'];
   function kanaMix(n) {
     const out = kanaFresh(n);
     let goals = []; try { goals = App.profile().goals || []; } catch (e) { }
-    if (!goals.includes('travel') || kanaLearned().length < 10) return out;
-    const k = out.length >= n ? 2 : 3, ph = [];
+    if (!goals.includes('travel')) return out;
+    const k = kanaLearned().length >= 10 ? 2 : 1, ph = [], cand = [];
     for (const s of arr(G('SCENES'))) for (const w of arr(s.phrases)) {
+      if (!w || !w.jp || !w.kana || !w.zh || String(w.jp).length > 10) continue;
+      cand.push([w, s]);
+    }
+    const rank = w => { const i = KANA_PH_PREF.findIndex(x => normP(w.kana).startsWith(x) || normP(w.jp).startsWith(x)); return i < 0 ? 99 : i; };
+    cand.sort((x, y) => rank(x[0]) - rank(y[0]));
+    for (const [w, s] of cand) {
       if (ph.length >= k) break;
-      if (!w || !w.jp || !w.kana || String(w.jp).length > 10) continue;
       const id = idOf(w, 'phrase'); if (!isFresh(id) || ph.some(x => x.id === id)) continue;
-      ph.push({ id, type: 'phrase', jp: w.jp, kana: w.kana, romaji: w.romaji || '', zh: w.zh || '', hint: w.use || w.hint || '', source: '🧳 旅遊必備句・' + s.name });
+      ph.push({ id, type: 'phrase', jp: w.jp, kana: w.kana, romaji: w.romaji || '', zh: w.zh || '', hint: w.use || w.hint || '', source: '🧳 旅遊必備句・' + s.name, scene: s.id || s.name });
     }
     return out.concat(ph);
   }
@@ -282,39 +300,58 @@
   }
   // 歌曲新聞：先用閱讀／歌曲收進來還沒學的詞 → 最後播放（或最近存的）那首歌的歌詞詞彙 → 今日短文的句子 → 同級其他短文；不用旅遊句補位
   function dailyPick() { let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { } const R = window.READING; return R && typeof R.pick === 'function' ? R.pick(lv, App.today()) : null; }
-  let SONG = null;   // prepare('fun') 時從 App.idb 讀出的歌：{id, title, lines:[{jp,zh}]}
+  let SONG = null;   // prepare('fun') 時讀出的歌：{id, title, lines:[{jp,zh}]}；SONGS＝候選（上次那首 → 我的歌 → 熱門第一首 → 示範曲）
+  let SONGS = [];
+  const okSong = s => s && Array.isArray(s.lines) && s.lines.length ? { id: s.id, title: s.title || '', lines: s.lines } : null;
   function loadSong() {
-    const I = App.idb; if (!I) return Promise.resolve(null);
-    const last = S().songLast;
-    return (last && last.id ? Promise.resolve(last.id) : I.get('songs:index').then(a => Array.isArray(a) && a[0] ? a[0].id : null))
-      .then(id => id ? I.get('song:' + id) : null)
-      .then(s => (SONG = s && Array.isArray(s.lines) && s.lines.length ? { id: s.id, title: s.title || '', lines: s.lines } : null))
-      .catch(() => (SONG = null));
+    const I = App.idb; SONGS = []; SONG = null;
+    const last = S().songLast, SG = window.Songs;
+    const getS = id => I ? I.get('song:' + id).catch(() => null) : Promise.resolve(null);
+    const idx = I ? I.get('songs:index').then(a => Array.isArray(a) ? a.map(x => x.id) : []).catch(() => []) : Promise.resolve([]);
+    return idx.then(ids => {
+      if (last && last.id) ids = [last.id].concat(ids.filter(x => x !== last.id));
+      return Promise.all(ids.slice(0, 4).map(getS));
+    }).then(list => {
+      SONGS = list.map(okSong).filter(Boolean);
+      // 還沒有歌：匯入熱門第一首（最多等 6 秒；離線就用示範曲）
+      if (SONGS.length || !SG || typeof SG.importHot !== 'function' || !Array.isArray(SG.HOT) || !SG.HOT[0]) return null;
+      const imp = SG.importHot(0).then(id => id ? getS(id) : null).catch(() => null);
+      return Promise.race([imp, new Promise(r => setTimeout(() => r(null), 6000))]).then(s => { s = okSong(s); if (s) SONGS.push(s); });
+    }).then(() => {
+      if (!SONGS.length && window.Songs && Songs.DEMO) SONGS.push(okSong(Songs.DEMO));
+      SONGS = SONGS.filter(Boolean);
+      return (SONG = SONGS[0] || null);
+    }).catch(() => (SONG = null));
   }
   const POS_OK = /^(n|v|i|na|adv)$/;
   function songWords(n) {
     const J = window.JPText, out = [];
-    if (!SONG || !J || typeof J.tokenize !== 'function' || !J.size) return out;
-    for (const l of SONG.lines) {
-      const jp = String(l.jp || '').trim(); if (!jp || jp.length > 40) continue;
-      let tk = []; try { tk = J.tokenize(jp); } catch (e) { }
-      for (const t of tk) {
-        if (out.length >= n) return out;
-        if (!t.known || !t.zh || !POS_OK.test(t.pos || '') || String(t.base).length < 2) continue;
-        const id = 'v:' + jp0(t.base); if (!isFresh(id) || out.some(x => x.id === id)) continue;
-        out.push({ id, type: 'vocab', jp: t.base, kana: t.bkana || '', zh: String(t.zh).split(/[；;]/)[0], lv: t.lv || '', ex: [jp, l.zh || ''], source: '🎵 歌詞：' + SONG.title });
+    if (!SONGS.length || !J || typeof J.tokenize !== 'function' || !J.size) return out;
+    for (const sg of SONGS) {
+      for (const l of sg.lines) {
+        const jp = String(l.jp || '').trim(); if (!jp || jp.length > 40) continue;
+        let tk = []; try { tk = J.tokenize(jp); } catch (e) { }
+        for (const t of tk) {
+          if (out.length >= n) break;
+          if (!t.known || !t.zh || !POS_OK.test(t.pos || '') || String(t.base).length < 2) continue;
+          const id = 'v:' + jp0(t.base); if (!isFresh(id) || out.some(x => x.id === id)) continue;
+          out.push({ id, type: 'vocab', jp: t.base, kana: t.bkana || '', zh: String(t.zh).split(/[；;]/)[0], lv: t.lv || '', ex: [jp, l.zh || ''], source: '🎵 歌詞：' + sg.title, song: sg.id });
+        }
+        if (out.length >= n) break;
       }
-    }
-    return out;
-  }
-  function funFresh(n) {
-    const LL = L(), out = [];
-    for (const id in LL) {
-      const e = LL[id], src = (e.m && e.m.source) || e.src || '';
-      if (!e.reps && /歌|song|閱讀|文章|read|新聞|📰|🎵/.test(src)) { const v = view(id); v.type = id.startsWith('p:') ? 'phrase' : 'vocab'; out.push(v); }
       if (out.length >= n) break;
     }
-    if (out.length < n) songWords(Math.min(n - out.length, Math.ceil(n / 2))).forEach(x => out.push(x));
+    if (out.length) SONG = SONGS.find(x => x.id === out[0].song) || SONG;
+    return out;
+  }
+  // 歌曲新聞：歌詞詞優先（上次那首 → 我的歌 → 熱門第一首 → 示範曲）→ 閱讀／歌曲收進來還沒學的詞 → 今日短文的句子；不用旅遊句補位
+  function funFresh(n) {
+    const LL = L(), out = songWords(n);
+    for (const id in LL) {
+      if (out.length >= n) break;
+      const e = LL[id], src = (e.m && e.m.source) || e.src || '';
+      if (!e.reps && /歌|song|閱讀|文章|read|新聞|📰|🎵/.test(src) && !out.some(x => x.id === id)) { const v = view(id); v.type = id.startsWith('p:') ? 'phrase' : 'vocab'; out.push(v); }
+    }
     const R = window.READING, a = dailyPick();
     let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { }
     const arts = a ? [a] : [];
@@ -352,9 +389,12 @@
     travel: () => ({ route: 'play', params: {}, label: '到冒險店家用出來' }),
     exam: () => ({ route: 'challenge-play', params: { lv: lvKey(), t: 'mix' }, label: lvKey() + ' 綜合 10 題' }),
     // 歌曲新聞：固定唱一首歌（最後那首，沒有就熱門精選）；不再依日期輪替，也不重複剛學過的短文
+    // 今天學的歌詞詞出自哪首就唱哪首；熱門歌沒匯入也能開（song 路由會自動匯入）
     fun: () => {
-      const last = S().songLast;
-      return last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
+      if (SONG && SONG.id) return { route: 'song', params: { id: SONG.id }, label: '唱一首歌：' + (SONG.title || '今天那首') };
+      const last = S().songLast, H = window.Songs && Array.isArray(Songs.HOT) && Songs.HOT[0];
+      return last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') }
+        : H ? { route: 'song', params: { id: 'yt:' + H[2] }, label: '唱一首歌：' + H[0] } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
     },
     work: () => ({ route: 'biz', params: {}, label: '商務情境練習' })
   };
@@ -555,7 +595,7 @@
   window.Learn = {
     idOf, kbIdOf, jp0, normP,
     record, setStatus, get, status, atLeast, star, fav, inList: id => inList(get(id)),
-    due, dueCount, learnedCount, isLearned: id => learnedE(get(id)), queue, prepare, stats, view, views, kanaLearned,
+    due, dueCount, dueTomorrow, freshBudget, DUE_CAP, learnedCount, isLearned: id => learnedE(get(id)), queue, prepare, stats, view, views, kanaLearned,
     mindST, kbItem, resolvePending, migrate, importList,
     ORDER: ST_ORDER
   };

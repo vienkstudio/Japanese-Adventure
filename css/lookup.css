@@ -18,6 +18,8 @@
 .lk-ph .t{flex:1;min-width:0;display:flex;flex-direction:column}
 .lk-ph b{font-size:var(--fs-lg);word-break:keep-all;overflow-wrap:anywhere}
 .lk-ph small,.lk-w small{color:var(--muted);font-size:var(--fs-sm)}
+.lk-ph small,.lk-ph .zh{overflow-wrap:anywhere}
+.lk-pl .zh small{font-size:var(--fs-xs)}
 .lk-ph small.rm{color:var(--acc-d);font-weight:700}
 .lk-ph .zh{font-size:var(--fs-sm)}
 .lk-ph .go,.lk-w .go{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--pri-t);color:var(--pri)}
