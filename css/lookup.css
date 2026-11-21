@@ -50,8 +50,20 @@
 .lk-more summary::before{content:"▸"}
 .lk-more[open] summary::before{content:"▾"}
 .lk-more .lk-tools{margin-top:var(--sp-1)}
-.lk-exp{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);margin-top:var(--sp-5);color:var(--muted);font-size:var(--fs-sm)}
-.lk-exp button{border:1px dashed var(--line2);background:transparent;color:var(--muted);border-radius:var(--r-pill);padding:6px 14px;min-height:44px;font:inherit;font-size:var(--fs-sm);cursor:pointer}
+/* 導引（js/nav.js）：推薦、修正連結、全部功能（☆ 釘選）、功能搜尋列 */
+.lk-rec{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-fs=xl] .lk-rec,[data-fs=l] .lk-rec{grid-template-columns:1fr}
+.lk-rec .lk-tool b,.lk-row b{font-size:var(--fs-md)}
+.lk-tool small{font-size:var(--fs-xs);overflow-wrap:anywhere}
+.lk-tool.on{outline:2px solid var(--pri)}
+.lk-row{width:100%;min-height:56px}
+.lk-fix{display:block;margin:var(--sp-2) 0 0 auto;border:none;background:none;color:var(--pri-d);font:inherit;font-size:var(--fs-sm);font-weight:700;min-height:44px;padding:0 var(--sp-1);cursor:pointer}
+.lk-allf summary small{font-weight:500;font-size:var(--fs-xs);margin-left:auto}
+.lk-ch{font-size:var(--fs-sm);color:var(--muted);margin:var(--sp-3) 0 var(--sp-1)}
+.lk-nr{display:flex;gap:var(--sp-2);align-items:stretch}
+.lk-nr .lk-tool{flex:1;min-width:0}
+.lk-pin{flex:none;width:48px;min-height:48px;border:none;border-radius:var(--r-m);background:var(--chip);color:var(--muted);font:inherit;font-size:1.3em;cursor:pointer}
+.lk-pin.on{color:var(--acc-d);background:var(--pri-t)}
 
 /* ---------- 我的 ---------- */
 .my-head{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-2) 0 var(--sp-3)}

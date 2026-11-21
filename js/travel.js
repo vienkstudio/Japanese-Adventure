@@ -462,7 +462,7 @@
     showQuestion(true);
   }
 
-  App.register('trip-event', { title: '旅遊情境', icon: '💬', nav: false, navParent: 'home', render: renderEncounter });
+  App.register('trip-event', { title: '旅遊情境', icon: '💬', nav: false, navParent: 'path', render: renderEncounter });
 
   /* ---------- 站內流程（Hub） ---------- */
   const HUB = { stop: null, i: -1 };
@@ -496,8 +496,8 @@
     App.toast(`🚶 前往下一站：${st.icon} ${st.name}`);
     App.go('trip-stop');
   }
-  App.register('trip-next', { title: '下一站', icon: '🚶', nav: false, transient: true, navParent: 'home', render: nextStop });
-  App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, transient: true, navParent: 'home', render: renderStopHub });
-  App.register('trip', { title: '旅程・五十音', icon: '🗾', nav: false, navParent: 'home', render: renderPlay });
+  App.register('trip-next', { title: '下一站', icon: '🚶', nav: false, transient: true, navParent: 'path', render: nextStop });
+  App.register('trip-stop', { title: '站內流程', icon: '📍', nav: false, transient: true, navParent: 'path', render: renderStopHub });
+  App.register('trip', { title: '旅程・五十音', icon: '🗾', nav: false, navParent: 'path', render: renderPlay });
   window.Travel = { renderPlay, openSettings, goshuin: goshuinModal };
 })();

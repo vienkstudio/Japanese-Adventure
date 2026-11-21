@@ -52,14 +52,7 @@
   function lazy(defs, js, css) {
     defs.forEach(([name, def]) => { T[name] = { js: (js || []).slice(), css: (css || []).slice() }; App.register(name, Object.assign({}, def, { render: null })); });
   }
-  // 冒險地圖頁（還沒進街區）底部放「經典練習」入口
-  const AFTER = {
-    play(el, p) {
-      if (p.d || p.s || el.querySelector('.cl-entry')) return;
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn block cl-entry'; b.textContent = '🏯 經典練習（舊版旅程、關卡、小遊戲）';
-      b.onclick = () => App.go('classic'); el.appendChild(b);
-    }
-  };
+  const AFTER = {};   // 路由畫完後的掛鉤（v14 刪掉冒險地圖底部的經典練習入口）
 
   /* =========================================================
      今天：首頁
@@ -561,7 +554,6 @@
       <div class="st-box"><h2>🧰 其他</h2><div class="st-rows">
         ${G ? `<button type="button" class="st-row" id="st-sfx">${G.sfxOn() ? '🔊 音效' : '🔇 音效'}<small>${G.sfxOn() ? '開' : '關'}</small></button>` : ''}
         <button type="button" class="st-row" id="st-av">🎭 換頭像<small>›</small></button>
-        <button type="button" class="st-row" id="st-cl">🏯 經典練習<small>舊版旅程、關卡、小遊戲 ›</small></button>
         <button type="button" class="st-row" id="st-bk">💾 備份／還原存檔<small>${App.saveStatus === 'cloud' ? '已雲端存檔' : '存在這台裝置'}</small></button>
       </div></div>
       <div class="st-box"><h2>⚠️ 危險區</h2>
@@ -587,7 +579,6 @@
       if (G && has(G, 'pickAvatar')) G.pickAvatar(() => App.render());
     };
     q('#st-bk').onclick = () => App.backup();
-    q('#st-cl').onclick = () => App.go('classic');
     q('#st-clear').onclick = () => {
       if (!clearArmed) { clearArmed = true; App.toast('⚠️ 會清除 XP、不會清單、所有進度。再點一次確定'); setTimeout(() => { clearArmed = false; }, 3000); return; }
       clearArmed = false; App.resetAll();

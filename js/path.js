@@ -484,7 +484,7 @@
     const k = ['kana', '🔤', '五十音'];
     const main = (gs.length ? gs : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));
     const rest = GOALS.filter(g => !main.includes(g));
-    if (zeroKana()) main.unshift(k); else rest.push(k);
+    if (zeroKana()) main.unshift(k); else main.push(k);   // 五十音常駐主分頁：零基礎第一、其他人最後
     return { main, rest, all: main.concat(rest) };
   }
   const starTxt = n => n ? '★'.repeat(n) + '☆'.repeat(3 - n) : '';

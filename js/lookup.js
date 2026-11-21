@@ -1,4 +1,4 @@
-/* 查（路由 lookup，導覽 3）：一個搜尋框跨「手冊句子、MIND 單字與文法、外來語、我的文章與歌曲」＋依目的的工具卡。
+/* 查（路由 lookup，導覽 3）：一個搜尋框跨「手冊句子、MIND 單字與文法、外來語、我的文章與歌曲」＋導引（js/nav.js：🆘 緊急、為你推薦、全部功能、功能搜尋置頂）。
    依賴：App、Phrasebook（js/phrasebook.js，⭐ 必備＋🆘 緊急句、大字出示）、Phrase（羅馬字）。
    其他資料搜尋時才載入：SCENES（data/scenes-*.js）、冒險世界 WORLD（data/world，京阪等地名・景點・店內句子）、MIND（data/mind/grammar.js、lex-n*.js）、LOAN（data/loan.js）；
    我的文章／歌曲直接讀 IndexedDB 索引（docs:index、songs:index），不必先載入 reader／songs。
@@ -171,36 +171,33 @@
   const QUICK = ['袋はいりません。', 'これください。', 'これはいくらですか。', 'カードで払えますか。', 'トイレはどこですか。', '免税できますか。'];
   const quick = n => { const pb = PB(); if (!pb || !pb.MUST) return []; return QUICK.map(j => pb.MUST.find(w => w.jp === j)).filter(Boolean).slice(0, n); };
 
-  const TOOLS = {
-    travel: [['phrasebook', { cat: 'must' }, '📖', '旅遊快查手冊', '點餐、購物、交通、住宿；可大字給店員看']],
-    exam: [['lookup', { view: 'gram' }, '📗', '文法句型', 'N5–N1 句型、接續、例句（依級數）'], ['kb', { p: 'db', kind: 'word' }, '📘', '字典', 'N5–N1 單字、讀音、例句']],
-    work: [['lookup', { view: 'keigo' }, '🙇', '敬語・商務句型', '尊敬語、謙讓語、商務常用句型'], ['kb', { p: 'db', kind: 'word' }, '📘', '字典', 'N5–N1 單字、讀音、例句']],
-    fun: [['songs', {}, '🎵', '歌曲', '跟唱、看懂歌詞'], ['read', {}, '📰', '閱讀', '新聞、今日短文'], ['read', { sec: 'art' }, '📄', '我的文章', '貼上或匯入的文章']]
-  };
   // 搜尋框範例依目的（第一個目的優先）
-  const HINT = {
-    travel: '查句子、單字：袋子、いくら、ikura',
-    exam: '查文法句型、單字：ばかり、ようにする、わけ',
-    fun: '查歌名、歌詞單字：紅蓮華、Lemon、夢',
-    work: '查敬語、商務句：いたします、申し上げる、會議'
-  };
-  let TK = [];
-  const tool = t => { TK.push(t); return `<button type="button" class="lk-tool" data-tool="${TK.length - 1}"><span class="i" aria-hidden="true">${t[2]}</span><span><b>${esc(t[3])}</b><small>${esc(t[4])}</small></span></button>`; };
-
+  const HINT = '查句子、單字或功能：五十音、點餐';
+  // 功能卡（js/nav.js 的 NAV.TOOLS）：data-nv＝工具 id；推薦卡第 4 格「上次用的」帶參數（data-last）
+  const NV = () => window.NAV || null;
+  const navCard = (t, cls) => `<button type="button" class="lk-tool${cls ? ' ' + cls : ''}" data-nv="${esc(t.id)}"${t.last ? ' data-last="1"' : ''}><span class="i" aria-hidden="true">${esc(t.icon)}</span><span><b>${esc(t.name)}</b><small>${esc(t.last ? t.lastTxt || '上次用的' : t.desc)}</small></span></button>`;
+  const navRow = t => `<div class="lk-nr">${navCard(t, 'lk-row')}<button type="button" class="lk-pin${NV().pinned(t.id) ? ' on' : ''}" data-pin="${esc(t.id)}" aria-pressed="${NV().pinned(t.id)}" aria-label="${NV().pinned(t.id) ? '取消釘選' : '釘選到推薦'}：${esc(t.name)}">${NV().pinned(t.id) ? '★' : '☆'}</button></div>`;
+  let ALLOPEN = false;
   function home() {
-    const p = App.profile(), gs = p.goals && p.goals.length ? p.goals : ['travel'], travel = gs.includes('travel');
-    TK = [];
-    const seen = new Set(), own = [], rest = [];
-    gs.forEach(g => (TOOLS[g] || []).forEach(t => { const id = t[0] + JSON.stringify(t[1]); if (!seen.has(id)) { seen.add(id); own.push(t); } }));
-    Object.keys(TOOLS).forEach(g => TOOLS[g].forEach(t => { const id = t[0] + JSON.stringify(t[1]); if (!seen.has(id)) { seen.add(id); rest.push(t); } }));
-    // 🆘 緊急：只有選旅遊的人置頂；其他目的收進「其他工具」
-    const emer = cls => `<button type="button" class="${cls}" data-tool="${TK.push(['phrasebook', { cat: 'emer' }]) - 1}"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
-    const q = travel ? quick(gs.length > 2 ? 4 : gs.length > 1 ? 5 : 6) : [];
-    return (travel ? emer('lk-emer') : '') +
+    const p = App.profile(), gs = p.goals && p.goals.length ? p.goals : ['travel'], travel = gs.includes('travel'), N = NV();
+    const q = travel ? quick(gs.length > 2 ? 3 : 4) : [];
+    const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="emer"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
+    const rec = N ? N.forMe(4) : [];
+    const all = N ? N.CATS.map(([c, ic, n]) => { const ts = N.TOOLS.filter(t => t.cat === c); return ts.length ? `<h3 class="lk-ch">${ic} ${esc(n)}</h3><div class="lk-list">${ts.map(navRow).join('')}</div>` : ''; }).join('') : '';
+    return emer +
       (q.length ? `<h2 class="lk-h">💬 常用句<small>點一下放大給店員看</small></h2><div class="lk-list">${q.map(phRow).join('')}</div>` : '') +
-      `<div class="lk-tools">${own.map(tool).join('')}</div>` +
-      `<details class="lk-more"><summary>其他工具</summary>${travel ? '' : emer('lk-emer sm')}${rest.length ? `<div class="lk-tools">${rest.map(tool).join('')}</div>` : ''}</details>` +
-      `<div class="lk-exp"><span>實驗：</span><button type="button" data-tool="${TK.push(['mind3d', {}]) - 1}">🧠 3D 心智圖</button><button type="button" data-tool="${TK.push(['read', { mode: 'url' }]) - 1}">🔗 匯入網址</button></div>`;
+      (rec.length ? `<h2 class="lk-h">✨ 為你推薦</h2><div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) +
+      `<button type="button" class="lk-fix" data-fix="1">推薦不準？改目的與程度 ›</button>` +
+      (N ? `<details class="lk-more lk-allf"${ALLOPEN ? ' open' : ''}><summary>全部功能<small>☆ 釘選到推薦</small></summary>${all}</details>` : '');
+  }
+  // 搜尋結果最上面：功能命中（≤3）；其他功能命中排在內容後面
+  function navHits(raw) {
+    const N = NV(); if (!N) return { top: '', more: '' };
+    const r = N.search(raw);
+    return {
+      top: r.top.length ? `<h2 class="lk-h">🧭 功能</h2><div class="lk-list">${r.top.map(t => navCard(t, 'lk-row')).join('')}</div>` : '',
+      more: r.more.length ? `<h2 class="lk-h">🧭 相關功能</h2><div class="lk-list">${r.more.slice(0, 4).map(t => navCard(t, 'lk-row')).join('')}</div>` : ''
+    };
   }
 
   /* ---------- 文法句型（日檢，依級數）／敬語・商務句型（商務）：查頁內的精簡清單，一次 ≤12 個 ---------- */
@@ -303,6 +300,8 @@
     if (!funQ) h += hotH;
     if (my.length) h += `<h2 class="lk-h">⭐ 我的文章與歌曲</h2><div class="lk-list">${my.map(x => `<button type="button" class="lk-w" data-mine="${x.k}:${esc(x.id)}"><span aria-hidden="true">${x.k === 'song' ? '🎵' : '📄'}</span><b>${esc(x.t)}</b></button>`).join('')}</div>`;
     const busy = more && !more.done;
+    const nv = navHits(raw);
+    h = nv.top + h + nv.more;
     if (!h) return busy ? `<p class="lk-tip">⏳ 搜尋中…</p>` : `<p class="lk-tip">找不到「${esc(raw)}」，換個說法試試（中文、日文、羅馬字都可以）</p>`;
     return h + (busy ? `<p class="lk-tip">⏳ 還在載入更多資料…</p>` : '');
   }
@@ -310,9 +309,10 @@
   function render(el, params) {
     params = params || {};
     if (params.view === 'gram' || params.view === 'keigo') return renderGram(el, params.view);
-    if (params.q != null) UI.q = String(params.q);
+    if (params.pick) return withNav(() => NAV.renderPick(el, params), el);
+    UI.q = params.q != null ? String(params.q) : '';   // 從底部導覽進來＝空白（看推薦）；按返回回到搜尋結果（查詢存在歷史紀錄）
     el.innerHTML = `<section class="lk">
-      <div class="lk-sbar"><input class="lk-q" type="search" enterkeyhint="search" autocomplete="off" placeholder="${esc(HINT[(App.profile().goals || [])[0]] || HINT.travel)}" value="${esc(UI.q)}" aria-label="搜尋">
+      <div class="lk-sbar"><input class="lk-q" type="search" enterkeyhint="search" autocomplete="off" placeholder="${esc(HINT)}" value="${esc(UI.q)}" aria-label="搜尋">
       <button type="button" class="lk-x" aria-label="清除"${UI.q ? '' : ' hidden'}>✕</button></div>
       <div id="lk-box"></div>${App.voiceHTML ? App.voiceHTML() : ''}</section>`;
     const box = el.querySelector('#lk-box'), inp = el.querySelector('.lk-q'), x = el.querySelector('.lk-x');
@@ -330,21 +330,32 @@
       const p = loadMore(() => { clearTimeout(t); t = setTimeout(refresh, 60); });
       p.then(() => { p.done = true; refresh(); });
     };
-    inp.oninput = () => { UI.q = inp.value; clearTimeout(t); t = setTimeout(() => { paint(); kick(); }, 150); };
+    const keepQ = () => { if (App.replaceEntry) App.replaceEntry('lookup', UI.q.trim() ? { q: UI.q } : {}); };
+    inp.oninput = () => { UI.q = inp.value; clearTimeout(t); t = setTimeout(() => { paint(); kick(); keepQ(); }, 150); };
     inp.onkeydown = e => { if (e.key === 'Enter') { inp.blur(); } };
-    x.onclick = () => { UI.q = ''; inp.value = ''; paint(true); inp.focus(); };
+    x.onclick = () => { UI.q = ''; inp.value = ''; paint(true); keepQ(); inp.focus(); };
     box.onclick = e => {
       const b = e.target.closest('button'); if (!b) return;
       const d = b.dataset;
       if (d.big != null) { const w = KEYS[+d.big]; if (!w) return; const pb = PB(); if (pb && pb.showBig) pb.showBig(w); else App.speak(w.kana || w.jp); }
       else if (d.say != null) { const w = KEYS[+d.say]; if (w) App.speak(w.jp); }
-      else if (d.tool != null) { const tt = TK[+d.tool]; if (tt) App.go(tt[0], tt[1]); }
+      else if (d.nv) { const N = NV(); if (N) N.go(N.byId(d.nv), d.last && (App.state.nav || {}).last); }
+      else if (d.pin) { const N = NV(); if (N) { N.pin(d.pin); ALLOPEN = true; paint(true); } }
+      else if (d.fix) App.go('settings');
       else if (d.kb) App.go('kb-page', { id: d.kb });
       else if (d.pbq) App.go('phrasebook', { q: UI.q });
       else if (d.hot != null) { const hh = HOTK[+d.hot]; if (hh) openHot(hh); }
       else if (d.mine) { const i = d.mine.indexOf(':'), k = d.mine.slice(0, i), id = d.mine.slice(i + 1); App.go(k === 'song' ? 'song' : 'read-article', k === 'song' ? { id } : { doc: id }); }
     };
+    box.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('lk-allf')) ALLOPEN = e.target.open; }, true);
     paint(true); kick();
+    if (!NV()) withNav(() => { if (box.isConnected && !UI.q.trim()) paint(true); else refresh(); });
+  }
+  // nav.js 由 index.html 與查頁一起載入；萬一沒有就補載
+  function withNav(fn, el) {
+    if (window.NAV) return fn();
+    if (el) el.innerHTML = '<p class="lk-tip">⏳ 載入中…</p>';
+    App.loadScript('js/nav.js').then(fn, () => { if (el) el.innerHTML = '<p class="lk-tip">載入失敗，請稍後再試</p>'; });
   }
 
   App.register('lookup', { title: '查', icon: '🔍', nav: true, navOrder: 3, render });

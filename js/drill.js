@@ -496,7 +496,7 @@
     });
   }
 
-  App.register('boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'home', render: renderHub });
-  App.register('boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'home', render: renderPlay });
+  App.register('boot', { title: '特訓', icon: '🎧', nav: false, navParent: 'path', render: renderHub });
+  App.register('boot-play', { title: '特訓', icon: '🎧', nav: false, navParent: 'path', render: renderPlay });
   window.DrillAPI = { numKana, hourK, dayK, monthK, floorK, MODES, NUM };
 })();
