@@ -144,6 +144,46 @@
       else { sfx('lose'); vibrate(200); }
     }
   }
+  /* ---------------- 彈窗與提示排隊 ----------------
+     御朱印、升級、結果等彈窗一次只開一個（後來的等前一個關掉才出現）；
+     toast 一次一個、依序顯示，有彈窗開著時先等（語音字幕 tts-cap 例外，照常即時顯示） */
+  const rawRemove = Element.prototype.remove;
+  const MQ = [], TQ = [];
+  let tBusy = false, pumpT0 = 0;
+  const openModals = () => [...document.querySelectorAll('.modal-bg')].filter(m => !m.classList.contains('keep'));
+  function holdModal(n) {
+    if (n.classList.contains('keep') || !openModals().some(m => m !== n && (m.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING))) return false;   // 只讓先開的那個留著
+    rawRemove.call(n);
+    // 排隊中被關（core 的 close() 呼叫 bg.remove()）就取消
+    n.remove = function () { const i = MQ.indexOf(this); if (i >= 0) MQ.splice(i, 1); rawRemove.call(this); };
+    MQ.push(n);
+    return true;
+  }
+  function holdToast(n) {
+    if (n.classList.contains('tts-cap')) return;
+    const cls = [...n.classList].filter(c => c !== 'out' && c !== 'toast').join(' ');
+    TQ.push({ html: n.innerHTML, cls });
+    rawRemove.call(n);
+    pumpToast();
+  }
+  function pumpLater() { clearTimeout(pumpT0); pumpT0 = setTimeout(pump, 250); }
+  function pump() {
+    if (!openModals().length && MQ.length) { const m = MQ.shift(); delete m.remove; document.body.appendChild(m); return; }
+    pumpToast();
+  }
+  function pumpToast() {
+    if (tBusy || !TQ.length || openModals().length) return;
+    tBusy = true;
+    const it = TQ.shift();
+    let box = document.getElementById('toastBox');
+    if (!box) { box = document.createElement('div'); box.id = 'toastBox'; document.body.appendChild(box); }
+    const t = document.createElement('div');
+    t._mine = true; t.className = 'toast q ' + it.cls; t.innerHTML = it.html;
+    box.appendChild(t);
+    const dur = TQ.length >= 2 ? 1400 : 2000;
+    setTimeout(() => t.classList.add('out'), dur);
+    setTimeout(() => { rawRemove.call(t); tBusy = false; pumpToast(); }, dur + 350);
+  }
   const mo = new MutationObserver(list => {
     const ok = [], ng = [];
     let tOk = 0, tNg = 0;   // 旅程狀況題：音效由 travel.js 自己處理，這裡只計數
@@ -160,10 +200,11 @@
         else if (m.target.classList.contains('trip-right') && !/trip-right/.test(was)) tOk++;
       }
       if (m.type === 'childList') m.addedNodes.forEach(n => {
-        if (n.nodeType !== 1) return;
-        if (n.classList.contains('modal-bg')) onModal(n);
-        else if (n.classList.contains('toast') && n.classList.contains('xp')) sfx('coin');
+        if (n.nodeType !== 1 || !n.isConnected) return;
+        if (n.classList.contains('modal-bg')) { if (!holdModal(n)) onModal(n); }
+        else if (n.classList.contains('toast')) { if (n._mine) { if (n.classList.contains('xp')) sfx('coin'); } else holdToast(n); }
       });
+      if (m.type === 'childList' && [...m.removedNodes].some(n => n.nodeType === 1 && n.classList.contains('modal-bg'))) pumpLater();
     });
     if (ok.length || ng.length) onChoices(ok, ng);
     if (tOk && !tNg) bump('ok');

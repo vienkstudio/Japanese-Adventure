@@ -232,7 +232,7 @@ WORLD.pack('tokyo', {
         { id: 'mizu', jp: '水', kana: 'みず', zh: '礦泉水', emoji: '💧', price: 130, c: 'hon', zone: 'V', tags: ['drink'] },
         { id: 'ocha', jp: 'お茶', kana: 'おちゃ', zh: '綠茶', emoji: '🍵', price: 160, c: 'hon', zone: 'V', tags: ['drink'] },
         { id: 'cola', jp: 'コーラ', kana: 'コーラ', zh: '可樂', emoji: '🥤', price: 160, c: 'hon', zone: 'V', tags: ['drink'] },
-        { id: 'cocoa', jp: 'ホットココア', kana: 'ほっところあ', zh: '熱可可', emoji: '☕', price: 140, c: 'hon', zone: 'V', tags: ['drink'] }
+        { id: 'cocoa', jp: 'ホットココア', kana: 'ホットココア', zh: '熱可可', emoji: '☕', price: 140, c: 'hon', zone: 'V', tags: ['drink'] }
       ],
       asks: [
         { id: 'ninzu', phase: 'checkin', when: 'always', zh: '幾位',

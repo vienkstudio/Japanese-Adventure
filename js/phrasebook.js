@@ -51,7 +51,7 @@
     ['eat', '中国語のメニューはありますか。', 'ちゅうごくごのメニューはありますか', 'chūgokugo no menyū wa arimasu ka', '有中文菜單嗎？', '入座後問'],
     ['eat', '英語のメニューはありますか。', 'えいごのメニューはありますか', 'eigo no menyū wa arimasu ka', '有英文菜單嗎？', '沒有中文菜單時'],
     ['eat', 'おすすめは何ですか。', 'おすすめはなんですか', 'osusume wa nan desu ka', '推薦什麼？', '不知道點什麼時'],
-    ['eat', 'これをください。', 'これをください', 'kore o kudasai', '請給我這個。', '指著菜單或商品'],
+    ['eat', 'これください。', 'これください', 'kore kudasai', '我要這個。', '指著菜單或商品（也可以說「これをください」）'],
     ['eat', 'お会計をお願いします。', 'おかいけいをおねがいします', 'okaikei o onegai shimasu', '麻煩結帳（買單）。', '吃完要付錢時'],
     ['move', '〜へはどう行けばいいですか。', '〜へはどういけばいいですか', '~ e wa dō ikeba ii desu ka', '請問〜怎麼去？', '把〜換成地名，例：駅へはどう行けばいいですか'],
     ['move', '駅はどこですか。', 'えきはどこですか', 'eki wa doko desu ka', '車站在哪裡？', '問路'],
@@ -145,16 +145,15 @@
   }
   const bare = s => String(s || '').replace(/[、。！？!?\s「」]/g, '');
   const kanaOf = w => { const k = kataKana(w.jp, w.kana); return k && bare(k) !== bare(w.jp) ? k : ''; };
-  // 羅馬字：全站統一用 Phrase.romaji（分詞、助詞 wa／e／o、數字分段、長音 ou／uu／aa）
+  // 羅馬字：資料裡有人工校對的 romaji 就優先用（分好詞）；沒有才用 Phrase.romaji 自動產生
   const MACRON = { ā: 'aa', ī: 'ii', ū: 'uu', ē: 'ei', ō: 'ou' };
   function romOf(w) {
     if (w._r != null) return w._r;
-    let r = '';
-    try {
+    let r = w.romaji ? String(w.romaji).replace(/[āīūēō]/g, c => MACRON[c]) : '';
+    if (!r) try {
       const src = w.kana || (/^[぀-ヿー、。！？\s〜]+$/.test(w.jp || '') ? w.jp : '');
       if (src && window.Phrase && Phrase.romaji) r = Phrase.romaji(src, w.jp);
     } catch (e) { r = ''; }
-    if (!r && w.romaji) r = String(w.romaji).replace(/[āīūēō]/g, c => MACRON[c]);
     return (w._r = r.replace(/\s+/g, ' ').trim());
   }
   const showRom = () => { const p = App.profile(); return p.lv === 'zero' || p.assist === 'full'; };
@@ -178,6 +177,7 @@
 .pb-t p{margin:0}
 .pb-t .jp{font-size:var(--fs-lg);font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
 .pb-t .k{color:var(--muted);font-size:var(--fs-sm)}
+.pb-t .k,.pb-t .rm,.pb-t .zh,.pb-t .use,.pb-t .src{overflow-wrap:anywhere}
 .pb-t .rm{color:var(--acc-d);font-size:var(--fs-sm);font-weight:700}
 .pb-t .zh{font-size:var(--fs-md)}
 .pb-t .use,.pb-t .src{color:var(--muted);font-size:var(--fs-xs)}
@@ -187,11 +187,14 @@
 .pb summary{cursor:pointer;font-weight:800;min-height:44px;display:flex;align-items:center}
 .pb-voc{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .pb-voc button{border:none;background:var(--card);box-shadow:var(--shadow);border-radius:var(--r-m);padding:8px 10px;text-align:left;font:inherit;color:var(--text);cursor:pointer;min-height:44px}
+.pb-voc button{min-width:0;overflow-wrap:anywhere}
 .pb-voc b{display:block}.pb-voc small{display:block;color:var(--muted);font-size:var(--fs-xs)}
 .pb-empty,.pb-load{color:var(--muted);text-align:center;margin:20px 0}
 .pb-more{color:var(--muted);font-size:var(--fs-sm);text-align:center}
-.pb-full{position:fixed;inset:0;z-index:300;background:var(--card);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:pointer}
+.pb-full{position:fixed;inset:0;overflow-x:hidden;overflow-y:auto;z-index:300;background:var(--card);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;cursor:pointer}
 .pb-full .big{font-size:var(--pbz,clamp(2.8rem,15vw,7rem));font-weight:800;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic","Meiryo",sans-serif}
+.pb-full>*{max-width:100%;min-width:0;box-sizing:border-box}
+.pb-full .kk,.pb-full .rr,.pb-full .zz{overflow-wrap:anywhere}
 .pb-full .kk{font-size:1.5rem;color:var(--muted);margin-top:12px}
 .pb-full .rr{font-size:1.3rem;color:var(--acc-d);font-weight:700;margin-top:6px}
 .pb-full .zz{font-size:1.3rem;color:var(--muted);margin-top:18px}
@@ -202,8 +205,8 @@
 .pb-hot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;padding:10px 12px;border-radius:var(--r-m);background:var(--card);color:var(--text);border:1px solid var(--line2);text-decoration:none;font-weight:800;min-height:44px}
 .pb-hot small{font-weight:400;color:var(--muted);font-size:var(--fs-xs)}
 .pb-tel-tip{grid-column:1/-1;margin:2px 0 0;color:var(--muted);font-size:var(--fs-sm)}
-.pb-fill{display:flex;flex-direction:column;gap:6px;width:min(100%,520px);margin-bottom:18px;text-align:left;font-size:var(--fs-sm);color:var(--muted)}
-.pb-fill input{font:inherit;font-size:var(--fs-lg);padding:10px 14px;border-radius:var(--r-m);border:2px solid var(--pri);background:var(--card);color:var(--text);min-height:48px}
+.pb-fill{box-sizing:border-box;display:flex;flex-direction:column;gap:6px;width:min(100%,520px);margin-bottom:18px;text-align:left;font-size:var(--fs-sm);color:var(--muted)}
+.pb-fill input{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-size:var(--fs-lg);padding:10px 14px;border-radius:var(--r-m);border:2px solid var(--pri);background:var(--card);color:var(--text);min-height:48px}
 .pb-full .pb-fsay{margin-top:16px;min-height:48px}
 .pb-full .tip{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:var(--fs-sm);color:var(--muted)}`;
     document.head.appendChild(s);

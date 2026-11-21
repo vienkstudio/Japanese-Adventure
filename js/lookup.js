@@ -1,6 +1,6 @@
 /* 查（路由 lookup，導覽 3）：一個搜尋框跨「手冊句子、MIND 單字與文法、外來語、我的文章與歌曲」＋依目的的工具卡。
    依賴：App、Phrasebook（js/phrasebook.js，⭐ 必備＋🆘 緊急句、大字出示）、Phrase（羅馬字）。
-   其他資料搜尋時才載入：SCENES（data/scenes-*.js）、MIND（data/mind/grammar.js、lex-n*.js）、LOAN（data/loan.js）；
+   其他資料搜尋時才載入：SCENES（data/scenes-*.js）、冒險世界 WORLD（data/world，京阪等地名・景點・店內句子）、MIND（data/mind/grammar.js、lex-n*.js）、LOAN（data/loan.js）；
    我的文章／歌曲直接讀 IndexedDB 索引（docs:index、songs:index），不必先載入 reader／songs。
    旅遊：🆘 緊急置頂、常用句點一下就全螢幕大字（給店員看）；冷啟動 → 查 → 點句子＝2 步，打字搜尋＝3 步。
    樣式 css/lookup.css（前綴 lk-）。 */
@@ -24,7 +24,9 @@
       load('data/mind/grammar.js').then(() => { GRAM = null; tick(); }),
       load('data/loan.js').then(tick),
       Promise.all(LVS.map(l => load('data/mind/lex-' + l.toLowerCase() + '.js').then(() => { delete WORDS[l]; tick(); }))),
-      mine().then(tick)
+      mine().then(tick),
+      // 冒險世界：地區索引＋各地區店家（京阪地名、景點、店內句子）；搜尋時才載
+      load('data/world/index.js').then(() => { const pb = PB(); return pb && pb.loadWorld ? pb.loadWorld() : seq(worldFiles()); }).then(() => { PL = null; tick(); })
     ]));
   }
 
@@ -75,6 +77,48 @@
     return out.sort((a, b) => a[0] - b[0]).slice(0, n).map(x => x[1]);
   }
 
+  /* ---------- 冒險世界地名：地區、街區、景點、店家（data/world，搜尋時才載） ---------- */
+  const worldFiles = () => { const W = window.WORLD; return W && W.regions ? [].concat(...W.regions.map(r => (r.files || []).map(f => 'data/world/' + f + '.js'))) : []; };
+  let PL = null;
+  function places() {
+    if (PL) return PL;
+    const W = window.WORLD; if (!W || !W.regions) return [];
+    const out = [], seen = new Set();
+    const rn = id => { const r = W.regions.find(x => x.id === id); return r ? r.name : ''; };
+    const add = (o, sub) => {
+      if (!o || !o.jp) return; const k = o.jp + '|' + (o.name || ''); if (seen.has(k)) return; seen.add(k);
+      const kana = String(o.kana || '').replace(/[・\s]/g, '');
+      out.push({ jp: o.jp, kana: o.kana || '', zh: o.name || o.zh || '', icon: o.icon || '📍', sub, tip: o.tip || o.desc || '', say: o.say && o.say.jp ? o.say : null,
+        nj: norm(o.jp), nk: toHira(norm(kana)), nz: norm(o.name || ''), r: null });
+    };
+    W.regions.forEach(r => add(r, '地區'));
+    Object.values(W.districts || {}).forEach(d => {
+      add(d, rn(d.region) + '・街區');
+      Object.values(d.places || {}).forEach(p => { if (p && (p.type === 'spot' || p.type === 'gate')) add(p, [rn(d.region), d.name].filter(Boolean).join('・')); });
+    });
+    Object.values(W.shops || {}).forEach(s => {
+      const d = (W.districts || {})[Object.keys(W.districts || {}).find(k => (W.districts[k].places && Object.values(W.districts[k].places).some(p => p && p.shop === s.id))) || ''];
+      add(s, [rn(s.region), d && d.name].filter(Boolean).join('・'));
+    });
+    return (PL = out);
+  }
+  function findPlace(q, qh, qa, n) {
+    const out = [];
+    places().forEach(p => {
+      let s = 9;
+      if (qa) {
+        if (q.length < 3) return;
+        if (p.r == null) p.r = romN(rom(p.kana || p.jp));
+        const r = romN(q);
+        if (p.r === r) s = 0; else if (p.r.startsWith(r)) s = 1; else if (r.length >= 4 && p.r.includes(r)) s = 2;
+      } else if (p.nj === q || p.nz === q || (p.nk && p.nk === qh)) s = 0;
+      else if (p.nj.startsWith(q) || p.nz.startsWith(q) || (p.nk && p.nk.startsWith(qh))) s = 1;
+      else if (p.nj.includes(q) || p.nz.includes(q) || (qh.length > 1 && p.nk.includes(qh))) s = 2;
+      if (s < 9) out.push([s + (p.sub === '地區' ? -0.5 : 0) + p.jp.length / 100, p]);
+    });
+    return out.sort((a, b) => a[0] - b[0]).slice(0, n).map(x => x[1]);
+  }
+
   /* ---------- 外來語 LOAN ---------- */
   let LKEYS = null;
   function findLoan(q, qa, n) {
@@ -114,10 +158,17 @@
     return `<button type="button" class="lk-ph" data-big="${k}" aria-label="${esc(w.zh)}：放大給店員看">
       <span class="t"><b lang="ja">${esc(w.jp)}</b>${kn ? `<small lang="ja">${esc(kn)}</small>` : ''}${rm ? `<small class="rm">${esc(rm)}</small>` : ''}<span class="zh">${esc(w.zh)}</span></span><span class="go" aria-hidden="true">📢</span></button>`;
   }
+  // 地名列：點一下全螢幕大字（給司機、站員看）；景點附一句現場用得到的話
+  function plRow(p) {
+    const k = key({ jp: p.jp, kana: p.kana, zh: p.zh }), rm = romOf({ jp: p.jp, kana: p.kana });
+    return `<button type="button" class="lk-ph lk-pl" data-big="${k}" aria-label="${esc(p.zh)}：放大給對方看">
+      <span class="t"><b lang="ja">${esc(p.icon)} ${esc(p.jp)}</b>${p.kana && p.kana !== p.jp ? `<small lang="ja">${esc(p.kana)}</small>` : ''}${rm ? `<small class="rm">${esc(rm)}</small>` : ''}<span class="zh">${esc(p.zh)}<small> ・${esc(p.sub)}</small></span></span><span class="go" aria-hidden="true">📢</span></button>` +
+      (p.say ? phRow({ jp: p.say.jp, kana: p.say.kana || '', zh: p.say.zh || '' }) : '');
+  }
   const lvB = lv => lv ? `<span class="lv-b ${String(lv).toLowerCase()}">${esc(lv)}</span>` : '';
 
   // 旅遊常用句（點一下就大字）：從手冊 ⭐ 必備挑
-  const QUICK = ['袋はいりません。', 'これをください。', 'これはいくらですか。', 'カードで払えますか。', 'トイレはどこですか。', '免税できますか。'];
+  const QUICK = ['袋はいりません。', 'これください。', 'これはいくらですか。', 'カードで払えますか。', 'トイレはどこですか。', '免税できますか。'];
   const quick = n => { const pb = PB(); if (!pb || !pb.MUST) return []; return QUICK.map(j => pb.MUST.find(w => w.jp === j)).filter(Boolean).slice(0, n); };
 
   const TOOLS = {
@@ -237,11 +288,13 @@
     if (!q) return '';
     const pb = PB();
     const ph = pb && pb.search ? pb.search(raw) : [];
+    const pl = findPlace(q, qh, qa, 4);
     const ws = findWords(q, qh, qa, 4), gm = findGram(q, qa, 3), ln = findLoan(q, qa, 2), my = findMine(q, 2), hot = findHot(q, 3);
     HOTK = hot;
     const hotH = hot.length ? `<h2 class="lk-h">🎵 熱門歌<small>點一下匯入歌詞、開始跟唱</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
     const funQ = ((App.profile().goals || [])[0] === 'fun');
     let h = funQ ? hotH : '';
+    if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;
     if (ph.length) h += `<h2 class="lk-h">💬 句子<small>點一下放大</small></h2><div class="lk-list">${ph.slice(0, 5).map(phRow).join('')}</div>` +
       (ph.length > 5 ? `<button type="button" class="lk-all" data-pbq="1">在手冊看全部 ${ph.length} 句 ›</button>` : '');
     if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;
@@ -295,5 +348,5 @@
   }
 
   App.register('lookup', { title: '查', icon: '🔍', nav: true, navOrder: 3, render });
-  window.Lookup = { search: q => { const n = norm(q), qa = isAscii(n); return { ph: PB() && PB().search ? PB().search(q) : [], words: findWords(n, toHira(n), qa, 10), gram: findGram(n, qa, 10), loan: findLoan(n, qa, 10), mine: findMine(n, 10), hot: findHot(n, 10) }; }, loadMore: () => loadMore(() => { }) };
+  window.Lookup = { search: q => { const n = norm(q), qa = isAscii(n); return { places: findPlace(n, toHira(n), qa, 10), ph: PB() && PB().search ? PB().search(q) : [], words: findWords(n, toHira(n), qa, 10), gram: findGram(n, qa, 10), loan: findLoan(n, qa, 10), mine: findMine(n, 10), hot: findHot(n, 10) }; }, loadMore: () => loadMore(() => { }) };
 })();

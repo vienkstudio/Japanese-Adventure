@@ -185,7 +185,7 @@ input[type=file].rd-in{padding:8px}
 .sg-in.ok{background:var(--ok-t);border-bottom-color:var(--ok);color:var(--ok)}
 .sg-in.ng{background:var(--err-t);border-bottom-color:var(--err);color:var(--err)}
 .sg-ans{display:inline-block;font-size:var(--fs-sm);color:var(--ok);font-weight:700;margin-right:4px}
-.sg-dictbar{display:flex;gap:var(--sp-2);justify-content:flex-end;margin:var(--sp-2) 0}
+.sg-dictbar{display:flex;gap:var(--sp-2);justify-content:flex-end;margin:0 0 var(--sp-2)}
 .sg-dictbar[hidden]{display:none}
 .sg-dictbar .btn{margin:0}
 
@@ -195,7 +195,8 @@ input[type=file].rd-in{padding:8px}
 .sg-rech{display:flex;gap:var(--sp-2);align-items:baseline;font-size:var(--fs-sm);min-width:0}
 .sg-rech .muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sg-myaudio{flex:1;min-width:160px;height:44px}
-.sg-finish{margin:var(--sp-4) 0 var(--sp-3);min-height:52px}
+.sg-finish{margin:0;min-height:44px;padding:0 var(--sp-3);flex:1 1 auto;white-space:nowrap}
+.sg-finish[hidden]{display:none}
 
 /* 底部播放控制列（手機在導覽列上方） */
 .sg-ctl{position:sticky;bottom:0;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;box-shadow:0 -4px 16px var(--shade);padding:var(--sp-2) var(--sp-3);margin:var(--sp-3) calc(-1 * var(--sp-2)) 0}

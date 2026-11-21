@@ -191,7 +191,7 @@
     el.innerHTML = `<div class="rv">
       <div class="panel">
         <h2 class="rv-h">📌 複習</h2>
-        <div class="rv-stats"><div class="rv-stat"><b>${r.early ? 0 : n}</b>今天到期</div><div class="rv-stat"><b>${st.learning + st.review}</b>學習中</div><div class="rv-stat"><b>${st.mastered}</b>已掌握 🎓</div></div>
+        <div class="rv-stats"><div class="rv-stat"><b>${r.early ? 0 : n}</b>今天到期</div><div class="rv-stat"><b>${Math.max(0, st.total - st.new - st.known)}</b>學習中</div><div class="rv-stat"><b>${st.known}</b>已學會 ✓</div></div>
         ${r.early ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個：<b class="jp" lang="ja">${esc(nd.jp)}</b>（${when}）` : ''}</div>` : ''}
         ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：想一想→翻面→自評 4 級</small></button>
         <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習</button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去路線學新的</button>`}

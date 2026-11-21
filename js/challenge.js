@@ -38,9 +38,9 @@
     ['reading', [['daily', 1], ['para', 2], ['sent', 4]]],
     ['listen', [['lword', 3], ['ljp', 1], ['lsent', 2], ['lpara', 1]]]
   ];
-  const FALLBACK = { kanji: 'mean', spell: 'mean', ctx: 'mean', mean: 'lword', form: 'sent', order: 'form', daily: 'para', para: 'sent', sent: 'mean', lword: 'mean', ljp: 'lword', lsent: 'lword', lpara: 'lsent' };
-  const SECS = { kanji: 20, spell: 20, ctx: 30, mean: 20, form: 35, order: 50, daily: 120, para: 60, sent: 40, lword: 25, ljp: 25, lsent: 40, lpara: 60 };
-  const LABEL = { kanji: '漢字讀音', spell: '表記', ctx: '文脈規定', mean: '語意', form: '文法形式判斷', order: '句子重組', daily: '短文讀解', para: '短文讀解', sent: '句意理解', lword: '聽解・單字', ljp: '聽解・單字', lsent: '聽解・句子', lpara: '聽解・短文' };
+  const FALLBACK = { kanji: 'mean', spell: 'mean', ctx: 'mean', mean: 'lword', form: 'gmean', gmean: 'sent', order: 'form', daily: 'para', para: 'sent', sent: 'mean', lword: 'mean', ljp: 'lword', lsent: 'lword', lpara: 'lsent' };
+  const SECS = { kanji: 20, spell: 20, ctx: 30, mean: 20, form: 35, gmean: 25, order: 50, daily: 120, para: 60, sent: 40, lword: 25, ljp: 25, lsent: 40, lpara: 60 };
+  const LABEL = { kanji: '漢字讀音', spell: '表記', ctx: '文脈規定', mean: '語意', form: '文法形式判斷', gmean: '文法意思', order: '句子重組', daily: '短文讀解', para: '短文讀解', sent: '句意理解', lword: '聽解・單字', ljp: '聽解・單字', lsent: '聽解・句子', lpara: '聽解・短文' };
 
   /* ---------------- 存檔 ---------------- */
   function rec() {
@@ -62,10 +62,13 @@
   const lvKey = () => { const p = App.profile().lv; return p && p !== 'zero' ? p.toUpperCase() : 'N5'; };
 
   /* ---------------- 資料載入 ---------------- */
+  // 有等級時也載入 JPText（挖空要以詞為單位檢查；載入失敗也照常出題，只是不用替代例句）
   function need(L) {
     const src = ['data/mind/grammar.js'];
     if (L) src.push('data/mind/lex-' + L.toLowerCase() + '.js', 'data/reading/daily.js');
-    return src.reduce((p, s) => p.then(() => App.loadScript(s)), Promise.resolve());
+    const base = src.reduce((p, s) => p.then(() => App.loadScript(s)), Promise.resolve());
+    if (!L) return base;
+    return base.then(() => App.loadScript('js/jp-text.js').then(() => window.JPText && JPText.ready ? JPText.ready(lvN(L) >= 3) : 0).catch(() => { }));
   }
 
   /* ---------------- 工具 ---------------- */
@@ -92,6 +95,18 @@
   let AVOID = null;
   const avKey = s => String(s || '').replace(/[\s　。．.！!？?、，,「」『』]/g, '');
   const avoided = s => !!(AVOID && s && AVOID.has(avKey(s)));
+  /* ---- 挖空以詞為單位：挖空範圍前後不得把一個詞切開（おみや（　）、きょ（　）は 這種不出） ---- */
+  const CONT = /^(n|pron|adv|num|name|unk|user|conj|int|exp)$/;
+  const jpReady = () => !!(window.JPText && typeof JPText.tokenize === 'function' && JPText.size > 0);
+  const TK = new Map();
+  const toks = s => { if (!TK.has(s)) { let t = []; try { t = JPText.tokenize(s); } catch (e) { } TK.set(s, t); } return TK.get(s); };
+  // 回傳：false＝沒切到詞（可出）；token＝被切開的詞；null＝JPText 未就緒無法判斷
+  function midWord(s, a, b) {
+    if (!jpReady()) return null;
+    for (const t of toks(s)) { const e = t.i + t.s.length; if (CONT.test(t.pos) && ((t.i < a && a < e) || (t.i < b && b < e))) return t; }
+    return false;
+  }
+  const blankOK = (s, a, b) => midWord(s, a, b) === false;
   function unusedOf(list, used, key) { const c = list.filter(x => !used.has(key(x))); return c.length ? c[Math.floor(Math.random() * c.length)] : null; }
 
   /* ---------------- 題庫（每級建一次） ---------------- */
@@ -160,6 +175,7 @@
         if (HIRA.test(s[0]) && HIRA.test(a)) continue;
         if (/^[゠-ヿー]/.test(s) && /[゠-ヿー]/.test(a)) continue;
         if (/[゠-ヿー]$/.test(s) && /[゠-ヿー]/.test(b)) continue;
+        if (midWord(jp, k, k + s.length)) continue;   // JPText 判斷挖空會切開一個詞
         out.push({ w, jp, zh, k });
         if (++n >= 2) break;
       }
@@ -257,15 +273,26 @@
   const FUNC = ['conj', 'adv', 'int', 'exp', 'part'];
   const posPools = (w, cand) => FUNC.includes(w.pos) ? [cand.filter(x => !FUNC.includes(x.pos))] : [cand.filter(x => x.pos === w.pos), cand];
   const overlap = (a, b) => a.includes(b) || b.includes(a);   // 紙／手紙 這種互相包含的寫法不能同時當選項
+  // 中文同形：日文寫法（新字體轉繁體後）就是中文意思之一，例：原則＝原則、交渉＝交涉
+  const SHIN = '渉涉対對応應国國学學会會価價経經済濟発發説說読讀転轉鉄鐵気氣図圖歩步毎每様樣楽樂薬藥来來売賣続續実實写寫帰歸広廣戦戰関關円圓区區単單断斷権權歴歷験驗険險検檢証證総總労勞営營栄榮覚覺挙舉拠據処處当當党黨伝傳体體声聲圧壓囲圍辺邊変變恋戀湾灣両兩満滿県縣軽輕弁辯与與仮假巻卷勧勸拡擴乱亂礼禮辞辭鉱礦児兒従從縦縱獣獸渋澀弾彈脳腦悩惱焼燒畳疊譲讓醸釀剰剩浄淨状狀条條触觸嘱囑尽盡粋粹酔醉随隨枢樞数數静靜窃竊専專浅淺践踐銭錢潜潛繊纖禅禪壮壯争爭荘莊捜搜挿插巣巢装裝蔵藏臓臟属屬堕墮駄馱帯帶滞滯台臺沢澤担擔胆膽団團遅遲昼晝虫蟲鋳鑄庁廳聴聽逓遞点點灯燈闘鬪独獨届屆弐貳廃廢麦麥髪髮抜拔晩晚蛮蠻秘祕浜濱払拂仏佛並竝舗舖宝寶豊豐没沒万萬黙默訳譯予豫余餘揺搖謡謠頼賴覧覽竜龍猟獵緑綠塁壘涙淚励勵霊靈齢齡暦曆炉爐楼樓録錄駅驛観觀顔顏亀龜偽僞戯戲犠犧旧舊峡峽狭狹郷鄉暁曉勲勳径徑茎莖恵惠掲揭渓溪蛍螢鶏鷄芸藝撃擊倹儉剣劍圏圈献獻顕顯厳嚴効效恒恆黄黃号號砕碎雑雜参參桟棧蚕蠶惨慘賛贊残殘糸絲歯齒湿濕舎舍釈釋寿壽収收粛肅叙敍奨獎将將称稱壌壤嬢孃寝寢慎愼真眞穂穗髄髓斉齊摂攝絶絕双雙聡聰層層騒騷増增即卽滝瀧択擇脱脫痴癡猪豬鎮鎭盗盜稲稻徳德覇霸拝拜麺麵弥彌誉譽';
+  const S2T = (() => { const m = {}; for (let i = 0; i + 1 < SHIN.length; i += 2) if (!m[SHIN[i]]) m[SHIN[i]] = SHIN[i + 1]; return m; })();
+  const toT = s => [...String(s || '')].map(c => S2T[c] || c).join('');
+  function sameForm(w) {
+    if (!w || !w.jp || w.jp.length < 2 || !/^[㐀-鿿々]+$/.test(w.jp)) return false;
+    const j = toT(w.jp);
+    return segs(w.zh).some(z => z === w.jp || toT(z) === j);
+  }
   const sameWordOK = (B, w) => x => x.jp !== w.jp && !w.alts.includes(x.kana) && !x.alts.includes(w.kana) && !zhClash(x.zh, w.zh);
 
   // 文法形式題換句：字卡已看過該文法的例句時，改用本級以下其他文法的例句中「只出現一次」這個句型的句子
   //（排除句型互相包含的文法，例：〜たばかり 的例句不能拿來考 〜ばかり）
+  //（以詞為單位：JPText 斷詞後挖空範圍不得切開名詞等詞；單一假名的句型不換句；JPText 未就緒就不換句）
   function altSent(B, x) {
     const M = window.MIND || { gram: [] };
+    if (!x.p || x.p.length < 2 || !jpReady()) return null;
     const near = new Set((M.gram || []).filter(g => { const p = stripPat(g.pat); return p && g.id !== x.g.id && (p.includes(x.p) || x.p.includes(p)); }).map(g => g.id));
     const c = (M.gram || []).filter(g => g.id !== x.g.id && !near.has(g.id) && g.ex && g.ex[0] && g.ex[1] && lvN(g.lv) >= 0 && lvN(g.lv) <= lvN(B.L) && !avoided(g.ex[0]))
-      .map(g => g.ex).filter(e => { const k = e[0].indexOf(x.p); return k >= 0 && e[0].indexOf(x.p, k + 1) < 0 && e[0].length <= 45; });
+      .map(g => g.ex).filter(e => { const k = e[0].indexOf(x.p); return k >= 0 && e[0].indexOf(x.p, k + 1) < 0 && e[0].length <= 45 && blankOK(e[0], k, k + x.p.length); });
     return c.length ? c[Math.floor(Math.random() * c.length)] : null;
   }
   // 干擾項是否「也放得進這個空格」：它自己的例句裡，句型前一字的字種與後面接的詞（だ／です／の／に…）都和題目相同 → 可能一題兩解，不當干擾
@@ -279,8 +306,8 @@
   }
   const GEN = {
     // 漢字讀音：畫線的字怎麼念
-    kanji(B, used) {
-      const w = unusedOf(B.words.filter(w => w.kj), used, w => 'w' + w.i); if (!w) return null;
+    kanji(B, used, w0) {
+      const w = w0 || unusedOf(B.words.filter(w => w.kj), used, w => 'w' + w.i); if (!w) return null;
       const bad = B.readings[w.jp] || new Set(w.alts);
       const fake = mutate(w.kana).filter(k => !bad.has(k));
       const real = B.words.filter(x => x.kj && x.pos === w.pos && !bad.has(x.kana) && Math.abs(x.kana.length - w.kana.length) <= 1).map(x => x.kana);
@@ -302,8 +329,8 @@
       return build({ k: 'spell', key: 'w' + w.i, ask: '寫成漢字是哪一個？', body: `<div class="ch-big jp">${esc(w.kana)}</div>`, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
     // 文脈規定：（　　）裡放哪個字
-    ctx(B, used) {
-      const c = unusedOf(ctxOf(B).filter(c => !avoided(c.jp)), used, c => 'w' + c.w.i); if (!c) return null;
+    ctx(B, used, w0) {
+      const c = unusedOf(ctxOf(B).filter(c => !avoided(c.jp) && (!w0 || c.w === w0)), used, c => 'w' + c.w.i); if (!c) return null;
       const w = c.w, ok = sameWordOK(B, w);
       const cand = B.words.filter(x => ok(x) && !c.jp.includes(x.jp));
       const near = cand.filter(x => x.pos === w.pos && Math.abs(x.jp.length - w.jp.length) <= 1 && KJ.test(x.jp) === KJ.test(w.jp));
@@ -311,9 +338,10 @@
       const s = esc(c.jp.slice(0, c.k)) + '<span class="ch-blank">（　　）</span>' + esc(c.jp.slice(c.k + w.jp.length));
       return build({ k: 'ctx', key: 'w' + w.i, ask: '（　　）裡放哪個字最適合？', body: `<div class="ch-sent jp">${s}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(c.zh)}</p>` : ''), explain: wordExplain(w) + `<br><span class="jp">${esc(c.jp)}</span><br><span class="muted">${esc(c.zh)}</span>`, item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
-    // 語意：單字的中文意思
+    // 語意：單字的中文意思（中文同形詞如 原則＝原則 看字就對，改出讀音題或文脈題）
     mean(B, used) {
       const w = unusedOf(B.words, used, w => 'w' + w.i); if (!w) return null;
+      if (sameForm(w)) { const q = (w.kj && GEN.kanji(B, used, w)) || GEN.ctx(B, used, w); if (q) return q; used.add('w' + w.i); return null; }
       const ok = sameWordOK(B, w);
       const cand = B.words.filter(ok);
       const dis = pick(posPools(w, cand), 3, (x, o) => !o.some(y => zhClash(y.zh, x.zh))).map(x => x.zh);
@@ -323,7 +351,7 @@
     form(B, used) {
       const x0 = unusedOf(B.gform, used, x => 'g' + x.i); if (!x0) return null;
       let x = x0;
-      if (avoided(x0.ex[0])) { const alt = altSent(B, x0); if (!alt) { used.add('g' + x0.i); return null; } x = Object.assign({}, x0, { ex: alt }); }
+      if (avoided(x0.ex[0])) { const alt = altSent(B, x0); if (!alt) return GEN.gmean(B, used, x0); x = Object.assign({}, x0, { ex: alt }); }
       const g = x.g, head = c => String(c || '').split(/[＋+／]/)[0].slice(0, 2);
       const k0 = x.ex[0].indexOf(x.p), after = x.ex[0].slice(k0 + x.p.length), before = x.ex[0][k0 - 1] || '';
       const okD = y => y.p && y.i !== x.i && y.p !== x.p && !y.p.includes(x.p) && !x.p.includes(y.p) && y.g.zh !== g.zh
@@ -336,6 +364,15 @@
       const s = x.ex[0], k = s.indexOf(x.p);
       const body = `<div class="ch-sent jp">${esc(s.slice(0, k))}<span class="ch-blank">（　　）</span>${esc(s.slice(k + x.p.length))}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(x.ex[1])}</p>` : '');
       return build({ k: 'form', key: 'g' + x.i, ask: '（　　）裡放什麼最適合？', body, explain: gramExplain(x), item: gramItem(x), mk: ['g', x.i] }, x.p, dis);
+    },
+    // 文法意思：句型的中文意思（字卡已用掉例句、或句型挖不了空時，仍考到本課文法）
+    gmean(B, used, x0) {
+      const x = x0 || unusedOf(B.grams.filter(x => x.g.zh), used, x => 'g' + x.i); if (!x || !x.g.zh) return null;
+      const g = x.g;
+      const cand = B.grams.filter(y => y.i !== x.i && y.g.zh && y.g.pat !== g.pat && !zhClash(y.g.zh, g.zh) && !(g.rel || []).includes(y.g.id) && !(y.g.rel || []).includes(g.id) && !(g.pre || []).includes(y.g.id));
+      // 干擾項取不同類別的句型（同類別多是近義句型，可能一題兩解）
+      const dis = pick([cand.filter(y => y.g.cat !== g.cat)], 3, (y, o) => !o.some(z => zhClash(z.g.zh, y.g.zh))).map(y => y.g.zh);
+      return build({ k: 'gmean', key: 'g' + x.i, ask: '這個句型的意思是？', body: `<div class="ch-big jp">${esc(g.pat)}</div>${g.conn ? `<p class="ch-conn muted center">接續：${esc(g.conn)}</p>` : ''}`, col: true, explain: gramExplain(x), item: gramItem(x), mk: ['g', x.i] }, g.zh, dis);
     },
     // 句子重組：★ 放哪一段
     order(B, used) {
@@ -402,7 +439,7 @@
     }
   };
   /* ---------------- 題目自動檢查：選項唯一、不重疊、無疊字錯誤、N3 以上題幹無中文 ---------------- */
-  const JPK = ['kanji', 'spell', 'ctx', 'form', 'ljp', 'order'], ZHK = ['mean', 'lword'];
+  const JPK = ['kanji', 'spell', 'ctx', 'form', 'ljp', 'order'], ZHK = ['mean', 'lword', 'gmean'];
   function problems(q, L) {
     const e = [], o = (q && q.opts) || [];
     if (!q) return ['null'];
@@ -414,6 +451,7 @@
     if (ZHK.includes(q.k)) o.forEach((a, i) => o.forEach((b, j) => { if (i < j && zhClash(a, b)) e.push('中文同義：' + a + '≈' + b); }));
     if (q.k === 'form') o.forEach(a => { if (/[〜～＋+／]/.test(a) || /^(.{2,})\1$/.test(a)) e.push('疊字或殘留符號：' + a); });
     if (!zhOK(L) && /<p class="muted center">/.test(q.body || '')) e.push('N3+ 題幹附中文');
+    if (q.k === 'mean' && q.item && sameForm({ jp: q.item.jp, zh: q.opts[q.ans] })) e.push('中文同形送分');
     return [...new Set(e)];
   }
   function gen(k, B, used) {
@@ -667,5 +705,5 @@
     });
     return out;
   }
-  window.Challenge = { bank, makeRound, makeQuestions, need, mutate, chunks, GEN, LVS, TYPES, problems, selfTest };
+  window.Challenge = { bank, makeRound, makeQuestions, need, mutate, chunks, GEN, LVS, TYPES, problems, selfTest, midWord, sameForm };
 })();

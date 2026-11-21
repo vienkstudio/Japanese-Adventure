@@ -30,6 +30,7 @@ for (const [id, ext] of Object.entries(sctx.window.SCENE_EXT || {})) for (const 
 const LEX_FIX = {
   'N3|新興': { zh: '新興；新近興起', pos: 'n', wh: '事' },
   'N5|晴れ': { wh: '狀' }, 'N5|曇り': { wh: '狀' }, 'N4|政治': { wh: '事' }, 'N4|経済': { wh: '事' }, 'N3|携帯': { wh: '物' },
+  'N2|～丁目': { zh: '～丁目（日本地址的街區編號）' }, 'N2|一旦': { zh: '暫且；姑且（不是中文的「一旦＝如果」）' },   // 評審 v11
   'N4|失礼': { wh: '狀' }, 'N4|久しぶり': { wh: '狀' }, 'N3|いたずら': { wh: '狀' }, 'N1|頻繁': { wh: '狀' }, 'N1|物好き': { wh: '狀' }
 };
 // 文法等級修正（依 JLPT 常見教材分級；原 annot 分錯者）
@@ -77,7 +78,16 @@ const GPRE_FIX = {
   '〜かたがた': ['〜ついでに'], '〜がてら': ['〜ついでに'], '〜なりとも': ['〜でも（舉例）'], '〜たりとも': ['〜も（數量強調）']
 };
 // 接續修正
-const GCONN_FIX = { '〜ごとく': '名詞の・動詞普通形（＋が）＋ごとく；名詞の＋ごとし', '〜ごとき': '名詞（の）・動詞普通形（＋が）＋ごとき' };
+const GCONN_FIX = {
+  '〜ごとく': '名詞の・動詞普通形（＋が）＋ごとく；名詞の＋ごとし', '〜ごとき': '名詞（の）・動詞普通形（＋が）＋ごとき',
+  // 評審 v10／v11：「ない形＋ない〜」會變成 行かないない〜，改成「ない形去ない」（手改 data/mind/grammar.js 的同步）
+  '〜ずに済む': '動詞ない形去ない＋ずに済む／動詞ない形去ない＋ないで済む', '〜ないものでもない': '動詞ない形去ない＋ないものでもない',
+  '〜ないでもない': '動詞ない形去ない＋ないでもない', '〜ないとも限らない': '動詞ない形去ない＋ないとも限らない',
+  '〜ないまでも': '動詞ない形去ない＋ないまでも', '〜ないものか': '動詞ない形去ない＋ないものか／ないものだろうか',
+  '〜なくもない': '動詞ない形去ない＋なくもない（行かなくもない）'
+};
+// 詞彙改級（評審 v10：N4 裡的 N5 基本詞移到 N5，加在 N5 最後）
+const LEX_MOVE = { 'N4|だめ': 'N5', 'N4|～ございます': 'N5', 'N4|大学生': 'N5' };
 // 3D 分類修正（wh 人事時地物、sc 場景）
 const GWH_FIX = { '〜（さ）せる（使役）': '事', '〜（さ）せられる（使役被動）': '事', '〜（ら）れる（被動）': '事', '〜矢先に': '時' };
 const GSC_FIX = { '〜矢先に': ['time'] };
@@ -129,7 +139,7 @@ const head = e => e.split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').repl
 const isCore = e => { const j = head(e); return j.length >= 2 && CORPUS.includes(j); };
 
 // ---- 詞彙 ----
-const seen = new Set(); const stats = { lex: {}, gram: {} }; let sceneHit = 0; const groups = {};
+const seen = new Set(); const stats = { lex: {}, gram: {} }; const moved = {}; const lexOut = {}; let sceneHit = 0; const groups = {};
 const variants = e => e.split(/[;；]/).map(s => s.trim()).filter(Boolean);
 for (const n of [5, 4, 3, 2, 1]) {
   const lv = 'N' + n, rows = readLevel(n);
@@ -160,8 +170,18 @@ for (const n of [5, 4, 3, 2, 1]) {
     for (const k of [...variants(r.expr), r.kana]) for (const s of sceneOf.get(k) || []) subs.add(s);
     if (subs.size) { sceneHit++; for (const s of subs) { if (!scs.includes(M.SUB[s])) scs.push(M.SUB[s]); scs.push(s); } }
     const gk = wh + '|' + scs[0]; (groups[lv] = groups[lv] || {})[gk] = (groups[lv][gk] || 0) + 1;
-    out.push([r.expr, r.kana === r.expr ? '' : r.kana, zh || r.en, pos, grp, wh, scs.join(','), isCore(r.expr) ? 1 : 0]);
+    // 「名詞＋する」的讀音不含する（運動＝うんどう，不是 うんどうする；評審 v10）
+    let kana = r.kana === r.expr ? '' : r.kana;
+    if (pos === 'n' && grp === 's' && !/する$/.test(r.expr) && /^[^;]+する$/.test(kana)) kana = kana.replace(/する$/, '');
+    const row = [r.expr, kana, zh || r.en, pos, grp, wh, scs.join(','), isCore(r.expr) ? 1 : 0];
+    const mv = LEX_MOVE[lv + '|' + r.expr];
+    if (mv && mv !== lv) (moved[mv] = moved[mv] || []).push(row); else out.push(row);
   });
+  lexOut[lv] = out;
+}
+for (const [lv, rows] of Object.entries(moved)) lexOut[lv].push(...rows);
+for (const n of [5, 4, 3, 2, 1]) {
+  const lv = 'N' + n, out = lexOut[lv];
   stats.lex[lv] = out.length;
   const body = `// 自動產生（tools/build-mind.mjs），勿手改。欄位：[jp, kana(同jp時空), zh, pos, grp, wh, sc, core(本站常用=1)]\n(window.MIND = window.MIND || { lex: {}, gram: [] }).lex.${lv} = ${JSON.stringify(out).replace(/\],\[/g, '],\n[')};\n`;
   fs.writeFileSync(P(`data/mind/lex-n${n}.js`), body);

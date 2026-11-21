@@ -412,3 +412,10 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 .cl-row small,.cl-sec small{display:block;color:var(--muted);font-size:var(--fs-sm)}
 .cl-sec .chips{padding:0 var(--sp-2)}
 .cl-chip{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--text);font:inherit;font-size:var(--fs-sm)}
+/* v11：今日課完成頁的按鈕固定在第一屏（底部導覽之上）；程度旁的 JLPT 對照 */
+.td-endbtns{display:flex;flex-direction:column;gap:var(--sp-2);position:sticky;bottom:calc(var(--sp-2) + var(--safeB));z-index:5;background:var(--bg);padding:var(--sp-2) var(--sp-1);margin:0 calc(-1 * var(--sp-1));box-shadow:0 -6px 12px -8px var(--shade2)}
+@media(max-width:768px){.td-endbtns{bottom:calc(var(--navH) + var(--safeB))}}
+.ob-n{font-style:normal;font-weight:700;font-size:var(--fs-sm);color:var(--acc-d);background:var(--chip);border-radius:var(--r-pill);padding:1px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.ob-q .ob-n,h1 .ob-n{font-size:var(--fs-md)}
+/* toast 排隊：一次一個 */
+.toast.q{animation:pop .25s}

@@ -99,7 +99,33 @@
     arr(s.asks).forEach(a => { const x = arr(a.a)[0]; if (x) add(x.jp, x.kana, x.zh, '店員問「' + (a.zh || '') + '」時'); });
     return o;
   }
+  // 依實戰店產生 8 句（選了地區、實戰店不是預設店時）：點單品項、店員問句的回答（asks[].a）、詢問（info）、請求（acts）、許可（may）
+  // 句子和進店後的對答同一份資料，學的就是店裡會用到的
+  function shopItems(pack, id) {
+    const W = window.WORLD, s = W && W.shops && W.shops[id]; if (!s) return null;
+    const pk = Object.assign({}, pack, { name: pack.name + '・' + (s.name || '') });
+    const B = { it: [], ask: [], info: [], act: [], may: [] }, seen = new Set();
+    const put = (k, jp, kana, zh, hint) => { const t = String(jp || '').trim(); if (!t || seen.has(t)) return; seen.add(t); B[k].push(phraseItem(t, kana, zh, { hint: hint || '' }, pk)); };
+    const q = arr(s.quests)[0], qi = q ? arr(q.items).map(([i]) => arr(s.items).find(x => x.id === i)).filter(Boolean) : [];
+    const tags = new Set([].concat(...qi.map(x => arr(x.tags))));
+    if (s.kind === 'eat') qi.slice(0, 2).forEach(x => { const w = x.say || x; put('it', w.jp + 'をください。', (w.kana || x.kana || '') + 'をください', '請給我' + (x.zh || '')); });
+    if (s.kind === 'store') put('it', 'これください。', 'これください', '我要這個。', '結帳時（店內也用這句）');
+    const PH = { enter: 0, checkin: 1, order: 2, pay: 3 };
+    arr(s.asks).filter(a => a.when === 'always' || (String(a.when).startsWith('tag:') && tags.has(String(a.when).slice(4))))
+      .sort((a, b) => (PH[a.phase] || 0) - (PH[b.phase] || 0))
+      .forEach(a => { const x = arr(a.a)[0]; if (x) put('ask', x.jp, x.kana, x.zh, '店員問「' + (a.zh || '') + '」時'); });
+    arr(s.info).forEach(x => x.q && put('info', x.q.jp, x.q.kana, x.q.zh));
+    arr(s.acts).forEach(x => put('act', x.jp + 'ください。', (x.kana || '') + 'ください', '請' + x.zh));
+    arr(s.may).forEach(x => put('may', x.jp + 'もいいですか。', (x.kana || '') + 'もいいですか', '可以' + x.zh + '嗎？'));
+    const quota = { it: 2, ask: 3, info: 2, act: 1, may: 1 }, out = [];
+    Object.keys(quota).forEach(k => out.push(...B[k].slice(0, quota[k])));
+    Object.keys(quota).forEach(k => B[k].slice(quota[k]).forEach(x => { if (out.length < 8) out.push(x); }));
+    return out.slice(0, 8);
+  }
+  const baseShop = pack => pack.src ? pack.src[1] : pack.shops[0];
   function packItems(pack) {
+    const sh = shopFor(pack);
+    if (sh && sh !== baseShop(pack)) { const o = shopItems(pack, sh); if (o && o.length) { putCache(pack.id + '@' + sh, o.map(x => x.id)); return o; } }
     if (pack.src) { const o = shopPhrases(pack).slice(0, 8); if (o.length) putCache(pack.id, o.map(x => x.id)); return o; }
     const o = [], per = pack.scenes.length > 1 ? [5, 3] : [8];
     pack.scenes.forEach((sid, k) => {
@@ -111,11 +137,14 @@
     });
     return o;
   }
-  const packIds = pack => pack.src ? (cache[pack.id] || null) : (window.SCENES ? packItems(pack).map(x => x.id) : null);
+  const packIds = pack => { const sh = shopFor(pack); if (sh && sh !== baseShop(pack) && cache[pack.id + '@' + sh]) return cache[pack.id + '@' + sh]; return pack.src ? (cache[pack.id] || null) : (window.SCENES ? packItems(pack).map(x => x.id) : null); };
+  // 實戰店所在地區的資料檔（店家句子要用）
+  function shopFiles(id) { const W = window.WORLD, R = W && arr(W.regions).find(r => arr(r.shops).some(x => x[1] === id)); return R && !(W.shops && W.shops[id]) ? arr(R.files).map(f => 'data/world/' + f + '.js') : []; }
 
   /* ---------------- 日檢：MIND 詞庫 → 每課 8 詞＋2 文法 ---------------- */
   const patWord = p => String(p || '').replace(/（[^）]*）|\([^)]*\)/g, '').replace(/[〜～]/g, '').replace(/(だ|です)$/, '').trim();
   const EXB = {};
+  const TRAVEL_SC = new Set(['travel', 'konbini', 'clothes', 'drugstore', 'ramen', 'cafe', 'izakaya', 'yakiniku', 'directions', 'station', 'airport', 'hotel', 'shrine', 'emergency']);
   function examBank(L) {
     const M = window.MIND, lex = M && M.lex && M.lex[L];
     if (!lex || !Array.isArray(M.gram)) return null;
@@ -124,8 +153,15 @@
     // 低級詞庫已有的詞（N4 課不再出 N5 詞）、與本級以下文法同形的詞（つもり 只當文法）
     const lower = new Set(); low.forEach(l => arr(M.lex[l]).forEach(r => lower.add(jp0(r[0]))));
     const gw = new Set(M.gram.filter(g => lvI(g.lv) >= 0 && lvI(g.lv) <= lvI(L)).map(g => patWord(g.pat)).filter(Boolean));
-    const seen = new Set(), words = [];
-    lex.filter(r => r[7]).concat(lex.filter(r => !r[7])).forEach(r => {
+    const seen = new Set(), words = [], hi = lvI(L) >= 3;
+    // 基本會話詞（寒暄 int/exp）各級都不當單字課；N2／N1 另排除旅遊常用詞（本站常用＋片假名或旅遊場景詞，如 温泉、改札、サイズ）
+    const greet = r => lvI(L) >= 2 && (r[3] === 'int' || (hi && r[3] === 'exp' && /^(お|ご|御|行って|いって|こ[ちん]|[ァ-ヿ])/.test(String(r[0]))));   // 寒暄（いってらっしゃい、おかけください…）
+    const basic = r => greet(r) || r[7] && (/^(int|exp)$/.test(r[3]) || (hi &&(/^[ァ-ヿー・\s（）()～〜]+$/.test(r[0]) || String(r[6] || '').split(',').some(s => TRAVEL_SC.has(s)))));
+    const affix = r => /^(suf|ctr|pre)$/.test(r[3]) || /^[〜～]|[〜～]$/.test(String(r[0]).trim());
+    // 排序：N5–N3 本站常用詞先學；N2／N1 不看 core（core 多是旅遊用語），一般詞先、常用詞後、接頭接尾詞最後
+    const keep = lex.filter(r => !basic(r));
+    const order = hi ? keep.filter(r => !r[7] && !affix(r)).concat(keep.filter(r => r[7] && !affix(r)), keep.filter(affix)) : keep.filter(r => r[7]).concat(keep.filter(r => !r[7]));
+    order.forEach(r => {
       const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp) || gw.has(jp)) return;
       if (lvI(L) >= 3 && /^[ぁ-ゟ]{1,2}$/.test(jp)) return;   // N2／N1 的 2 字平假名多是接尾或片段（ごと、さす、いち），不當單字課
       seen.add(id);
@@ -188,15 +224,13 @@
   function bizParts(u) {
     if (!u) return [];
     const lv = String(u.lv || '').toUpperCase(), src = '💼 ' + u.title;
-    const V = arr(u.vocab).map(x => ({ id: 'v:' + jp0(x.jp), type: 'vocab', jp: x.jp, kana: x.kana || '', zh: x.zh || '', lv, source: src, ex: [] }));
-    const P = arr(u.phrases).map(x => ({ id: 'p:' + normP(x.jp), type: 'phrase', jp: x.jp, kana: x.kana || '', zh: x.zh || '', hint: x.when || '', lv, source: src }));
-    const G = arr(u.grammar).map(g => ({ id: 'g:' + String(g.gid || g.pat).replace(/^gram:/, ''), type: 'grammar', jp: g.pat, kana: '', zh: g.zh || '', hint: g.conn ? '接續：' + g.conn : '', lv, source: src, ex: arr(g.ex).map(e => ({ jp: e[0], zh: e[1] || '' })) }));
-    const split = (a, n) => { const k = Math.ceil(a.length / n), o = []; for (let i = 0; i < k; i++) o.push(a.slice(Math.floor(a.length * i / k), Math.floor(a.length * (i + 1) / k))); return o; };
-    const out = [];
-    split(V, CARD).forEach((items, i, all) => out.push({ k: 'v', title: '單字' + (all.length > 1 ? ' ' + (i + 1) : ''), items }));
-    const pg = P.concat(G), ps = split(pg, CARD);
-    ps.forEach((items, i) => out.push({ k: 'p', title: (items.some(x => x.type === 'grammar') ? '句子＋句型' : '句子') + (ps.length > 1 ? ' ' + (i + 1) : ''), items }));
-    return out.map((p, i) => Object.assign(p, { id: 'bz-' + u.id + '-' + (i + 1), n: i + 1, u }));
+    // 卡片：單字用 Path.exOf 配例句（以詞比對、等級不高於單元；索引未建時留空）
+    const it = c => c.k === 'v' ? { id: 'v:' + jp0(c.d.jp), type: 'vocab', jp: c.d.jp, kana: c.d.kana || '', zh: c.d.zh || '', lv, source: src, ex: [] }
+      : c.k === 'p' ? { id: 'p:' + normP(c.d.jp), type: 'phrase', jp: c.d.jp, kana: c.d.kana || '', zh: c.d.zh || '', hint: c.d.when || '', lv, source: src }
+        : { id: 'g:' + String(c.d.gid || c.d.pat).replace(/^gram:/, ''), type: 'grammar', jp: c.d.pat, kana: '', zh: c.d.zh || '', hint: c.d.conn ? '接續：' + c.d.conn : '', lv, source: src, ex: arr(c.d.ex).map(e => ({ jp: e[0], zh: e[1] || '' })) };
+    // 切法與 biz-unit 同一套（BIZ.parts），小節 n＝biz-unit 第 n 節
+    const PS = window.BIZ && typeof BIZ.parts === 'function' ? BIZ.parts(u) : [];
+    return PS.map(x => ({ k: x.k, title: x.title, items: x.cards.map(it), id: 'bz-' + u.id + '-' + x.n, n: x.n, u }));
   }
   const bizUnit = id => arr(window.BIZ && BIZ.units).find(u => u.id === id);
 
@@ -238,7 +272,9 @@
     id = P.id;
     if (P.kind === 'travel' && P.pack) {
       const p = P.pack, items = packItems(p), shop = shopFor(p);
-      const wb = items.slice().sort((a, b) => a.jp.length - b.jp.length).slice(0, 2);
+      // 排句子挑中等長度（約 12 字）的句子：太短只切得出 1–2 塊，等於不用想
+      const wl = s => String(s).replace(/[。、！？!?\s]/g, '').length;
+      const wb = items.slice().sort((a, b) => Math.abs(wl(a.jp) - 12) - Math.abs(wl(b.jp) - 12)).slice(0, 2);
       return {
         id, kind: 'travel', icon: p.icon, title: p.name, sub: '必備句 ' + items.length + ' 句・實戰：' + shopLabel(shop), items, shop, shops: p.shops, hasShop: true,
         steps: [
@@ -273,6 +309,9 @@
     if (P.kind === 'biz') {
       const bu = bizUnit(P.b), part = bizParts(bu).find(x => x.n === P.n); if (!part) return null;
       const items = part.items, t = bu.title + '：' + part.title, lv = String(bu.lv || '').toUpperCase();
+      // 單字卡例句：以詞比對、例句等級 ≤ 單元等級；同一課不重複；找不到留空
+      const used = new Set(items.filter(x => x.type !== 'vocab').map(x => arr(x.ex)[0] && x.ex[0].jp).filter(Boolean));
+      items.forEach(x => { if (x.type !== 'vocab' || lvI(lv) < 0) return; const e = exFor(x, lv, used); x.ex = e || []; if (e && e[0]) used.add(e[0].jp); });
       const ph = items.filter(x => x.type === 'phrase'), other = items.filter(x => x.type !== 'phrase');
       const steps = [{ type: 'flashcard', items, title: t, learn: true }];
       if (part.k === 'v') steps.push({ type: 'choice', items: (App.shuffle ? App.shuffle(items.slice()) : items).slice(0, Q_N), params: { retry: false, pool: arr(bu.vocab).map(x => ({ jp: x.jp, kana: x.kana, zh: x.zh, lv, type: 'vocab' })) }, title: t + '：選選看' });
@@ -290,10 +329,11 @@
   function loadUnit(id) {
     const P = parse(id); if (!P) return Promise.resolve(null);
     let pr = Promise.resolve();
-    if (P.kind === 'travel' && P.pack) pr = seq(['data/world/index.js']).catch(() => { }).then(() => P.pack.src ? seq(['data/world/' + P.pack.src[0] + '.js']) : seq(SC));
+    if (P.kind === 'travel' && P.pack) pr = seq(['data/world/index.js']).catch(() => { }).then(() => P.pack.src ? seq(['data/world/' + P.pack.src[0] + '.js']) : seq(SC))
+      .then(() => { const sh = shopFor(P.pack); return sh && sh !== baseShop(P.pack) ? seq(shopFiles(sh)).catch(() => { }) : 0; });
     else if (P.kind === 'exam') pr = examNeed(P.L);
     else if (P.kind === 'kana') pr = seq(KN);
-    else if (P.kind === 'biz') pr = App.loadScript('js/biz.js').then(() => BIZ.load());
+    else if (P.kind === 'biz') pr = App.loadScript('js/biz.js').then(() => BIZ.load()).then(() => { const bu = bizUnit(P.b), L = String(bu && bu.lv || '').toUpperCase(); return lvI(L) >= 0 ? examNeed(L).catch(() => { }) : 0; });
     return pr.then(() => unit(id));
   }
 
@@ -332,7 +372,7 @@
       B.META.forEach(m => {
         const u = bizUnit(m.id); if (!u) return;
         bizParts(u).forEach(p => out.push(row(p.id, m.icon, p.title, m.title + '・' + m.lv, p.items.map(x => x.id), { group: m.id, lv: m.lv })));
-        out.push(row('bz-' + m.id + '-d', '💬', '對話演練＋Email', m.title + '・' + m.lv, null, { group: m.id, lv: m.lv, route: 'biz-unit', params: { id: m.id }, stars: B.stars ? B.stars(m.id) : 0, complete: !!(B.stars && B.stars(m.id)) }));
+        out.push(row('bz-' + m.id + '-d', '💬', '對話演練＋Email', m.title + '・' + m.lv, null, { group: m.id, lv: m.lv, route: 'biz-unit', params: { id: m.id, sec: 'dlg' }, stars: B.stars ? B.stars(m.id) : 0, complete: !!(B.stars && B.stars(m.id)) }));
       });
       return out;
     }
@@ -517,8 +557,8 @@
     root.querySelector('#pa-start').onclick = () => start(u, nxt, complete);
     root.addEventListener('click', e => {
       const s = e.target.closest('[data-ks]'); if (s) { App.speak(s.dataset.ks); return; }
-      const r = e.target.closest('[data-rg]'); if (r) { setRegion(r.dataset.rg); drawUnit(el, unit(u.id)); return; }
-      const z = e.target.closest('[data-biz]'); if (z) { App.go('biz-unit', { id: z.dataset.biz }); return; }
+      const r = e.target.closest('[data-rg]'); if (r) { setRegion(r.dataset.rg); loadUnit(u.id).then(v => { if (el.isConnected) drawUnit(el, v); }); return; }
+      const z = e.target.closest('[data-biz]'); if (z) { App.go('biz-unit', { id: z.dataset.biz, sec: 'dlg' }); return; }
       const n = e.target.closest('.pa-next[data-u]'); if (n) { if (nxt && nxt.route) App.go(nxt.route, nxt.params || {}); else App.go('path-unit', { id: n.dataset.u }); }
     });
   }

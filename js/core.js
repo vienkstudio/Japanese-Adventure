@@ -389,6 +389,30 @@
   // 路由定義 transient:true 表示「只負責轉址」的頁面，不留在歷史紀錄。
   let CUR = null, IDX = 0, canHist = false;
   const HIST = [];   // history API 不能用時的備援
+  const STK = {};    // 各筆歷史紀錄的路由（i → {name, params}），給 backTo 判斷上一頁是誰
+  // 返回攔截（活動進行中）：頂列 ← 與手機返回鍵都交給 onBack（例：問「要離開嗎？」）；換頁時呼叫 onDrop
+  let GUARD = null;
+  function guardBack(onBack, onDrop) {
+    const g = { onBack, onDrop };
+    GUARD = g;
+    return () => { if (GUARD === g) GUARD = null; };
+  }
+  // 回到指定頁：上一筆歷史就是它 → history.back()（不重複堆疊）；否則把目前這筆換成它（返回不會回到剛離開的頁）
+  function backTo(name, params) {
+    params = params || {};
+    const prev = canHist ? (IDX > 0 ? STK[IDX - 1] : null) : HIST[HIST.length - 1];
+    const pp = (prev && prev.params) || {};
+    if (prev && prev.name === name && Object.keys(params).every(k => JSON.stringify(pp[k]) === JSON.stringify(params[k]))) return back();
+    if (canHist) try { history.replaceState({ jpq: 1, i: IDX, name, params }, ''); STK[IDX] = { name, params }; } catch (e) { }
+    CUR = { name, params };
+    render();
+  }
+  // 只換掉目前這筆歷史紀錄（不重繪）：之後按返回／從下一頁回來會落到 name，而不是目前畫面
+  function replaceEntry(name, params) {
+    params = params || {};
+    if (canHist) try { history.replaceState({ jpq: 1, i: IDX, name, params }, ''); STK[IDX] = { name, params }; } catch (e) { }
+    else if (CUR) { CUR = { name, params }; }
+  }
   function parseHash() { return CUR || { name: 'home', params: {} }; }
   function entryRoute() {
     if (new URLSearchParams(location.search).has('share')) return 'read';
@@ -399,14 +423,15 @@
     const same = CUR && CUR.name === name && JSON.stringify(CUR.params) === JSON.stringify(params);
     const fromTransient = CUR && routes[CUR.name] && routes[CUR.name].transient;
     if (!isBack && !same && CUR) {
-      if (fromTransient) { if (canHist) try { history.replaceState({ jpq: 1, i: IDX, name, params }, ''); } catch (e) { } }
-      else if (canHist) { try { history.pushState({ jpq: 1, i: IDX + 1, name, params }, ''); IDX++; } catch (e) { canHist = false; HIST.push(CUR); } }
+      if (fromTransient) { if (canHist) try { history.replaceState({ jpq: 1, i: IDX, name, params }, ''); STK[IDX] = { name, params }; } catch (e) { } }
+      else if (canHist) { try { history.pushState({ jpq: 1, i: IDX + 1, name, params }, ''); IDX++; STK[IDX] = { name, params }; } catch (e) { canHist = false; HIST.push(CUR); } }
       else { HIST.push(CUR); if (HIST.length > 30) HIST.shift(); }
     }
     CUR = { name, params };
     render();
   }
   function back() {
+    if (GUARD) { try { GUARD.onBack(); } catch (e) { console.error(e); GUARD = null; } return; }
     if (canHist && IDX > 0) { history.back(); return; }
     const p = HIST.pop();
     if (p) go(p.name, p.params, true); else go('home', null, true);
@@ -414,6 +439,7 @@
   function initHistory() {
     try {
       history.replaceState({ jpq: 1, i: 0, name: CUR.name, params: CUR.params }, '');
+      STK[0] = { name: CUR.name, params: CUR.params };
       canHist = true;
       window.addEventListener('popstate', e => {
         const st = e.state;
@@ -421,6 +447,14 @@
         if (skipPop) { skipPop = false; if (st && st.jpq) IDX = st.i || 0; return; }
         const top = LAYERS[LAYERS.length - 1];
         if (top) { LAYERS.pop(); top.remove(); if (st && st.jpq) IDX = st.i || 0; return; }
+        // 活動進行中按手機返回鍵：補回這一筆、留在原頁，交給活動問「要離開嗎？」
+        if (GUARD && CUR) {
+          IDX = st && st.jpq ? st.i || 0 : 0;
+          try { history.pushState({ jpq: 1, i: IDX + 1, name: CUR.name, params: CUR.params }, ''); IDX++; STK[IDX] = { name: CUR.name, params: CUR.params }; } catch (e) { }
+          try { GUARD.onBack(); } catch (e) { console.error(e); GUARD = null; }
+          return;
+        }
+        if (st && st.jpq) STK[st.i || 0] = { name: st.name || 'home', params: st.params || {} };
         if (!st || !st.jpq) { IDX = 0; CUR = { name: entryRoute(), params: {} }; render(); return; }
         // 轉址頁（transient）不重跑，順著方向再跳一格，避免返回時重開已完成的關卡
         if (routes[st.name] && routes[st.name].transient && (st.i || 0) > 0) { const fwd = (st.i || 0) > IDX; IDX = st.i || 0; fwd ? history.forward() : history.back(); return; }
@@ -436,7 +470,7 @@
   function layer(el) {
     document.body.appendChild(el);
     let pushed = false;
-    if (canHist && CUR) try { history.pushState({ jpq: 1, i: IDX + 1, name: CUR.name, params: CUR.params, ov: 1 }, ''); IDX++; pushed = true; } catch (e) { }
+    if (canHist && CUR) try { history.pushState({ jpq: 1, i: IDX + 1, name: CUR.name, params: CUR.params, ov: 1 }, ''); IDX++; STK[IDX] = { name: CUR.name, params: CUR.params }; pushed = true; } catch (e) { }
     if (pushed) LAYERS.push(el);
     return () => {
       const k = LAYERS.indexOf(el);
@@ -449,6 +483,7 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     document.querySelectorAll('.modal-bg:not(.keep)').forEach(m => m.remove());
     LAYERS.splice(0).forEach(m => m.remove());
+    if (GUARD) { const g = GUARD; GUARD = null; try { g.onDrop && g.onDrop(); } catch (e) { console.error(e); } }   // 換頁：進行中的活動以「未完成」結束，等待中的呼叫端不會卡住
     try { syncAvatar(); } catch (e) { }
     const { name, params } = parseHash();
     const r = routes[name] || routes.home;
@@ -715,7 +750,7 @@
     addXP, completeQuest, reward, showResult, modal, toast,
     speak: speakJP, voiceOK, voiceHTML, voicePacks, setVoice, ttsVoice, jaVoices, layer, esc, shuffle, sample, kanaItem, wordItem,
     isCleared: id => !!S.cleared[id], stars: id => S.cleared[id] || 0,
-    back,
+    back, backTo, replaceEntry, guardBack,
     resetAll() { LS.del(KEY); IDB.del('save'); S = migrate({}); save(); if (CL.ref) cloudPush(); go('home'); },
     get saveStatus() { return CL.status; },
     noteClear,

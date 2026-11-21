@@ -205,8 +205,8 @@ WORLD.pack('hokkaido', {
         2: { type: 'sign', jp: '要冷蔵 お早めにお召し上がりください', kana: 'ようれいぞう おはやめにおめしあがりください', zh: '需冷藏，請盡早食用', style: 'w', note: '「要冷蔵」＝需要冷藏；「賞味期限」＝最佳賞味期。' }
       },
       items: [
-        { id: 'whitechoco-12', jp: 'ホワイトチョコクッキー12枚入り', kana: 'ほわいとちょここっきーじゅうにまいいり', zh: '白巧克力夾心餅乾 12 片裝', emoji: '🍪', price: 1200, c: 'hako', zone: 'A', tags: ['gift'] },
-        { id: 'whitechoco-24', jp: 'ホワイトチョコクッキー24枚入り', kana: 'ほわいとちょここっきーにじゅうよんまいいり', zh: '白巧克力夾心餅乾 24 片裝', emoji: '🍪', price: 2400, c: 'hako', zone: 'A', tags: ['gift'] },
+        { id: 'whitechoco-12', jp: 'ホワイトチョコクッキー12枚入り', kana: 'ホワイトチョコクッキーじゅうにまいいり', zh: '白巧克力夾心餅乾 12 片裝', emoji: '🍪', price: 1200, c: 'hako', zone: 'A', tags: ['gift'] },
+        { id: 'whitechoco-24', jp: 'ホワイトチョコクッキー24枚入り', kana: 'ホワイトチョコクッキーにじゅうよんまいいり', zh: '白巧克力夾心餅乾 24 片裝', emoji: '🍪', price: 2400, c: 'hako', zone: 'A', tags: ['gift'] },
         { id: 'buttersand', jp: 'レーズンバターサンド', kana: 'レーズンバターサンド', zh: '葡萄乾奶油夾心餅（5 個裝）', emoji: '🥮', price: 900, c: 'hako', zone: 'A', tags: ['gift'] },
         { id: 'baumkuchen', jp: 'バウムクーヘン', kana: 'バウムクーヘン', zh: '年輪蛋糕', emoji: '🎂', price: 1500, c: 'hako', zone: 'A', tags: ['gift'] },
         { id: 'haskap-sand', jp: 'ハスカップジャムサンド', kana: 'ハスカップジャムサンド', zh: '藍靛果果醬夾心餅', emoji: '🍇', price: 1000, c: 'hako', zone: 'A', tags: ['gift'] },

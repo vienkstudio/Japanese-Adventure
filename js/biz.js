@@ -104,7 +104,8 @@
     o.source = SRCN(u);
     return o;
   }
-  const learned = ref => { try { const e = window.Learn && Learn.get && Learn.get(ref); return !!(e && e.reps > 0); } catch (er) { return false; } };
+  // 與路線同一個判斷（學過＝狀態不是 new 或答過）
+  const learned = ref => { try { const e = window.Learn && Learn.get && Learn.get(ref); return !!(e && (e.s !== 'new' || e.reps > 0)); } catch (er) { return false; } };
   function addWrong(R, u, ref, via, item) {
     const it = item || itemOf(u, ref); if (!it) return;
     if (!via && window.Tracker) try { Tracker.add(it, true); } catch (e) { }
@@ -140,8 +141,8 @@
   /* ---------------- 單元進度存檔：App.state.bizRun[id] = {cards, skip, done[], ok, total, known, wrong[], rec{}} ---------------- */
   const RS = () => { const S = App.state; if (!S.bizRun || typeof S.bizRun !== 'object') S.bizRun = {}; return S.bizRun; };
   const runOf = id => { try { return RS()[id] || null; } catch (e) { return null; } };
-  const CARD_MAX = 12;
-  const secCount = P => Math.ceil(((P && P.cards) || []).length / CARD_MAX) + 2;
+  const CARD_MAX = 10;   // 與路線（path.js）同一套切法：單字每 10 張一節、句子＋句型每 10 張一節
+  const secCount = P => (P && P.n) || Math.ceil(((P && P.cards) || []).length / 12) + 2;
   const doneCount = P => ((P && P.done) || []).filter(Boolean).length;
 
   /* ================= 路由 biz：單元列表 ================= */
@@ -180,7 +181,17 @@
   const RUNS = {};
   const normS = s => String(s || '').replace(/[\s　]/g, '').replace(/[。．！？!?]+$/, '');
   const hasKana = s => /[ぁ-ゟァ-ヿ]/.test(s || '');
-  const refOf = c => c.k === 'v' ? 'v:' + c.d.jp : c.k === 'p' ? 'p:' + c.d.jp : 'g:' + c.d.pat;
+  const refOf = c => c.k === 'v' ? 'v:' + c.d.jp : c.k === 'p' ? 'p:' + c.d.jp : 'g:' + String(c.d.gid || c.d.pat).replace(/^gram:/, '');
+  // 卡片小節的切法（路線 Path 也用這個）：[{k:'v'|'p', title, short, cards:[{k,d}], refs}]
+  function parts(u) {
+    const split = (a, n) => { const k = Math.ceil(a.length / n), o = []; for (let i = 0; i < k; i++) o.push(a.slice(Math.floor(a.length * i / k), Math.floor(a.length * (i + 1) / k))); return o; };
+    const out = [], V = (u.vocab || []).map(d => ({ k: 'v', d })), PG = (u.phrases || []).map(d => ({ k: 'p', d })).concat((u.grammar || []).map(d => ({ k: 'g', d })));
+    split(V, CARD_MAX).forEach((cards, i, all) => out.push({ k: 'v', title: '單字' + (all.length > 1 ? ' ' + (i + 1) : ''), cards }));
+    const ps = split(PG, CARD_MAX);
+    ps.forEach((cards, i) => out.push({ k: 'p', title: (cards.some(c => c.k === 'g') ? '句子＋句型' : '句子') + (ps.length > 1 ? ' ' + (i + 1) : ''), cards }));
+    return out.map((x, i) => Object.assign(x, { n: i + 1, refs: x.cards.map(refOf) }));
+  }
+  B.parts = parts;
   // 測驗題與剛看過的卡片／對話選項一模一樣 → 換呈現：填空（去掉共同頭尾）或選情境／選意思
   function remix(u, d, h) {
     const o = d.opts.map(String), z = o[0];
@@ -204,24 +215,28 @@
       return d.t === 'order' ? { k: 'o', st: 'quiz', d, i, pool: sh(d.parts.length), pick: [] } : { k: 'q', st: 'quiz', d, i, o: sh(d.opts.length), tried: [] };
     });
   }
+  // 小節＝路線同一套：單字 1／單字 2／句子 1／句子＋句型 2…（卡片）→ 對話演練 → Email＋小測驗
+  // 卡片小節的進度看 Learn（在路線、今日課學過的卡算數，不重做）；已學過的卡在小節裡略過
   function build(u) {
     const sh = n => App.shuffle([...Array(n).keys()]);
-    const all = [].concat(u.vocab.map(d => ({ k: 'v', d })), u.phrases.map(d => ({ k: 'p', d })), u.grammar.map(d => ({ k: 'g', d })));
+    const PS = parts(u);
     let P = runOf(u.id);
-    if (!P || !Array.isArray(P.cards)) {
-      const keep = all.filter(c => !learned(refOf(c)));   // 今日課等處已學過的卡片不再出現
-      P = { cards: keep.map(refOf), skip: all.length - keep.length, done: [], ok: 0, total: 0, known: 0, wrong: [], rec: {} };
+    if (P && P.v !== 2) {   // 舊存檔（卡片小節每 12 張、只放沒學過的卡）：只保留對話、Email 兩節的完成狀態
+      const nOld = Math.ceil(((P.cards || []).length) / 12), d = P.done || [];
+      P = Object.assign({}, P, { v: 2, done: [] }); P.done[PS.length] = !!d[nOld]; P.done[PS.length + 1] = !!d[nOld + 1];
+      RS()[u.id] = P;
     }
-    P.rec = P.rec || {}; P.done = P.done || []; P.wrong = P.wrong || [];
-    const cards = P.cards.map(r => all.find(c => refOf(c) === r)).filter(Boolean);
+    if (!P) P = { v: 2, done: [], ok: 0, total: 0, known: 0, wrong: [], rec: {} };
+    P.rec = P.rec || {}; P.done = P.done || []; P.wrong = P.wrong || []; P.n = PS.length + 2;
+    PS.forEach((x, i) => { if (x.refs.every(learned)) P.done[i] = true; });
+    P.skip = PS.reduce((n, x) => n + x.refs.filter(learned).length, 0);
     const secs = [], steps = [];
-    const add = (title, short, icon, list) => { secs.push({ title, short, icon, from: steps.length, to: steps.length + list.length }); steps.push(...list); };
-    const nC = Math.ceil(cards.length / CARD_MAX);
-    for (let i = 0; i < nC; i++) {
-      const a = Math.floor(cards.length * i / nC), b = Math.floor(cards.length * (i + 1) / nC);
-      add('單字句子' + (nC > 1 ? ` ${i + 1}/${nC}` : ''), '卡片' + (nC > 1 ? ' ' + (i + 1) : ''), '📇', cards.slice(a, b).map(c => ({ k: c.k, st: 'card', d: c.d })));
-    }
-    add('對話演練', '對話', '💬', [{ k: 'sec', st: 'dlg' }].concat(u.dialogue.steps.map((d, i) => ({ k: 'd', st: 'dlg', d, i, o: sh(d.choices.length), tried: [] }))));
+    const add = (title, short, icon, list, extra) => { secs.push(Object.assign({ title, short, icon, from: steps.length, to: steps.length + list.length }, extra || {})); steps.push(...list); };
+    PS.forEach((x, i) => {
+      const cards = P.done[i] ? x.cards : x.cards.filter(c => !learned(refOf(c)));
+      add(x.title, x.title, x.k === 'v' ? '🔤' : '💬', (cards.length ? cards : x.cards).map(c => ({ k: c.k, st: 'card', d: c.d })), { part: x.n });
+    });
+    add('對話演練', '對話', '🗣️', [{ k: 'sec', st: 'dlg' }].concat(u.dialogue.steps.map((d, i) => ({ k: 'd', st: 'dlg', d, i, o: sh(d.choices.length), tried: [] }))));
     add('Email＋小測驗', '信＋測驗', '✉️', [{ k: 'sec', st: 'mail' }].concat(u.email.blanks.map((d, i) => ({ k: 'm', st: 'mail', d, i, o: sh(d.opts.length), tried: [] })), [{ k: 'sec', st: 'quiz' }], quizSteps(u, sh)));
     return { id: u.id, P, steps, secs, cur: -1, brk: -1, i: 0, ok: 0, total: 0, known: 0, wrong: [], mail: [] };
   }
@@ -263,8 +278,16 @@
     if (!needData(el, 'biz-unit', params, renderUnit)) return;
     const u = unitOf(params && params.id);
     if (!u) { el.innerHTML = '<p class="center bz-load">找不到這個單元。</p>'; return; }
-    let R = RUNS[u.id] || (RUNS[u.id] = build(u));
+    let R = RUNS[u.id];
+    // 不在小節中：重建，讓路線、今日課剛學的卡立刻反映到小節進度
+    if (!R || (R.cur < 0 && !R.fin)) R = RUNS[u.id] = Object.assign(build(u), { brk: R ? R.brk : -1 });
     if (R.fin) { finish(u, R); return; }
+    // 從路線進來：{id, sec:'dlg'|'mail'|小節序號}（路線點哪一節就從哪一節開始）；只用一次
+    if (params && params.sec != null && !params._used && R.cur < 0) {
+      params._used = true;
+      const c = params.sec === 'dlg' || params.sec === 'mail' ? R.secs.findIndex(x => R.steps[x.from].st === params.sec) : +params.sec;
+      if (c >= 0 && c < R.secs.length) { R = startSec(u, c); }
+    }
     const draw = keep => { if (!onRoute('biz-unit')) return; renderUnit(el, params); const f = keep && el.querySelector('.bz-fb'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center' }); else window.scrollTo(0, 0); };
     const begin = c => { startSec(u, c); draw(); };
     const skipCards = () => { R.secs.forEach((x, i) => { if (R.steps[x.from].st === 'card') R.P.done[i] = true; }); begin(R.secs.findIndex(x => R.steps[x.from].st === 'dlg')); };
