@@ -19,7 +19,12 @@
   const MIX = { id: 'mix', ic: '🎯', name: '綜合', desc: '單字・文法・讀解各幾題' };
   const typeOf = t => t === 'mix' ? MIX : TYPES.find(x => x.id === t);
   const SEC = { vocab: '文字・語彙', grammar: '文法', reading: '讀解', listen: '聽解' };
-  const PASS = { N5: 44, N4: 50, N3: 53, N2: 50, N1: 55 };   // 合格線（總分 %，參考 JLPT 合格點／總分）；另每大題需 ≥ 1/3
+  const PASS = { N5: 44, N4: 50, N3: 53, N2: 50, N1: 55 };
+  // 模擬考配分（仿 JLPT 180 分制）：N1–N3 文字語彙 30＋文法 30（言語知識 60）、讀解 60、聽解 60；N4–N5 文字語彙 40＋文法 40＋讀解 40（言語知識・讀解 120）、聽解 60
+  // 合格：總分 ≥ 合格點，且每個得分區分 ≥ 基準點（60 分區分 19、120 分區分 38）
+  const PTS = L => lvN(L) >= 2 ? { vocab: 30, grammar: 30, reading: 60, listen: 60 } : { vocab: 40, grammar: 40, reading: 40, listen: 60 };
+  const AREAS = L => lvN(L) >= 2 ? [['言語知識（文字・語彙・文法）', ['vocab', 'grammar'], 19], ['讀解', ['reading'], 19], ['聽解', ['listen'], 19]] : [['言語知識（文字・語彙・文法）・讀解', ['vocab', 'grammar', 'reading'], 38], ['聽解', ['listen'], 19]];
+  const PASS180 = { N1: 100, N2: 90, N3: 95, N4: 90, N5: 80 };   // 合格線（總分 %，參考 JLPT 合格點／總分）；另每大題需 ≥ 1/3
   const PLAN = {
     vocab: [['kanji', 3], ['spell', 2], ['ctx', 3], ['mean', 2]],
     grammar: [['form', 6], ['order', 4]],
@@ -83,6 +88,10 @@
     }
     return out;
   }
+  // 例句去重：makeQuestions(…, {avoid:[句子…]}) 時，題目不再用這些句子（字卡已看過的例句）
+  let AVOID = null;
+  const avKey = s => String(s || '').replace(/[\s　。．.！!？?、，,「」『』]/g, '');
+  const avoided = s => !!(AVOID && s && AVOID.has(avKey(s)));
   function unusedOf(list, used, key) { const c = list.filter(x => !used.has(key(x))); return c.length ? c[Math.floor(Math.random() * c.length)] : null; }
 
   /* ---------------- 題庫（每級建一次） ---------------- */
@@ -250,6 +259,24 @@
   const overlap = (a, b) => a.includes(b) || b.includes(a);   // 紙／手紙 這種互相包含的寫法不能同時當選項
   const sameWordOK = (B, w) => x => x.jp !== w.jp && !w.alts.includes(x.kana) && !x.alts.includes(w.kana) && !zhClash(x.zh, w.zh);
 
+  // 文法形式題換句：字卡已看過該文法的例句時，改用本級以下其他文法的例句中「只出現一次」這個句型的句子
+  //（排除句型互相包含的文法，例：〜たばかり 的例句不能拿來考 〜ばかり）
+  function altSent(B, x) {
+    const M = window.MIND || { gram: [] };
+    const near = new Set((M.gram || []).filter(g => { const p = stripPat(g.pat); return p && g.id !== x.g.id && (p.includes(x.p) || x.p.includes(p)); }).map(g => g.id));
+    const c = (M.gram || []).filter(g => g.id !== x.g.id && !near.has(g.id) && g.ex && g.ex[0] && g.ex[1] && lvN(g.lv) >= 0 && lvN(g.lv) <= lvN(B.L) && !avoided(g.ex[0]))
+      .map(g => g.ex).filter(e => { const k = e[0].indexOf(x.p); return k >= 0 && e[0].indexOf(x.p, k + 1) < 0 && e[0].length <= 45; });
+    return c.length ? c[Math.floor(Math.random() * c.length)] : null;
+  }
+  // 干擾項是否「也放得進這個空格」：它自己的例句裡，句型前一字的字種與後面接的詞（だ／です／の／に…）都和題目相同 → 可能一題兩解，不當干擾
+  const tailOf = t => { const m = String(t || '').match(/^(です|でし|だっ|だ|では|でも|なら|なの|な|の|に|を|が|は|と|も|で|。|、)/); return m ? (/^(です|でし|だっ|だ)$/.test(m[1]) ? 'COP' : m[1]) : ''; };
+  const cls = c => !c ? '' : KJ.test(c) || /[゠-ヿー]/.test(c) ? 'N' : /[぀-ゟ]/.test(c) ? 'H' : 'O';
+  function slotFits(y, before, after) {
+    const e = y.ex && y.ex[0]; if (!e || !y.p) return false;
+    const j = e.indexOf(y.p); if (j < 0) return false;
+    const a = tailOf(after); if (!a) return false;
+    return a === tailOf(e.slice(j + y.p.length)) && cls(before) === cls(e[j - 1] || '');
+  }
   const GEN = {
     // 漢字讀音：畫線的字怎麼念
     kanji(B, used) {
@@ -276,7 +303,7 @@
     },
     // 文脈規定：（　　）裡放哪個字
     ctx(B, used) {
-      const c = unusedOf(ctxOf(B), used, c => 'w' + c.w.i); if (!c) return null;
+      const c = unusedOf(ctxOf(B).filter(c => !avoided(c.jp)), used, c => 'w' + c.w.i); if (!c) return null;
       const w = c.w, ok = sameWordOK(B, w);
       const cand = B.words.filter(x => ok(x) && !c.jp.includes(x.jp));
       const near = cand.filter(x => x.pos === w.pos && Math.abs(x.jp.length - w.jp.length) <= 1 && KJ.test(x.jp) === KJ.test(w.jp));
@@ -294,11 +321,14 @@
     },
     // 文法形式判斷：（　　）裡放哪個句型
     form(B, used) {
-      const x = unusedOf(B.gform, used, x => 'g' + x.i); if (!x) return null;
+      const x0 = unusedOf(B.gform, used, x => 'g' + x.i); if (!x0) return null;
+      let x = x0;
+      if (avoided(x0.ex[0])) { const alt = altSent(B, x0); if (!alt) { used.add('g' + x0.i); return null; } x = Object.assign({}, x0, { ex: alt }); }
       const g = x.g, head = c => String(c || '').split(/[＋+／]/)[0].slice(0, 2);
+      const k0 = x.ex[0].indexOf(x.p), after = x.ex[0].slice(k0 + x.p.length), before = x.ex[0][k0 - 1] || '';
       const okD = y => y.p && y.i !== x.i && y.p !== x.p && !y.p.includes(x.p) && !x.p.includes(y.p) && y.g.zh !== g.zh
         && !(g.rel || []).includes(y.g.id) && !(g.pre || []).includes(y.g.id) && !(y.g.rel || []).includes(g.id) && !zhClash(y.g.zh, g.zh)
-        && x.ex[0].replace(x.p, y.p) !== x.ex[0];
+        && x.ex[0].replace(x.p, y.p) !== x.ex[0] && !slotFits(y, before, after);
       const cand = B.grams.filter(okD);
       const p1 = cand.filter(y => y.g.cat !== g.cat && head(y.g.conn) === head(g.conn));
       const p2 = cand.filter(y => y.g.cat !== g.cat);
@@ -309,7 +339,7 @@
     },
     // 句子重組：★ 放哪一段
     order(B, used) {
-      const o = unusedOf(B.gorder, used, o => 'g' + o.x.i); if (!o) return null;
+      const o = unusedOf(B.gorder.filter(o => !avoided(o.x.ex[0])), used, o => 'g' + o.x.i); if (!o) return null;
       // ★ 放在不能自由移動的段（不以 は/が/に/で/と/も/、 結尾的段，通常是述語），降低「換順序也通」的機會
       const fixed = [1, 2, 3].filter(i => !/[はがにでとも、]$/.test(o.parts[i]));
       const star = fixed.length ? fixed[Math.floor(Math.random() * fixed.length)] : 3;
@@ -329,14 +359,14 @@
     },
     // 短文讀解：段落意思
     para(B, used) {
-      const p = unusedOf(B.paras, used, p => 'p' + p.id); if (!p) return null;
+      const p = unusedOf(B.paras.filter(p => !avoided(p.jp)), used, p => 'p' + p.id); if (!p) return null;
       const others = B.allParas.filter(y => y.zh !== p.zh && y.jp !== p.jp);
       const dis = pick([others.filter(y => y.a.lv === p.a.lv && y.a.id !== p.a.id), others], 3, (y, o) => !o.some(z => z.zh === y.zh)).map(y => y.zh);
       return build({ k: 'para', key: 'p' + p.id, ask: '這段文章的意思是？', body: `<div class="ch-passage jp"><p>${esc(p.jp)}</p></div>`, col: true, explain: `<span class="jp">${esc(p.jp)}</span><br><b>${esc(p.zh)}</b>`, item: p.jp.length <= 40 ? sentItem(p.jp, p.zh, B.L) : null }, p.zh, dis);
     },
     // 句意理解：例句意思
     sent(B, used) {
-      const x = unusedOf(B.sents, used, x => 'g' + x.i); if (!x) return null;
+      const x = unusedOf(B.sents.filter(x => !avoided(x.ex[0])), used, x => 'g' + x.i); if (!x) return null;
       const dis = pick([B.sents.filter(y => y.i !== x.i && y.ex[1] !== x.ex[1] && y.ex[0] !== x.ex[0])], 3, (y, o) => !o.some(z => z.ex[1] === y.ex[1])).map(y => y.ex[1]);
       return build({ k: 'sent', key: 'g' + x.i, ask: '這句話的意思是？', body: `<div class="ch-sent jp">${esc(x.ex[0])}</div>`, col: true, explain: `<span class="jp">${esc(x.ex[0])}</span><br><b>${esc(x.ex[1])}</b><br>` + gramExplain(x), item: gramItem(x), mk: ['g', x.i] }, x.ex[1], dis);
     },
@@ -420,6 +450,7 @@
     opt = opt || {}; n = Math.max(1, n || 10);
     const B = bank(L), used = new Set();
     let qs = [];
+    AVOID = Array.isArray(opt.avoid) && opt.avoid.length ? new Set(opt.avoid.map(avKey).filter(x => x.length >= 4)) : null;
     if (Array.isArray(opt.ids)) {
       const J = window.Learn && Learn.jp0 ? Learn.jp0 : clean;
       const want = new Set(opt.ids.map(id => window.Learn ? Learn.idOf(id) : id).filter(Boolean));
@@ -436,6 +467,7 @@
         if (q) { q.sec = q.sec || 'unit'; qs.push(q); miss = 0; } else miss++;
       }
     }
+    AVOID = null;
     qs.forEach(q => { q.id = q.item && window.Learn ? Learn.idOf(q.item.id) : null; });
     return qs;
   }
@@ -466,7 +498,7 @@
         const s = starsOf(L, t.id), b = c.best[L + ':' + t.id];
         return `<button type="button" class="ch-item${t.id === 'mock' ? ' mock' : ''}" data-t="${t.id}">
           <span class="ic" aria-hidden="true">${t.ic}</span>
-          <span class="tx"><b>${esc(t.name)}${t.id === 'mock' ? `<small> 合格線 ${PASS[L]}%</small>` : ''}</b><small>${esc(t.desc)}</small></span>
+          <span class="tx"><b>${esc(t.name)}${t.id === 'mock' ? `<small> 合格 ${PASS180[L]}／180 分</small>` : ''}</b><small>${esc(t.desc)}</small></span>
           <span class="rt"><span class="st" aria-label="${s} 星">${[0, 1, 2].map(i => i < s ? '⭐' : '☆').join('')}</span><small>${b != null ? `最佳 ${b}%` : '未挑戰'}</small></span>
         </button>`;
       }).join('')}</div>
@@ -478,10 +510,22 @@
   }
 
   /* ---------------- 作答 ---------------- */
-  let TIMER = null;
+  let TIMER = null, MT = null;
   const stopTimer = () => { if (TIMER) { clearInterval(TIMER); TIMER = null; } };
+  const stopMock = () => { if (MT) { clearInterval(MT); MT = null; } };
+  const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  function startMock(el, G) {
+    stopMock();
+    MT = setInterval(() => {
+      if (!el.isConnected || G.over) { stopMock(); return; }
+      if (!G.deadline) return;
+      const left = Math.max(0, Math.round((G.deadline - Date.now()) / 1000)), t = el.querySelector('#ch-mt');
+      if (t) { t.textContent = '⏱ ' + mmss(left); t.classList.toggle('low', left < 60); }
+      if (left <= 0) { stopMock(); stopTimer(); G.timeUp = true; finish(el, G); }
+    }, 500);
+  }
   function renderPlay(el, params) {
-    stopTimer();
+    stopTimer(); stopMock();
     const L = LVS.includes(params && params.lv) ? params.lv : lvKey();
     const t = typeOf(params && params.t) ? params.t : 'vocab';
     el.innerHTML = '<p class="center muted" style="margin:48px 0">出題中…</p>';
@@ -489,7 +533,10 @@
       if (!el.isConnected) return;
       const qs = makeRound(L, t);
       if (!qs.length) { el.innerHTML = '<div class="panel center"><p>😵 這個等級暫時出不了題</p></div>'; return; }
-      play(el, { L, t, qs, i: 0, ok: 0, wrong: [], sec: {}, timed: !!rec().timed });
+      const G = { L, t, qs, i: 0, ok: 0, wrong: [], sec: {}, timed: !!rec().timed && t !== 'mock' };
+      // 模擬考：整場計時（預設開，可關；時間到直接交卷，沒作答的算錯）
+      if (t === 'mock') { G.limit = qs.reduce((n, q) => n + (SECS[q.k] || 30), 0); if (rec().mockTimer !== false) G.deadline = Date.now() + G.limit * 1000; startMock(el, G); }
+      play(el, G);
     }).catch(() => { el.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
   function voiceState() { try { return App.voiceOK ? App.voiceOK() : null; } catch (e) { return null; } }
@@ -499,7 +546,7 @@
     const listen = !!q.say, noVoice = listen && voiceState() === false;
     const secName = G.t === 'mock' ? SEC[q.sec] : G.t === 'mix' ? LABEL[q.k] || T.name : T.name;
     el.innerHTML = `<section class="ch ch-play">
-      <div class="ch-top"><span class="pill">${G.L}・${esc(secName)}</span><span class="ch-n">${G.i + 1}／${n}</span><span class="ch-ok">✓ ${G.ok}</span></div>
+      <div class="ch-top"><span class="pill">${G.L}・${esc(secName)}</span><span class="ch-n">${G.i + 1}／${n}</span>${G.t === 'mock' ? `<button type="button" class="btn sm ch-mt" id="ch-mtb" aria-pressed="${!!G.deadline}"><span id="ch-mt">${G.deadline ? '⏱ ' + mmss(Math.max(0, Math.round((G.deadline - Date.now()) / 1000))) : '⏱ 計時：關'}</span></button>` : `<span class="ch-ok">✓ ${G.ok}</span>`}</div>
       <div class="bar"><div style="width:${G.i / n * 100}%"></div></div>
       ${G.timed ? `<div class="ch-time" aria-hidden="true"><i id="ch-tm"></i></div>` : ''}
       <div class="panel ch-card">
@@ -511,6 +558,13 @@
         <div class="feedback" id="ch-fb" aria-live="polite"></div>
       </div>
     </section>`;
+    const mtb = el.querySelector('#ch-mtb');
+    if (mtb) mtb.onclick = () => {
+      const c = rec();
+      if (G.deadline) { G.left = Math.max(0, G.deadline - Date.now()); G.deadline = null; c.mockTimer = false; mtb.firstChild.textContent = '⏱ 計時：關'; }
+      else { G.deadline = Date.now() + (G.left != null ? G.left : G.limit * 1000); c.mockTimer = true; }
+      mtb.setAttribute('aria-pressed', String(!!G.deadline)); App.save();
+    };
     const say = r => { if (q.say && voiceState() !== false) App.speak(q.say, r); };
     if (listen) {
       el.querySelector('#ch-say').onclick = () => say();
@@ -552,20 +606,27 @@
     }
   }
   function finish(el, G) {
-    stopTimer();
-    const n = G.qs.length, pct = Math.round(G.ok / n * 100), c = rec(), key = G.L + ':' + G.t;
+    stopTimer(); stopMock();
+    if (G.over) return; G.over = true;
+    const n = G.qs.length, c = rec(), key = G.L + ':' + G.t;
+    let pct = Math.round(G.ok / n * 100);
     let stars = pct >= 100 ? 3 : pct >= 85 ? 2 : pct >= 70 ? 1 : 0;
     let note = '', title = '';
     if (G.t === 'mock') {
-      const secs = MOCK.map(([s]) => { const r = G.sec[s] || { ok: 0, n: 0 }; return { s, ok: r.ok, n: r.n, good: !r.n || r.ok / r.n >= 1 / 3 }; });
-      const pass = pct >= PASS[G.L] && secs.every(x => x.good);
-      if (!pass) stars = 0;
-      else if (stars < 1) stars = 1;
+      // 分科：題數以整份考卷為準（時間到沒作答的算錯），依配分換算成 180 分制
+      const P = PTS(G.L), sc = {};
+      MOCK.forEach(([s]) => { const tot = G.qs.filter(q => q.sec === s).length, ok = (G.sec[s] || { ok: 0 }).ok; sc[s] = { ok, n: tot, pt: tot ? Math.round(ok / tot * P[s]) : 0, max: P[s] }; });
+      const areas = AREAS(G.L).map(([name, ks, base]) => { const pt = ks.reduce((a, k) => a + sc[k].pt, 0), max = ks.reduce((a, k) => a + sc[k].max, 0); return { name, pt, max, base, good: pt >= base }; });
+      const total = areas.reduce((a, x) => a + x.pt, 0);
+      pct = Math.round(total / 180 * 100);
+      const pass = total >= PASS180[G.L] && areas.every(x => x.good);
+      stars = pass ? (pct >= 90 ? 3 : pct >= 75 ? 2 : 1) : 0;
       if (pass) c.pass[G.L] = 1;
       title = pass ? `🎓 ${G.L} 模擬考 合格！` : `${G.L} 模擬考 未合格`;
-      note = `<b>${pass ? '合格' : '不合格'}</b>　總分 ${pct}%（合格線 ${PASS[G.L]}%）<br>` +
-        secs.map(x => `${esc(SEC[x.s])} ${x.ok}／${x.n}${x.good ? '' : ' <span class="ch-low">未達基準</span>'}`).join('　') +
-        '<br><small class="muted">每大題至少答對 1/3，且總分達合格線才算合格</small>';
+      note = `<b>${pass ? '合格' : '不合格'}</b>　總分 ${total}／180（合格點 ${PASS180[G.L]}）${G.timeUp ? '　⏰ 時間到' : ''}<br>` +
+        MOCK.map(([s]) => `${esc(SEC[s])} ${sc[s].ok}／${sc[s].n} 題＝${sc[s].pt}／${sc[s].max} 分`).join('<br>') + '<br>' +
+        areas.map(x => `${esc(x.name)} ${x.pt}／${x.max}${x.good ? '' : ` <span class="ch-low">未達基準 ${x.base}</span>`}`).join('<br>') +
+        '<br><small class="muted">仿 JLPT：總分達合格點，且每個得分區分都達基準點才算合格</small>';
     } else {
       title = stars ? `${G.L} ${typeOf(G.t).name} 過關！` : '再試一次';
       note = `答對率 ${pct}%${stars ? '' : '（70% 以上得星）'}`;

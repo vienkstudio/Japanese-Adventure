@@ -299,8 +299,11 @@
     return t.split(/\s+/).filter(Boolean).map(w => w === 'は' ? 'wa' : w === 'へ' ? 'e' : w === 'を' ? 'o' : conv(w)).join(' ');
   }
   // 全站唯一的羅馬字：romaji(kana, jp)；也接受 (jp, kana)（第一個參數有漢字或數字、第二個沒有時自動對調）
+  // 平假名寫的外來語（かーど、こーひー）先轉成片假名，長音符才不會在分詞時被吃掉
+  const hiraLong = t => String(t).replace(/[ぁ-ゖ]+ー[ぁ-ゖー]*/g, m => m.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)));
   function romaji(s, jp) {
-    s = String(s == null ? '' : s);
+    s = hiraLong(s == null ? '' : s);
+    if (jp != null) jp = hiraLong(jp);
     if (jp != null && jp !== '') {
       jp = String(jp);
       if (/[一-鿿々0-9０-９]/.test(s) && !/[一-鿿々]/.test(jp)) [s, jp] = [jp, s];

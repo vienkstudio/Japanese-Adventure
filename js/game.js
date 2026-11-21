@@ -89,7 +89,7 @@
   const DAILY = [
     { id: 'ok', name: '答對 20 題', icon: '✅', goal: 20, xp: 20 },
     { id: 'quests', name: '完成 1 個關卡或任務', icon: '⚔️', goal: 1, xp: 25 },
-    { id: 'review', name: '複習不會清單 5 次', icon: '📌', goal: 5, xp: 15 }
+    { id: 'review', name: '複習 5 次', icon: '📌', goal: 5, xp: 15 }
   ];
   DAILY.forEach(m => Object.defineProperty(m, 'label', { enumerable: true, get() { let v = 0; try { v = Math.min(m.goal, prog(m.id)); } catch (e) { } return m.name + '（' + v + '/' + m.goal + '）'; } }));
   // quests＝冒險世界在店內完成目標（world 組呼叫 bump('quests')）；clear＝其他模組過關（閱讀、五十音、特訓…）

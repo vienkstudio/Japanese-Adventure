@@ -5,7 +5,7 @@
      num   數字快打：聽價錢／時間選數字（不需要 items，params.n 題，params.kind 'price'|'time'|'mix'）
      clerk 店員問句：聽店員說的話選意思（DRILLS.CLERK，params.scene 篩場景，params.n 題）
    沒有日文語音：上方提示安裝方法，題目改成看字（讀音）作答
-   答錯在最後重考一次：第一次答對 2、答錯 0；重考答對 1 */
+   答錯在最後重考一次：第一次答對 2、答錯 0；重考答對 1；答對 0.6 秒自動下一題，答錯才停下顯示正解 */
 (function () {
   'use strict';
   const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -112,12 +112,12 @@
             ctx.sfx(ok);
             ctx.mark(it, ok ? (q.second ? 1 : 2) : 0);
             if (!ok && !q.second && p.retry !== false) qs.push(Object.assign({}, q, { second: true, opts: shuf(q.opts) }));
-            const ro = ctx.romaji(it), kn = q.num ? it.kana : ctx.kana(it);
+            const ro = ctx.showRo(it) ? ctx.romaji(it) : '', kn = q.num ? it.kana : ctx.showKana() ? ctx.kana(it) : '';
             const fb = el.querySelector('.ac-fb');
             fb.className = 'ac-fb ' + (ok ? 'ok' : 'ng');
-            fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + esc(q.ans)}</p><div class="ac-exp"><span class="jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</span>${kn && kn !== it.jp ? `<small class="jp" lang="ja">${esc(kn)}</small>` : ''}${ro && !q.num ? `<small>${esc(ro)}</small>` : ''}<span>${esc(it.zh)}</span>${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</div><button type="button" class="btn primary block ac-go">繼續 ▶</button>`;
-            try { el.querySelector('.ac-go').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { }
-            fb.querySelector('.ac-go').onclick = () => { k++; show(); };
+            fb.innerHTML = `<p>${ok ? '✓ 答對了！' : '✗ 正確答案：' + esc(q.ans)}</p><div class="ac-exp"><span class="jp" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</span>${kn && kn !== it.jp ? `<small class="jp" lang="ja">${esc(kn)}</small>` : ''}${ro && !q.num ? `<small>${esc(ro)}</small>` : ''}<span>${esc(it.zh)}</span>${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</div>`;
+            if (ok) fb.innerHTML = '<p>✓ 答對了！</p>';
+            ctx.advance(ok, el, () => { k++; show(); });
           });
         };
         show();

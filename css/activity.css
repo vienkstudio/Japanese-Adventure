@@ -87,3 +87,18 @@
 .ac-chal{min-height:140px}
 .ac-chal .ch-sent,.ac-chal .ch-passage{text-align:left;width:100%}
 .ac-chal-exp{display:block;text-align:left;line-height:1.6;font-size:var(--fs-sm)}
+
+/* v10：主按鈕固定在第一屏（位於底部導覽之上）；兩鈕自評；詞塊羅馬字 */
+.ac-dock,.ac-end .ac-btns{position:sticky;bottom:calc(var(--sp-2) + var(--safeB));z-index:5;background:var(--bg);padding:var(--sp-2) 0;margin:0 calc(-1 * var(--sp-1));padding-left:var(--sp-1);padding-right:var(--sp-1);box-shadow:0 -6px 12px -8px var(--shade2)}
+@media(max-width:768px){
+  .ac-dock,.ac-end .ac-btns{bottom:calc(var(--navH) + var(--safeB))}
+  /* 練習中的確認彈窗不蓋住底部導覽 */
+  body:has(.ac) .modal-bg{bottom:calc(var(--navH) + var(--safeB))}
+}
+.ac-grade.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ac-grade.two .btn{flex-direction:row;gap:6px;font-size:var(--fs-md);min-height:52px}
+.ac-new{position:absolute;top:10px;left:12px;margin:0;padding:2px 10px;border-radius:var(--r-pill);background:var(--acc-t);color:var(--acc-d);font-size:var(--fs-xs);font-weight:800}
+.ac-card{padding-top:var(--sp-6)}
+.ac-chip{display:inline-flex;flex-direction:column;align-items:center;gap:0;line-height:1.25}
+.ac-chip-ro{font-size:var(--fs-xs);font-weight:600;color:var(--muted)}
+.ac-chip.on .ac-chip-ro{color:var(--pri-d)}

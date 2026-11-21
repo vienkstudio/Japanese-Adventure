@@ -270,8 +270,10 @@
     const T = terms(q);
     const hay = w => [w.jp, kataKana(w.jp, w.kana), w.kana, romOf(w), w.zh, w.use].map(norm).join('\n');
     const hit = w => { const h = hay(w); return T.some(t => h.includes(t)); };
+    // 去重：同一句只列一次；只差助詞は／を／が、中文意思相同（免税できますか／免税はできますか）也合併
     const seen = new Set(), ph = [], vo = [];
-    const add = (arr, w, src) => { const id = bare(w.jp); if (!id || seen.has(id)) return; seen.add(id); arr.push(src ? Object.assign({}, w, { src: w.src || src }) : w); };
+    const loose = w => '~' + bare(w.jp).replace(/[はをが]/g, '') + '|' + bare(String(w.zh || '').replace(/（[^）]*）|\([^)]*\)/g, ''));
+    const add = (arr, w, src) => { const id = bare(w.jp); if (!id || seen.has(id)) return; const lk = loose(w); if (seen.has(lk)) return; seen.add(id); seen.add(lk); arr.push(src ? Object.assign({}, w, { src: w.src || src }) : w); };
     MUST.filter(hit).forEach(w => add(ph, w));
     EMER.filter(hit).forEach(w => add(ph, w));
     scenes().forEach(sc => (sc.phrases || []).filter(hit).forEach(w => add(ph, w, '💬 ' + sc.name)));

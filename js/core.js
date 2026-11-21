@@ -69,8 +69,35 @@
 
   // 等級門檻：第 n 級需要 LEVELS[n-1] XP
   const LEVELS = [0, 60, 150, 280, 450, 670, 940, 1260, 1640, 2080, 2600, 3200, 3900, 4700, 5600];
-  const TITLES = ['新手旅人', '五十音學徒', '假名見習生', '片假名探險家', '便利商店常客', '拉麵達人', '電車通勤者',
-    '購物高手', '觀光老手', '日語旅人', '街頭溝通王', '日本通', '準日本人', '日語大師', '傳說旅人'];
+  // 稱號依目的與程度：零基礎（還在學假名）用五十音稱號；其他依第一個目的；沒有目的用中性稱號
+  const TITLE_SETS = {
+    kana: ['五十音新手', '五十音學徒', '假名見習生', '片假名探險家', '日語起步者', '單字收集者', '句子練習生', '日常會話新秀', '日語旅人', '溝通小達人', '日本通', '準日本人', '日語達人', '日語大師', '傳說學習者'],
+    travel: ['新手旅人', '點餐入門', '問路小幫手', '車站通', '便利商店常客', '拉麵達人', '電車通勤者', '購物高手', '觀光老手', '日語旅人', '街頭溝通王', '日本通', '準日本人', '日語大師', '傳說旅人'],
+    exam: ['日檢起步', '單字收集者', '文法入門', '穩紮穩打', '讀解挑戰者', '聽解練習生', '模擬考常客', '文法達人', '讀解高手', '日檢衝刺者', '合格候補', '日檢老手', '準合格者', '日檢大師', '傳說考生'],
+    work: ['商務新人', '名片交換者', '敬語入門', '電話應對者', 'Email 寫手', '會議參與者', '客戶接待者', '報連相達人', '簡報能手', '談判新秀', '商務溝通者', '職場日語通', '部門骨幹', '商務大師', '傳說社長'],
+    fun: ['歌詞新手', '跟唱入門', '歌詞解讀者', '字幕挑戰者', '新聞初讀者', '卡拉 OK 常客', '動漫通', '歌詞翻譯者', '新聞讀者', 'J-pop 達人', '日本文化通', '準日本人', '日語達人', '日語大師', '傳說歌手'],
+    any: ['日語新手', '日語學習者', '每日練習者', '單字收集者', '句子練習生', '穩定進步中', '日語溝通者', '日語好手', '閱讀達人', '日語進階者', '日語高手', '日本通', '準日本人', '日語大師', '傳說學習者']
+  };
+  const AVATAR_OF = { kana: '🌱', travel: '🧳', exam: '🎓', work: '💼', fun: '🎧', any: '🙂' };
+  const KANA_SEION = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+  function titleKey() {
+    const p = (S && S.profile) || {}, g = Array.isArray(p.goals) && p.goals[0];
+    if ((p.lv || 'zero') === 'zero') {
+      const L = window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : [...KANA_SEION].filter(c => ((S.kanaL || {}).h || []).includes(c)).length;
+      if (L < 46) return 'kana';
+    }
+    return TITLE_SETS[g] ? g : 'any';
+  }
+  const titles = () => TITLE_SETS[titleKey()];
+  // 預設頭像依目的（使用者自己挑過就不動）：S.avatarAuto 記錄自動給的那個
+  function syncAvatar() {
+    if (!S) return;
+    const want = AVATAR_OF[titleKey()] || '🙂';
+    if (!S.avatar || (S.avatarAuto && S.avatar === S.avatarAuto) || (!S.avatarAuto && S.avatar === '🧳' && want !== '🧳')) {
+      if (S.avatar !== want) { S.avatar = want; S.avatarAuto = want; }
+      else S.avatarAuto = want;
+    }
+  }
 
   function levelOf(xp) { let l = 1; for (let i = 1; i < LEVELS.length; i++) if (xp >= LEVELS[i]) l = i + 1; return l; }
 
@@ -271,7 +298,7 @@
     save();
     toast(`✨ +${n} XP ${reason ? '・' + esc(reason) : ''}`, 'xp');
     // 升級彈窗等其他彈窗（結果畫面）關掉後才出現，避免兩個主按鈕疊在一起
-    const lvModal = () => { if (document.querySelector('.modal-bg')) return setTimeout(lvModal, 400); modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${TITLES[after - 1] || '傳說旅人'}</b></p>${unlockHTML(after)}`, [{ label: '太棒了！', cls: 'primary' }]); };
+    const lvModal = () => { if (document.querySelector('.modal-bg')) return setTimeout(lvModal, 400); modal(`<div class="lvup">🎉</div><h2>升級！Lv.${after}</h2><p>獲得稱號：<b>${esc(titles()[after - 1] || titles()[titles().length - 1])}</b></p>${unlockHTML(after)}`, [{ label: '太棒了！', cls: 'primary' }]); };
     if (after > before) setTimeout(lvModal, 600);
     if (after > before) remindBackup(`升到 Lv.${after} 了`);
     return { gained: n, levelUp: after > before };
@@ -285,7 +312,7 @@
   // 備份提醒：非雲端存檔時，每升一級、每完成 5 關提醒一次
   function remindBackup(why) {
     if (CL.status === 'cloud') return;
-    setTimeout(() => toast(`💾 ${esc(why)}！記得到 ⚙️ 設定 →「💾 備份」保存進度${CL.status === 'none' ? '（這裡無法自動存檔）' : '（進度只存在這台裝置）'}`), 2600);
+    setTimeout(() => toast(`💾 ${esc(why)}！記得到「我的」→「💾 備份」保存進度${CL.status === 'none' ? '（這裡無法自動存檔）' : '（進度只存在這台裝置）'}`), 2600);
   }
   function noteClear() {
     S.clearN = (S.clearN || 0) + 1; save();
@@ -422,6 +449,7 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     document.querySelectorAll('.modal-bg:not(.keep)').forEach(m => m.remove());
     LAYERS.splice(0).forEach(m => m.remove());
+    try { syncAvatar(); } catch (e) { }
     const { name, params } = parseHash();
     const r = routes[name] || routes.home;
     const main = document.getElementById('main');
@@ -450,7 +478,7 @@
     const cur0 = parseHash().name, r0 = routes[cur0], cur = (r0 && r0.navParent) || (r0 && r0.nav ? cur0 : 'home');   // 沒指定 navParent 的子頁點亮首頁
     nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
-      const dn = n === 'me' || n === 'review' ? (window.Learn ? Learn.stats().due : Tracker.dueCount()) : 0;   // 紅點＝今天到期數
+      const dn = n === 'me' || n === 'review' ? (window.Learn ? Learn.due(15).length : Tracker.dueCount()) : 0;   // 紅點＝今天到期數（與首頁、我的同一個 Learn.due(15).length）
       const badge = dn ? `<span class="badge">${dn}</span>` : '';
       return `<a href="#${n}" data-route="${n}" class="${cur === n ? 'on' : ''}"${cur === n ? ' aria-current="page"' : ''}><span class="ni">${NAV_SVG[n] ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${NAV_SVG[n]}"/></svg>` : r.icon || ''}</span><span>${esc(r.title)}</span>${badge}</a>`;
     }).join('');
@@ -463,9 +491,8 @@
       const ss = { cloud: ['☁️', '已雲端存檔'], local: ['💾', '存在這台裝置'], none: ['⚠️', '無法存檔：本次進度關閉後會消失'] }[CL.status];
       const sk = streakInfo();
       pc.innerHTML = `<button class="pc-lv" id="lvBtn" type="button" title="${S.xp} XP・連續 ${sk.days} 天"><span class="pc-st${sk.done ? ' on' : ''}">🔥${sk.days}</span><b>Lv.${lv}</b><span class="pc-xp"><i style="width:${Math.max(4, Math.min(100, (S.xp - lo) / (hi - lo) * 100))}%"></i></span></button>
-        <button class="icon-btn" id="setBtn" type="button" title="設定" aria-label="設定">⚙️</button>`;
-      document.getElementById('lvBtn').onclick = () => modal(`<h2>冒險者 Lv.${lv} ${esc(TITLES[lv - 1] || '')}</h2><p class="muted">程度：${esc(LV_NAMES[S.profile.lv])}（在 ⚙️ 設定可改）</p><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
-      document.getElementById('setBtn').onclick = () => go('settings');
+`;
+      document.getElementById('lvBtn').onclick = () => modal(`<h2>Lv.${lv} ${esc(titles()[lv - 1] || '')}</h2><p class="muted">程度：${esc(LV_NAMES[S.profile.lv])}（在「我的」→ 設定可改）</p><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
       let bk = document.getElementById('backBtn');
       if (!bk) { bk = document.createElement('button'); bk.id = 'backBtn'; bk.className = 'icon-btn'; bk.title = '回上一頁'; bk.textContent = '←'; const top = document.querySelector('#top .in'); top.insertBefore(bk, top.firstChild); bk.onclick = back; }
       bk.hidden = cur0 === 'home';   // 首頁不顯示（不留空位，logo 貼齊左緣）；#backBtn 是全站唯一返回鍵，頁內不再放 ←
@@ -498,7 +525,7 @@
     Object.assign(p, patch);
     if (patch.lv && !patch.assist && patch.lv !== was) p.assist = ASSIST_DEF[patch.lv] || p.assist;
     if (patch.lv) p.placed = true;
-    normProfile(p); syncOld(S); save();
+    normProfile(p); syncOld(S); syncAvatar(); save();
     document.dispatchEvent(new CustomEvent('profilechange', { detail: profile() }));
     return profile();
   }
@@ -682,7 +709,7 @@
 
   window.App = {
     get state() { return S; },
-    LEVELS, TITLES, levelOf,
+    LEVELS, get TITLES() { return titles(); }, TITLE_SETS, titleKey, levelOf,
     get level() { return levelOf(S.xp); },
     save, onChange, register, go, start, render,
     addXP, completeQuest, reward, showResult, modal, toast,

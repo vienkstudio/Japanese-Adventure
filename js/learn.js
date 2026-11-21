@@ -84,7 +84,7 @@
   function blank(src) { return { s: 'new', due: 0, stab: 0, diff: 5, reps: 0, lapses: 0, last: 0, src: src || '' }; }
   function ensure(id, ctx) {
     const LL = L(); let e = LL[id];
-    if (!e) e = LL[id] = blank(ctx && ctx.src);
+    if (!e) { e = LL[id] = blank(ctx && ctx.src); e.add = Date.now(); }   // add：建立時間（我的頁判斷「隔天以上還記得」）
     if (ctx && ctx.item) putMeta(e, ctx.item);
     if (ctx && ctx.lv && !(e.m && e.m.lv)) putMeta(e, { lv: ctx.lv });
     return e;
@@ -95,6 +95,7 @@
     ctx = ctx || {};
     id = idOf(id, ctx.type); if (!id) return null;
     const e = ensure(id, ctx), now = Date.now(), g = clamp(Math.round(+grade || 0), 0, 3);
+    if (!e.reps && !e.f) e.f = now;   // f：第一次作答時間（「學會」要隔天以上還記得）
     e.reps++; e.g = g;
     if (g === 0) {
       e.lapses++; e.str = 0;
@@ -156,6 +157,17 @@
   }
   const inList = e => !!e && (!!e.star || (e.lapses || 0) > (e.ack || 0));
   const isDue = (e, now) => e.s !== 'new' && (e.reps > 0 || e.star || e.lapses) && (e.due || 0) <= now;
+  // 今天到期數：首頁、我的、導覽紅點共用這一個
+  function dueCount() { const now = Date.now(), LL = L(); let n = 0; for (const id in LL) if (isDue(LL[id], now)) n++; return n; }
+  // 「學會」統一定義：review 以上、間隔（穩定度）≥1 天，且最後一次答對距第一次學 ≥20 小時（＝隔天以上還記得）
+  //   沒有 f（舊存檔、知識庫手動標記）只看狀態
+  const LEARN_GAP = 20 * 36e5;
+  const learnedE = e => !!e && ST_ORDER[e.s] >= 2 && (e.stab || 0) >= 1 && (!e.f || (e.last || 0) - e.f >= LEARN_GAP);
+  function learnedCount(opt) {
+    opt = opt || {}; const LL = L(); let n = 0;
+    for (const id in LL) { const e = LL[id]; if (opt.type && !id.startsWith(opt.type + ':')) continue; if (opt.lv && !(e.m && e.m.lv === opt.lv)) continue; if (learnedE(e)) n++; }
+    return n;
+  }
   function due(n) {
     const now = Date.now(), LL = L();
     const ids = Object.keys(LL).filter(id => isDue(LL[id], now)).sort((a, b) => (LL[a].due || 0) - (LL[b].due || 0) || (LL[b].lapses || 0) - (LL[a].lapses || 0));
@@ -198,7 +210,7 @@
       o.total++; o[e.s] = (o[e.s] || 0) + 1;
       if (isDue(e, now)) o.due++;
       if (inList(e) && e.s !== 'mastered') o.list++;
-      if (ST_ORDER[e.s] >= 2) o.known++;
+      if (learnedE(e)) o.known++;
     }
     return o;
   }
@@ -339,11 +351,10 @@
   const APPLY = {
     travel: () => ({ route: 'play', params: {}, label: '到冒險店家用出來' }),
     exam: () => ({ route: 'challenge-play', params: { lv: lvKey(), t: 'mix' }, label: lvKey() + ' 綜合 10 題' }),
-    // 歌曲新聞：依日期輪替「唱一首歌（最後那首，沒有就熱門精選）」與「讀一篇短文」
+    // 歌曲新聞：固定唱一首歌（最後那首，沒有就熱門精選）；不再依日期輪替，也不重複剛學過的短文
     fun: () => {
-      const a = dailyPick(), odd = Math.floor(Date.parse(App.today()) / DAY) % 2, last = S().songLast;
-      const song = last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
-      return odd || !a ? song : { route: 'read-article', params: { daily: a.id }, label: '讀一篇短文：' + a.title };
+      const last = S().songLast;
+      return last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
     },
     work: () => ({ route: 'biz', params: {}, label: '商務情境練習' })
   };
@@ -544,7 +555,7 @@
   window.Learn = {
     idOf, kbIdOf, jp0, normP,
     record, setStatus, get, status, atLeast, star, fav, inList: id => inList(get(id)),
-    due, queue, prepare, stats, view, views, kanaLearned,
+    due, dueCount, learnedCount, isLearned: id => learnedE(get(id)), queue, prepare, stats, view, views, kanaLearned,
     mindST, kbItem, resolvePending, migrate, importList,
     ORDER: ST_ORDER
   };

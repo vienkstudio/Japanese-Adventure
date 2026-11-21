@@ -1,44 +1,90 @@
 /* 我的（路由 me，導覽 4）：今日到期與複習（→ review）、已學會統計（Learn 狀態）、連勝與成就、御朱印帳、設定、🏯 經典練習、備份。
-   只讀 Learn／App／Game 的狀態，不另存資料；成就由現有進度即時計算。樣式 css/lookup.css（前綴 my-）。 */
+   只讀 Learn／App／Game 的狀態，不另存資料；成就由現有進度即時計算。樣式 css/lookup.css（前綴 my-）。
+   今天到期＝Learn.due(15)（與首頁今日課同一函式、同一上限）。
+   「學會」＝Learn 狀態 review 以上，且距第一次學到已隔 1 天以上（今天剛學的不算，與說明一致）。 */
 (function () {
   'use strict';
   const esc = App.esc;
-  const KANA_N = 46;
+  const KANA_N = 46, DUE_N = 15, GAP = 20 * 36e5;   // 隔天：容許 20 小時（晚上學、隔天早上複習）
   const stampN = () => Object.keys(((App.state.world || {}).stamps) || {}).length;
+  const dayStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
-  function achievements(sk, S, kana) {
-    const tot = S.all, lv = App.level || 1;
-    return [
-      ['🔥', '連續 3 天', sk.days >= 3], ['🔥', '連續 7 天', sk.days >= 7], ['🏅', '連續 30 天', sk.days >= 30],
-      ['🔤', '平假名 46 個', kana >= KANA_N], ['📘', '學會 50 個單字', S.v.known >= 50], ['📚', '學會 300 個單字', S.v.known >= 300],
-      ['💬', '學會 30 句', S.p.known >= 30], ['📗', '學會 10 個文法', S.g.known >= 10], ['🎓', '掌握 100 個', tot.mastered >= 100],
-      ['⭐', '升到 Lv.5', lv >= 5], ['⛩️', '第一個御朱印', stampN() >= 1], ['🗾', '御朱印 10 個', stampN() >= 10]
+  // 學會：review／mastered 且有「隔天以上」的證據
+  //   有第一次學到的時間（e.add／e.first）→ 最後一次答對距第一次 ≥ 20 小時
+  //   沒有（舊資料）→ 最後一次作答在今天以前（今天才答的、又沒有起始時間的不算）
+  function isKnown(e, t0) {
+    if (!e || (e.s !== 'review' && e.s !== 'mastered')) return false;
+    const first = e.add || e.first || 0, last = e.last || 0;
+    if (first) return last - first >= GAP && e.g !== 0;
+    return last > 0 && last < t0;
+  }
+  function counts() {
+    const L = App.state.learn || {}, t0 = dayStart();
+    const o = { v: { known: 0, learning: 0 }, p: { known: 0, learning: 0 }, g: { known: 0, learning: 0 }, kana: { known: 0, learning: 0 }, mastered: 0 };
+    for (const id in L) {
+      const e = L[id]; if (!e || e.s === 'new') continue;
+      const k = id.slice(0, id.indexOf(':')), b = o[k]; if (!b) continue;
+      if (isKnown(e, t0)) { b.known++; if (e.s === 'mastered') o.mastered++; }
+      else b.learning++;
+    }
+    return o;
+  }
+
+  // 成就：依目的與程度排序；與目的無關的（五十音給非零基礎、御朱印給非旅遊）不列
+  function achievements(sk, C, kana, p) {
+    const gs = p.goals && p.goals.length ? p.goals : ['travel'], zero = (p.lv || 'zero') === 'zero';
+    const hi = ['n3', 'n2', 'n1'].includes(p.lv);
+    const lv = App.level || 1, tot = C.v.known + C.p.known + C.g.known;
+    // [圖示, 名稱, 達成, 適用（目的或 'all'／'zero'）, 權重：越小越前面]
+    const A = [
+      ['🔤', '平假名 46 個', kana >= KANA_N, 'zero', 0],
+      ['🔥', '連續 3 天', sk.days >= 3, 'all', 1],
+      ['💬', '學會 10 句', C.p.known >= 10, 'travel work', 2],
+      ['📘', hi ? '學會 100 個單字' : '學會 30 個單字', C.v.known >= (hi ? 100 : 30), 'exam fun', 2],
+      ['📗', '學會 10 個文法', C.g.known >= 10, 'exam work', 3],
+      ['🙇', '學會 5 個文法（敬語）', C.g.known >= 5, 'work', 2.5],
+      ['⛩️', '第一個御朱印', stampN() >= 1, 'travel', 3],
+      ['🔥', '連續 7 天', sk.days >= 7, 'all', 4],
+      ['💬', '學會 30 句', C.p.known >= 30, 'travel work fun', 5],
+      ['📚', hi ? '學會 500 個單字' : '學會 300 個單字', C.v.known >= (hi ? 500 : 300), 'exam fun work', 5],
+      ['🗾', '御朱印 10 個', stampN() >= 10, 'travel', 6],
+      ['🎓', '掌握 100 個', C.mastered >= 100 || tot >= 300, 'all', 7],
+      ['⭐', '升到 Lv.5', lv >= 5, 'all', 8],
+      ['🏅', '連續 30 天', sk.days >= 30, 'all', 9]
     ];
+    const fit = a => a[3] === 'all' || (a[3] === 'zero' ? zero : a[3].split(' ').some(g => gs.includes(g)));
+    const seen = new Set();
+    return A.filter(fit).filter(a => !seen.has(a[1]) && seen.add(a[1]))
+      .map((a, i) => [a, i]).sort((x, y) => x[0][4] - y[0][4] || x[1] - y[1]).map(x => x[0]).slice(0, 9);
   }
 
   function render(el) {
-    const sk = App.streakInfo(), lv = App.level || 1, xp = App.state.xp || 0, G = window.Game;
-    const st = o => window.Learn ? Learn.stats(o) : { known: 0, learning: 0, review: 0, mastered: 0, due: 0, total: 0 };
-    const S = { all: st(), v: st({ type: 'v' }), p: st({ type: 'p' }), g: st({ type: 'g' }) };
+    const p = App.profile(), sk = App.streakInfo(), lv = App.level || 1, xp = App.state.xp || 0, G = window.Game;
+    const C = counts();
+    const zero = (p.lv || 'zero') === 'zero';
     const kana = window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : 0;
-    const due = S.all.due;
-    const ach = achievements(sk, S, kana), got = ach.filter(a => a[2]).length;
+    const due = window.Learn && Learn.due ? Learn.due(DUE_N).length : 0;
+    const ach = achievements(sk, C, kana, p), got = ach.filter(a => a[2]).length;
     const daily = G && G.DAILY ? G.DAILY : [];
     const dd = G && G.daily ? G.daily() : { claimed: {} };
-    const hasGos = (window.World && typeof World.goshuin === 'function') || stampN() > 0;
+    const travel = (p.goals || []).includes('travel') || !(p.goals || []).length;
+    const hasGos = travel && ((window.World && typeof World.goshuin === 'function') || stampN() > 0);
     const tile = (n, lbl, sub) => `<div class="my-tile"><b>${n}</b><span>${esc(lbl)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`;
+    const lrn = b => b.learning ? `學習中 ${b.learning}` : '';
+    const tiles = (zero ? [tile(kana + '<small>/' + KANA_N + '</small>', '平假名')] : [])
+      .concat([tile(C.v.known, '單字', lrn(C.v)), tile(C.p.known, '句子', lrn(C.p)), tile(C.g.known, '文法', lrn(C.g))]);
     el.innerHTML = `<section class="my">
-      <div class="my-head"><span class="my-av" aria-hidden="true">${esc(G && G.avatar ? G.avatar() : '🧳')}</span>
-        <div><b>Lv.${lv} ${esc((App.TITLES || [])[lv - 1] || '')}</b><small>${xp} XP・${esc((App.LV_NAMES || {})[App.profile().lv] || '')}</small></div>
+      <div class="my-head"><span class="my-av" aria-hidden="true">${esc(G && G.avatar ? G.avatar() : '🙂')}</span>
+        <div><b>Lv.${lv} ${esc((App.TITLES || [])[lv - 1] || '')}</b><small>${xp} XP・${esc((App.LV_NAMES || {})[p.lv] || '')}</small></div>
         <span class="my-fire${sk.done ? ' on' : ''}" title="連續天數">🔥 ${sk.days} 天</span></div>
 
       <button type="button" class="my-due${due ? ' hot' : ''}" data-go="review">
         <span class="i" aria-hidden="true">📌</span>
-        <span><b>${due ? `今天到期 ${due} 個` : '今天沒有到期的 ✓'}</b><small>${due ? '先複習再學新的，記得最牢' : '可以看不會清單或提前複習'}</small></span><span aria-hidden="true">›</span></button>
+        <span><b>${due ? `今天到期 ${due} 個` : '今天沒有到期的 ✓'}</b><small>${due ? '先複習再學新的，記得最牢' : '可以提前複習或看不會清單'}</small></span><span aria-hidden="true">›</span></button>
 
       <div class="my-box"><h2>📊 已學會</h2>
-        <div class="my-tiles">${tile(kana + '<small>/' + KANA_N + '</small>', '平假名')}${tile(S.v.known, '單字', S.v.learning ? `學習中 ${S.v.learning}` : '')}${tile(S.p.known, '句子', S.p.learning ? `學習中 ${S.p.learning}` : '')}${tile(S.g.known, '文法', S.g.learning ? `學習中 ${S.g.learning}` : '')}</div>
-        <p class="my-note">「學會」＝連續答對、隔天以上還記得；已完全掌握 ${S.all.mastered} 個 🎓</p>
+        <div class="my-tiles${tiles.length === 3 ? ' t3' : ''}">${tiles.join('')}</div>
+        <p class="my-note">「學會」＝答對、而且隔天以上還記得（今天剛學的先算「學習中」）；已完全掌握 ${C.mastered} 個 🎓</p>
       </div>
 
       <div class="my-box"><h2>🏆 連勝與成就<small>${got}／${ach.length}</small></h2>
@@ -68,4 +114,5 @@
   App.register('me', { title: '我的', icon: '👤', nav: true, navOrder: 4, render });
   // 學習進度變了（例如在別頁作答後返回）就重畫統計
   document.addEventListener('learnchange', () => { const m = document.getElementById('main'); if (m && m.className === 'route-me') { clearTimeout(render.t); render.t = setTimeout(() => { if (m.className === 'route-me') render(m); }, 300); } });
+  window.Me = { counts, isKnown };
 })();
