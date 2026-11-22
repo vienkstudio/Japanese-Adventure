@@ -371,7 +371,7 @@
         let tk = []; try { tk = J.tokenize(jp); } catch (e) { }
         for (const t of tk) {
           if (out.length >= n) break;
-          if (!t.known || !t.zh || t.gram || !POS_OK.test(t.pos || '') || String(t.base).length < 2 || FUNC.test(t.base) || auxAfter(tk, t)) continue;
+          if (!t.known || !t.zh || t.gram || !POS_OK.test(t.pos || '') || String(t.base).length < 2 || FUNC.test(t.base) || auxAfter(tk, t) || (J.isFunc && J.isFunc(t, tk[tk.indexOf(t) - 1]))) continue;
           const id = vid(t.base, t.bkana); if (!isFresh(id) || out.some(x => x.id === id)) continue;
           out.push({ id, type: 'vocab', jp: t.base, kana: t.bkana || '', zh: String(t.zh).split(/[；;]/)[0], lv: t.lv || '', ex: [jp, l.zh || ''], source: '🎵 歌詞：' + sg.title, song: sg.id });
         }

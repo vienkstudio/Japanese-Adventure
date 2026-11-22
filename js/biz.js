@@ -232,9 +232,17 @@
     P.skip = PS.reduce((n, x) => n + x.refs.filter(learned).length, 0);
     const secs = [], steps = [];
     const add = (title, short, icon, list, extra) => { secs.push(Object.assign({ title, short, icon, from: steps.length, to: steps.length + list.length }, extra || {})); steps.push(...list); };
+    // 每個字卡小節最後補 3 題四選一（評審 v16 P1：不再連續 28 張卡沒有題目）
+    const allZh = [...new Set(PS.flatMap(x => x.cards.map(c => c.d && c.d.zh).filter(Boolean)))];
+    const miniQ = cards => App.shuffle(cards.filter(c => c.d && c.d.jp && c.d.zh)).slice(0, 3).map((c, j) => {
+      const wrong = App.shuffle(allZh.filter(z => z !== c.d.zh)).slice(0, 3);
+      if (wrong.length < 3) return null;
+      return { k: 'q', st: 'quiz', i: 'mq' + j, o: sh(4), tried: [], d: { t: 'mean', q: '這個說法是什麼意思？', jp: c.d.jp, opts: [c.d.zh].concat(wrong), exp: c.d.jp + '＝' + c.d.zh, ref: refOf(c) } };
+    }).filter(Boolean);
     PS.forEach((x, i) => {
       const cards = P.done[i] ? x.cards : x.cards.filter(c => !learned(refOf(c)));
-      add(x.title, x.title, x.k === 'v' ? '🔤' : '💬', (cards.length ? cards : x.cards).map(c => ({ k: c.k, st: 'card', d: c.d })), { part: x.n });
+      const list = (cards.length ? cards : x.cards);
+      add(x.title, x.title, x.k === 'v' ? '🔤' : '💬', list.map(c => ({ k: c.k, st: 'card', d: c.d })).concat(miniQ(list)), { part: x.n });
     });
     add('對話演練', '對話', '🗣️', [{ k: 'sec', st: 'dlg' }].concat(u.dialogue.steps.map((d, i) => ({ k: 'd', st: 'dlg', d, i, o: sh(d.choices.length), tried: [] }))));
     add('Email＋小測驗', '信＋測驗', '✉️', [{ k: 'sec', st: 'mail' }].concat(u.email.blanks.map((d, i) => ({ k: 'm', st: 'mail', d, i, o: sh(d.opts.length), tried: [] })), [{ k: 'sec', st: 'quiz' }], quizSteps(u, sh)));

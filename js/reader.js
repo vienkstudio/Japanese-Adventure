@@ -465,8 +465,9 @@
   const LVR = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
   function vocabList(tokenRows, texts, title, source, max) {
     const seen = new Map();
-    tokenRows.forEach((row, r) => (row || []).forEach(t => {
+    tokenRows.forEach((row, r) => (row || []).forEach((t, ti) => {
       if (t.sym || !VPOS.test(t.pos) || t.pos === 'num') return;
+      if (JPText.isFunc && JPText.isFunc(t, row[ti - 1])) return;   // いる、こと、ため、そう…不列為本文單字
       if (!t.known && !(t.src && t.kana)) return;
       if (t.known && !t.zh) return;
       if (t.s.length < 2 && !JPText.hasKanji(t.s)) return;

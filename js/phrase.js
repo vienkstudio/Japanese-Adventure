@@ -242,6 +242,8 @@
     }
     if (!segs) segs = [{ t: 'F', k: kana }];
     segs = segs.map(s => s.t === 'N' && /^[何]$/.test(s.s) ? Object.assign({}, s, { t: 'K' }) : s);
+    // 〜用（お土産用、子供用）：用字獨立一段，羅馬字寫成 omiyage you
+    segs = segs.flatMap(s => s.t === 'K' && /^.+用$/.test(s.s || '') && /よう$/.test(toH(s.k)) ? [Object.assign({}, s, { s: s.s.slice(0, -1), k: s.k.slice(0, -2), n: (s.n || s.s.length) - 1 }), { t: 'K', s: '用', k: s.k.slice(-2), n: 1 }] : [s]);
     const isKN = t => t === 'K' || t === 'N';
     const units = [];
     segs.forEach((s, i) => {
@@ -253,11 +255,11 @@
         // 平假名名詞＋單一漢字（わらび餅、うに丼、たこ焼き）：視為一個詞
         const nx = segs[i + 1], tail = !nx || nx.t === 'P' || (nx.t === 'H' && /^[はがをにでともの、。きけ]/.test(nx.k));
         const noun = pu && pu.whole && !pu.lex && !pu.part && pu.k.length >= 2 && s.t === 'K' && s.n === 1 && tail;
-        units.push({ k: s.k, num: s.t === 'N' ? s.s : '', sp: !(pu && !pu.p && (pu.pre || pu.glue || noun)) });
+        units.push({ k: s.k, num: s.t === 'N' ? s.s : '', sp: s.s === '用' || !(pu && !pu.p && (pu.pre || pu.glue || noun)) });   // 〜用（お土産用）斷開
         return;
       }
-      const after = !!(prev && (isKN(prev.t) || prev.t === 'T')), nextK = !!(next && (isKN(next.t) || next.t === 'T'));
-      const hs = toH(s.k).split(/([、。！？!?\s]+)/);
+      const after = !!(prev && (isKN(prev.t) || prev.t === 'T')) && !(prev && prev.t === 'N' && /^(います|いる|いた|あります|ある|ください|です|でした|だ|で|も|と|が|は|を|に|しか|だけ|ずつ|お願い)/.test(toH(s.k))), nextK = !!(next && (isKN(next.t) || next.t === 'T'));
+      const hs = toH(s.k).replace(/(?<=[ぁ-ゖー])を(?=[ぁ-ゖ])/g, ' を ').split(/([、。！？!?\s]+)/);
       // 平假名段若原本是片假名讀音（對齊失敗時）照原字
       hs.forEach((h, j) => {
         if (!h) return;
@@ -282,6 +284,7 @@
     out = out.replace(/\s+([,.?!])/g, '$1').replace(/\s+/g, ' ').trim();
     GLUE.forEach(([a, b]) => { out = out.replace(a, b); });
     out = out.replace(/vuvu/g, '~');
+    out = out.replace(/([a-z]{3,}?)(nai|eru|iru|aru|uru)you ni\b/g, '$1$2 you ni').replace(/\s+/g, ' ');
     out = out.replace(/([a-z])jihan(?![a-z])/g, '$1ji han');
     return out;
   }

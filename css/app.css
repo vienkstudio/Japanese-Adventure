@@ -505,3 +505,8 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 .nv-n.nv-all{padding-left:24px;color:var(--pri-d);font-weight:700}
 .nv-g .nv-g{margin-left:8px}
 .hm .hm-cat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.kg-next{max-height:72px}
+.kg-next .btn.block{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:48px}
+[data-fs=xl] .kg-next .btn.block,[data-fs=l] .kg-next .btn.block{font-size:var(--fs-md)}
+@media(max-width:480px){#top .in.nv-has-crumb .logo{display:none}}

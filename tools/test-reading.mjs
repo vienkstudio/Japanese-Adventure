@@ -4,7 +4,8 @@ import fs from 'fs'; import path from 'path'; import vm from 'vm'; import { file
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ctx = { console, localStorage: { getItem: () => null, setItem() { } } }; ctx.window = ctx; ctx.globalThis = ctx; vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
-['data/mind/conj.js', 'data/mind/lex-n5.js', 'data/mind/lex-n4.js', 'data/mind/lex-n3.js', 'data/mind/lex-n2.js', 'data/mind/lex-n1.js', 'data/mind/grammar.js', 'data/reading/dict-news.js', 'data/scenes-1.js', 'data/scenes-2.js', 'data/cards.js', 'data/reading/daily.js', 'js/jp-text.js'].forEach(f => { try { load(f); } catch (e) { } });
+['data/mind/conj.js', 'data/mind/lex-n5.js', 'data/mind/lex-n4.js', 'data/mind/lex-n3.js', 'data/reading/dict-news.js', 'js/jp-text.js'].forEach(f => { try { load(f); } catch (e) { console.error('載入失敗', f, e.message); } });
+// 只載 App 冷啟動 JPText.ready() 的同一組檔案（不另載場景資料，免得假綠燈）
 const J = ctx.JPText; J._build();
 const C = [
   ['生ビールください', '生ビール', 'なまびーる'], ['日本酒を一つ', '日本酒', 'にほんしゅ'],
@@ -17,7 +18,12 @@ const C = [
   ['今日は何曜日', '何', 'なん'], ['何を食べますか', '何', 'なに'],
   ['別れは辛い', '辛い', 'つらい'], ['このカレーは辛い', '辛い', 'からい'],
   ['彼は来ないそうだ', 'そう', 'そう', '傳聞'], ['飲み込んでしまいそうな', 'そう', 'そう', '樣態'], ['雨が降りそうです', 'そうです', 'そう', '樣態'],
-  ['プレゼント用に', '用', 'よう', '用的'], ['気をつけてください', 'つけて', 'つける', '小心']
+  ['プレゼント用に', '用', 'よう', '用的'], ['気をつけてください', 'つけて', 'つける', '小心'],
+  // 評審 v16
+  ['北海道限定生ビール', '生ビール', 'なまびーる'], ['辛い思い出', '辛い', 'つらい'], ['辛くも勝った', '辛くも', 'からくも'],
+  ['道が空いている', '空いて', 'すく'], ['席が空いている', '空いて', 'あく'], ['生の声を聞く', '生の声', 'なまのこえ'], ['上手くいく', '上手く', 'うまく'],
+  ['君がいなくなった', 'いなくなった', 'いなくなる'], ['馬鹿馬鹿しい話だ', '馬鹿馬鹿しい', 'ばかばかしい'], ['そうはいかない', 'そうはいかない', 'そうはいかない'],
+  ['幻だと思おう', 'と', 'と', '引用']
 ];
 let f = 0;
 for (const [s, w, k, zh] of C) {

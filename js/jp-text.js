@@ -690,6 +690,20 @@
       }
       out.push(tk);
     }
+    return postFix(out, text);
+  }
+  // 斷詞後修正（評審 v16 P0）：名詞＋がい…（君がいなくなった）是「が＋いる」，不是「がい＝害處」；と＋思う／言う 的と是引用
+  function postFix(out, text) {
+    for (let k = 1; k < out.length; k++) {
+      const t = out[k], p = out[k - 1];
+      if (t.s === 'がい' && /^(n|pron|name|unk)$/.test(p.pos || '') && !/^(v|i)$/.test(p.pos || '')) {
+        const nx = out[k + 1], end = nx ? nx.i + nx.s.length : t.i + 2;
+        const ga = tokenize('が')[0]; ga.i = t.i;
+        const sub = tokenize(text.slice(t.i + 1, end)).map(x => Object.assign(x, { i: x.i + t.i + 1 }));
+        out.splice(k, nx ? 2 : 1, ga, ...sub);
+      }
+      if (t.s === 'と' && t.pos === 'part' && out[k + 1] && /^(思う|言う|いう|考える|感じる|聞く|話す|書く|答える|叫ぶ)$/.test(out[k + 1].base || '')) Object.assign(t, { zh: '（引用）表示說／想的內容' });
+    }
     return out;
   }
   /* ---------- 上下文讀音（評審 v15）：第一候選選錯、正解在同一字面的其他候選 ---------- */
@@ -712,7 +726,7 @@
       if (/^(v|i|aux)$/.test(p1.pos || '') || (p1.s === 'の' && PRON.test(p2.s || '')) || /^(がいい|がよい|がまし|が好き|がずっと|が上手|が安|が高|が早|が楽|よりも?|へ|に向)/.test(nx)) return want(info, 'ほう');
       return info;
     }
-    if (/^(空く)$/.test(base) && /(お?腹|おなか)が?$/.test(prevS(out, 2))) return want(info, 'すく');
+    if (/^(空く)$/.test(base) && /(お?腹|おなか|道|道路|電車|バス|車内|店内|お店|会場|館内)が?$/.test(prevS(out, 2))) return want(info, 'すく');   // 肚子餓、路上／車上人少
     if (/^(降りる)$/.test(base) && /(雨|雪|雹|霜)が?$/.test(prevS(out, 2))) return want(info, 'ふる');
     if (base === '開く') {
       if (/(ドア|窓|戸|箱|蓋|ふた|席|部屋|口|鍵)が?$/.test(prevS(out, 2))) return info;
@@ -720,7 +734,7 @@
       return info;
     }
     if (base === '一日' && /月$/.test(prevS(out, 1))) return want(info, 'ついたち');
-    if (base === '辛い') return HARD.test(prevS(out, 3)) && !FOOD.test(prevS(out, 3)) ? want(info, 'つらい') : info;
+    if (base === '辛い') return (HARD.test(prevS(out, 3)) && !FOOD.test(prevS(out, 3))) || /^(思い出|経験|思い|気持ち|日々|時期|過去|別れ|仕事|立場)/.test(nx) ? want(info, 'つらい') : info;
     if (base === '何' && /^(曜日|時|人|回|歳|階|日|月|年|本|枚|個|分|円|番|度|語|色|冊|匹|杯|台|でも|か所)/.test(nx)) return want(info, 'なん');
     return info;
   }
@@ -1031,7 +1045,18 @@
   }
   const short = z => String(z || '').split(/[；;，,]/)[0];
 
+  // 函式詞（不當「單字」出題或列入本文單字；評審 v16 P1）：樣態／傳聞そう、形式名詞、て形後的補助動詞（いる、しまう…）、連用形後的すぎる／やすい
+  const FUNC_W = /^(そう|よう|こと|もの|ところ|わけ|はず|ため|まま|ほど|くらい|ぐらい|だけ|ばかり|つもり|みたい|らしい|いる|ある|する|なる|いう|できる)$/;
+  function isFunc(t, prev) {
+    if (!t) return false;
+    if (t.gram || /^(part|aux|cop)$/.test(t.pos || '') || FUNC_W.test(t.base || t.s)) return true;
+    if (!prev) return false;
+    if (/^(しまう|おく|みる|くる|いく|あげる|くれる|もらう|ほしい)$/.test(t.base) && /[てで]$/.test(prev.s)) return true;
+    if (/^(すぎる|やすい|にくい|始める|出す|続ける|終わる|合う)$/.test(t.base) && /^(v|i)$/.test(prev.pos || '')) return true;
+    return false;
+  }
   window.JPText = {
+    isFunc,
     ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji: R2, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser, userLv, lvRank, lvKeep,
     POS_ZH, FORM_ZH, esc, numRead,
     get size() { return DICT.size; },

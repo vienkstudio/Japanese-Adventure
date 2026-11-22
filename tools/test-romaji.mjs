@@ -15,6 +15,14 @@ const verbose = process.argv.includes('-v');
 
 // [jp, kana, 期望, 評審報告的錯例]
 const CASES = [
+  // 評審 v16 P1：を、數字後的動詞、〜用／ように
+  ['おみくじをください', 'おみくじをください', 'omikuji o kudasai', 'omikujio kudasai'],
+  ['ぎゅうにゅうをください', 'ぎゅうにゅうをください', 'gyuunyuu o kudasai', 'gyuunyuuo'],
+  ['はい、一人います。', 'はい、ひとりいます', 'hai, hitori imasu', 'hitoriimasu'],
+  ['お土産用に', 'おみやげように', 'omiyage you ni', 'omiyageyou ni'],
+  ['プレゼント用に', 'プレゼントように', 'purezento you ni', 'purezento-you ni'],
+  ['割れないように', 'われないように', 'warenai you ni', 'warenaiyou ni'],
+  ['太陽に', 'たいように', 'taiyou ni', ''],
   ['最終入館 17:30', 'さいしゅうにゅうかん じゅうしちじはん', 'saishuunyuukan juushichiji han', 'juushi chijihan'],
   ['会議は17:30からです', 'かいぎはじゅうしちじさんじゅっぷんからです', 'kaigi wa juushichiji sanjuppun kara desu', ''],
   ['ご連絡申し上げます', 'ごれんらくもうしあげます', 'gorenraku moushiagemasu', 'gorenrakumoushiagemasu'],

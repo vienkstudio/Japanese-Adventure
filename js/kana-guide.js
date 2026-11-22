@@ -104,16 +104,16 @@
     }).catch(() => { if (host.isConnected) host.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
     // 頁尾：下一步
     const then = params.then || '';
-    const startTxt = then === 'today' ? '開始今天的課（あ行）' : '開始第一課：あ行';
-    const goStart = () => then && then !== 'today' ? App.go('path-unit', { id: then }) : then === 'today' ? App.go('today') : App.go('path-unit', { id: 'kana-k1' });
+    // 下一步：今日課；或路線上下一個還沒學完的分行（あ行、か行都學過就不再寫「第一課」）
+    const nx = (() => { try { return window.Path && Path.nextUnit ? Path.nextUnit('kana') : null; } catch (e) { return null; } })();
+    const startTxt = then === 'today' ? '開始今天的課' : then ? '回到單元' : nx ? '開始 ' + String(nx.title).split('：')[0] : '開始あ行';
+    const goStart = () => then && then !== 'today' ? App.go('path-unit', { id: then }) : then === 'today' ? App.go('today') : App.go('path-unit', { id: nx ? nx.id : 'kana-k1' });
     if (name === 'kana-guide') {
-      next.innerHTML = `<button type="button" class="btn primary block" data-n="drill">看完了 → ② 50 音訓練表</button>`;
+      next.innerHTML = `<button type="button" class="btn primary block" data-n="drill">下一步：50 音訓練表 →</button>`;
       next.querySelector('[data-n]').onclick = () => { KanaPrep.mark('guide'); App.go('kana-drill', then ? { then } : {}); };
     } else {
-      next.innerHTML = `<button type="button" class="btn primary block" data-n="go">練好了 → ${esc(startTxt)}</button>
-        <button type="button" class="btn sm ghost" data-n="tbl">五十音表與全部分行 ›</button>`;
+      next.innerHTML = `<button type="button" class="btn primary block" data-n="go">${esc(startTxt)} →</button>`;   // 底部條只放一顆滿寬按鈕（評審 v16 P1）
       next.querySelector('[data-n=go]').onclick = () => { KanaPrep.mark('drill'); goStart(); };
-      next.querySelector('[data-n=tbl]').onclick = () => { KanaPrep.mark('drill'); App.go('path', { tab: 'kana' }); };
     }
   }
   App.register('kana-guide', { title: '入門講義', icon: '📖', nav: false, navParent: 'path', render: (el, p) => render(el, p, 'kana-guide') });
