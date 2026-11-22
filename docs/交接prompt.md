@@ -78,6 +78,6 @@
   - 改檔後瀏覽器會吃舊快取。先註銷 SW、清 caches，或 `fetch(檔,{cache:'reload'})`。
   - Bash heredoc 常失敗，多行腳本用 Write 寫好再執行。
 - **平行分工**：依檔案擁有權分組，報告寫「交接」段，由主對話統一 commit。
-- **新路由**：在 index.html 用 `Home.lazy` 登記，不要加回同步載入；sw.js 預快取只放外殼，改版把 VERSION 加 1。
+- **新路由**：在 index.html 用 `Home.lazy` 登記，不要加回同步載入；sw.js 預快取只放外殼，發布時依 CONTRACT.md「版本編號」更新 js/core.js 的 APP_VERSION 與 sw.js 的 VERSION（node tools/check-version.mjs 檢查）。
 - **commit**：訊息用中文，結尾加 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。
 - 不要動 `99-參考資料/`、`docs/驗收報告-v2.md`。

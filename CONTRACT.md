@@ -188,7 +188,16 @@ N5／N4：〜ください・〜お願いします；N3：請求（〜お願い�
 - 開關型按鈕（`aria-pressed`）：開＝實心主色 `--pri`＋「✓」，關＝外框（虛線），兩者要一眼分得出。
 
 ## sw.js 快取規則
-網路優先（4 秒逾時）、失敗才用快取；只快取同網域且 `r.ok` 的回應；只刪 `jpq-v` 開頭的舊快取；安裝時個別檔案失敗不影響整體。改版請把 `VERSION` 加 1。**`FILES` 只放外殼**（index.html、tokens/app.css、core/learn/game/home.js、manifest、icons，約 160KB）；其他檔案第一次用到時由 fetch 執行期快取（`put`），新檔不必加進 `FILES`。
+網路優先（4 秒逾時）、失敗才用快取；只快取同網域且 `r.ok` 的回應；只刪 `jpq-v` 開頭的舊快取；安裝時個別檔案失敗不影響整體。改版請依下方「版本編號」更新 `VERSION`。**`FILES` 只放外殼**（index.html、tokens/app.css、core/learn/game/home.js、manifest、icons，約 160KB）；其他檔案第一次用到時由 fetch 執行期快取（`put`），新檔不必加進 `FILES`。
+
+## 版本編號（2026-11-22 起，格式 VX.X.X）
+- 唯一來源：`js/core.js` 的 `APP_VERSION`（例 `'3.2.3'`，`App.VERSION` 讀取）；`sw.js` 的 `VERSION` 寫成 `'jpq-v' + 同一版本`。`node tools/check-version.mjs` 檢查兩邊一致、格式正確。
+- 顯示：設定頁最下方「日語冒險・版本 V3.2.3」。
+- 每次**發布（推送上線）**才升版，同一次發布只升一次：
+  - **主版號 X.0.0**：導覽或整體架構大改（V1＝第一階段，V2＝第二階段 4 鈕導覽，V3＝樹狀導覽）。
+  - **次版號 X.Y.0**：新功能、新頁面、整批評審修正（P0／P1）。
+  - **修訂號 X.Y.Z**：小修、文字、樣式、複測小問題（P2）。
+- 舊快取名稱 `jpq-v54` 以前的流水號對照：v48＝V3.0.0、v49＝V3.0.1、v50＝V3.1.0、v51＝V3.1.1、v52＝V3.2.0、v53＝V3.2.1、v54＝V3.2.2。
 
 ## 自我檢核
 1. `node -e "new Function(require('fs').readFileSync(檔案,'utf8'))"` 檢查語法。

@@ -582,7 +582,7 @@
       <div class="st-box"><h2>⚠️ 危險區</h2>
         <button type="button" class="btn block st-danger" id="st-clear">🗑️ 清除全部進度</button>
       </div>
-      <p class="st-ver">日語冒險</p>
+      <p class="st-ver">日語冒險・版本 V${esc(App.VERSION || '')}</p>
     </section>`;
     const q = s => el.querySelector(s);
     el.querySelectorAll('[data-pal]').forEach(b => b.onclick = () => { App.setTheme(null, b.dataset.pal); settings(el); });

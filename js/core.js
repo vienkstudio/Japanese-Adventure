@@ -5,6 +5,8 @@
    ========================================================= */
 (function () {
   const KEY = 'jpQuest.v1';
+  // App 版本（V主.次.修）：和 sw.js 的 VERSION（'jpq-v' + 版本）必須一致，tools/check-version.mjs 會檢查；規則見 CONTRACT.md「版本編號」
+  const APP_VERSION = '3.2.3';
   const SCHEMA = 2;
   const MIGS = [];
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
@@ -745,6 +747,7 @@
 
   window.App = {
     get state() { return S; },
+    VERSION: APP_VERSION,
     LEVELS, get TITLES() { return titles(); }, TITLE_SETS, titleKey, levelOf,
     get level() { return levelOf(S.xp); },
     save, onChange, register, go, start, render,
