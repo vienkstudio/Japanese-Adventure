@@ -28,7 +28,7 @@
     T('kana-battle', 'kana', '⚔️', '假名戰鬥', '答對就攻擊，闖關記假名', ['戰鬥', '闖關', '假名遊戲', 'battle'], { run: () => classic().then(() => { const x = PathExtra.list('kana', 'kana')[0]; if (x) x.go(); else App.go('quest', { id: 'h-a', free: true }); }) }),
     T('kana-cards', 'kana', '🔠', '五十音字卡', '翻卡記假名、諧音聯想', ['假名字卡', '五十音卡'], { route: 'cards', params: { deck: 'hira' } }),
     T('phrasebook', 'travel', '📖', '旅遊手冊', '點餐、購物、交通、住宿；大字給店員看', ['手冊', '旅遊手冊', '常用句', '旅遊句', '給店員看', '大字', '出示', 'phrase', '会话'], { route: 'phrasebook', params: { cat: 'must' } }),
-    T('emer', 'travel', '🆘', '緊急求助', '110 警察・119 救護車・求救句', ['緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'], { route: 'phrasebook', params: { cat: 'emer' } }),
+    T('emer', 'travel', '🚑', '緊急求助', '110 警察・119 救護車・求救句', ['緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'], { route: 'phrasebook', params: { cat: 'emer' } }),
     T('dialog', 'travel', '🎭', '對話演練', '選一個地方，跟店員來回對話', ['對話', '会话', '會話', '點餐', '點菜', '点餐', '店員', '餐廳', '對話練習', 'dialog'], { need: 'pack', pre: 'x:dlg:' }),
     T('speak', 'travel', '🎤', '口說對話', '開口說出回答（不支援麥克風改跟讀）', ['口說', '說話', '開口', '發音', '麥克風', '跟讀', 'speak'], { need: 'pack', pre: 'x:spk:' }),
     T('menu', 'travel', '🧾', '情境小遊戲', '點餐、結帳、買票的限時任務', ['小遊戲', '遊戲', '限時', '拉麵', '券売機', '買票', '結帳', 'game'], { need: 'pack', pre: 'x:menu:' }),
@@ -56,7 +56,7 @@
     T('path', 'daily', '🧭', '路線', '依目的排好的全部單元', ['路線', '課程', '單元', 'course'], { route: 'path' }),
     T('settings', 'me', '⚙️', '設定', '程度、目的、字級、深色、語音', ['設定', '设置', '字太小', '字太大', '字級', '大字', '深色', '夜間', '暗色', '黑色', '語音', '聲音', '音效', '程度', '目的', 'settings', 'dark'], { route: 'settings' }),
     T('backup', 'me', '💾', '備份／還原', '換手機、雲端存檔', ['備份', '备份', '還原', '換手機', '換電腦', '存檔', '雲端', 'backup'], { run: () => App.backup() }),
-    T('goshuin', 'me', '⛩️', '御朱印帳', '冒險時蓋到的店家印章', ['御朱印', '印章', '蓋章', '集章', 'stamp'], { run: () => { if (window.World && World.goshuin) return World.goshuin(); if (window.Home && Home.need) { App.toast('⏳ 載入御朱印帳…'); Home.need('play').then(() => { if (window.World && World.goshuin) World.goshuin(); }).catch(() => App.toast('載入失敗，請稍後再試')); } } })
+    T('goshuin', 'me', '🖋️', '御朱印帳', '冒險時蓋到的店家印章', ['御朱印', '印章', '蓋章', '集章', 'stamp'], { run: () => { if (window.World && World.goshuin) return World.goshuin(); if (window.Home && Home.need) { App.toast('⏳ 載入御朱印帳…'); Home.need('play').then(() => { if (window.World && World.goshuin) World.goshuin(); }).catch(() => App.toast('載入失敗，請稍後再試')); } } })
   ];
   const byId = id => TOOLS.find(t => t.id === id) || null;
 
@@ -167,8 +167,8 @@
   const SECTIONS = [
     { id: 'home', icon: '🏠', name: '首頁', route: 'home' },
     { id: 'kana', icon: '🔤', name: '五十音', route: 'path', params: { tab: 'kana' }, tools: ['kana-guide', 'kana-drill', 'kana-table', 'kana-quiz', 'kana-battle', 'kana-cards'], group: 'kana' },
-    { id: 'travel', icon: '🧳', name: '旅遊', route: 'path', params: { tab: 'travel' }, group: 'packs', groupLabel: '📗 上課', tools: ['phrasebook', 'emer', { g: '⚔️ 實戰', items: ['play', 'dialog', 'menu'], more: { g: '更多實戰（口說、狀況題、特訓）', items: ['speak', 'event', 'boot'] } }] },
-    { id: 'exam', icon: '📝', name: '日檢', route: 'path', params: { tab: 'exam' }, group: 'levels', tools: ['gram', 'ex-cards', 'chal', { g: '🗃️ 資料庫', items: ['dict', 'kb', 'mind3d'] }] },
+    { id: 'travel', icon: '🧳', name: '旅遊', route: 'path', params: { tab: 'travel' }, tools: [{ g: '🏫 上課', packs: true, items: ['phrasebook', 'emer'] }, { g: '🏃 實戰', items: ['play', 'dialog', 'menu'], more: { g: '更多實戰（口說、狀況題、特訓）', items: ['speak', 'event', 'boot'] } }] },
+    { id: 'exam', icon: '📝', name: '日檢', route: 'path', params: { tab: 'exam' }, group: 'levels', tools: ['gram', 'ex-cards', 'chal', { g: '🗄️ 資料庫', items: ['dict', 'kb', 'mind3d'] }] },
     { id: 'work', icon: '💼', name: '商務', route: 'path', params: { tab: 'work' }, tools: ['biz', 'biz-read', 'keigo'] },
     { id: 'fun', icon: '🎵', name: '歌曲・閱讀', route: 'path', params: { tab: 'fun' }, tools: ['songs', 'read', 'news', 'url'] },
     { id: 'daily', icon: '📌', name: '複習', route: 'review', tools: ['today', 'review', 'cards'] },
@@ -229,7 +229,7 @@
   const nodeBtn = (o, act) => `<button type="button" class="nv-n${act ? ' on' : ''}" data-r="${esc(o.route || '')}" data-p="${esc(JSON.stringify(o.params || {}))}"${o.tool ? ` data-t="${esc(o.tool)}"` : ''}><span aria-hidden="true">${esc(o.icon || '•')}</span><span>${esc(o.name)}</span></button>`;
   function groupHTML(sec) {
     const k = sec.id + ':g', open = OPEN.has(k);
-    if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
+    if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open || (curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))) ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
     if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1 單元</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
     if (sec.group === 'kana') {
       const KU = window.Path && Path.units ? (() => { try { return Path.units('kana'); } catch (e) { return []; } })() : [];
@@ -244,10 +244,10 @@
         if (!sec.tools && !sec.group) return `<div class="nv-sec">${nodeBtn(Object.assign({}, sec), hs === sec.id)}</div>`;
         const open = OPEN.has(sec.id) || hs === sec.id;
         const tn = t => nodeBtn({ route: t.route || '', params: t.params, icon: t.icon, name: t.name, tool: t.id }, here && here.tool && here.tool.id === t.id);
-        const sub = x => { const k = sec.id + ':' + x.g, op = OPEN.has(k); return `<details class="nv-g" data-g="${esc(k)}"${op ? ' open' : ''}><summary>${esc(x.g)}</summary>${x.items.map(byId).filter(Boolean).map(tn).join('')}${x.more ? sub(x.more) : ''}</details>`; };
+        const sub = x => { const k = sec.id + ':' + x.g, op = OPEN.has(k) || (x.packs && curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))); return `<details class="nv-g" data-g="${esc(k)}"${op ? ' open' : ''}><summary>${esc(x.g)}</summary>${x.packs ? groupHTML(Object.assign({}, sec, { group: 'packs' })) : ''}${x.items.map(byId).filter(Boolean).map(tn).join('')}${x.more ? sub(x.more) : ''}</details>`; };
         const tools = (sec.tools || []).map(x => typeof x === 'string' ? (byId(x) ? tn(byId(x)) : '') : sub(x));
         return `<details class="nv-sec" data-s="${sec.id}"${open ? ' open' : ''}><summary class="${hs === sec.id ? 'on' : ''}"><span aria-hidden="true">${sec.icon}</span>${esc(sec.name)}</summary>
-          ${sec.route ? nodeBtn({ route: sec.route, params: sec.params, icon: sec.icon, name: '全部' + sec.name + (sec.id === 'me' || sec.id === 'daily' ? '' : '課程') }, false) : ''}${sec.groupLabel ? `<p class="nv-lab">${esc(sec.groupLabel)}</p>` : ''}${groupHTML(sec)}${tools.join('')}</details>`;
+          ${sec.route ? `<button type="button" class="nv-n nv-all" data-r="${esc(sec.route)}" data-p="${esc(JSON.stringify(sec.params || {}))}">看全部${esc(sec.name)} ›</button>` : ''}${groupHTML(sec)}${tools.join('')}</details>`;
       }).join('')}</nav>`;
   }
   function paintTree() {

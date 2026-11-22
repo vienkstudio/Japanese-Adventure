@@ -501,3 +501,7 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 .hm .hm-main{min-height:76px;padding:var(--sp-3) var(--sp-4)}
 .hm .hm-sec{margin-top:var(--sp-3)}
 .hm .hm-cont{margin-top:var(--sp-2)}
+
+.nv-n.nv-all{padding-left:24px;color:var(--pri-d);font-weight:700}
+.nv-g .nv-g{margin-left:8px}
+.hm .hm-cat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
