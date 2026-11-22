@@ -130,7 +130,7 @@
     const nOn = KD().K.filter(k => on(k[0])).length;
     return `<div class="kt-h"><h2>🔤 五十音表</h2><small>已學 ${nOn}／46・點字聽發音</small></div>
       ${seg('ksc', [['h', 'ひらがな 平假名'], ['k', 'カタカナ 片假名']], TS.sc)}
-      ${seg('kt', [['seion', '清音'], ['daku', '濁音・半濁音'], ['yoon', '拗音']], TS.t)}
+      ${seg('kt', [['seion', '清音'], ['daku', '濁音'], ['yoon', '拗音']], TS.t)}
       <div class="kt-g${R.cols === 3 ? ' c3' : ''}">${R.list.map(r => {
         const hs = r.cells.filter(Boolean), done = hs.length && hs.every(on);
         return `<button type="button" class="kt-row${done ? ' done' : ''}" data-unit="${esc(r.unit)}" aria-label="${esc(r.name)}：進入單元"><span lang="ja">${esc(nameOf(r))}</span><small>${done ? '✓ 學過' : '學 ›'}</small></button>` +

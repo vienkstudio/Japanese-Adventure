@@ -265,7 +265,7 @@
       <div class="h-worlds">${L.worlds.map(w => { const info = worldInfo(w); if (!info) return ''; const st = stageStars(w), pct = st.max ? st.got / st.max * 100 : 0;
         return `<button class="h-w" data-w="${w}" style="--tc:${esc(info.color || 'var(--n4)')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
           <span class="pg"><i style="width:${pct}%"></i></span><small>⭐ ${st.got}/${st.max}・${st.n} 關</small></button>`; }).join('')}</div>
-      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">📖 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／分享／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
+      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">🎓 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／分享／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
     el.querySelector('#avBtn').onclick = () => window.Game && Game.pickAvatar(() => App.render());
     const hn = el.querySelector('#hNext'); if (hn) hn.onclick = () => nextN.go();
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { UI.lv = b.dataset.lv; renderHome(el); });

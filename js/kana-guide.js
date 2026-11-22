@@ -28,7 +28,7 @@
         <button type="button" class="kp-skip" data-kp="skip">我已經看過了，直接開始</button></div>`;
     },
     // 看過以後：五十音分頁常駐兩張小卡（隨時回去複習講義、訓練表）
-    mini() { return `<div class="kp-mini"><button type="button" data-kp="guide">📖 入門講義</button><button type="button" data-kp="drill">🎯 50 音訓練表</button></div>`; },
+    mini() { return `<div class="kp-mini"><button type="button" data-kp="guide">🎓 入門講義</button><button type="button" data-kp="drill">🎯 50 音訓練表</button></div>`; },
     bind(el, then, onSkip) {
       el.querySelectorAll('[data-kp]').forEach(b => b.onclick = () => {
         const k = b.dataset.kp;

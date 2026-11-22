@@ -703,7 +703,7 @@
         out.splice(k, nx ? 2 : 1, ga, ...sub);
       }
       // 動詞／形容詞＋ことに（行くことにした、食べたことに気づいた）是「こと＋に」，不是副詞「尤其」
-      if (t.s === 'ことに' && t.pos === 'adv' && /^(v|i|aux|na)$/.test(p.pos || '')) {
+      if (t.s === 'ことに' && t.pos === 'adv' && (/^(v|i|aux|na)$/.test(p.pos || '') || p.s === 'な')) {   // な形容詞＋な＋ことに（好きなことに）也是
         const a = tokenize('こと')[0], b = tokenize('に')[0]; a.i = t.i; b.i = t.i + 2;
         out.splice(k, 1, a, b);
       }

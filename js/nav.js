@@ -171,7 +171,7 @@
     { id: 'exam', icon: '📝', name: '日檢', route: 'path', params: { tab: 'exam' }, group: 'levels', tools: ['gram', 'ex-cards', 'chal', { g: '🗄️ 資料庫', items: ['dict', 'kb', 'mind3d'] }] },
     { id: 'work', icon: '💼', name: '商務', route: 'path', params: { tab: 'work' }, tools: ['biz', 'biz-read', 'keigo'] },
     { id: 'fun', icon: '🎵', name: '歌曲・閱讀', route: 'path', params: { tab: 'fun' }, tools: ['songs', 'read', 'news', 'url'] },
-    { id: 'daily', icon: '📌', name: '複習', route: 'review', tools: ['today', 'review', 'cards'] },
+    { id: 'daily', icon: '📌', name: '複習', route: 'review', tools: ['today', 'cards'] },   // 「複習」本身由上方「📅 今天的複習」進入
     { id: 'lookup', icon: '🔍', name: '查', route: 'lookup' },
     { id: 'me', icon: '👤', name: '我的', route: 'me', tools: ['settings', 'backup', 'goshuin'] }
   ];

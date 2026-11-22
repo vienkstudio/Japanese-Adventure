@@ -512,3 +512,6 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 @media(max-width:480px){#top .in.nv-has-crumb .logo{display:none}}
 
 [data-fs=xl] #playerChip .pc-st{display:none}   /* 特大字頂列：連勝只在首頁看，chip 只留 Lv */
+
+.kp-mini button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+[data-fs=xl] .kp-mini button,[data-fs=l] .kp-mini button{font-size:var(--fs-sm)}
