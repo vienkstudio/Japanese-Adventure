@@ -262,6 +262,14 @@
     App.save();
     if (nextSec(R) < 0) R.fin = true;
   }
+  // 打擊感（評審 v15 P1-7）：和活動框架同一套——答對音效（3 連升調）、粒子、浮字 +1／🔥n、輕震；答錯錯誤音＋雙震、連擊歸零
+  function hitFX(R, ok, el) {
+    const G = window.Game; if (!G) return;
+    try {
+      if (ok) { R.combo = (R.combo || 0) + 1; R.best = Math.max(R.best || 0, R.combo); G.sfx(R.combo >= 3 ? 'combo' : 'ok', R.combo); G.vibrate && G.vibrate(15); if (el) { G.burst && G.burst(el, 12); G.floatText && G.floatText(el, R.combo >= 3 ? '🔥' + R.combo : '+1'); } G.bump && G.bump('ok'); }
+      else { R.combo = 0; G.sfx('ng'); G.vibrate && G.vibrate([60, 40, 60]); if (el) G.floatText && G.floatText(el, '✗', true); }
+    } catch (e) { }
+  }
   // 計分：對話、Email、測驗第一次作答
   function score(R, step, correct) {
     if (step.scored) return;
@@ -366,20 +374,23 @@
       }
       if (correct) { s.done = true; if (s.k === 'm') R.mail[s.i] = s.d.opts[0]; }
       if (correct) App.speak && s.k === 'd' && App.speak(s.d.choices[k].jp);
+      hitFX(R, correct, b);
       draw(true);
     });
     // 重組
-    el.querySelectorAll('[data-pool]').forEach(b => b.onclick = () => { if (s.done) return; s.pick.push(+b.dataset.pool); s.bad = false; draw(); });
+    el.querySelectorAll('[data-pool]').forEach(b => b.onclick = () => { if (s.done) return; s.pick.push(+b.dataset.pool); s.bad = false; if (s.pick.length === s.d.parts.length) return check(b); draw(); });   // 排完自動檢查
     el.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { if (s.done) return; s.pick.splice(+b.dataset.pick, 1); s.bad = false; draw(); });
-    const ck = el.querySelector('[data-check]');
-    if (ck) ck.onclick = () => {
+    function check(btn) {
       const ans = s.pick.map(i => s.d.parts[i]).join(''), correct = ans === s.d.parts.join('');
       const first = !s.scored;
       score(R, s, correct);
       if (first && !correct) recWrong(R, u, s.d.ref);
       if (correct) { s.done = true; App.speak(s.d.parts.join('')); } else { s.bad = true; s.pick = []; }
+      hitFX(R, correct, btn || el.querySelector('.bz-ans'));
       draw(true);
-    };
+    }
+    const ck = el.querySelector('[data-check]');
+    if (ck) ck.onclick = () => check(ck);
   }
   function cardHTML(u, s) {
     const d = s.d;
@@ -452,7 +463,7 @@
       <div class="bz-ans${s.done ? ' ok' : ''}">${s.pick.length ? s.pick.map((k, i) => `<button type="button" class="bz-chip on jp" data-pick="${i}"${s.done ? ' disabled' : ''}>${esc(d.parts[k])}</button>`).join('') : '<span class="muted">點下面的詞語依序排好</span>'}</div>
       ${s.done ? '' : `<div class="bz-pool">${s.pool.filter(k => !used.has(k)).map(k => `<button type="button" class="bz-chip jp" data-pool="${k}">${esc(d.parts[k])}</button>`).join('')}</div>`}
       ${s.done ? `<div class="bz-fb ok">⭕ ${esc(d.exp)}</div>` : s.bad ? `<div class="bz-fb bad">❌ 順序不對，再排一次。<br><small>正確答案：<span class="jp">${esc(d.parts.join(''))}</span></small></div>` : ''}
-      ${s.done ? '' : `<div class="bz-nav"><button type="button" class="btn primary" data-check${s.pick.length === d.parts.length ? '' : ' disabled'}>確認</button></div>`}</div>`;
+      ${s.done ? '' : `<div class="bz-nav bz-chk"><button type="button" class="btn primary" data-check${s.pick.length === d.parts.length ? '' : ' disabled'}>✓ 檢查</button></div>`}</div>`;
   }
   function finish(u, R) {
     const P = R.P, pct = P.total ? P.ok / P.total : 0;
@@ -462,8 +473,9 @@
     const r = App.reward('biz:' + u.id, stars, '商務');
     const i = META.findIndex(m => m.id === u.id), nx = META[i + 1];
     const el = document.getElementById('main');
-    if (el && onRoute('biz-unit')) el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p>完成！</p>
+    if (el && onRoute('biz-unit')) el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="bz-stars" aria-label="${stars} 星">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p><p>完成！答對 ${P.ok}／${P.total}${R.best >= 2 ? `・最佳連擊 🔥${R.best}` : ''}</p>
       <p><button type="button" class="btn" data-again>🔄 再做一次</button><button type="button" class="btn primary" data-list>單元列表</button></p></div></div>`;
+    try { const G = window.Game; if (G) { G.sfx(stars >= 2 ? 'win' : 'star'); if (stars >= 2 && G.confetti && !(G.reduced && G.reduced())) G.confetti(70); } } catch (e) { }
     if (el) {
       const a = el.querySelector('[data-again]'); if (a) a.onclick = () => renderUnit(el, { id: u.id });
       const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('biz');

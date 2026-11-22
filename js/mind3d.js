@@ -62,7 +62,7 @@
     });
   }
   const loadAll = () => Promise.all(LV.map(loadLex));
-  const jp0 = w => (w.jp.split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || w.jp;
+  const jp0 = w => window.Learn && Learn.jp0 ? Learn.jp0(w.jp) : (w.jp.split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || w.jp;
   const trackItem = w => ({ id: 'word:' + jp0(w), jp: jp0(w), kana: w.kana, zh: w.zh, source: '心智圖 ' + w.lv });
   const gramItem = g => ({ id: 'gram:' + g.pat, jp: g.pat, zh: g.zh, source: '心智圖 ' + g.lv + ' 文法' });
   const isVerb = w => w.pos === 'v' || w.grp === 's';

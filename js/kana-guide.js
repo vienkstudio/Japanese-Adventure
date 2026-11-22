@@ -22,10 +22,13 @@
     box(then) {
       const s = st(), ck = k => s[k] ? '<i aria-label="已看過">✓</i>' : '';
       return `<div class="kp-box"><b>🔰 第一次學五十音：先看這兩個，再進分行練習</b>
+        <small class="kp-note">第一次約多花 15 分鐘（講義 10 分鐘＋訓練表 5 分鐘），之後就直接上課</small>
         <button type="button" class="kp-step${s.guide ? ' ok' : ''}" data-kp="guide"><span aria-hidden="true">📖</span><span><b>① 入門講義</b><small>三種文字、母音、圖解＋諧音、易混淆字（約 10 分鐘）</small></span>${ck('guide')}</button>
         <button type="button" class="kp-step${s.drill ? ' ok' : ''}" data-kp="drill"><span aria-hidden="true">🎯</span><span><b>② 50 音訓練表</b><small>總表背誦、閃卡、測驗、書寫練習紙</small></span>${ck('drill')}</button>
         <button type="button" class="kp-skip" data-kp="skip">我已經看過了，直接開始</button></div>`;
     },
+    // 看過以後：五十音分頁常駐兩張小卡（隨時回去複習講義、訓練表）
+    mini() { return `<div class="kp-mini"><button type="button" data-kp="guide">📖 入門講義</button><button type="button" data-kp="drill">🎯 50 音訓練表</button></div>`; },
     bind(el, then, onSkip) {
       el.querySelectorAll('[data-kp]').forEach(b => b.onclick = () => {
         const k = b.dataset.kp;
@@ -53,7 +56,7 @@
   function render(el, params, name) {
     params = params || {};
     const f = SRC[name];
-    el.innerHTML = `<section class="kg"><div class="kg-host"></div><div class="kg-next"></div></section>`;
+    el.innerHTML = `<section class="kg"><div class="kg-host"></div><div class="kg-next"></div></section>`;   // .kg-next 固定在底部導覽上方
     const host = el.querySelector('.kg-host'), next = el.querySelector('.kg-next');
     host.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>';
     Promise.all([fetchDoc(f), typeof KANA === 'undefined' ? App.loadScript('kana-data.js') : 0]).then(([html]) => {
@@ -64,8 +67,12 @@
       doc.querySelectorAll('script, style').forEach(s => s.remove());
       host.innerHTML = '';
       const root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+      const fs = document.documentElement.dataset.fs; if (fs) host.classList.add('fs-' + fs);   // 大字：表格縮字、不切掉右欄
       root.innerHTML = `<style>${scopeCSS(css)}
-        :host{display:block}.kg-body{min-height:0!important;border-radius:16px;overflow:hidden}
+        :host{display:block}.kg-body{min-height:0!important;border-radius:16px;overflow-x:auto}
+        .kg-body table{table-layout:fixed;width:100%}.kg-body td,.kg-body th{overflow-wrap:anywhere}
+        :host(.fs-l) table{font-size:.9em}:host(.fs-xl) table{font-size:.78em}:host(.fs-xl) .grid td{padding:4px 2px!important}
+        .kg-body a.btn[href$=".html"],.kg-body p.noprint:has(a.btn){display:none!important}
         .kg-body .wrap{padding:16px 12px!important}
         @media(max-width:420px){.kg-body h1{font-size:1.6em!important}.kg-body section{padding:16px 14px!important}}</style>
         <div class="kg-body">${doc.body.innerHTML}</div>`;
@@ -85,17 +92,26 @@
         get body() { return root; }, get documentElement() { return document.documentElement; }
       };
       try { new Function('document', code)(D); } catch (e) { console.error(e); }
+      // 訓練表測驗：答對／答錯接全站音效與學習紀錄（kana:あ）
+      if (name === 'kana-drill') root.addEventListener('click', e => {
+        const b = e.target.closest && e.target.closest('#qc button'); if (!b) return;
+        const ok = b.classList.contains('ok'), ng = b.classList.contains('ng'); if (!ok && !ng) return;
+        const fb = (root.getElementById ? root.getElementById('qfb') : root.querySelector('#qfb')) || {};
+        const m = String(fb.textContent || '').match(/(?:正確！|答案是\s*)([ぁ-ゖ]+)/);
+        if (window.Game && Game.sfx) Game.sfx(ok ? 'ok' : 'ng');
+        if (m && window.Learn && Learn.record) Learn.record('kana:' + m[1], ok ? 2 : 0, { type: 'kana', m: { jp: m[1], kana: m[1], source: '🎯 50 音訓練表' } });
+      });
     }).catch(() => { if (host.isConnected) host.innerHTML = '<p class="center" style="margin:48px 0">😵 載入失敗，請檢查網路後再試一次</p>'; });
     // 頁尾：下一步
     const then = params.then || '';
     const startTxt = then === 'today' ? '開始今天的課（あ行）' : '開始第一課：あ行';
     const goStart = () => then && then !== 'today' ? App.go('path-unit', { id: then }) : then === 'today' ? App.go('today') : App.go('path-unit', { id: 'kana-k1' });
     if (name === 'kana-guide') {
-      next.innerHTML = `<button type="button" class="btn block" data-n="drill">✓ 看完講義，下一步：50 音訓練表 →</button>`;
+      next.innerHTML = `<button type="button" class="btn primary block" data-n="drill">看完了 → ② 50 音訓練表</button>`;
       next.querySelector('[data-n]').onclick = () => { KanaPrep.mark('guide'); App.go('kana-drill', then ? { then } : {}); };
     } else {
-      next.innerHTML = `<button type="button" class="btn block" data-n="go">✓ 練好了，${esc(startTxt)} →</button>
-        <button type="button" class="btn block ghost" data-n="tbl">看五十音表與全部分行 ›</button>`;
+      next.innerHTML = `<button type="button" class="btn primary block" data-n="go">練好了 → ${esc(startTxt)}</button>
+        <button type="button" class="btn sm ghost" data-n="tbl">五十音表與全部分行 ›</button>`;
       next.querySelector('[data-n=go]').onclick = () => { KanaPrep.mark('drill'); goStart(); };
       next.querySelector('[data-n=tbl]').onclick = () => { KanaPrep.mark('drill'); App.go('path', { tab: 'kana' }); };
     }

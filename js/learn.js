@@ -17,7 +17,35 @@
   const G = n => { try { return window[n] !== undefined ? window[n] : (0, eval)('typeof ' + n + '!=="undefined"?' + n + ':undefined'); } catch (e) { return undefined; } };
 
   /* ---------------- id 轉換 ---------------- */
-  const jp0 = s => (String(s || '').split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || String(s || '');
+  // 詞庫欄位清理（全站唯一一份；評審 v15 P0）：「足; 脚」「回る、回す」「(花を〜) 生ける, 活ける」→ 主形；讀音「けっこん (する)」「いく; ゆく」「いただく|頂く」→ 主讀
+  const SPLIT = /\s*[;；,，、|｜]\s*/;
+  const strip = s => String(s || '').replace(/[（(][^）)]*[）)]/g, ' ').replace(/[〜～]/g, '').trim();
+  const hira = s => String(s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  function lexForm(r) {
+    const raw = Array.isArray(r) ? r : [r];
+    const js = strip(raw[0]).split(SPLIT).map(x => x.trim()).filter(Boolean);
+    const ks = strip(raw[1]).split(SPLIT).map(x => x.replace(/\s+/g, '').trim()).filter(x => x && !/[一-龯々]/.test(x));
+    const jp = js[0] || String(raw[0] || '').trim();
+    return { jp, kana: ks[0] || '', alt: js.slice(1), altKana: ks.slice(1), note: (String(raw[1] || '').match(/[（(]([^）)]*)[）)]/) || [])[1] || '' };
+  }
+  const jp0 = s => lexForm([s]).jp || String(s || '');
+  const kana0 = s => lexForm(['', s]).kana;
+  // 學習 id：同形異讀（開く あく／ひらく、辛い からい／つらい、一日 いちにち／ついたち）分開記錄。
+  //   該字面在詞庫只有一種讀音、或就是最低等級那筆的讀音 → 'v:字面'（舊紀錄照用）；其他讀音 → 'v:字面|讀音'
+  let HOMO = null, HOMOsig = '';
+  function homo() {
+    const lex = (window.MIND && MIND.lex) || {}, sig = LVS.map(l => (lex[l] || []).length).join(',');
+    if (HOMO && sig === HOMOsig) return HOMO;
+    const all = new Map(), first = new Map();
+    LVS.forEach(l => (lex[l] || []).forEach(r => { const f = lexForm(r), k = hira(f.kana); if (!f.jp || !k || f.jp === k) return; if (!first.has(f.jp)) first.set(f.jp, k); (all.get(f.jp) || all.set(f.jp, new Set()).get(f.jp)).add(k); }));
+    HOMO = new Map(); all.forEach((ks, jp) => { if (ks.size > 1) HOMO.set(jp, first.get(jp)); });
+    HOMOsig = sig; return HOMO;
+  }
+  function vid(jp, kana) {
+    const j = jp0(jp), pk = homo().get(j), k = hira(kana0(kana) || kana || '');
+    return pk && k && k !== pk ? 'v:' + j + '|' + k : 'v:' + j;
+  }
+  const rowId = r => { const f = lexForm(r); return vid(f.jp, f.kana); };
   const normP = s => String(s || '').replace(/[\s　]+/g, '').replace(/[。．.！!？?…]+$/, '');
   const GA = id => { const A = window.MIND && MIND.GALIAS; return (A && A[id]) || id; };
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
@@ -28,7 +56,7 @@
     if (x == null) return null;
     if (typeof x === 'object') {
       if (type === 'chal') {   // {L, kind:'w'|'g', i}：挑戰舊索引，用當下詞庫查回
-        if (x.kind === 'w') { const r = lexRow(x.L, x.i); return r ? 'v:' + jp0(r[0]) : null; }
+        if (x.kind === 'w') { const r = lexRow(x.L, x.i); return r ? rowId(r) : null; }
         const g = gramOfLv(x.L, x.i); return g ? 'g:' + GA(g.id).replace(/^gram:/, '') : null;
       }
       if (x.id) return idOf(x.id);
@@ -36,7 +64,7 @@
       if (type === 'kana') return 'kana:' + String(x.kana || x.jp).split('・')[0];
       if (type === 'phrase' || type === 'p') return 'p:' + normP(x.jp);
       if (type === 'grammar' || type === 'g') return 'g:' + String(x.pat || x.jp);
-      return 'v:' + jp0(x.jp);
+      return vid(x.jp, x.kana);
     }
     const s = String(x);
     if (/^(kana|v|p|g|word|phrase|gram|w|num|cnt|cj|adj|idiom|proverb):/.test(s)) type = null;
@@ -51,7 +79,7 @@
       case 'word': case 'adj': return 'v:' + jp0(rest);
       case 'phrase': case 'idiom': case 'proverb': return 'p:' + normP(rest);
       case 'gram': return 'g:' + GA(s).replace(/^gram:/, '');
-      case 'w': { const p = rest.split(':'); const r = lexRow(p[0], p[1]); return r ? 'v:' + jp0(r[0]) : null; }
+      case 'w': { const p = rest.split(':'); const r = lexRow(p[0], p[1]); return r ? rowId(r) : null; }
       default: return s;
     }
   }
@@ -62,11 +90,11 @@
     if (id.startsWith('g:')) return 'gram:' + id.slice(2);
     if (id.startsWith('cj:')) return id;
     if (id.startsWith('v:')) {
-      const jp = id.slice(2), lex = (window.MIND && MIND.lex) || {};
+      const key = id, lex = (window.MIND && MIND.lex) || {};
       for (const lv of LVS) {
         const a = lex[lv]; if (!a) continue;
-        if (!vIndex[lv] || vIndex[lv].n !== a.length) { const m = new Map(); a.forEach((r, i) => { const k = jp0(r[0]); if (!m.has(k)) m.set(k, i); }); vIndex[lv] = { n: a.length, m }; }
-        const i = vIndex[lv].m.get(jp); if (i != null) return 'w:' + lv + ':' + i;
+        if (!vIndex[lv] || vIndex[lv].n !== a.length) { const m = new Map(); a.forEach((r, i) => { const k = rowId(r); if (!m.has(k)) m.set(k, i); }); vIndex[lv] = { n: a.length, m }; }
+        const i = vIndex[lv].m.get(key); if (i != null) return 'w:' + lv + ':' + i;
       }
     }
     return null;
@@ -295,8 +323,8 @@
     const lex = M.lex && M.lex[Lv];
     if (lex) for (const r of lex.filter(r => r[7]).concat(lex.filter(r => !r[7]))) {
       if (out.length >= n) break;
-      const id = 'v:' + jp0(r[0]); if (!isFresh(id) || out.some(o => o.id === id)) continue;
-      out.push({ id, type: 'vocab', jp: jp0(r[0]), kana: (r[1] || '').replace(/\s*[（(].*?[）)]/g, '') || jp0(r[0]), zh: r[2] || '', lv: Lv, source: 'JLPT ' + Lv });
+      const f = lexForm(r), id = rowId(r); if (!isFresh(id) || out.some(o => o.id === id)) continue;
+      out.push({ id, type: 'vocab', jp: f.jp, kana: f.kana || f.jp, zh: r[2] || '', lv: Lv, source: 'JLPT ' + Lv });
     }
     return out.slice(0, n);
   }
@@ -326,6 +354,14 @@
     }).catch(() => (SONG = null));
   }
   const POS_OK = /^(n|v|i|na|adv)$/;
+  // 函式詞不當單字出題（そう＝樣態／傳聞、よう、こと…）；て形後的補助動詞、連用形後的すぎる／やすい也不出（評審 v15 P0）
+  const FUNC = /^(そう|よう|こと|もの|ところ|わけ|はず|ため|まま|ほど|くらい|ぐらい|だけ|ばかり|つもり|みたい|らしい)$/;
+  function auxAfter(tk, t) {
+    const p = tk[tk.indexOf(t) - 1]; if (!p) return false;
+    if (/^(しまう|いる|おく|みる|くる|いく|ある|あげる|くれる|もらう|ほしい)$/.test(t.base) && /[てで]$/.test(p.s)) return true;
+    if (/^(すぎる|やすい|にくい|始める|出す|続ける|終わる|合う)$/.test(t.base) && /^(v|i)$/.test(p.pos || '')) return true;
+    return false;
+  }
   function songWords(n) {
     const J = window.JPText, out = [];
     if (!SONGS.length || !J || typeof J.tokenize !== 'function' || !J.size) return out;
@@ -335,8 +371,8 @@
         let tk = []; try { tk = J.tokenize(jp); } catch (e) { }
         for (const t of tk) {
           if (out.length >= n) break;
-          if (!t.known || !t.zh || !POS_OK.test(t.pos || '') || String(t.base).length < 2) continue;
-          const id = 'v:' + jp0(t.base); if (!isFresh(id) || out.some(x => x.id === id)) continue;
+          if (!t.known || !t.zh || t.gram || !POS_OK.test(t.pos || '') || String(t.base).length < 2 || FUNC.test(t.base) || auxAfter(tk, t)) continue;
+          const id = vid(t.base, t.bkana); if (!isFresh(id) || out.some(x => x.id === id)) continue;
           out.push({ id, type: 'vocab', jp: t.base, kana: t.bkana || '', zh: String(t.zh).split(/[；;]/)[0], lv: t.lv || '', ex: [jp, l.zh || ''], source: '🎵 歌詞：' + sg.title, song: sg.id });
         }
         if (out.length >= n) break;
@@ -458,7 +494,7 @@
   // 知識庫 id → 顯示資料（給 Learn 存 m）
   function kbItem(k) {
     if (!k) return null;
-    if (k.startsWith('w:')) { const p = k.split(':'), r = lexRow(p[1], p[2]); return r ? { jp: jp0(r[0]), kana: (r[1] || '').replace(/\s*[（(].*?[）)]/g, ''), zh: r[2] || '', lv: p[1], source: '知識庫 ' + p[1] } : null; }
+    if (k.startsWith('w:')) { const p = k.split(':'), r = lexRow(p[1], p[2]), f = r && lexForm(r); return r ? { jp: f.jp, kana: f.kana, zh: r[2] || '', lv: p[1], source: '知識庫 ' + p[1] } : null; }
     if (k.startsWith('gram:')) { const g = window.MIND && MIND.gram && MIND.gram.find(x => x.id === k); return g ? { jp: g.pat, zh: g.zh, lv: g.lv, source: '📐 文法' } : { jp: k.slice(5), source: '📐 文法' }; }
     return null;
   }
@@ -559,7 +595,7 @@
         let id, s, meta;
         if (p[0] === 'chal') {
           id = idOf({ L: p[1], kind: p[2], i: p[3] }, 'chal'); s = 'review';
-          if (p[2] === 'w') { const r = lexRow(p[1], p[3]); meta = r && { jp: jp0(r[0]), kana: (r[1] || '').replace(/\s*[（(].*?[）)]/g, ''), zh: r[2], lv: p[1], source: '🏆 挑戰 ' + p[1] }; }
+          if (p[2] === 'w') { const r = lexRow(p[1], p[3]), f = r && lexForm(r); meta = r && { jp: f.jp, kana: f.kana, zh: r[2], lv: p[1], source: '🏆 挑戰 ' + p[1] }; }
           else { const g = gramOfLv(p[1], p[3]); meta = g && { jp: g.pat, zh: g.zh, lv: g.lv, source: '📐 文法' }; }
         } else { id = idOf(p[1]); s = p[2]; meta = kbItem(p[1]); }
         if (!id) return;
@@ -597,7 +633,7 @@
   App.onChange(() => { if (!kickT && !pendBusy && Array.isArray(S().learnPend) && S().learnPend.length) kickT = setTimeout(() => { kickT = null; kick(); }, 2500); });
 
   window.Learn = {
-    idOf, kbIdOf, jp0, normP,
+    idOf, kbIdOf, jp0, normP, lexForm, vid, rowId,
     record, setStatus, get, status, atLeast, star, fav, inList: id => inList(get(id)),
     due, dueCount, dueTomorrow, freshBudget, DUE_CAP, learnedCount, isLearned: id => learnedE(get(id)), queue, prepare, stats, view, views, kanaLearned,
     mindST, kbItem, resolvePending, migrate, importList,

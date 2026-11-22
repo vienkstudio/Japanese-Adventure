@@ -236,7 +236,8 @@
         }
       } catch (e) { tu = null; }
     }
-    if (tu) return { route: 'path-unit', params: { id: tu.id }, label: '旅遊單元：' + tu.title + '（剛學的句子）' };
+    // 零基礎：平假名還沒學到 30 個前，「用出來」固定走下一個五十音單元（不送進整句的旅遊單元；評審 v15 P1-3）
+    if (tu && kanaSeen() >= 30) return { route: 'path-unit', params: { id: tu.id }, label: '旅遊單元：' + tu.title + '（剛學的句子）' };
     let ku = null; try { ku = has(P, 'nextUnit') ? P.nextUnit('kana') : null; } catch (e) { ku = null; }
     return ku ? { route: 'path-unit', params: { id: ku.id }, label: '五十音單元：' + ku.title, kana: 1 } : null;
   }
@@ -249,7 +250,7 @@
         const u = P.unit(r.id);
         for (const it of ((u && u.items) || [])) {
           if (out.length >= k) return out;
-          if (it.type !== 'phrase' || !it.kana || !it.zh || String(it.jp).length > 10 || !fresh(it.id)) continue;
+          if (it.type !== 'phrase' || !it.kana || !it.zh || String(it.jp).replace(/[。！？、\s]/g, '').length > 6 || !fresh(it.id)) continue;   // 只挑短句（これください、トイレは…）
           out.push(Object.assign({}, it, { source: '🧳 旅遊必備句・' + u.title }));
         }
       }

@@ -670,12 +670,14 @@
     for (let j = N; j > 0; j = prev[j]) segs.push([prev[j], j, pick[j]]);
     segs.reverse();
     const out = [];
-    for (const [i, j, info] of segs) {
+    for (let [i, j, info] of segs) {
       const s = text.slice(i, j);
       const last = out[out.length - 1];
       // 連續未知漢字合併
       if (info.t === 'unk' && last && last.pos === 'unk' && info.sc === 'k' && last.sc === 'k') { last.s += s; last.base = last.s; continue; }
+      if (info.t === 'w' && info.all && info.all.length > 1) info = ctxPick(info, s, out, text, j);
       const tk = mkToken(s, i, info);
+      ctxFix(tk, out, text, j);
       // 動詞／形容詞後面黏著的 1–2 個假名（ちゃ、くら、らん…）多半是活用或口語殘片，不給字典意思
       if (last && tk.known && tk.viaKana && isKanaStr(s) && s.length <= 2 && !/^(part|aux|cop|suf|int|conj)$/.test(tk.pos) && !FORMAL.test(s) && (/^(v|i)$/.test(last.pos) || last.form)) {
         Object.assign(tk, { zh: '', pos: 'unk', known: false, unreg: false, frag: true, alts: [] });
@@ -689,6 +691,60 @@
       out.push(tk);
     }
     return out;
+  }
+  /* ---------- 上下文讀音（評審 v15）：第一候選選錯、正解在同一字面的其他候選 ---------- */
+  const PRON = /^(こっち|そっち|あっち|どっち|こちら|そちら|あちら|どちら|右|左|前|後ろ|東|西|南|北|上|下|ほか|他|外|内|奥|手前|向こう)$/;
+  const FOOD = /(カレー|ラーメン|料理|味|スープ|ソース|唐辛子|キムチ|わさび|麻婆|担々|辛口|この|これ|それ|あれ|食べ物|ご飯|鍋)/;
+  const HARD = /(別れ|仕事|生活|毎日|気持ち|人生|練習|勉強|失恋|思い|現実|立場|経験|日々|朝|離れ|一人)/;
+  const OPEN = /(会議|会|パーティー|式|大会|展|店|口座|本|ページ|ファイル|窓口|扉|心|花|祭り|セミナー|講座|教室)/;
+  const prevS = (out, n) => out.slice(-n).map(t => t.s).join('');
+  function want(info, kana) {
+    const k = toHira(kana), hit = info.all.filter(c => toHira(c.e.kana || c.e.jp) === k);
+    if (!hit.length) return info;
+    let b = hit[0]; for (const c of hit) if (c.cost < b.cost) b = c;
+    return Object.assign({}, info, { c: b });
+  }
+  function ctxPick(info, s, out, text, j) {
+    const e = info.c.e, base = e.jp, p1 = out[out.length - 1] || {}, p2 = out[out.length - 2] || {}, nx = text.slice(j, j + 8);
+    // 可能形只是另一個動詞的活用撞形（開けて＝開ける，不是「開く」的可能形）
+    if (/^pot/.test(info.c.form || '') && p1.s === 'を') { const o = info.all.filter(c => !/^pot/.test(c.form || '')); if (o.length) { let b = o[0]; for (const c of o) if (c.cost < b.cost) b = c; info = Object.assign({}, info, { c: b }); } }
+    if (base === '方' || s === '方') {
+      if (/^(v|i|aux)$/.test(p1.pos || '') || (p1.s === 'の' && PRON.test(p2.s || '')) || /^(がいい|がよい|がまし|が好き|がずっと|が上手|が安|が高|が早|が楽|よりも?|へ|に向)/.test(nx)) return want(info, 'ほう');
+      return info;
+    }
+    if (/^(空く)$/.test(base) && /(お?腹|おなか)が?$/.test(prevS(out, 2))) return want(info, 'すく');
+    if (/^(降りる)$/.test(base) && /(雨|雪|雹|霜)が?$/.test(prevS(out, 2))) return want(info, 'ふる');
+    if (base === '開く') {
+      if (/(ドア|窓|戸|箱|蓋|ふた|席|部屋|口|鍵)が?$/.test(prevS(out, 2))) return info;
+      if (/^開か(れ|せ)/.test(s) || OPEN.test(prevS(out, 5))) return want(info, 'ひらく');
+      return info;
+    }
+    if (base === '一日' && /月$/.test(prevS(out, 1))) return want(info, 'ついたち');
+    if (base === '辛い') return HARD.test(prevS(out, 3)) && !FOOD.test(prevS(out, 3)) ? want(info, 'つらい') : info;
+    if (base === '何' && /^(曜日|時|人|回|歳|階|日|月|年|本|枚|個|分|円|番|度|語|色|冊|匹|杯|台|でも|か所)/.test(nx)) return want(info, 'なん');
+    return info;
+  }
+  // 候選裡沒有的讀音／用法：直接改 token
+  function ctxFix(tk, out, text, j) {
+    const p1 = out[out.length - 1] || {};
+    const set = (kana, zh, extra) => Object.assign(tk, { kana, bkana: kana, romaji: R2(kana, tk.s), zh }, extra || {});
+    // 〜中（じゅう）：一日中、一年中、世界中；〜中（ちゅう）：会議中、仕事中
+    if (tk.s === '中' && p1.s) {
+      if (/(一日|一年|一晩|一晩|年|世界|日本|町|家|学校|今日|午前|午後|夜|体)$/.test(p1.s)) return set('じゅう', '（接尾）整個…、…期間一直');
+      if (/(会議|授業|仕事|電話|食事|工事|営業|準備|運転|勉強|使用|外出|休憩)$/.test(p1.s)) return set('ちゅう', '（接尾）正在…中');
+    }
+    // 気をつける：小心、注意（不是「開燈」）
+    if (/^(付ける|点ける|着ける|つける)$/.test(tk.base) && /気を$/.test(prevS(out, 2))) return Object.assign(tk, { bkana: 'つける', zh: '（気をつける）小心、注意', base: '気をつける' });
+    // 名詞＋用（プレゼント用、子供用）：〜用的
+    if (tk.s === '用' && /^(n|unk)$/.test(p1.pos || '') && !/[はがをに]$/.test(p1.s)) return set('よう', '（接尾）…用的、供…使用', { pos: 'suf', gram: true });
+    // そう：動詞連用形／形容詞語幹＋そう＝樣態；常體＋そうだ＝傳聞（不是「是的」）
+    if (/^そう(です|だ|な)?$/.test(tk.s) && p1.s) {
+      if (p1.pos === 'v' && (/^(stem|masu)$/.test(p1.form || '') || /[いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ]$/.test(p1.s) && !/^(nai|ta)$/.test(p1.form || '') && p1.form !== '' ) || (p1.pos === 'i' && !/い$/.test(p1.s)) || p1.pos === 'na')
+        return set('そう', '（文法：樣態）看起來好像…、快要…', { pos: 'aux', gram: true });
+      if (/^(v|i|aux|cop)$/.test(p1.pos || '') || /[るたいだ]$/.test(p1.s)) return set('そう', '（文法：傳聞）聽說…', { pos: 'aux', gram: true });
+    }
+    // 動詞＋ように：目的／樣態（文法），不當單字
+    if (/^よう/.test(tk.s) && /^(v|aux)$/.test(p1.pos || '') && /^ように?/.test(text.slice(j - tk.s.length, j + 2))) return set(tk.kana || 'よう', '（文法）為了…、像…一樣', { pos: 'aux', gram: true });
   }
   const FORMAL = /^(ほう|こと|もの|とき|ため|よう|まま|うち|わけ|はず|ところ|とこ|つもり|ごろ|ころ|ほど|だけ|くらい|ぐらい|さえ|すら|あと|まえ|なか|ため|せい|おかげ|かた|ばかり)$/;
   const HON_ZH = { '様': '敬稱：先生／女士', 'さま': '敬稱：先生／女士', 'さん': '先生／小姐', '氏': '書面敬稱：先生', 'くん': '對男性晚輩', '君': '對男性晚輩', 'ちゃん': '親暱稱呼', '殿': '公文敬稱', '先生': '老師／醫生' };

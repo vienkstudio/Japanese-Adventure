@@ -13,7 +13,7 @@
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const G = n => { try { return window[n] !== undefined ? window[n] : (0, eval)('typeof ' + n + '!=="undefined"?' + n + ':undefined'); } catch (e) { return undefined; } };
   const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const jp0 = s => (String(s || '').split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || String(s || '');
+  const jp0 = s => window.Learn && Learn.jp0 ? Learn.jp0(s) : (String(s || '').split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || String(s || '');
 
   /* ---- 同義／重疊判斷（同挑戰） ---- */
   const segs = z => String(z || '').replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,、／/・。？?！!]/).map(s => s.trim()).filter(Boolean);
@@ -129,7 +129,7 @@
     if (types.has('vocab')) lvs.forEach(lv => {
       const a = lex[lv]; if (!a) return;
       const key = 'v' + lv + a.length;
-      if (!CACHE[key]) CACHE[key] = a.filter(r => r[0] && r[2]).map(r => { const jp = jp0(r[0]); return { id: 'v:' + jp, type: 'vocab', jp, kana: String(r[1] || '').split(/;\s*/)[0].replace(/\s*[（(].*?[）)]/g, '').trim() || jp, zh: String(r[2]), lv, pos: r[3] || '' }; });
+      if (!CACHE[key]) CACHE[key] = a.filter(r => r[0] && r[2]).map(r => { const f = window.Learn && Learn.lexForm ? Learn.lexForm(r) : { jp: jp0(r[0]), kana: '' }, jp = f.jp; return { id: window.Learn && Learn.rowId ? Learn.rowId(r) : 'v:' + jp, type: 'vocab', jp, kana: f.kana || jp, zh: String(r[2]), lv, pos: r[3] || '' }; });
       out.push(...CACHE[key]);
     });
     if (types.has('grammar') && window.MIND && Array.isArray(MIND.gram)) {

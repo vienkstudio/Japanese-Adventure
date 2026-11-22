@@ -197,7 +197,7 @@
   // ---------- 影片標題解析（翻唱／歌ってみた／カバー／弾き語り／翻唱…）：純函式，tools/test-cover.mjs 離線測試 ----------
   const COVER = /歌ってみた|歌わせて(?:いただ|頂)きました|歌いました|弾いてみた|弾き語り|叩いてみた|吹いてみた|演奏してみた|替え歌|カバー|カラオケ|翻唱|\bcover(?:s|ed)?\b|\bkaraoke\b|\bsung\s+by\b/i;
   const COVER_RM = /(?:を|で)?(?:本気で|全力で|ガチで)?(?:歌ってみた|歌わせて(?:いただ|頂)きました|歌いました|弾いてみた|弾き語り|叩いてみた|吹いてみた|演奏してみた|替え歌で?|カバー|カラオケ|翻唱|\b(?:acoustic\s+|girls?\s+rock\s+|rock\s+|piano\s+|collaboration\s+)?cover(?:s|ed)?\b\.?|\bkaraoke\b|\bcollaboration\b)/gi;
-  const NOISE_RM = /\bofficial\b(?:\s+(?:music\s+)?video|\s+audio|\s+mv|\s+youtube)?|\bmusic\s*(?:video|clip)\b|\blyrics?(?:\s*video)?\b|\b(?:full|tv|short)\s*(?:size|ver(?:sion)?)\b\.?|\bmv\b|\bpv\b|\bfull\b|\bhd\b|\b4k\b|\baudio\b|\bop\b|\bed\b|\bopening\b|\bending\b|フル(?:バージョン)?|歌詞付き?|歌詞|字幕|中字|和訳|コード|ギター|初心者向け|簡単|オープニング(?:テーマ)?|エンディング(?:テーマ)?|主題歌|挿入歌|女性が歌う|男性が歌う|原曲キー|\S*ver(?:sion)?\.(?=\s|$)|\S+\s+ver(?:sion)?\.?(?=\s|$)|\bfeat\.?\s.*$|\bft\.\s.*$/gi;
+  const NOISE_RM = /\bofficial\b(?:\s+(?:music\s+)?video|\s+audio|\s+mv|\s+youtube)?|\bmusic\s*(?:video|clip)\b|\blyrics?(?:\s*video)?\b|\b(?:full|tv|short)\s*(?:size|ver(?:sion)?)\b\.?|\bthe\s+first\s+take\b|\bfirst\s+take\b|\bmv\b|\bpv\b|\bfull\b|\bhd\b|\b4k\b|\baudio\b|\bop\b|\bed\b|\bopening\b|\bending\b|フル(?:バージョン)?|歌詞付き?|歌詞|字幕|中字|和訳|コード|ギター|初心者向け|簡単|オープニング(?:テーマ)?|エンディング(?:テーマ)?|主題歌|挿入歌|女性が歌う|男性が歌う|原曲キー|\S*ver(?:sion)?\.(?=\s|$)|\S+\s+ver(?:sion)?\.?(?=\s|$)|\bfeat\.?\s.*$|\bft\.\s.*$/gi;
   const SEP = /\s*(?:[\/|¦┃│]+|\s[-–—~〜]+\s|[–—]+|:\s)\s*/;
   const JP = /[ぁ-ゖァ-ヺ一-龯々]/;
   // 常見原唱歌手（熱門歌單以外也認得出「誰的歌」）
@@ -223,10 +223,14 @@
     const cover = COVER.test(s);
     let by = '';
     const take = re => { s = s.replace(re, (m, x) => { if (!by && x && trimSym(x)) by = trimSym(x); return ' ¦ '; }); };
-    // 翻唱者明寫：covered by X／cover by X／sung by X／歌：X／Vo. X／/ ver. X／Xが（本気で）「曲」歌ってみた
+    // 歌手名本身含分隔符號（DISH//、Mr.Children…）：先換成佔位，免得被當成分隔
+    const NAMES = [];
+    ARTISTS.filter(a => /[\/|・.]/.test(a)).forEach(a => { if (s.includes(a)) { s = s.split(a).join('\u0003' + NAMES.length + '\u0004'); NAMES.push(a); } });
+    // 翻唱者明寫（優先）：うた：X／歌：X／Vo. X；再來 covered by X／cover by X／sung by X／ver. X／Xが（本気で）「曲」歌ってみた
+    take(/(?<=^|[\s¦】\])）)])(?:vo\.|vocal|歌|唄|うた|歌い手)\s*[:]\s*([^\[\]【】()「」『』\/|¦┃│]+?)(?=\s*(?:[\[\]【】()「」『』\/|¦┃│]|$))/gi);
     take(/(?:full\s+)?(?:covered|cover|sung)\.?\s*by\s*:?\s*([^\[\]【】()「」『』\/|¦┃│]+?)(?=\s*(?:[\[\]【】()「」『』\/|¦┃│]|\s[-–—]\s|$))/gi);
     take(/(?:^|[\s¦])(?:vo\.|vocal|歌|唄|歌い手)\s*[:]\s*([^\[\]【】()「」『』\/|¦┃│]+?)(?=\s*(?:[\[\]【】()「」『』\/|¦┃│]|$))/gi);
-    if (cover) take(/(?:^|[\s\/|¦])ver\.\s*([^\s\-~)\]】\/|¦][^\[\]【】()\/|¦]*)/i);
+    if (cover) take(/(?:^|[\s\/|¦])ver\.\s*([^\s\-~)\]】【\[\/|¦][^\[\]【】()\/|¦]*)/i);
     if (cover) take(/([^\s¦\[\]【】()「」『』\/|]{2,15}?)が(?=[^「」『』¦]{0,10}?[「『]|(?:本気で|全力で)?歌ってみた)/);
     // 引號（'Lemon'、“…”）統一成「」；再把「」『』【】[]() 換成佔位符，保留在標題裡的位置
     s = s.replace(/(^|\s)'([^']{1,40})'(?=\s|$)/g, '$1「$2」').replace(/“([^”]{1,60})”/g, '「$1」');
@@ -242,9 +246,11 @@
     split(s, 't');
     // 每段清掉翻唱字樣、雜訊（MV、Full、ver.、OP…），記下「這段原本帶翻唱字樣」（多半是翻唱者名）
     const pieces = [];
+    const unName = x => String(x).replace(/\u0003(\d+)\u0004/g, (m, i) => NAMES[+i]);
+    by = unName(by);
     raw.forEach(r => {
       if (!r) return;
-      let x = r.raw.replace(/¦/g, ' ');
+      let x = unName(r.raw).replace(/¦/g, ' ');
       const mark = COVER_RM.test(x); COVER_RM.lastIndex = 0;
       x = trimSym(x.replace(COVER_RM, ' ').replace(NOISE_RM, ' '));
       if (!x || !/[\p{L}\p{N}]/u.test(x) || key(x).length < 1) { let j = pieces.length - 1; while (j > 0 && pieces[j].k === 'p') j--; const lp = pieces[j]; if (mark && lp && r.k === 't' && lp.k === 't' && !/[\/|¦┃│]/.test(r.raw)) lp.mark = true; return; }   // 「高橋李依（アイ役）cover.」：只剩翻唱字樣的段，標記給前一段
@@ -283,7 +289,7 @@
       if (words.length >= 2 && words.length <= 4 && JP.test(p.text) && !latinDesc(p.text)) words.forEach(w => {
         const wm = hotMatch(key(w), hot);
         if (wm.exact) addCand(wm.exact[0], prior + 95, p, wm.exact);
-        else if (key(w).length >= 2) addCand(w, prior - 10 + (knownArtist({ text: w }) ? -40 : words.some(o => o !== w && knownArtist({ text: o })) ? 25 : 0), p);
+        else { const art = words.some(o => o !== w && knownArtist({ text: o })); if (key(w).length >= 2 || (art && key(w).length >= 1 && JP.test(w))) addCand(w, prior - 10 + (knownArtist({ text: w }) ? -40 : art ? 25 : 0), p); }
       });
     });
     cands.sort((a, b) => b.prior - a.prior);
@@ -291,8 +297,8 @@
     cands.forEach(c => {
       const at = c.src ? pieces.indexOf(c.src) : -1, list = [];
       if (c.hot) list.push(c.hot[1]);
-      pieces.filter(knownArtist).forEach(p => list.push(p.text));
-      if (c.src) c.src.text.split(/\s+/).filter(w => knownArtist({ text: w })).forEach(w => list.push(w));   // 「あいみょん マリーゴールド」同一段裡的歌手
+      if (c.src) c.src.text.split(/\s+/).filter(w => knownArtist({ text: w })).forEach(w => list.push(w.replace(/^[-–—~]+/, '')));   // 「あいみょん マリーゴールド」「猫 -DISH//」同一段裡的歌手
+      pieces.filter(p => knownArtist(p) && p !== c.src).forEach(p => list.push(p.text));
       const nx = pieces[at + 1], pv = pieces[at - 1];
       if (nx && nx.k === 'p') list.push(nx.text);
       [nx, pv].forEach(p => { if (p && p.k !== 'b' && (!cover || !isAuthor(p)) && key(p.text) !== byKey && !latinDesc(p.text)) list.push(p.text); });
@@ -372,6 +378,9 @@
     if (p.cover) {
       result.cover = true; result.want = found ? found.track : p.track;
       result.coverBy = found ? coverBy(p, found.track, found.artist) : p.by;
+      // 原唱：LRCLIB 的歌手和標題裡認得的歌手不同時，用標題的（避免「k k」這類雜訊版本）
+      const ta = p.artist && ARTISTS.some(a => key(a) === key(p.artist)) ? p.artist : '';
+      if (found && ta && !key(found.artist).includes(key(ta)) && !key(ta).includes(key(found.artist))) found.artist = ta;
       if (found) { result.origTitle = found.title; result.title = coverTitle(found, result.coverBy); }
     }
     if (!found && choices.length) { result.choices = choices; result.note = `${p.cover ? '翻唱影片：' : ''}找到幾首可能的原曲，請選一首。`; }

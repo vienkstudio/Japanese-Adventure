@@ -503,8 +503,8 @@
     if (style === 'plain' || style === 'keigo') return m;
     const T = (jp, kana, zh) => ({ jp, kana: kana || jp, zh });
     const kore = T('これ', '', '這個'), wo = T('を', '', '（受詞）'), kuda = T('ください', '', '請給我'), one = T('お願いします', 'おねがいします', '麻煩了');
-    const parts = li() === 0 ? [kore, wo, kuda] : [kore, wo, kuda, one];
-    const ends = parts.slice(2).map(p => p.jp);
+    const parts = li() === 0 ? [kore, kuda] : [kore, kuda, one];   // 詞塊就是單元教的「これください」（評審 v15 P1-9）
+    const ends = parts.slice(1).map(p => p.jp);
     const accept = ends.flatMap(e => [['これ', e], ['これ', 'を', e]]);
     return { parts, accept, jp: 'これください。', kana: 'これください', zh: '我要這個（結帳）', extra: [], style: m.style, styles: m.styles };
   }
@@ -1166,6 +1166,19 @@
     });
     return out;
   }
+  // 任務和單元句（alt）是否矛盾：任務條件相反；或單元句說「只有大人」而任務要買小孩票
+  const KID = /kodomo|child|kid|shogaku|小人|子供|子ども|小学生|兒童|小孩/;
+  function questConflict(s, x, alt) {
+    if (!alt) return false;
+    for (const k in alt) {
+      if (x.prefs && x.prefs[k] != null && String(x.prefs[k]) !== String(alt[k].val)) return true;
+      const a = (s.asks || []).find(z => z.id === k), o = a && a.a.find(z => z.val === alt[k].val);
+      const said = ((o && o.jp) || '') + ' ' + ((alt[k].line && alt[k].line.jp) || '');
+      const adultOnly = /大人だけ|子(?:供|ども)はいません/.test(said) || (/^大人.{1,3}人です/.test(said.trim()) && !KID.test(said));
+      if (adultOnly && x.items.some(([id]) => { const it = s.items.find(i => i.id === id); return KID.test(id + ' ' + ((it && (it.jp + it.zh)) || '')); })) return true;
+    }
+    return false;
+  }
   function simGoal(s, goal, items, alt) {
     const qs = s.quests || [], byId = id => s.items.find(i => i.id === id);
     const zt = it => (s.zones[it.zone] || {}).type;
@@ -1184,7 +1197,10 @@
         const best = Math.max(...qs.map(sc));
         if (best > 0) cand = qs.filter(x => sc(x) === best);
       }
-      q = cand.find(x => !App.stars(`w:${s.id}:q-${x.id}`)) || cand[hash(App.today() + s.id) % cand.length];
+      // 和單元句衝突的任務不選（例：單元教「大人だけです」，就不配「兩大一小」；任務自帶條件和單元句相反也不選）
+      const ok = cand.filter(x => !questConflict(s, x, alt));
+      if (ok.length) cand = ok; else if (alt && Object.keys(alt).length) cand = [];
+      if (cand.length) q = cand.find(x => !App.stars(`w:${s.id}:q-${x.id}`)) || cand[hash(App.today() + s.id) % cand.length];
     }
     if (!g && !q) g = ckAsks.length ? { id: 'checkin', checkin: 1 } : { id: 'rand' };
     const icon = s.kind === 'eat' ? '🍽️' : s.kind === 'service' ? '🛎️' : '🛍️';
@@ -1206,7 +1222,7 @@
     o.key = /^(q-|checkin$|rand$)/.test(o.id) ? `w:${s.id}:${o.id}` : '';
     // 單元句對到的問句：旅伴的條件改成單元句那一邊（例：袋はいりません → 不要袋子）
     let changed = false;
-    Object.keys(alt || {}).forEach(k => { if (o.prefs[k] != null && String(o.prefs[k]) !== String(alt[k].val)) changed = true; o.prefs[k] = alt[k].val; });
+    Object.keys(alt || {}).forEach(k => { if (o.prefs[k] == null || String(o.prefs[k]) !== String(alt[k].val)) changed = true; o.prefs[k] = alt[k].val; });
     if (changed) { o.msg = '旅伴傳來清單：買齊下面的東西，店員問的時候用剛學的句子回答。'; o.jpMsg = null; }
     return o;
   }

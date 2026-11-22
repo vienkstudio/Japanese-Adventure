@@ -87,6 +87,8 @@ const CASES = [
   // 非翻唱（同一套解析也要切對歌名）
   ["LiSA『紅蓮華』-MUSiC CLiP-（テレビアニメ「鬼滅の刃」竈門炭治郎 立志編 オープニングテーマ）", 'LiSA Official YouTube', '紅蓮華', 'LiSA', null],
   ['YOASOBI「夜に駆ける」 Official Music Video', 'Ayase / YOASOBI', '夜に駆ける', 'YOASOBI', null],
+  ['【歌ってみた】DISH// - 猫 / THE FIRST TAKE ver. 【北村 匠海】うた：たすくこま（豚）', 'たすくこま', '猫', 'DISH//', 'たすくこま'],
+  ['猫 -DISH//歌ってみた【ふうはや】', 'ふうはや', '猫', 'DISH//', 'ふうはや'],
   ['あいみょん – マリーゴールド【AIMYON BUDOKAN -1995-】', 'あいみょん', 'マリーゴールド', 'あいみょん', null],
   ['残酷な天使のテーゼ - 高橋洋子（フル）', 'anime', '残酷な天使のテーゼ', '高橋洋子', null],
   ['Ado - うっせぇわ / THE FIRST TAKE', 'THE FIRST TAKE', 'うっせぇわ', 'Ado', null],

@@ -291,7 +291,7 @@
     if (q) {
       const { ph, vo } = search(q);
       const loading = !wDone ? `<p class="pb-load">⏳ 正在載入冒險世界各店的句子…</p>` : '';
-      if (!ph.length && !vo.length) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬拼音都可以）</p>`;
+      if (!ph.length && !vo.length) return loading || `<p class="pb-empty">找不到「${esc(q)}」，換個關鍵字試試（中文、日文、羅馬字都可以）</p>`;
       return (ph.length ? `<h2>💬 句子（${ph.length}）</h2>` + ph.slice(0, 60).map(w => row(w)).join('') + (ph.length > 60 ? `<p class="pb-more">只列前 60 句，再多打幾個字縮小範圍</p>` : '') : '') +
         (vo.length ? `<h2>📚 單字（${vo.length}）</h2><div class="pb-voc">${vo.slice(0, 60).map(vocab).join('')}</div>` : '') + loading;
     }

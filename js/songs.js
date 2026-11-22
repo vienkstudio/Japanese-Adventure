@@ -598,7 +598,7 @@
     }
     V.mode = m;
     V.root.querySelectorAll('[data-mode]').forEach(b => { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-selected', b.dataset.mode === m); });
-    V.$('.sg-help').textContent = HELP[m] + (m === 'sing' && V.P2.timed && !V.s.lines.some(l => l.t != null) ? '　※ 還沒對時：先到「⏱ 對時」標記每句開始時間，才會逐句高亮。' : '');
+    V.$('.sg-help').textContent = HELP[m] + (m === 'sing' && V.P2.timed && !V.s.lines.some(l => l.t != null) ? '　※ 還沒對時：先到「⏱ 對時」標記每句開始時間，才會逐句高亮。' : '') + (V.s.lines.some(l => l.zh) ? '' : '　※ 字下面的中文是逐詞參考，不是整句翻譯；可按 ✏️ 編輯貼上中文歌詞。');
     V.$('.sg-markb').hidden = m !== 'mark';
     V.$('.sg-dictbar').hidden = m !== 'dict';
     V.$('.sg-lyr').classList.toggle('marking', m === 'mark');
@@ -770,7 +770,7 @@
     });
     const done = ins.length - blank;
     if (!done) { toast('還沒有填任何格子喔'); return; }
-    V.dictBest = Math.max(V.dictBest, ok / ins.length);
+    V.dictBest = Math.max(V.dictBest, ok / ins.length); V.dictDone = true;   // 按過對答案就算做過填空（全錯也能練完）
     toast(`答對 ${ok} / ${done}${ok < done ? '・答錯的已加入不會清單' : ' 🎉'}${blank ? `（${blank} 格未作答，不算錯）` : ''}`, ok === done ? 'ok' : '');
   }
 
@@ -829,7 +829,7 @@
 
   /* ---------- 練完 ---------- */
   function finish(V) {
-    if (!V.listened && !V.recs.length && !V.dictBest) { toast('先按 ▶ 聽一次，或做一下填空吧'); return; }
+    if (!V.listened && !V.recs.length && !V.dictBest && !V.dictDone) { toast('先按 ▶ 聽一次，或做一下填空吧'); return; }
     const stars = Math.min(3, 1 + (V.recs.length ? 1 : 0) + (V.dictBest >= 0.7 ? 1 : 0));
     const r = App.reward('song:' + V.s.id, stars, '歌曲跟唱');
     const tips = [], d = App.state.today;

@@ -34,7 +34,7 @@
   }
 
   /* ---------------- 資料 → Item ---------------- */
-  const jp0 = s => (String(s).split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || s;
+  const jp0 = s => window.Learn && Learn.jp0 ? Learn.jp0(s) : (String(s).split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || s;   // 全站同一份清理（js/learn.js lexForm）
   const WORDS = {};
   function words(lv) {
     if (WORDS[lv]) return WORDS[lv];

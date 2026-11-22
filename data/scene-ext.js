@@ -157,7 +157,7 @@ window.SCENE_EXT = {
       { jp:'この商品を探しています', kana:'このしょうひんをさがしています', romaji:'kono shōhin o sagashite imasu', zh:'我在找這個商品', hint:'諧音：摳諾 休～hin歐 薩嘎西貼 伊媽斯', use:'給店員看手機裡的商品照片時' },
       { jp:'在庫はありますか', kana:'ざいこはありますか', romaji:'zaiko wa arimasu ka', zh:'還有庫存嗎？', hint:'諧音：紮伊摳哇 阿哩媽斯卡', use:'貨架上賣完時' },
       { jp:'一人いくつまで買えますか', kana:'ひとりいくつまでかえますか', romaji:'hitori ikutsu made kaemasu ka', zh:'一個人限買幾個？', hint:'諧音：hi偷哩 伊哭此媽爹 卡欸媽斯卡', use:'熱門商品有限購時' },
-      { jp:'これは子供も飲めますか', kana:'これはこどももものめますか', romaji:'kore wa kodomo mo nomemasu ka', zh:'這個小孩也能吃嗎？', hint:'諧音：摳勒哇 摳兜摸摸 諾妹媽斯卡', use:'幫小孩買藥時' },
+      { jp:'これは子供も飲めますか', kana:'これはこどもものめますか', romaji:'kore wa kodomo mo nomemasu ka', zh:'這個小孩也能服用嗎？', hint:'諧音：摳勒哇 摳兜摸摸 諾妹媽斯卡', use:'幫小孩買藥時' },
       { jp:'眠くなりますか', kana:'ねむくなりますか', romaji:'nemuku narimasu ka', zh:'吃了會想睡嗎？', hint:'諧音：內母哭 那哩媽斯卡', use:'買感冒藥、暈車藥時確認副作用' },
       { jp:'食後に飲みますか', kana:'しょくごにのみますか', romaji:'shokugo ni nomimasu ka', zh:'是飯後吃嗎？', hint:'諧音：休哭勾尼 諾咪媽斯卡', use:'確認服藥時間' },
       { jp:'敏感肌でも使えますか', kana:'びんかんはだでもつかえますか', romaji:'binkanhada demo tsukaemasu ka', zh:'敏感肌也能用嗎？', hint:'諧音：逼恩看哈搭爹摸 此卡欸媽斯卡', use:'買保養品時' },

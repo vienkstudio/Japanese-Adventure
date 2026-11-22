@@ -182,7 +182,8 @@
     const low = LVS.slice(0, lvI(L)), sig = lex.length + ':' + low.map(l => arr(M.lex[l]).length).join(',');
     if (EXB[L] && EXB[L].sig === sig) return EXB[L];
     // 低級詞庫已有的詞（N4 課不再出 N5 詞）、與本級以下文法同形的詞（つもり 只當文法）
-    const lower = new Set(); low.forEach(l => arr(M.lex[l]).forEach(r => lower.add(jp0(r[0]))));
+    const rid = r => window.Learn && Learn.rowId ? Learn.rowId(r) : 'v:' + jp0(r[0]);
+    const lower = new Set(); low.forEach(l => arr(M.lex[l]).forEach(r => lower.add(rid(r))));   // 同形異讀（開く あく／ひらく）各算一個詞
     const gw = new Set(M.gram.filter(g => lvI(g.lv) >= 0 && lvI(g.lv) <= lvI(L)).map(g => patWord(g.pat)).filter(Boolean));
     const seen = new Set(), words = [], hi = lvI(L) >= 3;
     // 基本會話詞（寒暄 int/exp）各級都不當單字課；N2／N1 另排除旅遊常用詞（本站常用＋片假名或旅遊場景詞，如 温泉、改札、サイズ）
@@ -193,14 +194,14 @@
     const keep = lex.filter(r => !basic(r));
     const order = hi ? keep.filter(r => !r[7] && !affix(r)).concat(keep.filter(r => r[7] && !affix(r)), keep.filter(affix)) : keep.filter(r => r[7]).concat(keep.filter(r => !r[7]));
     // 低級已有的詞在低級課學；寒暄、文法同形詞（つもり）、N2／N1 的 2 字平假名片段（ごと、さす）不進主課，放「補充」課
-    const mk = (r, jp) => ({ id: 'v:' + jp, type: 'vocab', jp, kana: String(r[1] || '').split(/;\s*/)[0].replace(/\s*[（(].*?[）)]/g, '') || jp, romaji: '', zh: r[2], hint: '', lv: L });
+    const mk = (r, jp) => ({ id: rid(r), type: 'vocab', jp, kana: (window.Learn && Learn.lexForm ? Learn.lexForm(r) : { jp: jp0(r[0]), kana: String(r[1] || '') }).kana || jp, romaji: '', zh: r[2], hint: '', lv: L });
     const extra = [];
     order.forEach(r => {
-      const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp)) return;
+      const jp = jp0(r[0]), id = rid(r); if (!jp || !r[2] || seen.has(id) || lower.has(id)) return;
       seen.add(id);
       if (gw.has(jp) || (lvI(L) >= 3 && /^[ぁ-ゟ]{1,2}$/.test(jp))) extra.push(mk(r, jp)); else words.push(mk(r, jp));
     });
-    lex.filter(basic).forEach(r => { const jp = jp0(r[0]), id = 'v:' + jp; if (!jp || !r[2] || seen.has(id) || lower.has(jp)) return; seen.add(id); extra.push(mk(r, jp)); });
+    lex.filter(basic).forEach(r => { const jp = jp0(r[0]), id = rid(r); if (!jp || !r[2] || seen.has(id) || lower.has(id)) return; seen.add(id); extra.push(mk(r, jp)); });
     const grams = M.gram.filter(g => g.lv === L).sort((a, b) => (a.ord || 0) - (b.ord || 0)).map(g => ({
       id: 'g:' + String(g.id).replace(/^gram:/, ''), type: 'grammar', jp: g.pat, kana: '', romaji: '', zh: g.zh, hint: g.conn ? '接續：' + g.conn : '',
       ex: g.ex && g.ex[0] ? [{ jp: g.ex[0], zh: g.ex[1] || '' }] : [], lv: L
@@ -592,7 +593,7 @@
         const rg = region();
         html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 自由逛日本（冒險地圖）</button>`;
       }
-      if (tab === 'kana') html = (window.KanaPrep && KanaPrep.need() ? KanaPrep.box('') : '') + '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
+      if (tab === 'kana') html = (window.KanaPrep ? (KanaPrep.need() ? KanaPrep.box('') : KanaPrep.mini()) : '') + '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
     }
     body.innerHTML = html;
     if (tab === 'kana' && window.KanaPrep) KanaPrep.bind(body, '', () => App.render());

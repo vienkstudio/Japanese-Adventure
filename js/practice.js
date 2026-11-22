@@ -381,7 +381,7 @@
       return [];
     }
     const out = [];
-    ['N5', 'N4', 'N3', 'N2', 'N1'].forEach(lv => (L[lv] || []).forEach(e => out.push({ id: 'word:' + e[0], kind: 'word', jp: e[0], kana: e[1] || '', romaji: '', zh: e[2], hint: window.Loan && Loan.label(e[0], 1) ? Loan.label(e[0], 1) : '', ex: '', exzh: '', emoji: '', lv, source: 'JLPT ' + lv })));
+    ['N5', 'N4', 'N3', 'N2', 'N1'].forEach(lv => (L[lv] || []).forEach(e => { const f = window.Learn && Learn.lexForm ? Learn.lexForm(e) : { jp: e[0], kana: e[1] || '' }; out.push({ id: window.Learn && Learn.rowId ? Learn.rowId(e) : 'word:' + f.jp, kind: 'word', jp: f.jp, kana: f.kana, romaji: '', zh: e[2], hint: window.Loan && Loan.label(f.jp, 1) ? Loan.label(f.jp, 1) : '', ex: '', exzh: '', emoji: '', lv, source: 'JLPT ' + lv }); }));
     return out;
   }
   function deckCards(k) {

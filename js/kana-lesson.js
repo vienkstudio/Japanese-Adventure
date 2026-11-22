@@ -34,7 +34,7 @@
   const CH = [
     ['s2', '2. 先學五個母音：あいうえお', () => `<p>日文只有 <b>5 個母音</b>，所有的音都是「子音＋這 5 個母音」組成。學會這 5 個，等於打通任督二脈！</p>
       <div class="kn-faces">${face('<ellipse cx="0" cy="48" rx="20" ry="18" class="mo"/>', 'あ', 'a', '嘴巴張大「啊」')}${face('<rect x="-24" y="42" width="48" height="8" rx="4" class="mo"/>', 'い', 'i', '嘴角往兩邊拉「衣」')}${face('<ellipse cx="0" cy="48" rx="8" ry="7" class="mo"/>', 'う', 'u', '嘴唇微嘟、不要太圓「屋」')}${face('<ellipse cx="0" cy="47" rx="20" ry="9" class="mo"/>', 'え', 'e', '半開、嘴角稍拉「欸」')}${face('<ellipse cx="0" cy="48" rx="13" ry="14" class="mo"/>', 'お', 'o', '嘴巴圓圓「喔」')}</div>
-      <h4>🧩 拼音魔法：子音 × 母音</h4>
+      <h4>🧩 組合魔法：子音 × 母音</h4>
       ${tbl(['', 'a 啊', 'i 衣', 'u 屋', 'e 欸', 'o 喔'], [['（無）', 'あ', 'い', 'う', 'え', 'お'], ['k', 'か', 'き', 'く', 'け', 'こ'], ['s', 'さ', 'し', 'す', 'せ', 'そ']].map(r => r.map((c, i) => i ? sayJ(c, c + ' ' + (c === 'し' ? '<b class="kn-em">shi</b>' : rn(BY[c][2]))) : c)))}
       <div class="kn-tip">⚠️ 特例只有幾個要注意：<span lang="ja">し</span>＝shi、<span lang="ja">ち</span>＝chi、<span lang="ja">つ</span>＝tsu、<span lang="ja">ふ</span>＝fu、<span lang="ja">ん</span>＝n。其他都照規則拼！</div>
       <div class="kn-key">🎵 <b>口訣：</b>「<span lang="ja">あいうえお</span>」＝「啊～衣～屋～欸～喔」，把它當成一首歌，每天唸 10 遍。</div>`],
@@ -49,7 +49,7 @@
       <button type="button" class="kn-go" data-kopen="yoon">ゃ 看拗音表（27 個）</button>
       <h4>② 促音：小「っ」＝停一拍（憋氣）</h4>
       <div class="kn-2"><button type="button" class="kn-sb" data-ks="きって"><span class="big" lang="ja">きって</span>kitte 郵票<br>🛑「ki～(憋)～te」</button><button type="button" class="kn-sb" data-ks="きて"><span class="big" lang="ja">きて</span>kite 來<br>沒有停頓</button></div>
-      <div class="kn-tip">💡 小「っ」本身不發音，像音樂的「休止符」，佔一拍時間。羅馬拼音寫成重複下一個子音（tt、kk、pp）。</div>
+      <div class="kn-tip">💡 小「っ」本身不發音，像音樂的「休止符」，佔一拍時間。羅馬字寫成重複下一個子音（tt、kk、pp）。</div>
       <h4>③ 長音：拉長一拍</h4>
       ${tbl(null, [['平假名', sayJ('おばさん') + '（阿姨）', sayJ('おばあさん', 'おば<b class="kn-em">あ</b>さん') + '（奶奶）'], ['片假名', '用「ー」表示：' + sayJ('コーヒー', 'コ<b class="kn-em">ー</b>ヒ<b class="kn-em">ー</b>') + '（coffee）、' + sayJ('ケーキ', 'ケ<b class="kn-em">ー</b>キ') + '（cake）']])}
       <div class="kn-key">🔑 長短音會改變意思！<span lang="ja">おばさん</span>是阿姨、<span lang="ja">おばあさん</span>是奶奶，叫錯會被瞪 😅</div>`],
@@ -86,7 +86,7 @@
       <button type="button" class="btn primary" data-kq="start">🔄 再練 10 題</button></div>`;
     const c = Q.cur, k = c.k, a = c.ans;
     const pr = c.prompt === 'listen'
-      ? (noVoice() ? `<div class="kn-qk sm">${esc(rn(k[2]))}</div><p class="kn-note">🔇 找不到日文語音，改看拼音選字</p>` : `<button type="button" class="kn-qplay" data-kq="play" aria-label="再聽一次">🔊</button><p class="kn-note">聽發音，選出正確的字</p>`)
+      ? (noVoice() ? `<div class="kn-qk sm">${esc(rn(k[2]))}</div><p class="kn-note">🔇 找不到日文語音，改看羅馬字選字</p>` : `<button type="button" class="kn-qplay" data-kq="play" aria-label="再聽一次">🔊</button><p class="kn-note">聽發音，選出正確的字</p>`)
       : `<div class="kn-qk" lang="ja">${esc(c.prompt)}</div>`;
     let fb = '';
     if (a != null) {

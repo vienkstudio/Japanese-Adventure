@@ -41,7 +41,7 @@
 
   /* ---------- MIND 單字／文法 ---------- */
   const WORDS = {};
-  const jp0 = s => (String(s).split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || s;
+  const jp0 = s => window.Learn && Learn.jp0 ? Learn.jp0(s) : (String(s).split(/[;；]/)[0].replace(/[（(][^）)]*[）)]/g, '').replace(/[〜～]/g, '').trim()) || s;   // 全站同一份清理（js/learn.js lexForm）
   function words(lv) {
     if (WORDS[lv]) return WORDS[lv];
     const raw = window.MIND && MIND.lex && MIND.lex[lv]; if (!raw) return [];
@@ -292,10 +292,14 @@
     const funQ = ((App.profile().goals || [])[0] === 'fun');
     let h = funQ ? hotH : '';
     if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;
+    // 目的是日檢、或查的字就是文法句型本身：文法排在句子前（「ように」不先出旅遊句「プレゼント用に」；評審 v15 P1-11）
+    const gm0 = gm.length && ((App.profile().goals || []).includes('exam') || gm.some(g => g.nj === q));
+    const gmH = gm.length ? `<h2 class="lk-h">📗 文法</h2><div class="lk-list">${gm.map(g => `<button type="button" class="lk-w" data-kb="${esc(g.id)}"><b lang="ja">${esc(g.jp)}</b><span class="zh">${esc(g.zh)}</span>${lvB(g.lv)}</button>`).join('')}</div>` : '';
+    if (gm0) h += gmH;
     if (ph.length) h += `<h2 class="lk-h">💬 句子<small>點一下放大</small></h2><div class="lk-list">${ph.slice(0, 5).map(phRow).join('')}</div>` +
       (ph.length > 5 ? `<button type="button" class="lk-all" data-pbq="1">在手冊看全部 ${ph.length} 句 ›</button>` : '');
     if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;
-    if (gm.length) h += `<h2 class="lk-h">📗 文法</h2><div class="lk-list">${gm.map(g => `<button type="button" class="lk-w" data-kb="${esc(g.id)}"><b lang="ja">${esc(g.jp)}</b><span class="zh">${esc(g.zh)}</span>${lvB(g.lv)}</button>`).join('')}</div>`;
+    if (!gm0) h += gmH;
     if (ln.length) h += `<h2 class="lk-h">🌐 外來語</h2><div class="lk-list">${ln.map(x => `<button type="button" class="lk-w" data-say="${key({ jp: x.jp })}"><b lang="ja">${esc(x.jp)}</b><span class="zh">${esc(x.o ? x.o.name + '：' + x.o.src : String(x.e[1] || ''))}</span><span class="go" aria-hidden="true">🔊</span></button>`).join('')}</div>`;
     if (!funQ) h += hotH;
     if (my.length) h += `<h2 class="lk-h">⭐ 我的文章與歌曲</h2><div class="lk-list">${my.map(x => `<button type="button" class="lk-w" data-mine="${x.k}:${esc(x.id)}"><span aria-hidden="true">${x.k === 'song' ? '🎵' : '📄'}</span><b>${esc(x.t)}</b></button>`).join('')}</div>`;

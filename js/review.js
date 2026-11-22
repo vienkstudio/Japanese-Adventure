@@ -62,7 +62,7 @@
 
   const esc = s => App.esc(s);
 
-  /* ---------------- 羅馬拼音寬鬆比對 ---------------- */
+  /* ---------------- 羅馬字寬鬆比對 ---------------- */
   const MACRON = { 'ā': 'aa', 'ī': 'ii', 'ū': 'uu', 'ē': 'ee', 'ō': 'oo', 'â': 'aa', 'î': 'ii', 'û': 'uu', 'ê': 'ee', 'ô': 'oo' };
   function normRomaji(s) {
     s = String(s == null ? '' : s).toLowerCase();
@@ -86,7 +86,7 @@
     return [ex].concat(ex.split(/[\/／|｜,，、;；]|\bor\b/)).flatMap(alt).some(e => { const b = normRomaji(e); return b && a === b; });
   }
 
-  // 假名 → 羅馬拼音（item 沒有 romaji 時的備援）
+  // 假名 → 羅馬字（item 沒有 romaji 時的備援）
   let K2R = null;
   // 「o (wo)」「hu／fu」這類註記只取第一個讀法，避免拼成「moufuo (wo)nimai」
   const cleanRom = r => String(r || '').trim().split(/[\s(（/／]/)[0];
@@ -200,7 +200,7 @@
       <details class="panel rv-more"${ui.open ? ' open' : ''}><summary class="noprint">⋯ 更多：清單、篩選、匯出入、列印</summary>
         <div class="rv-printhead"><h2>📌 日語不會清單</h2><div class="muted" id="rvPrintInfo"></div></div>
         <div class="rv-tools noprint">
-          <input type="search" id="rvQ" placeholder="🔍 搜尋日文／假名／拼音／中文" aria-label="搜尋清單">
+          <input type="search" id="rvQ" placeholder="🔍 搜尋日文／假名／羅馬字／中文" aria-label="搜尋清單">
           <select id="rvSort" aria-label="排序"><option value="new">最新加入</option><option value="wrong">錯最多</option><option value="old">最久未複習</option></select>
         </div>
         <div class="rv-tools noprint">

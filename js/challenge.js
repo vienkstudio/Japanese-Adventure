@@ -615,6 +615,14 @@
       const ok = k === q.ans, bs = el.querySelectorAll('.choice');
       bs.forEach((b, i) => { b.disabled = true; if (i === q.ans) b.classList.add('ok'); else if (i === k) b.classList.add('ng'); });
       if (ok) G.ok++;
+      // 打擊感（評審 v15 P1-7）：音效（3 連升調）、粒子、浮字、震動、連擊
+      try {
+        const F = window.Game, t = bs[k] || bs[q.ans];
+        if (F) {
+          if (ok) { G.combo = (G.combo || 0) + 1; F.sfx(G.combo >= 3 ? 'combo' : 'ok', G.combo); F.vibrate && F.vibrate(15); if (t) { F.burst && F.burst(t, 12); F.floatText && F.floatText(t, G.combo >= 3 ? '🔥' + G.combo : '+1'); } F.bump && F.bump('ok'); }
+          else { G.combo = 0; F.sfx('ng'); F.vibrate && F.vibrate([60, 40, 60]); if (t) F.floatText && F.floatText(t, '✗', true); }
+        }
+      } catch (e) { }
       const sec = G.sec[q.sec] || (G.sec[q.sec] = { ok: 0, n: 0 }); sec.n++; if (ok) sec.ok++;
       recordAns(q, G.L, ok);
       if (!ok && q.item && !G.wrong.some(w => w.id === q.item.id)) G.wrong.push(q.item);
