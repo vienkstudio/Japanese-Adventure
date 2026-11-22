@@ -247,7 +247,7 @@
         const sub = x => { const k = sec.id + ':' + x.g, op = OPEN.has(k) || (x.packs && curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))); return `<details class="nv-g" data-g="${esc(k)}"${op ? ' open' : ''}><summary>${esc(x.g)}</summary>${x.packs ? groupHTML(Object.assign({}, sec, { group: 'packs' })) : ''}${x.items.map(byId).filter(Boolean).map(tn).join('')}${x.more ? sub(x.more) : ''}</details>`; };
         const tools = (sec.tools || []).map(x => typeof x === 'string' ? (byId(x) ? tn(byId(x)) : '') : sub(x));
         return `<details class="nv-sec" data-s="${sec.id}"${open ? ' open' : ''}><summary class="${hs === sec.id ? 'on' : ''}"><span aria-hidden="true">${sec.icon}</span>${esc(sec.name)}</summary>
-          ${sec.route ? `<button type="button" class="nv-n nv-all" data-r="${esc(sec.route)}" data-p="${esc(JSON.stringify(sec.params || {}))}">看全部${esc(sec.name)} ›</button>` : ''}${groupHTML(sec)}${tools.join('')}</details>`;
+          ${sec.id === 'me' || sec.id === 'daily' ? nodeBtn({ route: sec.route, params: sec.params, icon: sec.id === 'me' ? '📊' : '📅', name: sec.id === 'me' ? '學習紀錄' : '今天的複習' }, curName === sec.route) : sec.route ? `<button type="button" class="nv-n nv-all" data-r="${esc(sec.route)}" data-p="${esc(JSON.stringify(sec.params || {}))}">看全部${esc(sec.name)} ›</button>` : ''}${groupHTML(sec)}${tools.join('')}</details>`;
       }).join('')}</nav>`;
   }
   function paintTree() {
@@ -258,6 +258,7 @@
     if (drawer) return drawer;
     drawer = document.createElement('aside'); drawer.id = 'nvTree'; drawer.className = 'nv-drawer'; drawer.setAttribute('aria-hidden', 'true');
     drawer.innerHTML = '<div class="nv-bg" data-x></div><div class="nv-in" role="dialog" aria-label="全部內容"></div>';
+    drawer.inert = true;
     document.body.appendChild(drawer);
     drawer.addEventListener('toggle', e => {
       const d = e.target; if (!d.dataset) return;
@@ -281,7 +282,7 @@
   let closeLayer = null;
   function open() {
     ensureDrawer(); paintTree();
-    document.body.classList.add('nv-open'); drawer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('nv-open'); drawer.setAttribute('aria-hidden', 'false'); drawer.inert = false;
     if (!isWide() && App.layer) {   // 手機返回鍵＝關閉選單
       const mark = document.createElement('i'); mark.hidden = true;
       closeLayer = App.layer(mark);
@@ -292,7 +293,7 @@
   function close(silent) {
     if (!drawer) return;
     if (isWide() && !silent) return;
-    document.body.classList.remove('nv-open'); drawer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('nv-open'); drawer.setAttribute('aria-hidden', 'true'); drawer.inert = true;
     if (closeLayer && !silent) { const c = closeLayer; closeLayer = null; c(); }
   }
   // 頂列：☰ 與麵包屑（取代 logo 文字）
@@ -308,7 +309,8 @@
     const logo = top.querySelector('.logo');
     if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => open(); if (logo) logo.after(cb); else top.appendChild(cb); }
     const c = crumb(curName, curP);
-    cb.textContent = c; cb.hidden = !c; cb.setAttribute('aria-label', c ? '目前位置：' + c + '（開啟選單）' : '');
+    const L0 = locate(curName, curP), xl = document.documentElement.dataset.fs === 'xl';
+    cb.textContent = xl && L0 && L0.sec ? L0.sec.icon + ' ›' : c; cb.hidden = !c; cb.setAttribute('aria-label', c ? '目前位置：' + c + '（開啟選單）' : '');
     top.classList.toggle('nv-has-crumb', !!c);
   }
   document.addEventListener('routechange', e => {
@@ -317,9 +319,9 @@
     try { topBar(); } catch (er) { }
     if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree();
     remember(curName, curP);
-    if (isWide()) { ensureDrawer(); if (!document.body.classList.contains('nv-open')) { document.body.classList.add('nv-open', 'nv-wide'); drawer.setAttribute('aria-hidden', 'false'); paintTree(); } }
+    if (isWide()) { ensureDrawer(); if (!document.body.classList.contains('nv-open')) { document.body.classList.add('nv-open', 'nv-wide'); drawer.setAttribute('aria-hidden', 'false'); drawer.inert = false; paintTree(); } }
   });
-  try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); } }); } catch (e) { }
+  try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); drawer.inert = false; paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); if (drawer) drawer.inert = true; } }); } catch (e) { }
   // 首頁用：主選項（每類的進度與下一步由首頁自己算）
   const mainSections = () => SECTIONS.filter(x => !/^(home|me|lookup)$/.test(x.id));   // 首頁卡不放底部導覽已有的「我的」「查」
   // 頁面自己換分頁（學習頁的分頁鈕）時更新麵包屑與側邊樹

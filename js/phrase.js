@@ -230,6 +230,26 @@
     flush();
     return out;
   }
+  // 4 字以上的漢字串：有載入 JPText（斷詞）時切成詞（夜間｜特別｜拝観 → yakan tokubetsu haikan）；讀音要能完全對上才切
+  function splitCompound(jp, kana) {
+    const J = typeof window !== 'undefined' && window.JPText;
+    if (!jp || jp.length < 4 || !J || !J.size || typeof J.tokenize !== 'function') return null;
+    try {
+      const tk = J.tokenize(jp); if (tk.length < 2 || tk.filter(t => !t.known).length > 1) return null;
+      const K = toH(kana), out = []; let pos = 0;
+      for (let i = 0; i < tk.length; i++) {
+        const t = tk[i], k = t.known ? toH(t.kana || t.bkana || '') : '';
+        if (t.known && k && K.startsWith(k, pos)) { out.push(k); pos += k.length; continue; }
+        if (t.known && i < tk.length - 1) return null;   // 讀音對不上：只有最後一個詞可以改用剩下的讀音（北海道限定生 → なま）
+        // 字典沒有的詞（拝観）：讀音＝到下一個已知詞之前的部分
+        const nx = tk[i + 1], nk = nx ? toH(nx.kana || nx.bkana || '') : '';
+        const end = nx ? K.indexOf(nk, pos + 1) : K.length;
+        if (end <= pos) return null;
+        out.push(K.slice(pos, end)); pos = end;
+      }
+      return pos === K.length ? out : null;
+    } catch (e) { return null; }
+  }
   function romajiJP(kana, jp) {
     // 〜（填空處）當作一個名詞：〜へは → ~ e wa
     const T = s => s.replace(/[〜~～]/g, 'ヴヴ');
@@ -255,7 +275,10 @@
         // 平假名名詞＋單一漢字（わらび餅、うに丼、たこ焼き）：視為一個詞
         const nx = segs[i + 1], tail = !nx || nx.t === 'P' || (nx.t === 'H' && /^[はがをにでともの、。きけ]/.test(nx.k));
         const noun = pu && pu.whole && !pu.lex && !pu.part && pu.k.length >= 2 && s.t === 'K' && s.n === 1 && tail;
-        units.push({ k: s.k, num: s.t === 'N' ? s.s : '', sp: s.s === '用' || !(pu && !pu.p && (pu.pre || pu.glue || noun)) });   // 〜用（お土産用）斷開
+        const sp0 = s.s === '用' || !(pu && !pu.p && (pu.pre || pu.glue || noun));   // 〜用（お土産用）斷開
+        const cp = s.t === 'K' ? splitCompound(s.s, s.k) : null;   // 複合漢語（夜間特別拝観）用斷詞切開
+        if (cp) { cp.forEach((k, j) => units.push({ k, num: '', sp: j ? true : sp0 })); return; }
+        units.push({ k: s.k, num: s.t === 'N' ? s.s : '', sp: sp0 });
         return;
       }
       const after = !!(prev && (isKN(prev.t) || prev.t === 'T')) && !(prev && prev.t === 'N' && /^(います|いる|いた|あります|ある|ください|です|でした|だ|で|も|と|が|は|を|に|しか|だけ|ずつ|お願い)/.test(toH(s.k))), nextK = !!(next && (isKN(next.t) || next.t === 'T'));

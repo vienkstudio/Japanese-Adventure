@@ -702,6 +702,18 @@
         const sub = tokenize(text.slice(t.i + 1, end)).map(x => Object.assign(x, { i: x.i + t.i + 1 }));
         out.splice(k, nx ? 2 : 1, ga, ...sub);
       }
+      // 動詞／形容詞＋ことに（行くことにした、食べたことに気づいた）是「こと＋に」，不是副詞「尤其」
+      if (t.s === 'ことに' && t.pos === 'adv' && /^(v|i|aux|na)$/.test(p.pos || '')) {
+        const a = tokenize('こと')[0], b = tokenize('に')[0]; a.i = t.i; b.i = t.i + 2;
+        out.splice(k, 1, a, b);
+      }
+      // 〜なければならない／〜なくてはならない／〜ないといけない：文法「必須」，不是「變成」
+      if (t.base === 'なる' && /^ならな|^なりません/.test(t.s) && /(なければ|なくては|なくちゃ|なきゃ|ねば)$/.test(p.s)) Object.assign(t, { zh: '（文法）必須…（〜なければならない）', pos: 'aux', gram: true });
+      // 名詞＋だと＋思う／言う：だ＋と（引用），不是接續詞「若是那樣」
+      if (t.s === 'だと' && out[k + 1] && /^(思う|言う|いう|考える|感じる|聞く|話す|信じる)$/.test(out[k + 1].base || '') && /^(n|na|pron|name|unk)$/.test(p.pos || '')) {
+        const a = tokenize('だ')[0], b = tokenize('と')[0]; a.i = t.i; b.i = t.i + 1;
+        out.splice(k, 1, a, b); continue;
+      }
       if (t.s === 'と' && t.pos === 'part' && out[k + 1] && /^(思う|言う|いう|考える|感じる|聞く|話す|書く|答える|叫ぶ)$/.test(out[k + 1].base || '')) Object.assign(t, { zh: '（引用）表示說／想的內容' });
     }
     return out;
@@ -728,12 +740,14 @@
     }
     if (/^(空く)$/.test(base) && /(お?腹|おなか|道|道路|電車|バス|車内|店内|お店|会場|館内)が?$/.test(prevS(out, 2))) return want(info, 'すく');   // 肚子餓、路上／車上人少
     if (/^(降りる)$/.test(base) && /(雨|雪|雹|霜)が?$/.test(prevS(out, 2))) return want(info, 'ふる');
-    if (base === '開く') {
+    if (info.c.e.jp === '開く' && base === '開く') {
+      if (p1.s === 'を') return want(info, 'ひらく');   // 他動詞：口を開く、店を開く、本を開く
       if (/(ドア|窓|戸|箱|蓋|ふた|席|部屋|口|鍵)が?$/.test(prevS(out, 2))) return info;
       if (/^開か(れ|せ)/.test(s) || OPEN.test(prevS(out, 5))) return want(info, 'ひらく');
       return info;
     }
     if (base === '一日' && /月$/.test(prevS(out, 1))) return want(info, 'ついたち');
+    if (base === '生' && /^[ァ-ヶー]/.test(nx)) return want(info, 'なま');   // 生＋外來語（生ビール、生クリーム）
     if (base === '辛い') return (HARD.test(prevS(out, 3)) && !FOOD.test(prevS(out, 3))) || /^(思い出|経験|思い|気持ち|日々|時期|過去|別れ|仕事|立場)/.test(nx) ? want(info, 'つらい') : info;
     if (base === '何' && /^(曜日|時|人|回|歳|階|日|月|年|本|枚|個|分|円|番|度|語|色|冊|匹|杯|台|でも|か所)/.test(nx)) return want(info, 'なん');
     return info;

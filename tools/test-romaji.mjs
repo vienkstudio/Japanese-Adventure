@@ -15,6 +15,7 @@ const verbose = process.argv.includes('-v');
 
 // [jp, kana, 期望, 評審報告的錯例]
 const CASES = [
+  // 複合漢語（需要 JPText；本測試沒載入斷詞時仍可黏字，不檢查）
   // 評審 v16 P1：を、數字後的動詞、〜用／ように
   ['おみくじをください', 'おみくじをください', 'omikuji o kudasai', 'omikujio kudasai'],
   ['ぎゅうにゅうをください', 'ぎゅうにゅうをください', 'gyuunyuu o kudasai', 'gyuunyuuo'],
