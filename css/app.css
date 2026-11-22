@@ -473,6 +473,8 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
   body.nv-wide .nv-head .nv-x{display:none}
   body.nv-wide #main{margin-left:280px}
   body.nv-wide .nv-menu{display:none}
+  body.nv-wide #nav{display:none}   /* 寬螢幕只留側邊樹，不再三套導覽 */
+  body.nv-wide #playerChip{margin-left:auto}
 }
 /* ===== 首頁：繼續上次＋全部主選項 ===== */
 .hm-day{color:var(--muted);font-size:var(--fs-sm);margin:var(--sp-2) 0 0}
@@ -482,8 +484,20 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 .hm-cont>span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column}
 .hm-cont small{color:var(--muted);font-size:var(--fs-xs)}
 .hm-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
-[data-fs=xl] .hm-all{grid-template-columns:1fr}
+[data-fs=xl] .hm-all,[data-fs=l] .hm-all{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-fs=xl] .hm-cat small,[data-fs=l] .hm-cat small{display:none}
+[data-fs=xl] .hm-cat,[data-fs=l] .hm-cat{min-height:52px;padding:var(--sp-2)}
+.hm-cat{min-height:56px;padding:var(--sp-2) var(--sp-3)}
 .hm-cat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:var(--sp-2);align-items:center;border:none;border-radius:var(--r-m);background:var(--card);color:var(--text);box-shadow:var(--shadow);padding:var(--sp-3);min-height:64px;font:inherit;text-align:left;cursor:pointer}
 .hm-cat .ic{grid-row:1/3;font-size:1.6em}
 .hm-cat small{color:var(--muted);font-size:var(--fs-xs)}
 .hm-cat.mine{outline:2px solid var(--pri-t)}
+.nv-lab{margin:6px 0 0 24px;font-size:var(--fs-xs);font-weight:800;color:var(--muted)}
+
+/* 首頁一屏放下（標準字 375×812）：卡片說明單行、目的切換縮小 */
+.hm .hm-cat small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hm .hm-cat b{min-width:0}
+.hm .hm-goal{min-height:40px;margin:var(--sp-2) auto 0;padding:4px 14px}
+.hm .hm-main{min-height:76px;padding:var(--sp-3) var(--sp-4)}
+.hm .hm-sec{margin-top:var(--sp-3)}
+.hm .hm-cont{margin-top:var(--sp-2)}

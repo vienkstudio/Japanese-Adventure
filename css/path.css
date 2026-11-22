@@ -12,9 +12,10 @@
 .pa-grid.one{grid-template-columns:minmax(0,1fr)}
 .pa-card{position:relative;display:flex;align-items:flex-start;gap:var(--sp-2);text-align:left;min-height:44px;padding:var(--sp-3);border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:var(--r-m);box-shadow:var(--shadow);font:inherit;cursor:pointer}
 .pa-card:active{transform:scale(.98)}
-.pa-card.next{border:2px solid var(--pri);background:var(--pri-t);grid-column:1/-1;padding-top:calc(var(--sp-3) + 14px)}
+.pa-card.next{border:2px solid var(--pri);background:var(--pri-t);grid-column:1/-1}
 .pa-card.done .pa-n{color:var(--ok)}
-.pa-tag{position:absolute;top:6px;left:var(--sp-3);font-size:var(--fs-xs);font-weight:800;color:var(--pri-d)}
+.pa-tag{flex-basis:100%;order:-1;margin-bottom:-4px;font-size:var(--fs-xs);font-weight:800;color:var(--pri-d)}
+.pa-card.next{flex-wrap:wrap}   /* 「建議下一個」獨佔一行，不壓圖示與標題 */
 .pa-ic{font-size:26px;line-height:1.1;flex:none}
 .pa-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .pa-t b{font-size:var(--fs-md);line-height:1.3}

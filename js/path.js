@@ -515,12 +515,10 @@
     const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}">${ic} ${esc(n)}</button>`;
     el.innerHTML = `<div class="pa">
       ${zeroKana() && UI.tab !== 'kana' ? `<button type="button" class="pa-pin" data-tab="kana"><b>🔤 先學五十音 ›</b><span>已會 ${kanaDone()}／46 個平假名，每課 5 個字。</span></button>` : ''}
-      <div class="tabs pa-tabs" role="tablist">${T.main.map(tb).join('')}${T.rest.length ? `<button type="button" class="pa-mt${open ? ' on2' : ''}" data-mt aria-expanded="${open}">${open ? '收起' : '⋯ 更多'}</button>` : ''}</div>
-      ${open && T.rest.length ? `<div class="tabs pa-tabs pa-rest" role="tablist">${T.rest.map(tb).join('')}</div>` : ''}
+      <div class="tabs pa-tabs" role="tablist">${(zeroKana() ? T.all : T.all.filter(t => t[0] !== 'kana').concat(T.all.filter(t => t[0] === 'kana'))).map(tb).join('')}</div>
       <div class="pa-body"><p class="center muted pa-load">載入中…</p></div></div>`;
     const body = el.querySelector('.pa-body');
     el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { UI.tab = b.dataset.tab; renderPath(el, {}); });
-    const mt = el.querySelector('[data-mt]'); if (mt) mt.onclick = () => { UI.open = !open; if (!UI.open && inRest) UI.tab = T.main[0][0]; renderPath(el, {}); };
     const tab = UI.tab, lv = UI.lv || lvNow();
     load(tab, { lv }).then(() => { if (el.isConnected && UI.tab === tab) paint(body, tab); })
       .catch(() => { if (el.isConnected) body.innerHTML = '<p class="center pa-load">😵 載入失敗，請檢查網路後再試一次</p>'; });

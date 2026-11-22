@@ -139,7 +139,7 @@
     const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${(p.goals || []).includes('travel') ? `＋${kanaPh()} 句旅遊句` : ''}，先教再考`
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
     applyDone(d);
-    const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? `▶ 開始今天的課（約 ${pl.min} 分鐘）` : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
+    const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今天的課' : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
     const steps = [
       { b: '複習', v: d.done ? (dueAll ? `還有 ${dueAll} 個到期` : d.reviewed ? `${d.reviewed} 個 ✓` : '不用 ✓') : pg ? (pg.revN ? `${pg.rev}／${pg.revN}` : '今天沒有') : due ? `${due} 個到期` : '今天沒有', ok: !!d.done && !dueAll },
       { b: '新學', v: d.done ? `${d.learned} 個 ✓` : pg ? `${pg.neu}／${pg.neuN}` : `0／${n}`, ok: !!d.done },
@@ -147,14 +147,12 @@
     ];
     const gs = p.goals || [];
     el.innerHTML = `<section class="hm">
-      <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}</small></h1>
-      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
+      <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}・${sk.days ? `🔥 連續 ${sk.days} 天${sk.done ? " ✓" : ""}` : esc(dayStatus(d, d.done ? dueAll : due))}</small></h1>
+      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
       ${!km && gs.length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
-      <p class="hm-day${d.done ? ' ok' : ''}">${esc(dayStatus(d, d.done ? dueAll : due))}・${steps.map(x => x.b + ' ' + x.v).join('・')}</p>
       ${contHTML()}
       <h2 class="hm-sec">全部內容</h2>
       <div class="hm-all">${mainCards(p)}</div>
-      <p class="hm-streak">${sk.days ? `🔥 連續 ${sk.days} 天${sk.risk ? '・今天上一課就能保住' : sk.done ? '・今天已練習 ✓' : ''}` : '🔥 今天上完一課，開始累積連勝'}</p>
     </section>`;
     el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
     el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.SECTIONS.find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
