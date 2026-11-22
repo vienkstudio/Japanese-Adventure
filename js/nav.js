@@ -13,7 +13,7 @@
   'use strict';
   const esc = App.esc;
   const arr = a => Array.isArray(a) ? a : [];
-  const CATS = [['kana', '🔤', '五十音'], ['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲・閱讀'], ['daily', '📅', '每天學'], ['me', '👤', '我的']];
+  const CATS = [['kana', '🔤', '五十音'], ['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲・閱讀'], ['daily', '📌', '複習'], ['me', '👤', '我的']];
   // 旅遊包（與 js/path.js PACKS 同步；有 Path.PACKS 時以它為準）
   const PACK0 = [['konbini', '🏪', '便利商店'], ['eat', '🍱', '餐廳・燒肉'], ['ramen', '🍜', '拉麵・麵店'], ['station', '🚉', '車站與交通'], ['hotel', '🏨', '飯店・旅館'], ['airport', '✈️', '機場'], ['cafe', '☕', '咖啡・甜點'],
     ['drug', '💊', '藥妝店'], ['shop', '🛍️', '購物・伴手禮'], ['izakaya', '🏮', '居酒屋'], ['sight', '⛩️', '觀光・寺社'], ['market', '🦀', '市場・美食街'], ['rental', '🚗', '租車・租借'], ['emer', '🆘', '緊急・醫療']];
@@ -243,7 +243,7 @@
         const open = OPEN.has(sec.id) || hs === sec.id;
         const tools = (sec.tools || []).map(byId).filter(Boolean).map(t => nodeBtn({ route: t.route || '', params: t.params, icon: t.icon, name: t.name, tool: t.id }, here && here.tool && here.tool.id === t.id));
         return `<details class="nv-sec" data-s="${sec.id}"${open ? ' open' : ''}><summary class="${hs === sec.id ? 'on' : ''}"><span aria-hidden="true">${sec.icon}</span>${esc(sec.name)}</summary>
-          ${sec.route ? nodeBtn({ route: sec.route, params: sec.params, icon: '🧭', name: sec.name + '首頁' }, false) : ''}${groupHTML(sec)}${tools.join('')}</details>`;
+          ${sec.route ? nodeBtn({ route: sec.route, params: sec.params, icon: sec.icon, name: '全部' + sec.name + (sec.id === 'me' || sec.id === 'daily' ? '' : '課程') }, false) : ''}${groupHTML(sec)}${tools.join('')}</details>`;
       }).join('')}</nav>`;
   }
   function paintTree() {
@@ -308,7 +308,8 @@
     top.classList.toggle('nv-has-crumb', !!c);
   }
   document.addEventListener('routechange', e => {
-    const d = e.detail || {}; curName = d.name || 'home'; curP = d.params || {};
+    const d = e.detail || {}, keep = d.name === 'path' && !(d.params || {}).tab && curName === 'path' && curP.tab;   // 學習頁已用 refresh 回報實際分頁
+    if (!keep) { curName = d.name || 'home'; curP = d.params || {}; }
     try { topBar(); } catch (er) { }
     if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree();
     remember(curName, curP);
@@ -317,6 +318,8 @@
   try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); } }); } catch (e) { }
   // 首頁用：主選項（每類的進度與下一步由首頁自己算）
   const mainSections = () => SECTIONS.filter(x => x.id !== 'home');
+  // 頁面自己換分頁（學習頁的分頁鈕）時更新麵包屑與側邊樹
+  function refresh(name, p) { curName = name; curP = p || {}; try { topBar(); } catch (e) { } if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree(); }
 
-  window.NAV = { TOOLS, CATS, byId, forMe, preset, search, go, note, pin, pinned, renderPick, packs, SECTIONS, mainSections, locate, crumb, cont, open, close };
+  window.NAV = { TOOLS, CATS, byId, forMe, preset, search, go, note, pin, pinned, renderPick, packs, SECTIONS, mainSections, locate, crumb, cont, open, close, refresh };
 })();

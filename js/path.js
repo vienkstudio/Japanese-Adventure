@@ -23,7 +23,7 @@
   'use strict';
   const esc = s => App.esc(String(s == null ? '' : s));
   const arr = a => Array.isArray(a) ? a : [];
-  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲新聞']];
+  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲・閱讀']];
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const KN = ['kana-data.js', 'js/kana-lesson.js'];
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
@@ -509,6 +509,7 @@
     if (params.goal && !params.tab) params = Object.assign({}, params, { tab: params.goal });   // 相容 {goal}
     if (params.tab && T.all.some(t => t[0] === params.tab)) UI.tab = params.tab;
     if (!UI.tab || !T.all.some(t => t[0] === UI.tab)) UI.tab = zeroKana() ? 'kana' : (T.main.find(t => t[0] !== 'kana') || T.main[0])[0];   // 零基礎預設停在五十音（先講義、訓練表）
+    if (window.NAV && NAV.refresh) NAV.refresh('path', Object.assign({}, params, { tab: UI.tab }));   // 麵包屑、側邊樹跟著畫面上的分頁
     if (params.lv) UI.lv = String(params.lv).toUpperCase();
     const inRest = T.rest.some(t => t[0] === UI.tab), open = UI.open || inRest;
     const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}">${ic} ${esc(n)}</button>`;
