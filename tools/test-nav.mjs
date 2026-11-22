@@ -19,7 +19,7 @@ for (const f of fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.j
 
 const state = { profile: {} };
 const App = { state, esc: s => String(s), save() { }, profile: () => ({ lv: state.profile.lv || 'zero', goals: (state.profile.goals && state.profile.goals.length ? state.profile.goals : ['travel']).slice() }), go() { }, loadScript: () => Promise.resolve(), toast() { }, register() { } };
-const ctx = { console, App };
+const ctx = { console, App, document: { addEventListener() { }, getElementById: () => null, querySelector: () => null }, matchMedia: () => ({ matches: false, addEventListener() { } }) };
 ctx.window = ctx; vm.createContext(ctx);
 vm.runInContext(rd('js/classic.js'), ctx, { filename: 'classic.js' });
 vm.runInContext(rd('js/nav.js'), ctx, { filename: 'nav.js' });

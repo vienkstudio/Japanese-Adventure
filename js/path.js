@@ -688,7 +688,7 @@
     });
   }
 
-  App.register('path', { title: '路線', icon: '🧭', nav: true, navOrder: 2, render: renderPath });
+  App.register('path', { title: '學習', icon: '🧭', nav: true, navOrder: 2, render: renderPath });
   App.register('path-unit', { title: '單元', icon: '🧭', nav: false, navParent: 'path', render: renderUnit });
   window.Path = { units, load, unit, loadUnit, nextUnit, prepare, exOf, region, shopFor, PACKS };
 })();

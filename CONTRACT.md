@@ -147,9 +147,9 @@ migrate 也會修正型別：`xp` 非有限數字→0（負數→0）、`cleared
 底部導覽 4 鈕（第二階段，2026-11-19）：`home`(1) 今天、`path`(2) 路線、`lookup`(3) 查、`me`(4) 我的；`play`／`challenge*`／`boot*`／`biz*`／`act` 歸路線，`read*`／`songs`／`song`／`kb*`／`mind3d`／`phrasebook` 歸查，`review`／`cards`／`settings`／`classic` 歸我的；其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。
 | 路由 | 模組 | 說明 |
 |---|---|---|
-| `home`（nav 1） | home.js | 「今天」：唯一主按鈕「▶ 開始今天的課（約 8 分鐘）」→ `today`；多目的的人主按鈕下有 1 顆「今天練：⇄ 換」切換今天的目的；連勝與今日進度（複習／新學／應用，不可點）。**不放捷徑列、不加條件按鈕**；含頂列與導覽可點元素 ≤10（實測 10）。未定位（`profile.placed` false）先顯示程度選擇→字級→目的，body 加 `.ob-mode` |
+| `home`（nav 1） | home.js | 「今天」：唯一主按鈕「▶ 開始今天的課（約 8 分鐘）」→ `today`；多目的的人主按鈕下有 1 顆「今天練：⇄ 換」切換今天的目的；連勝與今日進度（複習／新學／應用，不可點）。v48 起（使用者決定）首頁＝主按鈕＋「⏯ 繼續上次」＋「全部內容」7 張分類卡（自己的目的排前面）；頂列 ☰ 開側邊樹（≥1024px 常駐左側）、內頁顯示麵包屑（js/nav.js）。未定位（`profile.placed` false）先顯示程度選擇→字級→目的，body 加 `.ob-mode` |
 | `today` | home.js | 今日課 params `{goal:'travel'|'exam'|'fun'|'work'|'kana'}`。零基礎且平假名未學完（Learn 的 `kana:` 項目＜46）＝`kana`，不分目的。流程：`Learn.prepare` → ① 到期複習 ≤15（看答案→忘了 0／記得 2／很簡單 3）→ ② 新學 5–8 張卡（日文、讀音、羅馬字 `Phrase.romaji`、中文、🔊）→ ③ 小測驗（第一次答對 2、答錯 0 並在最後重考一次、重考答對 1）→ 結算（學會 N、複習、明天到期 M、連勝；+XP）＋「▶ 用出來」應用：travel＝`World.next()` 下一間店；exam＝`challenge-play {lv, t:'mix'}`；fun＝`read-article {daily}` 今日短文；work＝`BIZ.next()`（`biz-unit`）；kana＝`phrasebook {tab:'kana', sub:'quiz'}`。每題都 `Learn.record(id, grade, {src:'today'})`。fun 的新學不足時用今日短文段落補、work 用 `BIZ.units` 的 vocab／phrases 補 |
-| `settings` | home.js | 設定頁：程度、目的、外觀、語音、其他（音效、頭像、**🏯 經典練習**、備份）、清除 |
+| `settings` | home.js | 設定頁：程度、目的、外觀、語音、其他（音效、頭像、備份）、清除 |
 | `play`（nav 2） | world.js | 冒險世界：params `{r, d, s}`；地圖頁（無 d/s）底部有「🏯 經典練習」入口（home.js 附加） |
 | `event` | world-quest.js | 店家狀況題（需 TravelData，延遲載入） |
 | `read`（nav 3）、`read-article`、`songs`、`song` | reader.js、songs.js | 閱讀、歌曲；文章分頁另有「💼 商務」一節（`BIZ_READING`，點了到 `biz-read`） |

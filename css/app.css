@@ -438,3 +438,52 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 .kp-mini{display:flex;gap:var(--sp-2);margin:var(--sp-2) 0}
 .kp-mini button{flex:1;min-height:44px;border:none;border-radius:var(--r-pill);background:var(--card);color:var(--text);box-shadow:var(--shadow);font:inherit;font-weight:700;cursor:pointer}
 @media print{#top,#nav,.kg-next{display:none!important}}
+
+/* ===== 樹狀導覽（js/nav.js）：☰ 側邊樹、麵包屑；寬螢幕常駐左側 ===== */
+.nv-menu{flex:none}
+.nv-crumb{min-width:0;flex:0 1 auto;border:none;background:var(--chip);color:var(--text);font:inherit;font-size:var(--fs-sm);font-weight:700;border-radius:var(--r-pill);padding:6px 12px;min-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#top .in.nv-has-crumb .logo .t{display:none}
+.nv-drawer{position:fixed;inset:0;z-index:80;pointer-events:none}
+.nv-drawer .nv-bg{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .2s}
+.nv-drawer .nv-in{position:absolute;top:0;bottom:0;left:0;width:min(86vw,320px);background:var(--card);box-shadow:var(--shadow);overflow-y:auto;transform:translateX(-102%);transition:transform .22s;padding:calc(env(safe-area-inset-top,0px) + 8px) 8px 24px}
+body.nv-open .nv-drawer{pointer-events:auto}
+body.nv-open .nv-drawer .nv-bg{opacity:1}
+body.nv-open .nv-drawer .nv-in{transform:none}
+.nv-head{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.nv-x{width:44px;height:44px;border:none;border-radius:50%;background:var(--chip);color:var(--text);font:inherit;cursor:pointer}
+.nv-sec>summary,.nv-g>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border-radius:var(--r-s);font-weight:800;cursor:pointer;list-style:none}
+.nv-sec>summary::-webkit-details-marker,.nv-g>summary::-webkit-details-marker{display:none}
+.nv-sec>summary::after,.nv-g>summary::after{content:"▸";margin-left:auto;color:var(--muted)}
+.nv-sec[open]>summary::after,.nv-g[open]>summary::after{content:"▾"}
+.nv-sec>summary.on{background:var(--pri-t);color:var(--pri-d)}
+.nv-sec>summary>span{font-size:1.2em}
+.nv-g{margin-left:14px}
+.nv-g>summary{font-weight:700;font-size:var(--fs-sm);color:var(--muted)}
+.nv-n{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;border:none;background:none;color:var(--text);font:inherit;font-size:var(--fs-sm);text-align:left;padding:0 10px 0 24px;border-radius:var(--r-s);cursor:pointer}
+.nv-sec>.nv-n:first-of-type{font-weight:700}
+.nv-g .nv-n{padding-left:20px}
+.nv-n:hover,.nv-n:focus-visible{background:var(--chip)}
+.nv-n.on{background:var(--pri-t);color:var(--pri-d);font-weight:800}
+div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
+.nv-load{color:var(--muted);font-size:var(--fs-xs);padding:6px 24px}
+@media(min-width:1024px){
+  body.nv-wide .nv-drawer{top:var(--topH,60px);right:auto;width:280px;pointer-events:auto}
+  body.nv-wide .nv-drawer .nv-bg{display:none}
+  body.nv-wide .nv-drawer .nv-in{width:280px;transform:none;box-shadow:none;border-right:1px solid var(--line);padding-top:8px}
+  body.nv-wide .nv-head .nv-x{display:none}
+  body.nv-wide #main{margin-left:280px}
+  body.nv-wide .nv-menu{display:none}
+}
+/* ===== 首頁：繼續上次＋全部主選項 ===== */
+.hm-day{color:var(--muted);font-size:var(--fs-sm);margin:var(--sp-2) 0 0}
+.hm-day.ok{color:var(--ok, var(--pri))}
+.hm-cont{display:flex;align-items:center;gap:var(--sp-3);width:100%;margin-top:var(--sp-3);border:none;border-radius:var(--r-m);background:var(--card);color:var(--text);box-shadow:var(--shadow);padding:var(--sp-3);min-height:56px;font:inherit;text-align:left;cursor:pointer}
+.hm-cont .ic{font-size:1.5em}
+.hm-cont>span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column}
+.hm-cont small{color:var(--muted);font-size:var(--fs-xs)}
+.hm-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
+[data-fs=xl] .hm-all{grid-template-columns:1fr}
+.hm-cat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:var(--sp-2);align-items:center;border:none;border-radius:var(--r-m);background:var(--card);color:var(--text);box-shadow:var(--shadow);padding:var(--sp-3);min-height:64px;font:inherit;text-align:left;cursor:pointer}
+.hm-cat .ic{grid-row:1/3;font-size:1.6em}
+.hm-cat small{color:var(--muted);font-size:var(--fs-xs)}
+.hm-cat.mine{outline:2px solid var(--pri-t)}

@@ -160,5 +160,163 @@
     });
   }
 
-  window.NAV = { TOOLS, CATS, byId, forMe, preset, search, go, note, pin, pinned, renderPick, packs };
+  /* =========================================================
+     樹狀導覽（v48）：側邊樹（☰；寬螢幕常駐左側）＋頂列麵包屑＋「繼續上次」
+     SECTIONS：首頁／五十音／旅遊／日檢／商務／歌曲・閱讀／複習／我的；每類底下是工具（TOOLS）與單元群組（展開時才載入）
+     ========================================================= */
+  const SECTIONS = [
+    { id: 'home', icon: '🏠', name: '首頁', route: 'home' },
+    { id: 'kana', icon: '🔤', name: '五十音', route: 'path', params: { tab: 'kana' }, tools: ['kana-guide', 'kana-drill', 'kana-table', 'kana-quiz', 'kana-battle', 'kana-cards'], group: 'kana' },
+    { id: 'travel', icon: '🧳', name: '旅遊', route: 'path', params: { tab: 'travel' }, tools: ['phrasebook', 'emer', 'dialog', 'speak', 'menu', 'event', 'boot', 'play'], group: 'packs' },
+    { id: 'exam', icon: '📝', name: '日檢', route: 'path', params: { tab: 'exam' }, tools: ['gram', 'dict', 'ex-cards', 'chal', 'kb', 'mind3d'], group: 'levels' },
+    { id: 'work', icon: '💼', name: '商務', route: 'path', params: { tab: 'work' }, tools: ['biz', 'biz-read', 'keigo'] },
+    { id: 'fun', icon: '🎵', name: '歌曲・閱讀', route: 'path', params: { tab: 'fun' }, tools: ['songs', 'read', 'news', 'url'] },
+    { id: 'daily', icon: '📌', name: '複習', route: 'review', tools: ['today', 'review', 'cards'] },
+    { id: 'me', icon: '👤', name: '我的', route: 'me', tools: ['settings', 'backup', 'goshuin'] }
+  ];
+  const LVL = ['N5', 'N4', 'N3', 'N2', 'N1'];
+  // 路由 → 所在分類（麵包屑、側邊樹高亮）
+  function locate(name, p) {
+    p = p || {};
+    const sec = id => SECTIONS.find(x => x.id === id);
+    const tab = p.tab || p.goal;
+    if (name === 'home') return { sec: sec('home') };
+    if (name === 'path') return { sec: sec({ kana: 'kana', travel: 'travel', exam: 'exam', work: 'work', fun: 'fun' }[tab] || 'daily') || sec('daily'), sub: tab === 'exam' && p.lv ? String(p.lv).toUpperCase() : '' };
+    if (name === 'path-unit') {
+      const id = String(p.id || '');
+      if (/^kana-/.test(id)) return { sec: sec('kana'), sub: '分行單元' };
+      const m = id.match(/^tr-([a-z]+)/); if (m) { const pk = packs().find(x => x[0] === m[1]); return { sec: sec('travel'), sub: pk ? pk[2] : '' }; }
+      const e = id.match(/^(n[1-5])-/); if (e) return { sec: sec('exam'), sub: e[1].toUpperCase() };
+      if (/^biz/.test(id)) return { sec: sec('work') };
+      if (/^fun/.test(id)) return { sec: sec('fun') };
+      return { sec: sec('daily') };
+    }
+    if (/^(kana-guide|kana-drill|kana-quiz|quest)$/.test(name) || (name === 'cards' && /^(hira|kata|daku)$/.test(p.deck || ''))) return { sec: sec('kana'), tool: TOOLS.find(t => t.route === name && (!t.params || !t.params.deck || t.params.deck === p.deck)) };
+    if (/^(biz|biz-unit|biz-read)$/.test(name)) return { sec: sec('work') };
+    if (/^(songs|song|read|read-article)$/.test(name)) return { sec: sec('fun') };
+    if (/^(challenge|challenge-play|kb|kb-page|mind|mind3d)$/.test(name) || (name === 'cards' && p.deck === 'jlpt') || (name === 'lookup' && p.view === 'gram')) return { sec: sec('exam') };
+    if (name === 'lookup' && p.view === 'keigo') return { sec: sec('work') };
+    if (/^(phrasebook|drill|menu|trip-event|boot|boot-play|play|event|trip|practice-map|stage|scene)$/.test(name)) return { sec: sec('travel') };
+    if (/^(today|review|cards|act)$/.test(name)) return { sec: sec('daily') };
+    if (/^(me|settings)$/.test(name)) return { sec: sec('me') };
+    return null;
+  }
+  const ROUTE_NAME = n => { try { return (App.routeTitle && App.routeTitle(n)) || ''; } catch (e) { return ''; } };
+  function crumb(name, p) {
+    const L = locate(name, p); if (!L || !L.sec || L.sec.id === 'home') return '';
+    const t = L.tool ? L.tool.name : L.sub || '';
+    return L.sec.icon + ' ' + L.sec.name + (t ? ' › ' + t : '');
+  }
+
+  /* ---------- 繼續上次：最後一個「內容頁」（單元、講義、歌曲、文章、小遊戲…） ---------- */
+  const CONT = /^(path-unit|kana-guide|kana-drill|kana-quiz|quest|song|read-article|biz-unit|biz-read|challenge-play|menu|drill|trip-event|boot-play|kb-page|mind3d|phrasebook|play)$/;
+  function remember(name, p) {
+    if (!CONT.test(name)) return;
+    setTimeout(() => {
+      const h = document.querySelector('#main h1, #main h2, #main .wd-title b');
+      const title = (h && h.textContent.trim().slice(0, 30)) || crumb(name, p) || name;
+      const s = st(); s.cont = { name, params: p || {}, title, where: crumb(name, p), t: Date.now() }; App.save();
+    }, 900);
+  }
+  const cont = () => { const c = st().cont; return c && c.name ? c : null; };
+
+  /* ---------- 側邊樹 ---------- */
+  const OPEN = new Set();
+  let drawer = null, curName = 'home', curP = {};
+  const isWide = () => { try { return matchMedia('(min-width: 1024px)').matches; } catch (e) { return false; } };
+  const nodeBtn = (o, act) => `<button type="button" class="nv-n${act ? ' on' : ''}" data-r="${esc(o.route || '')}" data-p="${esc(JSON.stringify(o.params || {}))}"${o.tool ? ` data-t="${esc(o.tool)}"` : ''}><span aria-hidden="true">${esc(o.icon || '•')}</span><span>${esc(o.name)}</span></button>`;
+  function groupHTML(sec) {
+    const k = sec.id + ':g', open = OPEN.has(k);
+    if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
+    if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>📚 N5–N1 單元</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '📝', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
+    if (sec.group === 'kana') {
+      const KU = window.Path && Path.units ? (() => { try { return Path.units('kana'); } catch (e) { return []; } })() : [];
+      return `<details class="nv-g" data-g="${k}" data-lazy="kana"${open ? ' open' : ''}><summary>🔤 分行單元${KU.length ? '（' + KU.length + '）' : ''}</summary>${KU.length ? KU.map(u => nodeBtn({ route: 'path-unit', params: { id: u.id }, icon: u.complete ? '✓' : '•', name: u.title }, curName === 'path-unit' && curP.id === u.id)).join('') : '<p class="nv-load">展開時載入…</p>'}</details>`;
+    }
+    return '';
+  }
+  function treeHTML() {
+    const here = locate(curName, curP), hs = here && here.sec ? here.sec.id : '';
+    return `<div class="nv-head"><b>📚 全部內容</b><button type="button" class="nv-x" data-x aria-label="關閉選單">✕</button></div>
+      <nav class="nv-tree" aria-label="全部內容">${SECTIONS.map(sec => {
+        if (!sec.tools && !sec.group) return `<div class="nv-sec">${nodeBtn(Object.assign({}, sec), hs === sec.id)}</div>`;
+        const open = OPEN.has(sec.id) || hs === sec.id;
+        const tools = (sec.tools || []).map(byId).filter(Boolean).map(t => nodeBtn({ route: t.route || '', params: t.params, icon: t.icon, name: t.name, tool: t.id }, here && here.tool && here.tool.id === t.id));
+        return `<details class="nv-sec" data-s="${sec.id}"${open ? ' open' : ''}><summary class="${hs === sec.id ? 'on' : ''}"><span aria-hidden="true">${sec.icon}</span>${esc(sec.name)}</summary>
+          ${sec.route ? nodeBtn({ route: sec.route, params: sec.params, icon: '🧭', name: sec.name + '首頁' }, false) : ''}${groupHTML(sec)}${tools.join('')}</details>`;
+      }).join('')}</nav>`;
+  }
+  function paintTree() {
+    if (!drawer) return;
+    drawer.querySelector('.nv-in').innerHTML = treeHTML();
+  }
+  function ensureDrawer() {
+    if (drawer) return drawer;
+    drawer = document.createElement('aside'); drawer.id = 'nvTree'; drawer.className = 'nv-drawer'; drawer.setAttribute('aria-hidden', 'true');
+    drawer.innerHTML = '<div class="nv-bg" data-x></div><div class="nv-in" role="dialog" aria-label="全部內容"></div>';
+    document.body.appendChild(drawer);
+    drawer.addEventListener('toggle', e => {
+      const d = e.target; if (!d.dataset) return;
+      const k = d.dataset.s || d.dataset.g; if (!k) return;
+      if (d.open) OPEN.add(k); else OPEN.delete(k);
+      if (d.open && d.dataset.lazy === 'kana' && !(window.Path && Path.units)) {
+        App.loadScript('js/classic.js').then(() => App.loadScript('js/path.js')).then(() => Path.load('kana')).then(paintTree).catch(() => { });
+      } else if (d.open && d.dataset.lazy === 'kana' && window.Path && Path.load && d.querySelector('.nv-load')) Path.load('kana').then(paintTree).catch(() => { });
+    }, true);
+    drawer.addEventListener('click', e => {
+      if (e.target.closest('[data-x]')) return close();
+      const b = e.target.closest('.nv-n'); if (!b) return;
+      const t = b.dataset.t ? byId(b.dataset.t) : null;
+      if (!isWide()) close(true);
+      if (t) return go(t);
+      let p = {}; try { p = JSON.parse(b.dataset.p || '{}'); } catch (er) { }
+      App.go(b.dataset.r || 'home', p);
+    });
+    return drawer;
+  }
+  let closeLayer = null;
+  function open() {
+    ensureDrawer(); paintTree();
+    document.body.classList.add('nv-open'); drawer.setAttribute('aria-hidden', 'false');
+    if (!isWide() && App.layer) {   // 手機返回鍵＝關閉選單
+      const mark = document.createElement('i'); mark.hidden = true;
+      closeLayer = App.layer(mark);
+      const ob = new MutationObserver(() => { if (!mark.isConnected) { ob.disconnect(); closeLayer = null; close(true); } }); ob.observe(document.body, { childList: true });
+    }
+    const f = drawer.querySelector('.nv-sec[open] summary') || drawer.querySelector('.nv-n'); if (f) try { f.focus(); } catch (e) { }
+  }
+  function close(silent) {
+    if (!drawer) return;
+    if (isWide() && !silent) return;
+    document.body.classList.remove('nv-open'); drawer.setAttribute('aria-hidden', 'true');
+    if (closeLayer && !silent) { const c = closeLayer; closeLayer = null; c(); }
+  }
+  // 頂列：☰ 與麵包屑（取代 logo 文字）
+  function topBar() {
+    const top = document.querySelector('#top .in'); if (!top) return;
+    let mb = document.getElementById('nvMenu');
+    if (!mb) {
+      mb = document.createElement('button'); mb.id = 'nvMenu'; mb.type = 'button'; mb.className = 'icon-btn nv-menu'; mb.setAttribute('aria-label', '全部內容（選單）'); mb.textContent = '☰';
+      mb.onclick = () => document.body.classList.contains('nv-open') && !isWide() ? close() : open();
+      top.insertBefore(mb, top.firstChild);
+    }
+    let cb = document.getElementById('nvCrumb');
+    const logo = top.querySelector('.logo');
+    if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => open(); if (logo) logo.after(cb); else top.appendChild(cb); }
+    const c = crumb(curName, curP);
+    cb.textContent = c; cb.hidden = !c; cb.setAttribute('aria-label', c ? '目前位置：' + c + '（開啟選單）' : '');
+    top.classList.toggle('nv-has-crumb', !!c);
+  }
+  document.addEventListener('routechange', e => {
+    const d = e.detail || {}; curName = d.name || 'home'; curP = d.params || {};
+    try { topBar(); } catch (er) { }
+    if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree();
+    remember(curName, curP);
+    if (isWide()) { ensureDrawer(); if (!document.body.classList.contains('nv-open')) { document.body.classList.add('nv-open', 'nv-wide'); drawer.setAttribute('aria-hidden', 'false'); paintTree(); } }
+  });
+  try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); } }); } catch (e) { }
+  // 首頁用：主選項（每類的進度與下一步由首頁自己算）
+  const mainSections = () => SECTIONS.filter(x => x.id !== 'home');
+
+  window.NAV = { TOOLS, CATS, byId, forMe, preset, search, go, note, pin, pinned, renderPick, packs, SECTIONS, mainSections, locate, crumb, cont, open, close };
 })();

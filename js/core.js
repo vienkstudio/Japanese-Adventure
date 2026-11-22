@@ -495,6 +495,7 @@
     renderNav();
     try { r.render(main, params); }
     catch (e) { console.error(e); main.innerHTML = `<div class="panel"><h2>😵 頁面發生錯誤</h2><pre>${esc(e.stack || e)}</pre></div>`; }
+    try { document.dispatchEvent(new CustomEvent('routechange', { detail: { name: routes[name] ? name : 'home', params: params || {} } })); } catch (e) { }   // 側邊樹、麵包屑、繼續上次（js/nav.js）
   }
   // 導覽圖示：線條 SVG（stroke=currentColor，跟主題變色）；沒列在這裡的路由用 emoji
   const NAV_SVG = {

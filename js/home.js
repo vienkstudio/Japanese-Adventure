@@ -150,16 +150,35 @@
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
       ${!km && gs.length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
-      <div class="hm-prog" aria-label="今日進度">
-        <p class="hm-sec">今日進度</p>
-        <p class="hm-stat${d.done ? ' ok' : ''}">${esc(dayStatus(d, d.done ? dueAll : due))}</p>
-        <div class="hm-steps">${steps.map(s => `<span class="${s.ok ? 'ok' : ''}"><b>${s.b}</b>${esc(s.v)}</span>`).join('')}</div>
-      </div>
+      <p class="hm-day${d.done ? ' ok' : ''}">${esc(dayStatus(d, d.done ? dueAll : due))}・${steps.map(x => x.b + ' ' + x.v).join('・')}</p>
+      ${contHTML()}
+      <h2 class="hm-sec">全部內容</h2>
+      <div class="hm-all">${mainCards(p)}</div>
       <p class="hm-streak">${sk.days ? `🔥 連續 ${sk.days} 天${sk.risk ? '・今天上一課就能保住' : sk.done ? '・今天已練習 ✓' : ''}` : '🔥 今天上完一課，開始累積連勝'}</p>
     </section>`;
     el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
+    el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.SECTIONS.find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
+    const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
     if (gb) gb.onclick = () => { const i = gs.indexOf(goal); d.goal = gs[(i + 1) % gs.length]; App.save(); render(el); };
+  }
+  // 繼續上次（js/nav.js 記錄最後一個內容頁：單元、講義、歌曲、文章、小遊戲…；14 天內）
+  function contHTML() {
+    const c = window.NAV && NAV.cont && NAV.cont();
+    if (!c || Date.now() - (c.t || 0) > 14 * 864e5) return '';
+    return `<button type="button" class="hm-cont" id="hm-cont"><span class="ic" aria-hidden="true">⏯</span><span><b>繼續上次：${esc(c.title)}</b><small>${esc(c.where || '')}</small></span><span aria-hidden="true">›</span></button>`;
+  }
+  // 全部主選項：每類一張，附目前狀態；自己的目的排前面
+  function mainCards(p) {
+    const S = window.NAV && NAV.mainSections ? NAV.mainSections() : [];
+    const gs = p.goals || [], dueN = window.Learn ? Learn.due(15).length : 0;
+    const info = {
+      kana: `平假名 ${kanaSeen()}／${KANA_N}`, travel: '14 個場景包', exam: 'N5–N1 單字・文法', work: '敬語・Email・會議', fun: '跟唱・新聞・文章',
+      daily: dueN ? `今天到期 ${dueN} 個` : '今天沒有到期', me: '紀錄・設定・備份'
+    };
+    const mine = x => gs.includes(x.id) || (x.id === 'kana' && p.lv === 'zero');
+    const list = S.filter(mine).concat(S.filter(x => !mine(x)));
+    return list.map(x => `<button type="button" class="hm-cat${mine(x) ? ' mine' : ''}" data-sec="${x.id}"><span class="ic" aria-hidden="true">${x.icon}</span><b>${esc(x.name)}</b><small>${esc(info[x.id] || '')}</small></button>`).join('');
   }
   function greet() {
     const h = new Date().getHours();
@@ -592,7 +611,7 @@
   }
 
 
-  App.register('home', { title: '今天', icon: '🏠', nav: true, navOrder: 1, render });
+  App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, render });
   App.register('today', { title: '今日課', icon: '▶', nav: false, navParent: 'home', render: lesson });
   App.register('settings', { title: '設定', icon: '⚙️', nav: false, navParent: 'me', render: settings });
   window.Home = { render, settings, onboard, lazy, need, needSrc, loadCSS };
