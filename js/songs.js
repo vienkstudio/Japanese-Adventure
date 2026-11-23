@@ -378,7 +378,7 @@
     }
     if (!s) { el.innerHTML = '<div class="panel center"><p>找不到這首歌（可能已刪除）。</p><button class="btn primary" type="button">回歌曲清單</button></div>'; el.querySelector('button').onclick = () => App.go('songs'); return; }
     setLast(s);
-    if (s.lines.length) await JPText.ready();
+    if (s.lines.length) await JPText.ready(true);   // 歌詞等完整詞庫（N2／N1）載完再畫，第一次畫面就是正確斷詞（評審 v17 P1）
     if (!loading.isConnected) return;
     const hasLyrics = s.lines.length > 0;
     const P = pref();

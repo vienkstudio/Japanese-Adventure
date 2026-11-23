@@ -167,7 +167,7 @@
   const SECTIONS = [
     { id: 'home', icon: '🏠', name: '首頁', route: 'home' },
     { id: 'kana', icon: '🔤', name: '五十音', route: 'path', params: { tab: 'kana' }, tools: ['kana-guide', 'kana-drill', 'kana-table', 'kana-quiz', 'kana-battle', 'kana-cards'], group: 'kana' },
-    { id: 'travel', icon: '🧳', name: '旅遊', route: 'path', params: { tab: 'travel' }, tools: [{ g: '🏫 上課', packs: true, items: ['phrasebook', 'emer'] }, { g: '🏃 實戰', items: ['play', 'dialog', 'menu'], more: { g: '更多實戰（口說、狀況題、特訓）', items: ['speak', 'event', 'boot'] } }] },
+    { id: 'travel', icon: '🧳', name: '旅遊', route: 'path', params: { tab: 'travel' }, group: 'packsFlat', tools: ['phrasebook', 'emer', { g: '🏃 實戰', items: ['play', 'dialog', 'menu'], more: { g: '更多實戰（口說、狀況題、特訓）', items: ['speak', 'event', 'boot'] } }] },
     { id: 'exam', icon: '📝', name: '日檢', route: 'path', params: { tab: 'exam' }, group: 'levels', tools: ['gram', 'ex-cards', 'chal', { g: '🗄️ 資料庫', items: ['dict', 'kb', 'mind3d'] }] },
     { id: 'work', icon: '💼', name: '商務', route: 'path', params: { tab: 'work' }, tools: ['biz', 'biz-read', 'keigo'] },
     { id: 'fun', icon: '🎵', name: '歌曲・閱讀', route: 'path', params: { tab: 'fun' }, tools: ['songs', 'read', 'news', 'url'] },
@@ -197,6 +197,7 @@
     if (/^(songs|song|read|read-article)$/.test(name)) return { sec: sec('fun') };
     if (/^(challenge|challenge-play|kb|kb-page|mind|mind3d)$/.test(name) || (name === 'cards' && p.deck === 'jlpt') || (name === 'lookup' && p.view === 'gram')) return { sec: sec('exam') };
     if (name === 'lookup' && p.view === 'keigo') return { sec: sec('work') };
+    if (name === 'lookup' && p.pick) return { sec: sec('travel'), tool: byId(p.pick) };
     if (name === 'lookup' && !p.pick) return { sec: sec('lookup') };
     if (/^(phrasebook|drill|menu|trip-event|boot|boot-play|play|event|trip|practice-map|stage|scene)$/.test(name)) return { sec: sec('travel') };
     if (/^(today|review|cards|act)$/.test(name)) return { sec: sec('daily') };
@@ -212,13 +213,24 @@
 
   /* ---------- 繼續上次：最後一個「內容頁」（單元、講義、歌曲、文章、小遊戲…） ---------- */
   const CONT = /^(path-unit|kana-guide|kana-drill|kana-quiz|quest|song|read-article|biz-unit|biz-read|challenge-play|menu|drill|trip-event|boot-play|kb-page|mind3d|phrasebook|play)$/;
+  const TITLE_SEL = ['.sg-head h2', '.rd-art h1', '.rd-title', '.pa-uh h1', '.bz-intro h2', '.bz h2', '.kg-host', '.lk-title', '.wd-title b', '#main h1', '#main h2'];
   function remember(name, p) {
     if (!CONT.test(name)) return;
-    setTimeout(() => {
-      const h = document.querySelector('#main h1, #main h2, #main .wd-title b');
-      const title = (h && h.textContent.trim().slice(0, 30)) || crumb(name, p) || name;
-      const s = st(); s.cont = { name, params: p || {}, title, where: crumb(name, p), t: Date.now() }; App.save();
-    }, 900);
+    const where = crumb(name, p), sn = (locate(name, p) || {}).sec;
+    let n = 0;
+    const tick = () => {
+      if (curName !== name) return;   // 已經離開
+      let title = '';
+      for (const q of TITLE_SEL) {
+        const h = document.querySelector('#main ' + q) || document.querySelector(q);
+        if (!h) continue;
+        const t = q === '.kg-host' ? (name === 'kana-guide' ? '入門講義' : '50 音訓練表') : h.textContent.trim().replace(/\s+/g, ' ');
+        if (t && (!sn || t !== sn.name) && !/^載入中/.test(t)) { title = t.slice(0, 30); break; }
+      }
+      if (!title && ++n < 12) return setTimeout(tick, 500);
+      const s = st(); s.cont = { name, params: p || {}, title: title || where || name, where, t: Date.now() }; App.save();
+    };
+    setTimeout(tick, 600);
   }
   const cont = () => { const c = st().cont; return c && c.name ? c : null; };
 
@@ -230,6 +242,7 @@
   function groupHTML(sec) {
     const k = sec.id + ':g', open = OPEN.has(k);
     if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open || (curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))) ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
+    if (sec.group === 'packsFlat') return `<p class="nv-lab">🏫 場景包</p>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}<p class="nv-lab">🧰 工具</p>`;
     if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1 單元</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
     if (sec.group === 'kana') {
       const KU = window.Path && Path.units ? (() => { try { return Path.units('kana'); } catch (e) { return []; } })() : [];

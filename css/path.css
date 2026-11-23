@@ -83,3 +83,13 @@
 .pa-x .pa-h{margin-top:var(--sp-4)}
 .pa-xc{background:var(--chip)}
 .pa-kt{margin:0 0 var(--sp-3);min-width:0;overflow-x:auto}
+
+/* 旅遊包頁精簡（評審 v17）：全部課改成一行一課、更多練習收合 */
+.pa-sib{grid-template-columns:1fr;gap:6px}
+.pa-sib .pa-card{min-height:48px;padding:var(--sp-2) var(--sp-3);align-items:center}
+.pa-sib .pa-card .pa-ic{font-size:1.2em}
+.pa-sib .pa-card small,.pa-sib .pa-card .pa-bar{display:none}
+.pa-sib .pa-card .pa-t{flex-direction:row;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.pa-sib .pa-card .pa-n{margin-left:auto;font-size:var(--fs-xs);color:var(--muted)}
+.pa-xd .pa-grid{padding-bottom:var(--sp-3)}
+.pa-more-d .pa-items{padding-bottom:var(--sp-2)}

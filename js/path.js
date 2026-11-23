@@ -548,7 +548,7 @@
       const box = host.querySelector('.pa-x'); if (!box || typeof X.list !== 'function') return;
       let L = []; try { L = arr(X.list(goal, key)).filter(x => x && typeof x.go === 'function'); } catch (e) { L = []; }
       if (!L.length) { box.innerHTML = ''; return; }
-      box.innerHTML = `<h2 class="pa-h">🎮 更多練習</h2><div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
+      box.innerHTML = `<details class="pa-more-d pa-xd"><summary>🎮 更多練習（${L.length}）</summary><div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div></details>`;
       box.querySelectorAll('[data-px]').forEach(b => b.onclick = e => { e.stopPropagation(); try { L[+b.dataset.px].go(); } catch (er) { } });
     };
     if (window.PathExtra) run(); else App.loadScript('js/classic.js').then(run, () => { });
@@ -637,7 +637,7 @@
       <button type="button" class="btn primary block pa-start" id="pa-start">${complete ? '▶ 再練一次' : d >= ids.length && u.hasShop ? '▶ 進店用出來' : d ? '▶ 繼續學' : '▶ 開始'}</button>
       ${u.intro ? `<div class="pa-intro">${u.intro}</div>` : ''}
       ${u.more ? `<details class="pa-more-d"><summary>📘 ${esc(u.more.title)}</summary><div class="kn">${u.more.html}</div></details>` : ''}
-      ${u.kind !== 'kana' ? `<h2 class="pa-h">這課會學到</h2><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul>` : ''}
+      ${u.kind !== 'kana' ? `<details class="pa-more-d"><summary>📋 這課會學到（${u.items.length}）</summary><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul></details>` : ''}
       ${u.kind === 'biz' && !(nxt && nxt.route) ? `<button type="button" class="btn block pa-next" data-biz="${esc(u.biz)}">💬 對話演練＋Email（${esc(bizUnit(u.biz).title)}）›</button>` : ''}
       ${nxt ? `<button type="button" class="btn block pa-next" data-u="${esc(nxt.id)}">下一單元：${esc(nxt.title)} ›</button>` : ''}
       ${sibs}

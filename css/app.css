@@ -515,3 +515,7 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 
 .kp-mini button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
 [data-fs=xl] .kp-mini button,[data-fs=l] .kp-mini button{font-size:var(--fs-sm)}
+
+@media(min-width:1024px){body.nv-wide #main{max-width:calc(100vw - 296px)}}   /* 扣掉側邊樹寬度，不出現橫向捲動 */
+body.ob-mode .nv-drawer,body.ob-mode .nv-menu,body.ob-mode .nv-crumb{display:none!important}   /* 首次設定程度與目的時不給側邊樹跳過 */
+@media(min-width:1024px){body.ob-mode.nv-wide #main{margin-left:auto}}

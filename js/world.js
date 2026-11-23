@@ -1223,7 +1223,7 @@
     // 單元句對到的問句：旅伴的條件改成單元句那一邊（例：袋はいりません → 不要袋子）
     let changed = false;
     Object.keys(alt || {}).forEach(k => { if (o.prefs[k] == null || String(o.prefs[k]) !== String(alt[k].val)) changed = true; o.prefs[k] = alt[k].val; });
-    if (changed) { o.msg = '旅伴傳來清單：買齊下面的東西，店員問的時候用剛學的句子回答。'; o.jpMsg = null; }
+    if (changed) { o.msg = o.needs.length ? '旅伴傳來清單：買齊下面的東西，店員問的時候用剛學的句子回答。' : '到櫃台辦手續，店員問的時候照旅伴的條件、用剛學的句子回答。'; o.jpMsg = null; }
     return o;
   }
   const simZones = () => [...new Set(SIM.goal.needs.map(n => n.it.zone))].filter(k => S.zones[k]);
