@@ -89,6 +89,7 @@ function sensesOf(id, max) {
   for (const s of S) {
     const g = s.glosses && s.glosses[0] ? clean1(s.glosses[0].text) : '';
     const seg = g.split(/[；;]/).map(x => x.trim()).filter(Boolean).slice(0, 2).join('；').replace(/[|｜]/g, '／');
+    if (/陰莖|陰部|生殖器|性交|那話兒|私處/.test(seg)) continue;   // 學習用詞卡不列低俗義
     if (seg && !out.includes(seg)) out.push(seg.length > 20 ? seg.slice(0, 20) : seg);
     if (out.length >= max) break;
   }
@@ -150,13 +151,26 @@ const byFormAll = w => (FORMS.get(w) || []).sort((a, b) => b.c - a.c || b.ec - a
 const SEN = {};
 for (const w of mine) {
   const ids = byFormAll(w).map(x => x.id); if (!ids.length) continue;
-  // 同形異義（日＝ひ／にち）：最多取 2 個條目，各自讀音分開列
+  // 評審 v18 P0-3：只收「本站讀音」的條目當第一組，避免 と→十、この→九 這種同音異字搶到第一義。
+  //   純假名的詞：條目平常就寫成這個假名（或沒有漢字）才算；有漢字的詞：第二組才可以是另一個讀音（日＝ひ／にち），並標讀音。
+  const me = lookupBase(w);
+  const myK = me ? toHira(me.bkana || me.kana || '') : '';
+  const hasKj = /[一-鿿々]/.test(w);
+  const cand = ids.map(id => ({ id, e: JSON.parse(entryData.get(id).data) })).filter(({ e }) => {
+    if (hasKj) return true;
+    if (/^[ァ-ヶー]+$/.test(w) && (e.kanji || []).length) return false;   // 外來語（ボタン）不配漢字詞（牡丹）
+    const sf = surfaceOf(e);
+    return !!sf && toHira(sf.surf) === toHira(w);
+  }).map(c => Object.assign(c, { ks: (c.e.kana || []).map(k => toHira(k.text)), pri: ((c.e.kanji || [])[0] || {}).text === w ? 0 : 1 })).sort((a, b) => a.pri - b.pri);   // 表層是主要寫法的條目優先（明ける 不配 開ける）
+  const first = myK ? cand.find(c => c.ks.includes(myK)) : cand[0];
+  if (!first || (hasKj && first.pri)) continue;   // 表層只是別的詞的異體寫法（明ける 併在 開ける）：義項多半不是本詞，寧可不列
+  const second = hasKj ? cand.find(c => c !== first && !c.ks.includes(myK)) : null;   // 純假名詞不列同音異義（と＝土耳其 之類只會混淆）
   const groups = [];
-  for (const id of ids.slice(0, 2)) {
-    const S = sensesOf(id, 5); if (!S.length) continue;
-    const e = JSON.parse(entryData.get(id).data);
-    groups.push([toHira(((e.kana || [])[0] || {}).text || ''), S]);
+  for (const c of [first, second].filter(Boolean)) {
+    const S = sensesOf(c.id, 5); if (!S.length) continue;
+    groups.push([c === first && myK ? myK : toHira(((c.e.kana || [])[0] || {}).text || ''), S]);
   }
+  if (!groups.length || (myK && groups[0][0] !== myK)) continue;
   const n = groups.reduce((a, g) => a + g[1].length, 0);
   if (n >= 2) SEN[w] = groups.map(([k, S]) => (k && k !== w ? k + '：' : '') + S.join('｜')).join('‖');
 }

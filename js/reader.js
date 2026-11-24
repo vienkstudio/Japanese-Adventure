@@ -204,16 +204,17 @@
     if (!items.length) { box.innerHTML = '<p class="muted rd-tip">這個來源目前沒有內容。</p>'; return; }
     const idx = await docIndex();
     const have = new Map(idx.filter(d => d.url).map(d => [d.url, d.id]));
+    const kOf = n => n.key || n.link;
     const lim = box.dataset.more ? items.length : 8;
-    box.innerHTML = items.slice(0, lim).map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + (cat.easy ? new Date(n.t).toLocaleDateString() : ago(n.t)) : ''}</small></span>${have.has(n.link) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('') + (items.length > lim ? `<button type="button" class="btn block ghost rd-nmore">顯示更多（還有 ${items.length - lim} 則）</button>` : '');
+    box.innerHTML = items.slice(0, lim).map((n, k) => `<button type="button" class="rd-item rd-nitem" data-n="${k}"><span class="rd-ic" aria-hidden="true">${cat.icon}</span><span class="rd-it"><b lang="ja">${esc(n.title)}</b><small class="muted">${esc(n.src)}${n.t ? '・' + (cat.easy ? new Date(n.t).toLocaleDateString() : ago(n.t)) : ''}</small></span>${have.has(kOf(n)) ? '<span class="rd-done" title="已匯入">✔</span>' : '<span class="rd-go" aria-hidden="true">➜</span>'}</button>`).join('') + (items.length > lim ? `<button type="button" class="btn block ghost rd-nmore">顯示更多（還有 ${items.length - lim} 則）</button>` : '');
     const more = box.querySelector('.rd-nmore'); if (more) more.onclick = () => { box.dataset.more = '1'; drawNews(el, id); };
     box.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
       const n = items[+b.dataset.n];
-      if (have.has(n.link)) { App.go('read-article', { doc: have.get(n.link) }); return; }
+      if (have.has(kOf(n))) { App.go('read-article', { doc: have.get(kOf(n)) }); return; }
       if (b.disabled) return;
       b.disabled = true; const sm = b.querySelector('small'), old = sm.textContent; sm.textContent = '匯入中，正在擷取全文…';
       try {
-        const d = await LinkImport.article(n.link);
+        const d = n.key && LinkImport.newsDoc ? await LinkImport.newsDoc(n) : await LinkImport.article(n.link);
         const id = await saveDoc({ ...d, title: d.title || n.rt || n.title, src: 'news' });
         if (b.isConnected) App.go('read-article', { doc: id });
       } catch (e) {

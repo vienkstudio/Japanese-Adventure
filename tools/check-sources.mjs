@@ -58,5 +58,15 @@ for (const f of ['data/reading/dict-fill.js', 'data/reading/dict-big.js', 'data/
   if (!/CC BY-SA 4\.0/.test(head) || !/EDRDG|Electronic Dictionary Research/.test(head)) bad(`${f}：檔頭缺來源或授權標示`);
 }
 
+// 5) 工具與測試資料也不得收錄需授權內容：tools/ 底下不得出現已移除來源、受著作權保護的歌詞（測試基準的 lyric 類只能存本機）
+const toolFiles = [];
+const walkT = d => fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).forEach(e => { const p = d + '/' + e.name; if (e.isDirectory()) walkT(p); else if (/\.(m?js|txt|tsv|json|md)$/.test(e.name) && p !== 'tools/check-sources.mjs') toolFiles.push(p); });
+walkT('tools');
+for (const f of toolFiles) {
+  const s = rd(f);
+  if (BANNED.test(s)) bad(`${f}：出現已移除的需授權來源 ${s.match(BANNED)[0]}`);
+  if (/^lyric\t/m.test(s)) bad(`${f}：收錄了歌詞（受著作權保護，基準只能存在專案外）`);
+}
+
 console.log(fail ? `✗ check-sources：${fail} 個問題` : `✓ check-sources：${files.length} 個程式檔只連開放來源（${[...hosts.keys()].length} 個網域）、${dataFiles.length} 個資料檔都已登記授權`);
 process.exit(fail ? 1 : 0);

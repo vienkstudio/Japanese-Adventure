@@ -852,7 +852,24 @@
       // 「あの日」「いい日」「楽しい日」的 日＝日子、那天（字典第一義是太陽）
       if (t.s === '日' && t.kana === 'ひ' && (/^(pre|i|na)$/.test(p.pos || '') || /^(の|な|た|だ|る)$/.test(String(p.s || '').slice(-1)))) Object.assign(t, { zh: '日子；（那）天' });
       if (t.s === '目' && (p.pos === 'num' || /[日回人番年つ度杯個軒本枚週]$/.test(p.s))) Object.assign(t, { kana: 'め', bkana: 'め', zh: '（接尾）第…', pos: 'suf' });
-      if (t.s === 'と' && t.pos === 'part' && out[k + 1] && /^(思う|言う|いう|考える|感じる|聞く|話す|書く|答える|叫ぶ|わかる|分かる|知る)$/.test(out[k + 1].base || '')) Object.assign(t, { zh: '（引用）表示說／想的內容' });
+      if (t.s === 'と' && t.pos === 'part') {
+        const nx = out[k + 1] || {}, nb = nx.base || nx.s || '';
+        // 評審 v18：引用的と（〜と発表、「…」と、〜と伝える）、〜となる、動詞／形容詞＋と（條件）
+        if (/^(思う|言う|いう|考える|感じる|聞く|話す|書く|答える|叫ぶ|わかる|分かる|知る|伝える|述べる|呼ぶ|語る|訴える|尋ねる|頼む|決める|信じる|祈る|願う|笑う|聞こえる|見られる|される|みられる|発表|説明|報告|指摘|主張|強調|判断|予想|回答|返事|連絡|批判|発言|表明|明らか|話|確認|証言|公表|コメント|見方|声)$/.test(nb) || (p.sym && /[」』"]/.test(p.s))) Object.assign(t, { zh: '（引用）表示說／想的內容' });
+        else if (/^(なる|なり|なっ)/.test(nb)) Object.assign(t, { zh: '（〜となる）成為…；結果是…' });
+        else if (/^(幸い|助かる|嬉しい|うれしい|ありがたい|いい|良い|よい)/.test(nb) && /^(v|aux|i)$/.test(p.pos || '')) Object.assign(t, { zh: '（條件）如果…（就）' });
+        else if (/^(v|i|aux)$/.test(p.pos || '') && (!p.form || /^(nai|masu)$/.test(p.form)) && !p.sym && nx.s !== 'も') Object.assign(t, { zh: '（條件）一…就…；如果…' });
+      }
+      // 十分＋後／前／間…＝じゅっぷん（十分鐘），不是じゅうぶん（足夠）
+      if (p.s === '十分' && /^(後|前|間|以内|ほど|くらい|ぐらい|おき|待|遅|早|休|歩|ごと|毎)/.test(t.s)) { Object.assign(p, { kana: 'じゅっぷん', bkana: 'じゅっぷん', romaji: 'juppun', zh: '十分鐘', pos: 'num' }); if (t.s === '後') Object.assign(t, { kana: 'ご', bkana: 'ご', romaji: 'go', zh: '（時間）…後' }); }
+      // 名詞＋を＋かける：依名詞決定意思（迷惑をかける＝添麻煩，不是打電話）
+      const wo = p.s === 'を' ? k - 1 : /^[おご御]$/.test(p.s) && out[k - 2] && out[k - 2].s === 'を' ? k - 2 : -1;   // 迷惑を（お）かけ
+      if (/^(かける|掛ける)$/.test(t.base || '') && wo > 0) {
+        const nn = out[wo - 1].s.replace(/^[おご御]/, '');
+        const KAKE = [[/^(迷惑|心配|面倒|苦労|手数|足労|負担|手間|世話)$/, '（〜をかける）給人添（麻煩）；讓人（擔心）'], [/^(時間|お金|金|費用|手間暇|コスト)$/, '花費（時間、金錢）'], [/^声$/, '（声をかける）搭話；打招呼'], [/^電話$/, '打（電話）'], [/^(鍵|カギ|かぎ)$/, '上（鎖）'], [/^(眼鏡|めがね|メガネ)$/, '戴（眼鏡）'], [/^(音楽|曲|CD|レコード)$/, '播放（音樂）'], [/^(エンジン|ブレーキ|アイロン|掃除機)$/, '啟動；踩（煞車）；使用（電器）'], [/^(醤油|ソース|塩|水|ドレッシング)$/, '淋上；撒上'], [/^(保険|圧力|期待|命)$/, '投保；施加；寄託']];
+        const hit = KAKE.find(([re]) => re.test(nn));
+        if (hit) t.zh = hit[1];
+      }
     }
     return out;
   }
@@ -939,7 +956,7 @@
       const c = info.c, e = c.e;
       const tk = {
         s, base: e.jp, kana: isKanaStr(s) ? s : toHira(c.r), bkana: toHira(e.kana || e.jp), romaji: '', zh: e.zh, pos: e.pos, lv: e.lv === 'x' ? (LVOF.get(e.jp) || null) : e.lv, i, known: true, viaKana: !!c.kana || (hasKanji(e.jp) && !hasKanji(s)),
-        form: c.form && c.form !== 'dict' ? c.form : '', alts: info.all.filter(x => x.e !== e).map(x => ({ jp: x.e.jp, kana: x.e.kana, zh: x.e.zh, lv: x.e.lv })).slice(0, 3)
+        form: c.form && c.form !== 'dict' ? c.form : '', alts: info.all.filter((x, k, A) => x.e !== e && !(x.e.jp === e.jp && x.e.zh === e.zh) && A.findIndex(y => y.e.jp === x.e.jp && y.e.zh === x.e.zh) === k).map(x => ({ jp: x.e.jp, kana: x.e.kana, zh: x.e.zh, lv: x.e.lv })).slice(0, 3)
       };
       if (/^suru:/.test(tk.form)) { tk.base = e.jp + 'する'; tk.bkana = toHira(e.kana || e.jp) + 'する'; tk.pos = 'v'; tk.form = tk.form.slice(5); }
       if (e.ext && LVOF.has(e.jp)) tk.lv = LVOF.get(e.jp);
@@ -1046,6 +1063,15 @@
   }
   // 誤判排除表：檢查句型前一個 token（prev）是否符合接續；不符合就不算
   const NOUNISH = /^(n|name|pron|num|unk|suf|ctr)$/;
+  const MADE_TO = /^(?:で|に|は|の|行|来|帰|歩|走|乗|送|届|待|続|入|開|営業|延|有効|残|かか|掛か|向か|戻|泳|飛|運|逃|追|案内|移動|お越|伺|参|進|上が|下が|伸び|増え|減|下げ|上げ|達|及|ご|お|の間|お待|いらっしゃ|あり|ある|です|だ|でし|。|、)/;
+  function madeExtreme(p, sn, idx) {
+    if (!p || !NOUNISH.test(p.pos) || p.pos === 'num' || p.pos === 'name') return false;
+    if (sn.lastIndexOf('から', idx) >= 0) return false;
+    if (/(?:[時分日月年円台駅県市町区村港空港山川頂上階先家前後末頃]|ホテル|会社|学校)$/.test(p.s)) return false;   // 地點、時間、價格＝到…
+    const rest = sn.slice(idx + 2);
+    if (/^も/.test(rest)) return true;   // 子供までも＝甚至
+    return !MADE_TO.test(rest);
+  }
   const PREDISH = /^(v|i|aux|cop)$/;
   const GRAM_EXCL = {
     // 〜から（理由）：前面要是述語（動詞、形容詞、だ／です／ます…），「輸出から」「駅から」是起點
@@ -1060,8 +1086,11 @@
     'gram:〜からする': p => !!p && p.pos === 'num',
     'gram:〜も（數量強調）': p => !!p && p.pos === 'num',
     // 〜まで（甚至）：「から…まで」「までに（期限）」的まで不算
-    'gram:〜まで（甚至）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0 && sn[idx + 2] !== 'に',
-    'gram:〜まで（極端）': (p, sn, idx) => !!p && NOUNISH.test(p.pos) && sn.lastIndexOf('から', idx) < 0 && sn[idx + 2] !== 'に',
+    // 評審 v18：京都まで、屋根まで、二十四時まで、百五十円台まで 是「到…」；只有人／事物＋まで＋も、或後面不是移動／時間動詞才算「甚至」
+    // 〜かける（做到一半）：前面要是動詞ます形；「迷惑をおかけ」「声をかけ」不是
+    'gram:〜かける／〜かけ': p => !!p && /^(v|aux)$/.test(p.pos || ''),
+    'gram:〜まで（甚至）': (p, sn, idx) => madeExtreme(p, sn, idx),
+    'gram:〜まで（極端）': (p, sn, idx) => madeExtreme(p, sn, idx),
     // 〜(よ)うと（不管）：後面接 する／思う／考える…是「〜ようとする」「〜ようと思う」
     'gram:〜(よ)うと': (p, sn, idx, ct, x) => !/^(する|した|して|し[てたなま]|せず|思|おも|考|決|努|試)/.test(sn.slice(idx + x.seg.length)),
     // 〜として（作為）：「守ろうとして」是〜ようとする

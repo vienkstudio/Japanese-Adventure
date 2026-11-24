@@ -255,7 +255,22 @@
       if (c === 'ゅ' || c === 'ょ') { const r = a.slice(); r[i] = c === 'ゅ' ? 'ょ' : 'ゅ'; out.add(r.join('')); }
     });
     out.delete(k);
-    return [...out].filter(x => x.length >= 2 && !/^[っゃゅょー]/.test(x) && !/っ$/.test(x));
+    return [...out].filter(x => x.length >= 2 && kanaOK(x, k));
+  }
+  // 干擾項也必須是「念得出來的日語」（評審 v17、v18：かんっしょう、せっぢ 這種假字不能出現）
+  function kanaOK(x, k) {
+    if (/^[っゃゅょーん]/.test(x) || /っ$/.test(x)) return false;
+    if (/[ぢづ]/.test(x) && !/[ぢづ]/.test(k)) return false;   // ぢ／づ 只在原詞有時才用
+    const a = [...x];
+    for (let i = 0; i < a.length; i++) {
+      const c = a[i], p = a[i - 1] || '', pp = a[i - 2] || '';
+      if (c === 'っ') {
+        if (!/^[かきくけこさしすせそたちつてとぱぴぷぺぽ]$/.test(a[i + 1] || '')) return false;   // 促音後面只能接清音 k／s／t／p
+        if (/[んっーゃゅょ]/.test(p) || (p === 'う' && O_ROW.includes(pp)) || (p === 'い' && E_ROW.includes(pp))) return false;   // ん、長音之後不會有促音
+      }
+      if (/[ゃゅょ]/.test(c) && !/[きしちにひみりぎじぢびぴ]/.test(p)) return false;
+    }
+    return true;
   }
 
   /* ---------------- 題目產生器 ---------------- */

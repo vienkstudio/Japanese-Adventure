@@ -2,7 +2,8 @@
 //   --save   把目前結果存成基準（tools/test-jptext.base.txt）
 //   預設     與基準比對，列出修前修後差異，並檢查 CHECKS 的必要條件
 // 語料：data/reading/daily.js 全部段落＋下方新聞／商務／歌詞片段；
-//       若 D:\reviewtmp\v7-p4\*-tokens.txt 存在，另外還原歌詞逐句加入（不收進專案）
+//       若 D:\reviewtmp\v7-p4\*-tokens.txt 存在，另外還原歌詞逐句加入；
+//       歌詞受著作權保護，其基準只存在本機 D:\reviewtmp\v7-p4\lyric-base.txt，不得寫進專案
 import fs from 'fs';
 import path from 'path';
 import vm from 'vm';
@@ -10,6 +11,7 @@ import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = path.join(ROOT, 'tools', 'test-jptext.base.txt');
+const LBASE = 'D:/reviewtmp/v7-p4/lyric-base.txt';   // 歌詞基準（本機，不進 repo）
 const ctx = { console, localStorage: { getItem: () => null, setItem() { } } };
 ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
@@ -49,16 +51,16 @@ const EXTRA = [
   '今週中に送ります。何時間かかりますか。二日目の朝、彼だとわかった。',
   '口を開くと、毎月の家賃の話になる。',
   '一年中暑い町で、何本も激辛ラーメンを食べた。天才的な料理人だ。',
-  // 歌詞片段（04 評審點名的錯）
-  '弱いとこ見せちゃダメ',
-  'のらりくらりかわして',
-  '生きらんない',
-  'かったりい',
-  '世界に打ちのめされて',
-  '水面下で絡まる善悪',
-  '咲いた一輪が美しい',
+  // 口語／歌詞風格（自撰例句，04 評審點名的錯；不收真實歌詞）
+  '弱いとこは見せちゃだめだよ',
+  '質問をのらりくらりかわしている',
+  'こんな暑さじゃ生きらんない',
+  '月曜は本当にかったりい',
+  '試験に打ちのめされて帰った',
+  '水面下で交渉が進む',
+  '庭に咲いた一輪のばらが美しい',
   '強いね',
-  'お星様の引き立て役',
+  '今日の私は主役の引き立て役だ',
 ];
 function lyricLines() {
   const out = [];
@@ -86,13 +88,26 @@ for (const [src, s] of corpus) {
   const ph = J.findPhrases(s, tk, 10).map(p => p.jp);
   lines.push(`${src}\t${s}\n  T: ${tokStr(tk)}\n  G: ${gr.join(' | ')}\n  P: ${ph.join(' | ')}`);
 }
-const now = lines.join('\n');
+const isLyric = l => l.startsWith('lyric\t');
+const now = lines.filter(l => !isLyric(l)).join('\n'), nowL = lines.filter(isLyric).join('\n');
 
 // 必要條件（修正目標）
 const T = s => J.tokenize(s), G = (s, lv) => J.findGrammar(s, null, 40, { lv: lv || 'n1' }).map(g => g.pat), P = s => J.findPhrases(s, null, 20).map(p => p.jp);
 const has = (arr, re) => arr.some(x => re.test(x));
 const tok = (s, w) => T(s).find(t => t.s === w);
 const CHECKS = [
+  // 評審 v18 P0-6
+  ['京都まで 不判甚至', () => !has(G('京都まで行きます。'), /まで（/)],
+  ['屋根まで 不判甚至', () => !has(G('屋根まで飛んだ'), /まで（/)],
+  ['子供まで知っている 判甚至', () => has(G('子供まで知っている。'), /まで（甚至）/)],
+  ['二十日 不是八', () => { const t = tok('二十日に会いましょう。', '二十日'); return !!t && t.kana === 'はつか' && !/^八$/.test(t.zh); }],
+  ['十分後 讀じゅっぷん', () => { const t = tok('十分後に出発します。', '十分'); return !!t && t.kana === 'じゅっぷん'; }],
+  ['時間は十分 讀じゅうぶん', () => { const t = tok('時間は十分あります。', '十分'); return !!t && t.kana === 'じゅうぶん'; }],
+  ['迷惑をおかけ 不是打電話', () => !T('ご迷惑をおかけしました。').some(t => /電話/.test(t.zh || ''))],
+  ['迷惑をかける 不判〜かける（一半）', () => !has(G('迷惑をかける'), /かける／/)],
+  ['と発表 是引用', () => /引用/.test((T('政府は値上げすると発表した。').find(t => t.s === 'と') || {}).zh || '') || !T('政府は値上げすると発表した。').some(t => t.s === 'と' && /^和/.test(t.zh || ''))],
+  ['開くと 是條件', () => /條件/.test((T('ドアを開くと、猫がいた。').find(t => t.s === 'と') || {}).zh || '')],
+  ['ずとも 不判條件', () => !/條件/.test((T('現地に赴かずとも味わえる。').find(t => t.s === 'と') || {}).zh || '')],
   ['までに 不判〜まで（甚至）', () => !has(G('会議は金曜日までに延期させていただきます。'), /まで（/)],
   ['(よ)うとする 不判〜(よ)うと', () => !has(G('伝統が失われようとする今'), /^〜\(よ\)うと（|うと$|うとも/)],
   ['とはいうものの 抓 N2 句型', () => has(G('景気は回復したとはいうものの、生活は苦しい。'), /とはいうものの/)],
@@ -112,10 +127,10 @@ const CHECKS = [
   ['検索', () => T('検索サービス').some(t => /検索/.test(t.s) && t.known)],
   ['継承', () => T('制度を継承する').some(t => /継承/.test(t.s) && t.known)],
   ['保全', () => T('文化の保全').some(t => /保全/.test(t.s) && t.known)],
-  ['いとこ 不給「堂」', () => !T('弱いとこ見せちゃダメ').some(t => /堂/.test(t.zh || ''))],
-  ['ちゃ 不給「茶」', () => !T('弱いとこ見せちゃダメ').some(t => /茶/.test(t.zh || ''))],
-  ['くら 不給「倉庫」', () => !T('のらりくらりかわして').some(t => /倉/.test(t.zh || ''))],
-  ['らん 不給「欄位」', () => !T('生きらんない').some(t => /欄/.test(t.zh || ''))],
+  ['いとこ 不給「堂」', () => !T('弱いとこは見せちゃだめだよ').some(t => /堂/.test(t.zh || ''))],
+  ['ちゃ 不給「茶」', () => !T('弱いとこは見せちゃだめだよ').some(t => /茶/.test(t.zh || ''))],
+  ['くら 不給「倉庫」', () => !T('質問をのらりくらりかわしている').some(t => /倉/.test(t.zh || ''))],
+  ['らん 不給「欄位」', () => !T('こんな暑さじゃ生きらんない').some(t => /欄/.test(t.zh || ''))],
   ['強い 讀つよい', () => { const t = tok('強いね', '強い'); return !!t && /^つよ/.test(t.kana); }],
   ['不產生 総選挙におく', () => !has(P('総選挙における争点'), /におく/)],
   ['不產生 約におく', () => !has(P('約における公約'), /におく/)],
@@ -124,9 +139,9 @@ const CHECKS = [
 let fail = 0;
 const res = CHECKS.map(([n, f]) => { let ok = false; try { ok = !!f(); } catch (e) { ok = false; } if (!ok) fail++; return (ok ? 'PASS ' : 'FAIL ') + n; });
 
-if (process.argv.includes('--save')) { fs.writeFileSync(BASE, now); console.log('已存基準', BASE, corpus.length, '句'); }
-else if (fs.existsSync(BASE)) {
-  const old = fs.readFileSync(BASE, 'utf8').split(/\n(?=\S)/), cur = now.split(/\n(?=\S)/);
+if (process.argv.includes('--save')) { fs.writeFileSync(BASE, now); if (nowL) fs.writeFileSync(LBASE, nowL); console.log('已存基準', BASE, corpus.length, '句'); }
+else for (const [BF, NOW] of [[BASE, now], [LBASE, nowL]]) if (NOW && fs.existsSync(BF)) {
+  const old = fs.readFileSync(BF, 'utf8').split(/\n(?=\S)/), cur = NOW.split(/\n(?=\S)/);
   const om = new Map(old.map(b => [b.split('\n')[0], b]));
   let n = 0;
   for (const b of cur) {

@@ -97,10 +97,10 @@
   async function importHot(t, a, yt, dur, lrc) {
     if (/^ws:/.test(lrc || '')) {   // 公有領域（維基文庫）：語音朗讀、沒有時間軸
       const id = 'pd:' + yt, old = await getSong(id);
-      if (old && old.lines.length) return id;
+      if (old && old.lines.length && old.pdv === 2) return id;   // 舊版（線上抓、可能抓錯）一律換成內建版
       const L = await LinkImport.lyricsById(lrc).catch(() => null);
       if (!L || !L.lines.length) throw new Error('維基文庫暫時讀不到');
-      await putSong({ id, title: `${t}（${a}）`, src: { type: 'tts' }, lines: L.lines, url: L.url, license: '維基文庫・公有領域' });
+      await putSong({ id, title: `${t}（${a}）`, src: { type: 'tts' }, lines: L.lines, url: L.url, license: '維基文庫・公有領域', note: L.note || '', pdv: 2 });
       return id;
     }
     const id = 'yt:' + yt, old = await getSong(id);
@@ -399,7 +399,7 @@
     const hasRec = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     el.innerHTML = `<div class="sg-page">
       <div class="sg-head"><h2 class="rd-h2" lang="ja">${esc(s.title)}</h2>${s.demo ? '' : '<button type="button" class="btn ghost sg-edit" aria-label="編輯">✏️</button>'}</div>
-      ${s.license ? `<p class="muted rd-tip sg-lic">歌詞：<a href="${esc(s.url || '')}" target="_blank" rel="noopener">${esc(s.license)}</a></p>` : ''}
+      ${s.license ? `<p class="muted rd-tip sg-lic">歌詞：<a href="${esc(s.url || '')}" target="_blank" rel="noopener">${esc(s.license)}</a>${s.note ? '　' + esc(s.note) : ''}</p>` : ''}
       ${s.cover ? `<p class="sg-sub muted" lang="ja">🎤 翻唱：${esc(s.cover.by || '（未知）')}${s.cover.orig ? `・原曲 ${esc(s.cover.orig)}` : ''}</p>` : ''}
       <div class="sg-media"></div>
       <p class="rd-warn sg-twarn" role="status" hidden></p>
@@ -487,7 +487,7 @@
         if (!r) {
           const ok = await new Promise(res => App.modal(`<h2>用找到的歌詞取代？</h2><p class="muted">找到「${esc(L.title)}」${L.timed ? '（含時間軸）' : ''}，和目前歌詞不同。取代後原本的歌詞、中文與校時會被覆蓋。</p>`, [{ label: '保留原本', onClick: () => res(false) }, { label: '取代', cls: 'primary', onClick: () => res(true) }]));
           if (!ok) { st.textContent = '已保留原本歌詞。'; return; }
-          s.lines = L.lines.map(l => ({ jp: l.jp, zh: '', t: l.t })); r = 'all';
+          s.lines = L.lines.map(l => ({ jp: l.jp, zh: l.zh || '', t: l.t })); r = 'all';
         }
         if (/^YouTube・/.test(s.title) || s.src.type !== 'yt') s.title = L.title.slice(0, 60);
         if (L.timed && r === 'all') { s.auto = true; s.lrc = { id: L.id, dur: L.dur }; s.synced = false; }

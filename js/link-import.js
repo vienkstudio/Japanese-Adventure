@@ -33,9 +33,9 @@
   function rubyMark(node) {
     const box = node.cloneNode(true);
     box.querySelectorAll('ruby').forEach(r => {
-      const rt = [...r.querySelectorAll('rt')].map(x => x.textContent.trim()).join('');
+      const rt = [...r.querySelectorAll('rt')].map(x => x.textContent.trim()).join('').replace(/[\s（）()、，,]+/g, '');
       r.querySelectorAll('rt, rp').forEach(x => x.remove());
-      const base = r.textContent.replace(/\s+/g, '');
+      const base = r.textContent.replace(/[\s（）()、，,]+/g, '');   // 維基百科的 ruby 模板會把括號、頓號留在 ruby 內
       r.replaceWith(base && rt && /[ぁ-ゖァ-ヺー]/.test(rt) && !/[｜《》]/.test(base + rt) ? `｜${base}《${rt}》` : base);
     });
     box.querySelectorAll('rt, rp').forEach(x => x.remove());
@@ -71,12 +71,16 @@
     doc.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
     doc.querySelectorAll('.mw-editsection, .reference, .references, .reflist, .navbox, .infobox, table, style, script, .mw-empty-elt, .noprint, figure, .thumb, .gallery, .hatnote, .metadata, .licensetpl, .side-box, .toc, #toc, .sisitem, .mw-references-wrap').forEach(x => x.remove());
     const body = rubyMark(doc.body);
+    // 文末的情報源、出典、外部リンク等不是正文：從該標題起整段丟掉
+    const TAIL = /^(?:情報源|出典|脚注|注釈|参考文献|関連項目|関連ニュース|外部リンク|関連記事|ソース)\s*$/;
+    const cut = [...body.querySelectorAll('h2, h3')].find(h => TAIL.test(h.textContent.replace(/\[[^\]]*\]/g, '').trim()));
+    if (cut) { const top = cut.closest('.mw-heading') || cut; let x = top; while (x) { const nx = x.nextSibling; x.remove(); x = nx; } }
     const blocks = [...body.querySelectorAll('h2, h3, h4, p, li, dd, .poem')].filter(x => !x.closest('.poem') || x.matches('.poem'));
     const text = blocks.length ? blocks.map(x => x.textContent).join('\n') : body.textContent;
     return tidy(String(text).replace(/\[\d+\]|\[注 ?\d+\]|\[編集\]|\[編集 \| ソースを編集\]/g, ''));
   }
-  async function wikiPage(w) {
-    const j = await wikiApi(w.host, { action: 'parse', page: w.title, prop: 'text', redirects: '1', disabletoc: '1', disableeditsection: '1' });
+  async function wikiPage(w, lead) {
+    const j = await wikiApi(w.host, Object.assign({ action: 'parse', page: w.title, prop: 'text', redirects: '1', disabletoc: '1', disableeditsection: '1' }, lead ? { section: '0' } : {}));
     if (!j || !j.parse || !j.parse.text) throw new Error('找不到這一頁');
     return { title: j.parse.title, html: j.parse.text, url: `https://${w.host}/wiki/${encodeURIComponent(j.parse.title.replace(/ /g, '_'))}`, license: WIKI_LIC[w.project], source: WIKI_NAME[w.project] };
   }
@@ -90,6 +94,20 @@
     const text = wikiText(p.html);
     if (!hasJapanese(text, 8)) throw new Error('這一頁沒有日文正文，請換一篇日文頁面');
     return { title: p.title.slice(0, 240), text: text.slice(0, MAX_TEXT).replace(/｜[^》\n]*$/, ''), url: p.url, license: p.license, source: p.source };
+  }
+  // 「最近の出来事」的一則新聞：本文＝那則新聞摘要本身；另附每個相關條目的導言（只取開頭 2 段），不再開整篇條目
+  async function newsDoc(n) {
+    const rel = (n.rel || []).slice(0, 3);
+    const parts = [n.title];
+    for (const r of rel) {
+      const w = wikiOf(publicURL(r.href)); if (!w) continue;
+      try {
+        const p = await wikiPage(w, true);
+        const paras = wikiText(p.html).split('\n').filter(x => hasJapanese(x, 8)).slice(0, 2).join('\n').slice(0, 500);
+        if (paras) parts.push('【' + p.title + '】\n' + paras);
+      } catch { }
+    }
+    return { title: n.title.slice(0, 120), text: parts.join('\n\n'), url: n.key || n.link, license: 'CC BY-SA 4.0', source: '維基百科「最近の出来事」' };
   }
   // 相容舊介面：「最新簡單日文新聞」改成維基百科「最近の出来事」當天摘要
   const NHK = '';
@@ -324,6 +342,10 @@
   }
   const rowOf = (title, L) => ({ id: 'ws:' + title, trackName: title, artistName: '維基文庫・公有領域', plainLyrics: L.lines.join('\n'), duration: 0, url: L.url });
   async function lyrics(track) {
+    const k0 = key(baseTitle(track));
+    if (!window.SONGS_PD && window.App && App.loadScript) await App.loadScript('data/reading/songs-pd.js').catch(() => { });
+    const pdHit = Object.keys(window.SONGS_PD || {}).find(t => key(t) === k0);
+    if (pdHit) return pdSong(pdHit);
     const best = (await lyricsRank(track))[0];
     return best ? lrcResult(best.r, best.s) : null;
   }
@@ -337,8 +359,16 @@
     for (const h of hits) { const L = await wsLyrics(h.t).catch(() => null); if (L && L.lines.length >= 2) out.push({ s: h.s, r: rowOf(h.t, L) }); }
     return out;
   }
+  // 內建公有領域歌詞（data/reading/songs-pd.js）：離線可用、現代假名、附中文；有就不連網
+  async function pdSong(t) {
+    if (!window.SONGS_PD && window.App && App.loadScript) await App.loadScript('data/reading/songs-pd.js').catch(() => { });
+    const P = window.SONGS_PD && window.SONGS_PD[t]; if (!P) return null;
+    const lines = P.lines.filter(l => l[0]).map(([jp, zh]) => ({ jp, zh: zh || '', t: null }));
+    return { title: `${t}（${P.by}・公有領域）`, track: t, artist: P.by, note: P.note || '', lines, timed: false, score: 20, id: 'ws:' + t, dur: 0, url: 'https://' + WS + '/wiki/' + encodeURIComponent(t) };
+  }
   async function lyricsById(id) {
     const t = String(id || '').replace(/^ws:/, ''); if (!t) return null;
+    const pd = await pdSong(t); if (pd) return pd;
     const L = await wsLyrics(t).catch(() => null);
     return L && L.lines.length >= 2 ? lrcResult(rowOf(t, L), 20) : null;
   }
@@ -351,7 +381,7 @@
   // 最近新聞（多管道，皆開放授權）：維基百科「最近の出来事」（每天更新）、維基新聞（過去報導）、維基文庫（唱歌・名作）
   const NEWS_CATS = [
     { id: 'wp', name: '最近の出来事', icon: '🌐', note: '維基百科「最近の出来事」：每天更新的新聞摘要（CC BY-SA 4.0），點一則可讀相關條目' },
-    { id: 'wn', name: '維基新聞', icon: '📰', note: '維基新聞日文版（CC BY 2.5）：2026 年起停止更新，可讀過去的報導' },
+    { id: 'wn', name: '維基新聞（舊報導）', icon: '📰', note: '維基新聞日文版（CC BY 2.5）：已停止更新，這裡只有過去的舊報導；要看最近新聞請選「最近の出来事」' },
     { id: 'ws', name: '唱歌・名作', icon: '📜', note: '維基文庫：著作權已過期的唱歌、童謠與文學（公有領域）' }
   ];
   // 標題可能帶 <ruby>：還原成純文字，讀音存成「｜漢字《かな》」
@@ -364,7 +394,7 @@
     }
     return t.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
   }
-  const NEWS_KEY = 'jpq.news3.';
+  const NEWS_KEY = 'jpq.news4.';
   const WP = 'ja.wikipedia.org', PORTAL = 'Portal:最近の出来事';
   async function newsList(id, days) {
     const cat = NEWS_CATS.find(c => c.id === id) || NEWS_CATS[0];
@@ -386,10 +416,12 @@
         const raw = el.textContent.replace(/\s+/g, ' ').trim();
         const m = raw.match(/^((?:（[^）]{1,12}）)*)(.+?)(?:\s*-\s*([^-]{1,12}))?$/);
         if (!m || !hasJapanese(m[2], 4)) return;
-        // 連結：挑最具體的條目（跳過年月日、入口頁），取連結文字最長的
-        const a = [...el.querySelectorAll('a[href^="/wiki/"]')].filter(x => !/^\/wiki\/(?:Portal|Category|Help|Wikipedia|特別|ファイル|Template):/.test(decodeURIComponent(x.getAttribute('href'))) && !/^\d+(年|月|日)$|^\d+月\d+日$/.test(x.textContent.trim()))
-          .sort((x, y) => y.textContent.trim().length - x.textContent.trim().length).map(x => x.getAttribute('href'))[0];
-        items.push({ title: m[2].trim(), rt: '', link: a ? 'https://' + WP + a : p.url, t, day, src: (m[1] || '').replace(/）（/g, '・').replace(/[（）]/g, '').trim() || '維基百科' });
+        // 相關條目：依出現順序，跳過年月日、入口頁、出典；點開時只讀這則新聞＋條目導言
+        const seen = new Set();
+        const rel = [...el.querySelectorAll('a[href^="/wiki/"]')].filter(x => !/^\/wiki\/(?:Portal|Category|Help|Wikipedia|特別|ファイル|Template):/.test(decodeURIComponent(x.getAttribute('href'))) && !/^\d+(年|月|日)$|^\d+月\d+日$|^\d{4}年$/.test(x.textContent.trim()) && !x.closest('sup'))
+          .map(x => ({ t: x.textContent.trim(), href: 'https://' + WP + x.getAttribute('href') })).filter(r => r.t && !seen.has(r.href) && seen.add(r.href));
+        const title = m[2].trim();
+        items.push({ title, rt: '', link: p.url, key: p.url + '#' + day + '-' + title.slice(0, 40), rel, t, day, src: (m[1] || '').replace(/）（/g, '・').replace(/[（）]/g, '').trim() || '維基百科' });
       });
       items = items.filter(x => x.t >= since || items.indexOf(x) < 10).slice(0, 40);
     } else if (cat.id === 'wn') {
@@ -403,5 +435,5 @@
     return items;
   }
 
-  window.LinkImport = { WIKI_NAME, WIKI_LIC, wikiOf, OPEN_MSG, NEWS_CATS, NEWS_KEY, newsList, cleanTitle, sameSong, baseTitle, coverParse, coverBy, coverTitle, lyricsRank, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, lyricsById, parseLRC, songTitle };
+  window.LinkImport = { WIKI_NAME, WIKI_LIC, wikiOf, wikiText, OPEN_MSG, NEWS_CATS, NEWS_KEY, newsList, newsDoc, cleanTitle, sameSong, baseTitle, coverParse, coverBy, coverTitle, lyricsRank, NHK, EASY_FEEDS, latestEasy, nhkHome, publicURL, article, latestNHK, audio, youtubeID, youtube, lyrics, lyricsById, parseLRC, songTitle };
 })();

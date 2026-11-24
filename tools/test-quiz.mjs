@@ -72,4 +72,9 @@ show('挖空落在詞中間', mid);
 show('語意題中文同形送分', same);
 show('有文法的單元小考沒考文法', noGram);
 show('Challenge.problems', prob);
-process.exit(mid.length || same.length || noGram.length || prob.length ? 1 : 0);
+// 評審 v17／v18：讀音干擾項不得是念不出來的假字（かんっしょう、せっぢ）
+const fakeKana = [];
+const KOK = x => !/^[っゃゅょーん]|っ$/.test(x) && !/っ(?![かきくけこさしすせそたちつてとぱぴぷぺぽ])/.test(x) && !/[んっー]っ/.test(x) && !/(^|[^きしちにひみりぎじぢびぴ])[ゃゅょ]/.test(x);
+for (const L of ['N5', 'N4', 'N3', 'N2', 'N1']) for (const r of (MIND.lex[L] || [])) { const k = String(r[1] || ''); if (!/^[ぁ-ゖー]{2,}$/.test(k)) continue; for (const m of Challenge.mutate(k)) if (!KOK(m) || (/[ぢづ]/.test(m) && !/[ぢづ]/.test(k))) fakeKana.push([L, r[0], k, m]); }
+show('讀音干擾項是假字', fakeKana);
+process.exit(mid.length || same.length || noGram.length || prob.length || fakeKana.length ? 1 : 0);
