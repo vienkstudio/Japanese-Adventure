@@ -773,7 +773,7 @@
       inp.classList.toggle('ok', good); inp.classList.toggle('ng', !good);
       if (good) ok++;
       else {
-        Tracker.add(App.wordItem({ jp: t.base || t.s, kana: t.bkana || t.kana, romaji: JPText.romaji(t.bkana || t.kana || ''), zh: t.zh || '', hint: `出自《${V.s.title}》：${V.s.lines[li].jp}` }, '🎵 歌曲', 'word'), true);
+        Tracker.add(App.wordItem({ jp: t.base || t.s, kana: t.bkana || t.kana, romaji: JPText.romaji(t.bkana || t.kana || ''), zh: t.zh || '', hint: `出自《${V.s.title}》：${V.s.lines[li].jp}`, ex: V.s.lines[li].jp, exz: V.s.lines[li].zh || '', exw: t.s, from: V.s.title }, '🎵 歌曲', 'word'), true);
         if (!inp.nextElementSibling || !inp.nextElementSibling.classList.contains('sg-ans')) inp.insertAdjacentHTML('afterend', `<span class="sg-ans">${esc(t.s)}${t.kana && t.kana !== t.s ? '（' + esc(t.kana) + '）' : ''}</span>`);
       }
     });

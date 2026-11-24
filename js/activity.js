@@ -34,9 +34,9 @@
   const exNorm = ex => {
     if (!ex) return [];
     if (Array.isArray(ex) && typeof ex[0] === 'string') return ex[0] ? [{ jp: ex[0], zh: ex[1] || '' }] : [];
-    if (Array.isArray(ex)) return ex.map(x => Array.isArray(x) ? { jp: x[0], zh: x[1] || '' } : x && x.jp ? { jp: x.jp, zh: x.zh || '' } : null).filter(Boolean);
+    if (Array.isArray(ex)) return ex.map(x => Array.isArray(x) ? { jp: x[0], zh: x[1] || '' } : x && x.jp ? Object.assign({ jp: x.jp, zh: x.zh || '' }, x.w ? { w: x.w } : {}, x.from ? { from: x.from } : {}, x.own ? { own: true } : {}) : null).filter(Boolean);
     if (typeof ex === 'string') return [{ jp: ex, zh: '' }];
-    return ex.jp ? [{ jp: ex.jp, zh: ex.zh || '' }] : [];
+    return ex.jp ? [Object.assign({ jp: ex.jp, zh: ex.zh || '' }, ex.w ? { w: ex.w } : {}, ex.from ? { from: ex.from } : {})] : [];
   };
   // 任何來源物件 → 統一 item
   function item(x, type) {
@@ -50,17 +50,19 @@
     const lv = String(x.lv || '').toUpperCase();
     return {
       id, type: t, jp, kana: x.kana || '', zh: x.zh || '', romaji: x.romaji || '', hint: x.hint || x.use || x.note || '',
-      emoji: x.emoji || '', lv: LVS.includes(lv) ? lv : '', source: x.source || '', ex: exNorm(x.ex),
+      emoji: x.emoji || '', lv: LVS.includes(lv) ? lv : '', source: x.source || '', ex: ownEx(x).concat(exNorm(typeof x.ex === 'string' ? x.ex2 : x.ex)),
       accept: Array.isArray(x.accept) ? x.accept : null, say: x.say || ''
     };
   }
+  // 使用者在閱讀／歌曲裡遇到這個詞的原句（Learn meta：ex、exz、exw、from）
+  const ownEx = x => typeof x.ex === 'string' && x.ex.trim() ? [Object.assign({ jp: x.ex.trim(), zh: x.exz || '', own: true }, x.exw ? { w: x.exw } : {}, x.from ? { from: x.from } : {})] : [];
   const lexKana = r => String(r[1] || '').split(/;\s*/)[0].replace(/\s*[（(].*?[）)]/g, '').trim();
   // 從已載入的資料找回 id 的內容
   function resolve(id) {
     id = Learn.idOf(id); if (!id) return null;
     const t = typeOfId(id), rest = id.slice(id.indexOf(':') + 1);
     const v = Learn.view(id);
-    let base = v && v.jp ? { id, type: t, jp: v.jp, kana: v.kana, zh: v.zh, romaji: v.romaji, hint: v.hint, emoji: v.emoji, lv: v.lv, source: v.source } : null;
+    let base = v && v.jp ? Object.assign({ id, type: t, jp: v.jp, kana: v.kana, zh: v.zh, romaji: v.romaji, hint: v.hint, emoji: v.emoji, lv: v.lv, source: v.source }, v.ex ? { ex: v.ex, exz: v.exz, exw: v.exw, from: v.from } : {}) : null;
     let found = null;
     if (t === 'kana') {
       const B = G('BY_HIRA'), k = B && B[rest];
@@ -84,6 +86,7 @@
     }
     if (!found && !base) return null;
     const o = Object.assign({}, found || {}, base || {});
+    if (typeof o.ex === 'string' && found && found.ex) o.ex2 = found.ex;
     if (found) for (const k in found) if (o[k] === '' || o[k] == null) o[k] = found[k];
     return item(o, t);
   }
@@ -502,6 +505,15 @@
     if (!window.Loan || it.type === 'kana' || !has(Loan, 'label')) return '';
     try { const l = Loan.label(it.jp, 1); return l ? `<p class="ac-loan">${esc(l)}</p>` : ''; } catch (e) { return ''; }
   }
+  // 例句：原句裡的這個詞標粗體；使用者自己讀到的原句附出處
+  function exHTML(ex, it, front) {
+    const s = String(ex.jp || ''), w = [ex.w, it.jp, it.kana].find(k => k && s.indexOf(k) >= 0) || '';
+    const k = w ? s.indexOf(w) : -1;
+    const body = k >= 0 ? esc(s.slice(0, k)) + '<b>' + esc(w) + '</b>' + esc(s.slice(k + w.length)) : esc(s);
+    const src = ex.own && ex.from ? '<small class="ac-exsrc">出自《' + esc(ex.from) + '》</small>' : '';
+    if (front) return '<p class="ac-ex ac-exf"><span class="jp" lang="ja">「' + body + '」</span>' + src + '</p>';
+    return '<p class="ac-ex"><span class="jp" lang="ja">' + (ex.own ? '原句：' : '例：') + body + '</span>' + (ex.zh ? '<small>' + esc(ex.zh) + '</small>' : '') + src + '</p>';
+  }
   function card(x, o) {
     o = o || {};
     const it = x && x.id && x.type ? x : item(x);
@@ -510,17 +522,18 @@
     const emo = it.emoji ? `<div class="ac-emo" aria-hidden="true">${esc(it.emoji)}</div>` : '';
     let body;
     if (face === 'front' && o.zhFirst) body = `<p class="ac-zh-big">${esc(it.type === 'kana' ? romaji(it) : it.zh)}</p><p class="ac-ask">${esc(o.ask || askOf(it, true))}</p>`;
-    else if (face === 'front') body = `${emo}<p class="ac-jp jp${long}" lang="ja">${esc(jp)}</p><p class="ac-ask">${esc(o.ask || askOf(it, false))}</p>`;
+    else if (face === 'front') { const own = (it.ex || []).find(e => e.own); body = `${emo}<p class="ac-jp jp${long}" lang="ja">${esc(jp)}</p>${own ? exHTML(own, it, true) : ''}<p class="ac-ask">${esc(o.ask || askOf(it, false))}</p>`; }
     else {
       const kn = it.type === 'kana' ? '' : kanaOf(it), ro = showRo(it) ? romaji(it) : '';
-      const ex = o.ex === false ? null : o.ex && o.ex.jp ? o.ex : (it.ex || [])[0] || null;
+      const ex = o.ex === false ? (it.ex || []).find(e => e.own) || null : o.ex && o.ex.jp ? o.ex : (it.ex || [])[0] || null;
+      const hint = it.hint && !(ex && ex.own && it.hint.indexOf(ex.jp) >= 0) ? it.hint : '';
       body = `${emo}<p class="ac-jp jp${long}" lang="ja">${esc(jp)}</p>
         ${kn ? `<p class="ac-kana jp" lang="ja">${esc(kn)}</p>` : ''}
         ${ro ? `<p class="ac-ro">${esc(ro)}</p>` : ''}
         <p class="ac-zh">${esc(it.zh)}</p>
         ${loanOf(it)}
-        ${it.hint ? `<p class="ac-hint">${esc(it.hint)}</p>` : ''}
-        ${ex ? `<p class="ac-ex"><span class="jp" lang="ja">例：${esc(ex.jp)}</span>${ex.zh ? `<small>${esc(ex.zh)}</small>` : ''}</p>` : ''}`;
+        ${hint ? `<p class="ac-hint">${esc(hint)}</p>` : ''}
+        ${ex ? exHTML(ex, it) : ''}`;
     }
     return `<div class="ac-card${face === 'back' ? ' flip' : ''}">${o.isNew ? '<p class="ac-new">新的</p>' : ''}${body}${o.say === false ? '' : '<button type="button" class="ac-say" aria-label="播放發音">🔊</button>'}${o.src !== false && it.source ? `<p class="ac-src">${esc(it.source)}</p>` : ''}</div>`;
   }

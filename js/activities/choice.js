@@ -39,12 +39,29 @@
     if (p.length === 1 && e.jp.indexOf(p, k + 1) >= 0) return null;
     return { p, s: e.jp, k, zh: e.zh || '' };
   }
+  // 原句填空可用：使用者在閱讀／歌曲裡遇到這個詞的原句（ex.own），句中找得到這個詞
+  function clozeable(it) {
+    if (!it || (it.type !== 'vocab' && it.type !== 'phrase')) return null;
+    const e = (it.ex || []).find(x => x && x.own && x.jp); if (!e) return null;
+    const w = [e.w, it.jp, it.kana].find(k => k && e.jp.indexOf(k) >= 0); if (!w) return null;
+    if (norm(e.jp) === norm(w)) return null;   // 整句就是這個詞：挖空沒意義
+    return { s: e.jp, k: e.jp.indexOf(w), w, zh: e.zh || '', from: e.from || '' };
+  }
+  // 沒有詞性的詞（閱讀收的）：看字尾猜詞性，只用在原句填空挑干擾項
+  function guessPos(it) {
+    const j = String(it.jp || '');
+    if (/する$/.test(j)) return 'v';
+    if (/[一-鿿]/.test(j) && /[うくぐすつぬぶむる]$/.test(j)) return 'v';
+    if (/[一-鿿]/.test(j) && /しい$|[^一-鿿]い$/.test(j)) return 'i';
+    return /[一-鿿ァ-ヺ]/.test(j) ? 'n' : '';
+  }
   const rk = r => String(r || '').trim().split(/[\s(（]/)[0];   // 'o (wo)' → 'o'：お／を同音不能同時出現
   const kanaOf = it => it.type === 'kana' ? (it.kana || it.jp) : (it.kana || it.jp);
   function ansOf(it, mode) {
     if (mode === 'kana') return Activity.romaji(it);
     if (mode === 'jp2zh') return it.zh || '';
     if (mode === 'form') return stripPat(it.jp) || '';
+    if (mode === 'cloze') return it.jp;
     return it.type === 'kana' ? (it.kana || it.jp) : it.jp;   // zh2jp、listen
   }
   // 候選是否可當干擾（與正解、與已選的都不衝突）
@@ -56,6 +73,7 @@
     if (mode === 'kana') return kanaOf(c) !== kanaOf(it) && rk(a) !== rk(b);
     if (mode === 'jp2zh') return !zhClash(a, b);
     if (mode === 'form') return !overlap(a, b) && f.s.replace(f.p, b) !== f.s && !zhClash(c.zh, it.zh);
+    if (mode === 'cloze' && f && f.s.indexOf(c.jp) >= 0) return false;   // 干擾項本身出現在原句裡會混淆
     // zh2jp、listen：日文不互相包含、不同音、中文不同義
     if (overlap(a, b)) return false;
     if (it.kana && c.kana && norm(c.kana) === norm(it.kana)) return false;
@@ -75,12 +93,14 @@
   // 純函式：從 pool 選 n 個干擾項的答案字串（同型別同等級 → 同型別 → 同型別不同詞性）
   function distractors(it, mode, pool, n) {
     n = n || 3;
-    const f = mode === 'form' ? formable(it) : null;
-    if (mode === 'form' && !f) return [];
+    const f = mode === 'form' ? formable(it) : mode === 'cloze' ? clozeable(it) : null;
+    if ((mode === 'form' || mode === 'cloze') && !f) return [];
     const lv = lvOf(it), t = tkind(it);
     if (!it.pos) { const m = (pool || []).find(c => c && c.id === it.id && c.pos); if (m) it = Object.assign({}, it, { pos: m.pos }); }
     const same = (pool || []).filter(c => c && tkind(c) === t);
     const tiers = [];
+    // 原句填空：干擾項要同詞性（動詞配動詞），不然一看就知道
+    if (mode === 'cloze') { const gp = it.pos || guessPos(it); if (gp) tiers.push(same.filter(c => (c.pos || guessPos(c)) === gp && (!lv || !lvOf(c) || Math.abs(LVS.indexOf(lvOf(c)) - LVS.indexOf(lv)) <= 1))); }
     if (it.pos) { const FUNC = ['conj', 'adv', 'int', 'exp', 'part']; tiers.push(same.filter(c => lvOf(c) === lv && (FUNC.includes(it.pos) ? !FUNC.includes(c.pos) : c.pos === it.pos))); }
     tiers.push(same.filter(c => lvOf(c) === lv));
     if (lv) tiers.push(same.filter(c => !lvOf(c) || Math.abs(LVS.indexOf(lvOf(c)) - LVS.indexOf(lv)) <= 1));
@@ -98,12 +118,14 @@
   function pickMode(it, i, want, voiceOK) {
     if (want && want !== 'mix') {
       if (want === 'form' && !formable(it)) return 'jp2zh';
+      if (want === 'cloze' && !clozeable(it)) return 'jp2zh';
       if (want === 'listen' && voiceOK === false) return it.type === 'kana' ? 'kana' : 'jp2zh';
       if (want === 'kana' && it.type !== 'kana') return 'jp2zh';
       return want;
     }
     if (it.type === 'kana') return 'kana';
     if (it.type === 'grammar') return formable(it) ? 'form' : 'jp2zh';
+    if (clozeable(it) && i % 2 === 0) return 'cloze';   // 在閱讀／歌曲裡收的詞：一半用原句填空
     return i % 3 === 2 && it.zh ? 'zh2jp' : 'jp2zh';
   }
   // 純函式：出一題 → {mode, ans, opts, ansI} 或 null（干擾項不足）
@@ -120,6 +142,7 @@
   function extraPool(items) {
     const out = [];
     const types = new Set(items.map(tkind)), lvs = new Set(items.map(lvOf).filter(Boolean));
+    if (items.some(it => !lvOf(it) && clozeable(it))) { lvs.add('N5'); lvs.add('N4'); }   // 閱讀收的詞沒有等級：拿 N5／N4 同詞性當干擾
     if (types.has('kana')) {
       const K = G('KANA') || [];
       if (!CACHE.kana) CACHE.kana = K.map(k => ({ id: 'kana:' + k[0], type: 'kana', jp: k[0], kana: k[0], romaji: k[2], zh: '' }));
@@ -146,6 +169,7 @@
   }
   function prepare(items) {
     const src = [], lvs = new Set(items.filter(it => it.type === 'vocab').map(lvOf).filter(Boolean));
+    if (items.some(it => !lvOf(it) && clozeable(it))) { lvs.add('N5'); lvs.add('N4'); }   // 閱讀收的詞沒有等級：拿 N5／N4 同詞性當干擾
     lvs.forEach(lv => { if (!(window.MIND && MIND.lex && MIND.lex[lv])) src.push('data/mind/lex-' + lv.toLowerCase() + '.js'); });
     if (items.some(it => it.type === 'grammar') && !(window.MIND && MIND.gram)) src.push('data/mind/grammar.js');
     if (items.some(it => it.type === 'kana') && !G('KANA')) src.push('kana-data.js');
@@ -154,12 +178,13 @@
     return src.reduce((p, s) => p.then(() => App.loadScript(s).catch(() => { })), Promise.resolve());
   }
 
-  const ASK = { jp2zh: '是什麼意思？', zh2jp: '日文是哪一個？', listen: '聽到的是哪一個？', kana: '怎麼念？', form: '（　　）裡放什麼最適合？' };
+  const ASK = { jp2zh: '是什麼意思？', zh2jp: '日文是哪一個？', listen: '聽到的是哪一個？', kana: '怎麼念？', form: '（　　）裡放什麼最適合？', cloze: '原句（　　）裡是哪個詞？' };
   function stemHTML(it, q, ctx, noVoice) {
     const esc = ctx.esc, hz = ctx.hideZh(it);
     if (q.mode === 'zh2jp') return `<p class="ac-zh-big">${esc(it.zh)}</p>`;
     if (q.mode === 'listen') return noVoice ? `<p class="ac-jp jp" lang="ja">${esc(it.kana || it.jp)}</p><p class="ac-note">🔇 沒有日文語音，改看讀音選字</p>` : `<button type="button" class="ac-play" aria-label="再聽一次">🔊</button><p class="ac-note">點喇叭可再聽一次</p>`;
     if (q.mode === 'form') { const f = formable(it); return `<p class="ac-sent jp" lang="ja">${esc(f.s.slice(0, f.k))}<span class="ac-blank">（　　）</span>${esc(f.s.slice(f.k + f.p.length))}</p>${!hz && f.zh ? `<p class="ac-note">${esc(f.zh)}</p>` : ''}`; }
+    if (q.mode === 'cloze') { const c = clozeable(it); return `<p class="ac-sent jp" lang="ja">${esc(c.s.slice(0, c.k))}<span class="ac-blank">（　　）</span>${esc(c.s.slice(c.k + c.w.length))}</p>${!hz && c.zh ? `<p class="ac-note">${esc(c.zh)}</p>` : ''}${c.from ? `<p class="ac-note">出自《${esc(c.from)}》${c.w !== it.jp ? '・選項是原形' : ''}</p>` : c.w !== it.jp ? '<p class="ac-note">選項是原形</p>' : ''}`; }
     const kn = it.type !== 'kana' && it.kana && it.kana !== it.jp && q.mode === 'jp2zh' ? `<p class="ac-kana jp" lang="ja">${esc(it.kana)}</p>` : '';
     return `<p class="ac-jp jp${String(it.jp).length > 10 ? ' long' : ''}" lang="ja">${esc(it.type === 'kana' ? (it.kana || it.jp) : it.jp)}</p>${kn}`;
   }
@@ -225,7 +250,7 @@
   }
 
   Activity.register('choice', {
-    distractors, question, zhClash, formable, ansOf, pickMode, needItems: false,
+    distractors, question, zhClash, formable, clozeable, ansOf, pickMode, needItems: false,
     start(el, ctx) {
       if (ctx.params.kind || ctx.params.quiz || (!ctx.items.length && Array.isArray(ctx.params.ids))) return chalStart(el, ctx);
       if (!ctx.items.length) return Promise.resolve({ results: [] });
@@ -233,7 +258,7 @@
       // 例句去重：用過的例句往後排；全部用過就不出挖空題（改看日文選中文）
       const items = ctx.items.map(it => {
         if (!it.ex || !it.ex.length || !ctx.exUsed) return it;
-        const ex = it.ex.filter(e => e && e.jp && !ctx.exUsed(e.jp));
+        const ex = it.ex.filter(e => e && e.jp && (e.own || !ctx.exUsed(e.jp)));   // 自己讀到的原句不算重複
         return ex.length === it.ex.length ? it : Object.assign({}, it, { ex });
       });
       return prepare(items).then(() => new Promise(resolve => {
@@ -251,7 +276,7 @@
           const q = question(it, mode, pool) || (mode !== 'jp2zh' ? question(it, 'jp2zh', pool) : null);
           if (!q) { n++; return show(); }   // 干擾項不足：跳過，不記錄
           const noVoice = q.mode === 'listen' && voiceOK === false;
-          const jpOpt = q.mode === 'zh2jp' || q.mode === 'listen' || q.mode === 'form';
+          const jpOpt = q.mode === 'zh2jp' || q.mode === 'listen' || q.mode === 'form' || q.mode === 'cloze';
           el.innerHTML = `<div class="ac-card">${stemHTML(it, q, ctx, noVoice)}${q.mode !== 'listen' && q.mode !== 'zh2jp' ? '<button type="button" class="ac-say" aria-label="播放發音">🔊</button>' : ''}</div>
             <p class="ac-ask">${cur.second ? '再一次：' : ''}${ASK[q.mode]}</p>
             <div class="ac-opts">${q.opts.map((o, k) => `<button type="button" class="btn block${jpOpt ? ' jp' : ''}" data-o="${k}"${jpOpt ? ' lang="ja"' : ''}>${ctx.esc(o)}</button>`).join('')}</div>
@@ -260,6 +285,7 @@
           const sb = el.querySelector('.ac-say'); if (sb) sb.onclick = () => ctx.say(it);
           if (q.mode === 'listen' && !noVoice) ctx.say(it);
           if (q.mode === 'form' && ctx.useEx) { const f = formable(it); if (f) ctx.useEx(f.s); }
+          if (q.mode === 'cloze' && ctx.useEx) { const c = clozeable(it); if (c) ctx.useEx(c.s); }
           el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
             const ok = +b.dataset.o === q.ansI;
             el.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (+x.dataset.o === q.ansI) x.classList.add('ok'); });

@@ -23,6 +23,10 @@
 .ac-src{margin-top:4px}
 .ac-ex{margin:4px 0 0;padding:6px 10px;background:var(--chip);border-radius:var(--r-m);font-size:var(--fs-sm);display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;box-sizing:border-box}
 .ac-ex small{color:var(--muted);font-size:var(--fs-xs)}
+.ac-ex b{color:var(--acc-t);font-weight:700}
+.ac-exf{background:transparent;padding:2px 4px;text-align:center;align-items:center}
+.ac-exf .jp{font-size:var(--fs-sm);color:var(--muted)}
+.ac-exsrc{opacity:.85}
 .ac-say{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;border:none;background:var(--chip);color:var(--text);font-size:1.2em;cursor:pointer}
 .ac-play{width:88px;height:88px;border-radius:50%;border:none;background:var(--pri);color:var(--on-pri);font-size:2.2em;cursor:pointer;box-shadow:var(--shadow)}
 .ac-play:active,.ac-say:active{transform:scale(.94)}

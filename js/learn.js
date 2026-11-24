@@ -103,11 +103,15 @@
   /* ---------------- 排程（FSRS-lite） ---------------- */
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const stOfStab = st => st >= 6 ? 'mastered' : st >= 2 ? 'review' : 'learning';
-  const META = ['jp', 'kana', 'romaji', 'zh', 'hint', 'emoji', 'source', 'lv'];
+  const META = ['jp', 'kana', 'romaji', 'zh', 'hint', 'emoji', 'source', 'lv', 'ex', 'exz', 'exw', 'from'];   // ex／exz／exw／from：在閱讀、歌曲裡遇到這個詞的原句、整句中文、原句裡的寫法、出處
   function putMeta(e, it) {
     if (!it || typeof it !== 'object') return;
     const m = e.m || (e.m = {});
-    META.forEach(k => { const v = it[k]; if (v != null && v !== '' && (m[k] == null || m[k] === '' || k === 'source')) m[k] = String(v); });
+    const own = typeof it.ex === 'string' && it.ex.trim();   // 使用者自己讀到的原句：整組換成最新一次
+    META.forEach(k => {
+      if (/^(ex|exz|exw|from)$/.test(k)) { if (own) { const v = it[k]; if (v != null && v !== '') m[k] = String(v).slice(0, k === 'ex' ? 160 : 80); else delete m[k]; } return; }
+      const v = it[k]; if (v != null && v !== '' && typeof v !== 'object' && (m[k] == null || m[k] === '' || k === 'source')) m[k] = String(v);
+    });
   }
   function blank(src) { return { s: 'new', due: 0, stab: 0, diff: 5, reps: 0, lapses: 0, last: 0, src: src || '' }; }
   function ensure(id, ctx) {
@@ -232,7 +236,7 @@
     const m = metaOf(id);
     return {
       id, jp: m.jp || '', kana: m.kana || '', romaji: m.romaji || '', zh: m.zh || '', hint: m.hint || '', emoji: m.emoji || '',
-      source: m.source || SRC_NAME[e.src] || '其他', lv: m.lv || '',
+      source: m.source || SRC_NAME[e.src] || '其他', lv: m.lv || '', ex: m.ex || '', exz: m.exz || '', exw: m.exw || '', from: m.from || '',
       added: e.add || e.last || 0, seen: e.last || 0, right: Math.max(0, (e.reps || 0) - (e.lapses || 0)), wrong: e.lapses || 0,
       streak: e.str || 0, mastered: e.s === 'mastered', due: e.due || 0, s: e.s, inList: inList(e), star: !!e.star
     };

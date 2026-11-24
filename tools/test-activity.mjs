@@ -162,5 +162,34 @@ ok(s4.total === 1 && state.learn['p:これください'] && state.learn['p:こ�
 const its = await Activity.items(['v:会う', 'kana:あ', 'g:' + MIND.gram.find(g => g.lv === 'N5').id.replace(/^gram:/, '')], { lv: 'N5' });
 ok(its.length === 3 && its.every(x => x.id && x.jp && x.type), 'ids 解析成 item：' + its.map(x => x.type + ':' + x.jp + '/' + x.zh).join('、'));
 
+// 字卡附原句（閱讀／歌曲收的詞）：Learn 存原句 → 卡片顯示、選擇題原句填空
+{
+  const Lr = vm.runInContext('Learn', ctx);
+  const w = { id: 'word:食べる', jp: '食べる', kana: 'たべる', zh: '吃', hint: '出自《測試》：昨日すしを食べた。', source: '📖 閱讀', ex: '昨日すしを食べた。', exz: '昨天吃了壽司。', exw: '食べ', from: '測試文章' };
+  Lr.star(w.id, true, { item: w, src: 'review' });
+  const v = Lr.view('v:食べる');
+  ok(v && v.ex === '昨日すしを食べた。' && v.exw === '食べ' && v.from === '測試文章', 'Learn 存原句、原句寫法、出處：' + JSON.stringify(v && [v.ex, v.exw, v.from]));
+  const [it] = await Activity.items(['v:食べる'], { lv: 'N5' });
+  const own = it && (it.ex || []).find(e => e.own);
+  ok(own && own.jp === '昨日すしを食べた。' && own.w === '食べ' && own.from === '測試文章', 'item 第一個例句是原句：' + JSON.stringify(it && it.ex));
+  const back = Activity.card(it, { face: 'back', ex: false }), front = Activity.card(it, { face: 'front' });
+  ok(/原句：.*<b>食べ<\/b>/.test(back) && /出自《測試文章》/.test(back) && !/ac-hint/.test(back), '答案面顯示原句（標粗、出處，不重複 hint）');
+  ok(/ac-exf/.test(front) && /<b>食べ<\/b>/.test(front), '正面附原句情境');
+  const cz = C.clozeable(it);
+  ok(cz && cz.w === '食べ' && cz.s.slice(cz.k, cz.k + 2) === '食べ', 'clozeable 找到原句裡的寫法');
+  ok(C.pickMode(it, 0, 'mix') === 'cloze', 'mix 模式：原句詞出原句填空');
+  const q = C.question(it, 'cloze', [it].concat(N5));
+  ok(q && q.opts.length >= 3 && q.ans === '食べる' && new Set(q.opts).size === q.opts.length && !q.opts.some(o => o !== '食べる' && '昨日すしを食べた。'.includes(o)), '原句填空：選項唯一、答案是原形、干擾項不在原句裡：' + (q && q.opts.join('/')));
+  const posOf = o => (N5.find(x => x.jp === o) || {}).pos;
+  ok(q && q.opts.filter(o => o !== '食べる').every(o => posOf(o) === 'v'), '原句填空干擾項同詞性（動詞）：' + (q && q.opts.map(o => o + '/' + posOf(o)).join(' ')));
+  // 再從別的句子收：換成最新原句
+  Lr.star(w.id, true, { item: Object.assign({}, w, { ex: '朝ごはんを食べる。', exz: '', exw: '食べる', from: '短文二' }) });
+  const v2 = Lr.view('v:食べる');
+  ok(v2.ex === '朝ごはんを食べる。' && v2.from === '短文二' && !v2.exz, '再收一次換成最新原句（整組換）');
+  // 沒有原句的一般詞：不出填空
+  const plain = N5.find(x => !(x.ex || []).some(e => e.own));
+  ok(!C.clozeable(plain) && C.pickMode(plain, 0, 'mix') !== 'cloze', '沒有原句的詞不出填空');
+}
+
 console.log(`${fail ? '✗' : '✓'} test-activity：${pass} 通過，${fail} 失敗`);
 process.exit(fail ? 1 : 0);

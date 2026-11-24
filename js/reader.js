@@ -336,7 +336,7 @@
   function wordCard(t, ctx) {
     ctx = ctx || {};
     const base = t.base || t.s, bk = t.bkana || t.kana || '';
-    const item = App.wordItem({ jp: base, kana: bk, romaji: JPText.romaji(bk), zh: (t.zh || '（自填）') + (window.Loan && Loan.label(base) ? '（' + Loan.label(base) + '）' : ''), hint: ctx.title ? `出自《${ctx.title}》：${ctx.sentence || ''}` : (ctx.sentence || '') }, ctx.source || '📖 閱讀', 'word');
+    const item = App.wordItem({ jp: base, kana: bk, romaji: JPText.romaji(bk), zh: (t.zh || '（自填）') + (window.Loan && Loan.label(base) ? '（' + Loan.label(base) + '）' : ''), hint: ctx.title ? `出自《${ctx.title}》：${ctx.sentence || ''}` : (ctx.sentence || ''), ex: ctx.sentence || '', exz: ctx.zh || '', exw: t.s || '', from: ctx.title || '' }, ctx.source || '📖 閱讀', 'word');
     const sent = ctx.sentence && ctx.sentence.length <= 60 ? App.wordItem({ jp: ctx.sentence, kana: '', zh: ctx.zh || '（整句）', hint: ctx.title ? `出自《${ctx.title}》` : '' }, ctx.source || '📖 閱讀', 'phrase') : null;
     const form = t.form && JPText.FORM_ZH[t.form] ? `・${JPText.FORM_ZH[t.form]}` : '';
     const html = `<div class="rd-card">
@@ -493,13 +493,13 @@
       const o = seen.get(k);
       if (o) { o.n++; return; }
       const kana = t.bkana || t.kana || '';
-      seen.set(k, { base, kana, romaji: JPText.romaji(kana), zh: t.zh || '', lv: t.lv || '', n: 1, sent: sentenceOf(texts[r] || '', t.i) });
+      seen.set(k, { base, kana, romaji: JPText.romaji(kana), zh: t.zh || '', lv: t.lv || '', n: 1, s: t.s, sent: sentenceOf(texts[r] || '', t.i) });
     }));
     // 依使用者程度：N3 以上不列 N5／N4；自己的等級排最前，再來更難的，沒有等級的（未收錄）放最後
     const u = JPText.userLv ? JPText.userLv() : 0;
     const rank = lv => !LVR[lv] ? 30 : JPText.lvRank ? JPText.lvRank(lv, u) : LVR[lv];
     const list = [...seen.values()].filter(v => !JPText.lvKeep || JPText.lvKeep(v.lv, u)).sort((a, b) => rank(a.lv) - rank(b.lv) || b.n - a.n).slice(0, max || 60);
-    const items = list.map(v => App.wordItem({ jp: v.base, kana: v.kana, romaji: v.romaji, zh: v.zh || '（自填）', hint: title ? `出自《${title}》：${v.sent}` : v.sent }, source, 'word'));
+    const items = list.map(v => App.wordItem({ jp: v.base, kana: v.kana, romaji: v.romaji, zh: v.zh || '（自填）', hint: title ? `出自《${title}》：${v.sent}` : v.sent, ex: v.sent || '', exw: v.s || '', from: title || '' }, source, 'word'));
     return { list, items };
   }
   function vocabHTML(voc) {
@@ -523,7 +523,7 @@
     const gram = JPText.findGrammar(text, all, 12, { lv: prof().lv || 'zero' });
     const phr = JPText.findPhrases(text, all, 10);
     const gItem = g => ({ id: g.id, jp: g.pat, kana: '', romaji: '', zh: g.zh, hint: (g.ex && g.ex[0] ? '例：' + g.ex[0] + '（' + (g.ex[1] || '') + '）' : '') + (g.conn ? '｜接續：' + g.conn : ''), source: '📐 文法' });
-    const pItem = p => App.wordItem({ jp: p.jp, kana: p.kana, romaji: p.romaji, zh: p.zh, hint: `出自《${A.title}》：${p.sent}` }, '🧩 片語', 'phrase');
+    const pItem = p => App.wordItem({ jp: p.jp, kana: p.kana, romaji: p.romaji, zh: p.zh, hint: `出自《${A.title}》：${p.sent}`, ex: p.sent || '', exw: p.key || p.jp, from: A.title || '' }, '🧩 片語', 'phrase');
     const mark = (s, a, b) => esc(s.slice(0, a)) + '<mark>' + esc(s.slice(a, b)) + '</mark>' + esc(s.slice(b));
     S.gItems = gram.map(gItem); S.pItems = phr.map(pItem);
     const voc = vocabList([S.titleTk].concat(S.tokens), [A.title].concat(A.paras.map(p => p.jp)), A.title, '📖 閱讀');
