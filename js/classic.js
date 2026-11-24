@@ -55,18 +55,18 @@
   }
   function travel(key) {
     const k = String(key).replace(/^tr-/, ''), scs = packScenes(k), out = [];
-    scs.forEach(sc => out.push(item('x:ev:' + sc, '⚡', SC[sc][1] + '狀況題', '店員這樣說，你怎麼回？5 題', 'trip-event', { stop: sc })));
-    scs.forEach(sc => menuNames(sc).forEach(([ic, n], i) => out.push(item('x:menu:' + sc + ':' + i, ic, n, SC[sc][0] + ' 情境小遊戲・限時任務', 'menu', { id: sc, m: i }))));
+    scs.forEach(sc => out.push(item('x:ev:' + sc, '⚡', '情境任務：' + SC[sc][1] + '狀況題', '店員這樣說，你怎麼回？5 題', 'trip-event', { stop: sc })));
+    scs.forEach(sc => menuNames(sc).forEach(([ic, n], i) => out.push(item('x:menu:' + sc + ':' + i, ic, n, SC[sc][0] + ' 情境任務・限時', 'menu', { id: sc, m: i }))));
     if (scs.length) {
       const nm = scs.map(s => SC[s][1]).join('・');
-      out.push(item('x:dlg:' + k, '🎭', '對話演練', nm + '：跟店員來回對話', 'drill', { scenes: scs, kind: 'dialog', title: nm }));
-      out.push(item('x:spk:' + k, '🎤', '口說對話', '開口說出回答（不支援麥克風時改跟讀）', 'drill', { scenes: scs, kind: 'speak', title: nm }));
+      out.push(item('x:dlg:' + k, '🎭', '對話：打字', nm + '：跟店員來回對話', 'drill', { scenes: scs, kind: 'dialog', title: nm }));
+      out.push(item('x:spk:' + k, '🎤', '對話：口說', '開口說出回答（不支援麥克風時改跟讀）', 'drill', { scenes: scs, kind: 'speak', title: nm }));
     }
     const B = BOOT[k] || {};
-    arr(B.c).forEach(c => out.push(item('x:clerk:' + c, '🗣️', '店員問句聽解', CLERK_N[c] + '：同一句話的不同講法', 'boot-play', { m: 'clerk', f: c })));
-    if (B.s) out.push(item('x:sign:' + B.s, '🪧', '看板閱讀', SIGN_N[B.s] + '的標示', 'boot-play', { m: 'sign', f: B.s }));
-    if (B.n) out.push(item('x:num:' + B.n, '🔢', '數字聽力', '聽' + NUM_N[B.n] + '，打出數字', 'boot-play', { m: 'num', f: B.n }));
-    if (B.k) out.push(item('x:cnt', '🧮', '量詞', '一個、兩杯、三張…', 'boot-play', { m: 'num', f: 'counter' }));
+    arr(B.c).forEach(c => out.push(item('x:clerk:' + c, '🗣️', '聽力特訓：店員問句', CLERK_N[c] + '：同一句話的不同講法', 'boot-play', { m: 'clerk', f: c })));
+    if (B.s) out.push(item('x:sign:' + B.s, '🪧', '聽力特訓：看板', SIGN_N[B.s] + '的標示', 'boot-play', { m: 'sign', f: B.s }));
+    if (B.n) out.push(item('x:num:' + B.n, '🔢', '聽力特訓：數字', '聽' + NUM_N[B.n] + '，打出數字', 'boot-play', { m: 'num', f: B.n }));
+    if (B.k) out.push(item('x:cnt', '🧮', '聽力特訓：量詞', '一個、兩杯、三張…', 'boot-play', { m: 'num', f: 'counter' }));
     return out;
   }
 
@@ -81,15 +81,15 @@
   function kana() {
     const out = QUEST.map(([k, n, ic, ids]) => {
       const done = ids.filter(cleared).length, nx = ids.find(id => !cleared(id)) || ids[0];
-      return item('x:quest:' + k, ic, '假名戰鬥：' + n, ids.length > 1 ? `答對就攻擊，${done}／${ids.length} 關` : (done ? '已通過，再挑戰一次' : '平片濁拗全部混合 BOSS'), 'quest', { id: nx, free: true });
+      return item('x:quest:' + k, ic, '假名測驗：戰鬥・' + n, ids.length > 1 ? `答對就攻擊，${done}／${ids.length} 關` : (done ? '已通過，再挑戰一次' : '平片濁拗全部混合 BOSS'), 'quest', { id: nx, free: true });
     });
-    out.push(item('x:kquiz', '✏️', '50 音小考', '聽音選字、看字選音、平↔片，10 題', 'kana-quiz', {}));
-    out.push(item('x:kcards', '🎴', '五十音字卡', '平假名・片假名・濁音拗音', 'cards', { deck: 'hira' }));
+    out.push(item('x:kquiz', '✏️', '假名測驗：小考', '聽音選字、看字選音、平↔片，10 題', 'kana-quiz', {}));
+    out.push(item('x:kcards', '🎴', '字卡：五十音', '平假名・片假名・濁音拗音', 'cards', { deck: 'hira' }));
     return out;
   }
   function exam() {
     return [
-      item('x:jcards', '🎴', '日檢字卡', 'N5～N1 單字牌組，翻卡自評', 'cards', { deck: 'jlpt' }),
+      item('x:jcards', '🎴', '字卡：日檢', 'N5～N1 單字牌組，翻卡自評', 'cards', { deck: 'jlpt' }),
       item('x:chal', '🏆', '日檢挑戰', '限時題組與模擬考', 'challenge', {})
     ];
   }
@@ -164,10 +164,11 @@
 
   // 50 音小考（獨立頁，PathExtra 用；依賴 kana-data.js、js/kana-lesson.js 由 index.html 的 Home.lazy 載入）
   App.register('kana-quiz', {
-    title: '50 音小考', icon: '✏️', nav: false, navParent: 'path',
+    title: '假名測驗', icon: '✏️', nav: false, navParent: 'path',
     render(el) {
       if (!window.KanaLesson || !KanaLesson.quiz) { el.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>'; return; }
-      el.innerHTML = '<section class="kq"><h1>✏️ 50 音小考</h1><div id="kqBox"></div></section>';
+      el.innerHTML = '<section class="kq"><h1>✏️ 假名測驗</h1><div class="tabs kq-mode" role="group" aria-label="模式"><button type="button" class="on" aria-pressed="true">✏️ 小考 10 題</button><button type="button" id="kqBattle" aria-pressed="false">⚔️ 戰鬥模式</button></div><div id="kqBox"></div></section>';
+      el.querySelector('#kqBattle').onclick = () => { const x = PathExtra.list('kana', 'kana')[0]; if (x) x.go(); else App.go('quest', { id: 'h-a', free: true, from: 'path' }); };
       KanaLesson.quiz(el.querySelector('#kqBox'));
     }
   });

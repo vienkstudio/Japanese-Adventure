@@ -1517,7 +1517,7 @@
       if (s) { fromDistrict = fd; renderShop(el, s, d); } else renderDistrict(el, d);
     }).catch(e => { console.error(e); el.innerHTML = '<p class="center wd-wait">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
-  App.register('play', { title: '冒險', icon: '🗾', nav: false, navParent: 'path', render });
+  App.register('play', { title: '冒險地圖', icon: '🗾', nav: false, navParent: 'path', render });
 
   window.World = {
     _test: { unitAlt: (s, items) => unitAlt(s, items) },

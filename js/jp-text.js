@@ -3,7 +3,7 @@
 // 斷詞：格子圖最小成本（最長匹配的全域版），查不到時依字種切段；活用形反查辭書形。
 (function () {
   'use strict';
-  const MIND_SRC = 'data/mind/', EXT_SRC = 'data/reading/dict-news.js';
+  const MIND_SRC = 'data/mind/', EXT_SRC = 'data/reading/dict-news.js', FILL_SRC = 'data/reading/dict-fill.js', BIG_SRC = 'data/reading/dict-big.js';   // dict-big：JMdict 常用詞大詞庫（完整模式才載，tools/build-lex-ext.mjs）   // dict-fill：Tomoshi／JMdict 補詞（CC BY-SA 4.0，tools/build-fill.mjs）
   const BASE_LV = ['N5', 'N4', 'N3'], ALL_LV = ['N5', 'N4', 'N3', 'N2', 'N1'];
   const MAXL = 12;
   const POS_ZH = { v: '動詞', n: '名詞', i: 'い形容詞', na: 'な形容詞', adv: '副詞', pron: '代名詞', pre: '連體詞', int: '感嘆詞', ctr: '量詞', suf: '接尾詞', exp: '慣用語', conj: '連接詞', part: '助詞', aux: '助動詞', cop: '斷定', num: '數字', name: '專有名詞', sym: '符號', unk: '未知' };
@@ -434,24 +434,139 @@
       const kanji = hasKanji(sf);
       register(e, sf, kana || sf, baseCost);
       // 漢字詞的假名寫法：較低優先（避免把助詞串誤認為詞）
-      if (kanji && kana && kana !== sf) {
+      if (kanji && kana && kana !== sf && !e.noKana) {   // noKana：dict-fill 補詞只登記漢字寫法
         const soft = /^(adv|int|conj|pron|i|na|pre)$/.test(e.pos);
         register(e, kana, kana, baseCost + (soft ? .3 : 1.2) + (kana.length <= 2 ? 1.6 : 0), true);
       }
     });
   }
   function register(e, sf, rd, cost, viaKana) {
-    const add = (s, r, form, c) => addKey(s, { e, form, r, cost: c + (form === 'stem' ? .15 : form && form !== 'dict' ? .05 : 0), kana: !!viaKana });
+    const add = (s, r, form, c) => addKey(s, { e, form, r, cost: c + (form === 'stem' ? .15 : /^(pot|pass)$/.test(form) ? .12 /* 可能／被動形略貴：焼けた 先當 焼ける 的過去，不當 焼く 的可能 */ : form && form !== 'dict' ? .05 : 0), kana: !!viaKana });
     add(sf, rd, 'dict', cost);
     if (e.pos === 'v' && window.MIND && MIND.conjugate) {
       verbForms(sf, e.grp, rd).forEach(([s, r, form]) => add(s, r, form, cost));
     } else if (e.pos === 'i') {
       adjForms(sf, rd).forEach(([s, r, form]) => add(s, r, form, cost));
-    } else if (e.grp === 's' && window.MIND && MIND.conjugate) {
+    } else if (e.grp === 's' && !e.noKana && window.MIND && MIND.conjugate) {   // 補詞／大詞庫（noKana）的サ變名詞不展開「〜する」活用（省記憶體；斷成 名詞＋する）
       verbForms(sf + 'する', 3, rd + 'する').forEach(([s, r, form]) => add(s, r, 'suru:' + form, cost));
     }
   }
-  const FORM_ZH = { masu: 'ます形', te: 'て形', ta: '過去', nai: '否定', pot: '可能', pass: '被動', caus: '使役', cpass: '使役被動', vol: '意向', imp: '命令', ba: '假定', tara: 'たら', stem: '連用形', masen: '否定（禮貌）', mashita: '過去（禮貌）', maseNdeshita: '過去否定（禮貌）', mashou: '邀請', tai: '想要', nakatta: '過去否定', nakute: '否定て形', naide: '不要…', nakereba: '如果不', teru: '正在', tari: '又…又', chau: '〜てしまう（口語）', cha: '〜ては（口語）', toku: '〜ておく（口語）' };
+  const FORM_ZH = { masu: 'ます形', te: 'て形', ta: '過去', nai: '否定', pot: '可能', pass: '被動', caus: '使役', cpass: '使役被動', vol: '意向', imp: '命令', ba: '假定', tara: 'たら', stem: '連用形', masen: '否定（禮貌）', mashita: '過去（禮貌）', maseNdeshita: '過去否定（禮貌）', mashou: '邀請', tai: '想要', nakatta: '過去否定', nakute: '否定て形', naide: '不要…', nakereba: '如果不', teru: '正在', tari: '又…又', chau: '〜てしまう（口語）', cha: '〜ては（口語）', toku: '〜ておく（口語）', nakunaru: '〜なくなる（不再）' };
+  /* 逐詞中文（閱讀、歌詞每個詞底下那一行）：辭書形意思＋活用語意。例：忘れられない→忘記不了、会いたかった→好想見面、優しさ→溫柔 */
+  const STATIVE = /^(知る|住む|持つ|似る|結婚する|覚える|分かる|わかる|勤める|太る|痩せる|死ぬ|疲れる|空く|込む|着る|履く)$/;
+  function rootZh(z) {
+    const s = String(z || '').replace(/^(?:（[^）]*）|\([^)]*\))+/, '');
+    let g = s.split(/[｜；;，,]/)[0].trim();
+    const np = g.replace(/（[^）]*）|\([^)]*\)/g, '').trim();
+    if (np.length >= 2) g = np;
+    return (g || String(z || '').split(/[；;]/)[0]).slice(0, 7);
+  }
+  function gloss(t) {
+    if (!t || !t.zh) return '';
+    const v = rootZh(t.zh), s = String(t.s || ''), f = String(t.form || '').replace(/^suru:/, '');
+    if (t.pos === 'i' && f === 'adj') {
+      const a = v.replace(/的$/, '');
+      if (/くな(い|かった)(です)?$|くありません$/.test(s)) return '不' + a;
+      if (/くても$/.test(s)) return '即使' + a;
+      if (/ければ$/.test(s)) return '要是' + a;
+      if (/くな(る|った|ります|りました)$/.test(s)) return '變' + a;
+      if (/そう$/.test(s)) return '好像很' + a;
+      if (/すぎ(る)?$/.test(s)) return '太' + a;
+      if (/さ$/.test(s)) return a;
+      if (/く$/.test(s)) return a + '地';
+      return v;
+    }
+    const neg = /(な(い|かった|くて|ければ|くても)|ません|ず|ずに|らんない|らんねえ)$/.test(s);
+    switch (f) {
+      case 'tai': return /たくな(い|かった)$/.test(s) ? '不想' + v : /たかった$/.test(s) ? '好想' + v : '想' + v;
+      case 'pot': return neg ? v + '不了' : '能' + v;
+      case 'pass': return (neg ? '不被' : '被') + v;
+      case 'caus': return (neg ? '不讓' : '讓') + v;
+      case 'cpass': return '被迫' + v;
+      case 'nai': case 'masen': return /くても$/.test(s) ? '即使不' + v : '不' + v;
+      case 'nakatta': case 'maseNdeshita': return '沒' + v;
+      case 'nakute': case 'naide': return '不' + v;
+      case 'nakereba': return /(きゃ|くちゃ)$/.test(s) ? '得' + v : '不' + v + '的話';
+      case 'nakunaru': return /^不/.test(v) ? v : '不再' + v;
+      case 'ta': case 'mashita': return /了$/.test(v) ? v : v + '了';
+      case 'te': return /[てで]も$/.test(s) ? '即使' + v : v;
+      case 'teru':
+        if (/たって$/.test(s)) return '就算' + v;
+        if (/[てで]も$/.test(s)) return '即使' + v;
+        if (/な(い|かった)$/.test(s)) return '沒' + v;
+        return STATIVE.test(t.base || '') ? v : '在' + v;
+      case 'vol': case 'mashou': return v + '吧';
+      case 'imp': return v + '！';
+      case 'ba': case 'tara': return '要是' + v;
+      case 'chau': return /[っゃ]た$|った$/.test(s) ? v + '了' : v + '掉';
+      case 'toku': return '先' + v;
+      case 'tari': return v + '等';
+      case 'stem':
+        if (/ながら$/.test(s)) return '一邊' + v;
+        if (/すぎ(る)?$/.test(s)) return '太' + v;
+        if (/やすい$/.test(s)) return '容易' + v;
+        if (/にくい$/.test(s)) return '難以' + v;
+        if (/(方|かた)$/.test(s)) return v + '的方法';
+        if (/なさい$/.test(s)) return '請' + v;
+        return v;
+      default: return t.neg ? '不' + v : v;
+    }
+  }
+  /* ---------------- 詞卡：多義、漢字音讀／訓讀（點詞時才載 data/reading/senses.js、kanji.js） ---------------- */
+  let senP = null, kjP = null;
+  const loadOpt = (src, key) => (window[key] ? Promise.resolve() : (typeof App !== 'undefined' && App.loadScript ? App.loadScript(src) : Promise.reject())).catch(() => { });
+  // 多義：[{kana, list:[義項…]}]，同形異義的詞分組（日：ひ＝太陽／日子；にち＝天數）
+  function senses(t) {
+    senP = senP || loadOpt('data/reading/senses.js', 'JP_SENSES');
+    return senP.then(() => {
+      const base = (t && (t.base || t.s)) || '', own = String((t && t.zh) || '');
+      const raw = (window.JP_SENSES || {})[base];
+      if (raw) return raw.split('‖').map(g => { const m = g.match(/^([ぁ-ゖー]+)：(.*)$/); return { kana: m ? m[1] : '', list: (m ? m[2] : g).split('｜').filter(Boolean) }; });
+      return own.includes('｜') ? [{ kana: '', list: own.split('｜').filter(Boolean) }] : [];
+    });
+  }
+  // 漢字逐字讀音：[{k:'日', r:'ひ', t:'訓'|'音'|'', on, kun, zh, jukuji}]
+  const DAKU = { か: 'が', き: 'ぎ', く: 'ぐ', け: 'げ', こ: 'ご', さ: 'ざ', し: 'じ', す: 'ず', せ: 'ぜ', そ: 'ぞ', た: 'だ', ち: 'ぢ', つ: 'づ', て: 'で', と: 'ど', は: 'ば', ひ: 'び', ふ: 'ぶ', へ: 'べ', ほ: 'ぼ' };
+  const HAN = { は: 'ぱ', ひ: 'ぴ', ふ: 'ぷ', へ: 'ぺ', ほ: 'ぽ' };
+  function readVariants(r) {
+    if (!r) return [];
+    const out = new Set([r]), h = r[0];
+    if (DAKU[h]) out.add(DAKU[h] + r.slice(1));   // 連濁：人々（びと）、本棚（だな）
+    if (HAN[h]) out.add(HAN[h] + r.slice(1));     // 半濁：一本（ぽん）
+    [...out].forEach(x => { if (x.length >= 2 && /[つちくき]$/.test(x)) out.add(x.slice(0, -1) + 'っ'); });   // 促音：学校（がっ）、一回（いっ）
+    if (r === 'じゅう') out.add('じっ');
+    return [...out];
+  }
+  function kanji(t) {
+    kjP = kjP || loadOpt('data/reading/kanji.js', 'JP_KANJI');
+    return kjP.then(() => {
+      const K = window.JP_KANJI || {};
+      const sf = String((t && (t.base || t.s)) || ''), rd = toHira(String((t && (t.bkana || t.kana)) || ''));
+      const chars = [...sf];
+      if (!chars.some(isKanji)) return [];
+      const cand = c => {
+        const d = K[c]; if (!d) return [];
+        const on = (d[0] ? d[0].split(',') : []).map(x => ({ r: x, t: '音' }));
+        const kun = (d[1] ? d[1].split(',') : []).map(x => ({ r: x.replace(/^-|-$/g, '').split('.')[0], t: '訓' }));
+        return on.concat(kun).filter(x => x.r).flatMap(x => readVariants(x.r).map(v => ({ r: v, t: x.t })));
+      };
+      // 逐字比對：每個漢字試音讀／訓讀（含連濁、促音），假名（送假名）必須原樣對上；回溯找第一個能把整個讀音分完的組合
+      let best = null;
+      const go = (i, pos, acc) => {
+        if (best) return;
+        if (i === chars.length) { if (pos === rd.length) best = acc; return; }
+        const c = chars[i];
+        if (c === '々' && acc.length) { const p = acc[acc.length - 1]; readVariants(p.r).forEach(v => { if (rd.startsWith(v, pos)) go(i + 1, pos + v.length, acc.concat([{ k: c, r: v, t: p.t }])); }); return; }
+        if (!isKanji(c)) { const h = toHira(c); if (rd.startsWith(h, pos)) go(i + 1, pos + h.length, acc); return; }
+        const cs = cand(c).sort((a, b) => b.r.length - a.r.length);
+        for (const x of cs) if (rd.startsWith(x.r, pos)) go(i + 1, pos + x.r.length, acc.concat([{ k: c, r: x.r, t: x.t }]));
+      };
+      if (rd) go(0, 0, []);
+      // 對不上（熟字訓：今日、大人、明日）：只列字義，標 jukuji
+      const parts = best || chars.filter(c => isKanji(c) && c !== '々').map(k => ({ k, r: '', t: '' }));
+      return parts.map(p => { const d = K[p.k] || ['', '', '']; return Object.assign({}, p, { on: d[0], kun: d[1], zh: d[2], jukuji: !best && !!rd }); });
+    });
+  }
   function verbForms(w, grp, rd) {
     const f = MIND.conjugate(w, grp), fr = rd && rd !== w ? MIND.conjugate(rd, grp) : f;
     if (!f || !fr) return [];
@@ -467,7 +582,9 @@
     const zb = f.nai.slice(0, -2), zr = fr.nai.slice(0, -2);
     if (f.nai !== 'ない') { P('nai', zb + 'ず', zr + 'ず'); P('nai', zb + 'ずに', zr + 'ずに'); }
     [['nakatta', 'かった'], ['nakute', 'くて'], ['naide', 'いで'], ['nakereba', 'ければ'], ['nakereba', 'きゃ'], ['nakereba', 'くちゃ'], ['nai', 'くても']].forEach(([k, x]) => P(k, nb + x, nr + x));
-    [['teru', 'る'], ['teru', 'た'], ['teru', 'ます'], ['te', 'も'], ['te', 'は']].forEach(([k, x]) => P(k, f.te + x, fr.te + x));
+    [['teru', 'る'], ['teru', 'た'], ['teru', 'ます'], ['te', 'も'], ['te', 'は'], ['teru', 'て'], ['teru', 'ても'], ['teru', 'たら'], ['teru', 'ない'], ['teru', 'なかった'], ['teru', 'たって']].forEach(([k, x]) => P(k, f.te + x, fr.te + x));
+    // 〜なくなる（不再…）：見えなくなる、会えなくなった
+    [['nakunaru', 'くなる'], ['nakunaru', 'くなった'], ['nakunaru', 'くなって']].forEach(([k, x]) => P(k, nb + x, nr + x));
     P('tari', f.ta + 'り', fr.ta + 'り');
     // 口語縮約：〜ちゃう／〜ちゃ（てしまう、ては）、〜とく（ておく）、〜らんない（られない）
     const tb = f.te.slice(0, -1), trb = fr.te.slice(0, -1), dz = /で$/.test(f.te);
@@ -482,6 +599,8 @@
       P(k, g.masu.replace(/ます$/, 'ません'), gr.masu.replace(/ます$/, 'ません'));
       P(k, g.masu.replace(/ます$/, 'ました'), gr.masu.replace(/ます$/, 'ました'));
       P(k, g.nai.replace(/い$/, 'かった'), gr.nai.replace(/い$/, 'かった'));
+      // 会えなくて、忘れられなければ、言われなくても
+      ['くて', 'ければ', 'くても', 'くなる', 'くなった'].forEach(x => P(k, g.nai.replace(/い$/, x), gr.nai.replace(/い$/, x)));
     });
     return out;
   }
@@ -521,15 +640,19 @@
     });
   }
   // 新聞／歌詞補充字典（data/reading/dict-news.js）：複合詞成本低於拆開，長詞優先
-  let extBuilt = false;
+  let extDone = 0;   // 已處理的行數：dict-news＋dict-fill 冷啟動先建，dict-big（完整模式）載入後再補建後面的行
   function buildExt() {
-    if (extBuilt || !window.JP_DICT_EXT || !(window.MIND && MIND.conjugate)) return; extBuilt = true;
-    String(window.JP_DICT_EXT).split(/\r?\n/).forEach(l => {
-      const [jp, k, zh, pos, g, lv] = l.split('|');
+    if (!window.JP_DICT_EXT || !(window.MIND && MIND.conjugate)) return;
+    const L = String(window.JP_DICT_EXT).split(/\r?\n/);
+    if (L.length <= extDone) return;
+    const rows = L.slice(extDone); extDone = L.length;
+    rows.forEach(l => {
+      const [jp, k, zh, pos, g, lv, src] = l.split('|');
       if (!jp || !zh || jp.length > MAXL) return;
       // 詞庫已有的詞維持原成本（不改變既有斷詞），新詞才給低成本
-      const cost = pos === 'exp' ? .7 : pos === 'suf' ? 1.2 : LVOF.has(jp) || BYBASE.has(jp) ? 1 : jp.length >= 3 ? .75 : .8;
-      addEntry({ jp, raw: jp, kana: k || '', zh, pos: pos || 'n', grp: g || '', lv: /^N[1-5]$/.test(lv) ? lv : 'x', ext: 1 }, cost);
+      let cost = pos === 'exp' ? .7 : pos === 'suf' ? 1.2 : LVOF.has(jp) || BYBASE.has(jp) ? 1 : jp.length >= 3 ? .75 : .8;
+      if (src === 'f') cost = pos === 'suf' ? 1.3 : 1.05;   // 補詞只補缺：成本略高於 N5–N1 詞庫，不改變既有斷詞（生む 的被動形不會搶走 生まれる）
+      addEntry({ jp, raw: jp, kana: k || '', zh, pos: pos || 'n', grp: g || '', lv: /^N[1-5]$/.test(lv) ? lv : 'x', ext: 1, noKana: src === 'f' }, cost);
     });
   }
   function build() {
@@ -542,12 +665,12 @@
   function ready(full) {
     if (!readyP) {
       const L = (typeof App !== 'undefined' && App.loadScript) ? App.loadScript : (() => Promise.resolve());
-      readyP = [MIND_SRC + 'conj.js'].concat(BASE_LV.map(l => MIND_SRC + 'lex-' + l.toLowerCase() + '.js'), [EXT_SRC])
+      readyP = [MIND_SRC + 'conj.js'].concat(BASE_LV.map(l => MIND_SRC + 'lex-' + l.toLowerCase() + '.js'), [EXT_SRC, FILL_SRC])
         .reduce((p, s) => p.then(() => L(s).catch(() => { })), Promise.resolve())
         .then(() => { build(); });
     }
     if (!full) return readyP;
-    return fullP || (fullP = readyP.then(() => ['N2', 'N1'].reduce((p, l) => p.then(() => App.loadScript(MIND_SRC + 'lex-' + l.toLowerCase() + '.js').catch(() => { })), Promise.resolve())).then(build));
+    return fullP || (fullP = readyP.then(() => ['N2', 'N1'].map(l => MIND_SRC + 'lex-' + l.toLowerCase() + '.js').concat([BIG_SRC]).reduce((p, f) => p.then(() => App.loadScript(f).catch(() => { })), Promise.resolve())).then(build));
   }
   function ensureGrammar() {
     return gramP || (gramP = (window.MIND && MIND.gram && MIND.gram.length ? Promise.resolve() : App.loadScript(MIND_SRC + 'grammar.js')).then(buildGram).catch(() => { gramP = null; }));
@@ -726,6 +849,8 @@
       // 〜ごとに：每…（一日ごとに、国ごとに）；丸ごと、街ごと 才是「連同整個」
       if (t.s === 'ごと' && out[k + 1] && out[k + 1].s === 'に') Object.assign(t, { zh: '（〜ごとに）每…；各…' });
       // 數量詞＋目：第…（二日目、三回目、一つ目）
+      // 「あの日」「いい日」「楽しい日」的 日＝日子、那天（字典第一義是太陽）
+      if (t.s === '日' && t.kana === 'ひ' && (/^(pre|i|na)$/.test(p.pos || '') || /^(の|な|た|だ|る)$/.test(String(p.s || '').slice(-1)))) Object.assign(t, { zh: '日子；（那）天' });
       if (t.s === '目' && (p.pos === 'num' || /[日回人番年つ度杯個軒本枚週]$/.test(p.s))) Object.assign(t, { kana: 'め', bkana: 'め', zh: '（接尾）第…', pos: 'suf' });
       if (t.s === 'と' && t.pos === 'part' && out[k + 1] && /^(思う|言う|いう|考える|感じる|聞く|話す|書く|答える|叫ぶ|わかる|分かる|知る)$/.test(out[k + 1].base || '')) Object.assign(t, { zh: '（引用）表示說／想的內容' });
     }
@@ -818,7 +943,7 @@
       };
       if (/^suru:/.test(tk.form)) { tk.base = e.jp + 'する'; tk.bkana = toHira(e.kana || e.jp) + 'する'; tk.pos = 'v'; tk.form = tk.form.slice(5); }
       if (e.ext && LVOF.has(e.jp)) tk.lv = LVOF.get(e.jp);
-      if (/^(nai|nakatta|nakute|naide|nakereba|masen|maseNdeshita)$/.test(tk.form)) tk.neg = true;
+      if (/^(nai|nakatta|nakute|naide|nakereba|masen|maseNdeshita|nakunaru)$/.test(tk.form) || (/^(pot|pass|caus)$/.test(tk.form) && /(な(い|かった|くて|ければ|くても)|ません)$/.test(s))) tk.neg = true;
       tk.romaji = tk.pos === 'part' && /^[はへを]$/.test(s) ? { 'は': 'wa', 'へ': 'e', 'を': 'o' }[s] : R2(tk.kana, s);
       return tk;
     }
@@ -1085,7 +1210,7 @@
   window.JPText = {
     isFunc,
     ready, ensureGrammar, tokenize, ruby, rubyText, lookup, romaji: R2, toHira, hasKanji, sentences, findGrammar, findPhrases, setUser, userLv, lvRank, lvKeep,
-    POS_ZH, FORM_ZH, esc, numRead,
+    POS_ZH, FORM_ZH, esc, numRead, gloss, senses, kanji,
     get size() { return DICT.size; },
     get levels() { return [...builtLv]; },
     hasUnknown(tokens) { return (tokens || []).some(t => t.pos === 'unk' && t.sc === 'k'); },

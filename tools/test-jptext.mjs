@@ -15,7 +15,7 @@ ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 ['data/mind/conj.js', 'data/mind/lex-n5.js', 'data/mind/lex-n4.js', 'data/mind/lex-n3.js', 'data/mind/lex-n2.js', 'data/mind/lex-n1.js', 'data/mind/grammar.js',
-  'data/reading/dict-news.js', 'data/scenes-1.js', 'data/scenes-2.js', 'data/cards.js', 'data/reading/daily.js', 'js/jp-text.js'].forEach(f => { try { load(f); } catch (e) { console.error('載入失敗', f, e.message); } });
+  'data/reading/dict-news.js', 'data/reading/dict-fill.js', 'data/reading/dict-big.js', 'data/scenes-1.js', 'data/scenes-2.js', 'data/cards.js', 'data/reading/daily.js', 'js/jp-text.js'].forEach(f => { try { load(f); } catch (e) { console.error('載入失敗', f, e.message); } });
 const J = ctx.JPText;
 J._build();
 

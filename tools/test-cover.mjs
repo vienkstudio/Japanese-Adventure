@@ -7,8 +7,8 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const songs = fs.readFileSync(path.join(ROOT, 'js/songs.js'), 'utf8');
-const HOT = JSON.parse(songs.match(/const HOT = (\[\[.*?\]\]);/)[1]);
+// 測試用歌名清單（只當解析測試的輸入；App 已不內建流行歌、不自動抓歌詞，見 docs/資料來源.md）
+const HOT = [["アイドル","YOASOBI"],["夜に駆ける","YOASOBI"],["Bling-Bang-Bang-Born","Creepy Nuts"],["ライラック","Mrs. GREEN APPLE"],["ケセラセラ","Mrs. GREEN APPLE"],["怪獣の花唄","Vaundy"],["Lemon","米津玄師"],["KICK BACK","米津玄師"],["新時代","Ado"],["唱","Ado"],["Pretender","Official髭男dism"],["Subtitle","Official髭男dism"],["水平線","back number"],["SPECIALZ","King Gnu"],["はいよろこんで","こっちのけんと"],["晩餐歌","tuki."],["ドライフラワー","優里"],["紅蓮華","LiSA"],["群青","YOASOBI"],["ベテルギウス","優里"],["青と夏","Mrs. GREEN APPLE"],["オトノケ","Creepy Nuts"],["さよーならまたいつか！","米津玄師"]];
 const ctx = { console, URL, URLSearchParams };
 ctx.window = ctx; vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/link-import.js'), 'utf8'), ctx, { filename: 'link-import.js' });

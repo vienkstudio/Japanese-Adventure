@@ -397,10 +397,10 @@
         ${drop ? `<p class="trip-drop">${esc(drop)}</p>` : ''}
         ${nowStop > 0 ? '<button type="button" class="trip-primary" id="trip-next">下一站 ➜</button>' : ''}
         <button type="button" class="trip-secondary" id="trip-retry">重玩本站</button>
-        <button type="button" class="trip-secondary" id="trip-return">🗺️ 返回地圖</button>
+        <button type="button" class="trip-secondary" id="trip-return">${FP ? '↩ 返回' : '🗺️ 返回地圖'}</button>
       </div>`);
       const nb = el.querySelector('#trip-next'); if (nb) nb.onclick = () => App.go('trip-next');
-      el.querySelector('#trip-return').onclick = () => App.go('trip');
+      el.querySelector('#trip-return').onclick = () => FP ? App.back() : App.go('trip');   // 從旅遊包「更多練習」進來＝回原頁，不進舊旅程地圖
       el.querySelector('#trip-retry').onclick = restart;
     }
 
@@ -462,7 +462,7 @@
     showQuestion(true);
   }
 
-  App.register('trip-event', { title: '旅遊情境', icon: '💬', nav: false, navParent: 'path', render: renderEncounter });
+  App.register('trip-event', { title: '情境任務', icon: '🧾', nav: false, navParent: 'path', render: renderEncounter });
 
   /* ---------- 站內流程（Hub） ---------- */
   const HUB = { stop: null, i: -1 };

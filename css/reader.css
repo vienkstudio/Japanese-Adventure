@@ -269,3 +269,24 @@ input[type=file].rd-in{padding:8px}
 .sg-ver{font-size:var(--fs-xs);color:var(--acc-d);font-weight:700}
 .sg-warnt{color:var(--warn);font-weight:700}
 .sg-twarn{margin:var(--sp-2) 0}
+
+/* 詞卡：多義（data/reading/senses.js）、漢字音讀／訓讀（data/reading/kanji.js） */
+.rd-card .rd-sen,.rd-card .rd-kj{text-align:left;margin:var(--sp-2) 0;padding-top:var(--sp-2);border-top:1px solid var(--line)}
+.rd-sh{display:block;font-size:var(--fs-xs);color:var(--muted);margin-bottom:var(--sp-1)}
+.rd-sk{font-size:var(--fs-sm);font-weight:700;margin-top:var(--sp-1)}
+.rd-card .rd-sl{margin:0;padding-left:1.6em;font-size:var(--fs-sm);line-height:1.6;text-align:left}
+.rd-kl{display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:center}
+.rd-k{display:grid;justify-items:center;gap:2px;min-width:5em;max-width:10em;padding:var(--sp-1) var(--sp-2);border:1px solid var(--line);border-radius:10px;text-align:center}
+.rd-kc{font-size:1.6em;line-height:1.2}
+.rd-kr{font-size:var(--fs-sm);font-weight:700}
+.rd-kt{font-style:normal;font-size:.75em;margin-left:.3em;padding:0 .35em;border-radius:6px;background:var(--chip)}
+.rd-kt.on{color:#b45309}.rd-kt.kun{color:#0e7490}
+@media (prefers-color-scheme:dark){.rd-kt.on{color:#fbbf24}.rd-kt.kun{color:#67e8f9}}
+:root[data-theme="dark"] .rd-kt.on{color:#fbbf24}:root[data-theme="dark"] .rd-kt.kun{color:#67e8f9}
+:root[data-theme="light"] .rd-kt.on{color:#b45309}:root[data-theme="light"] .rd-kt.kun{color:#0e7490}
+.rd-kz,.rd-ko{font-size:var(--fs-xs);overflow-wrap:anywhere}
+.rd-kn{font-size:var(--fs-xs);margin:0 0 var(--sp-1)}
+
+.rd-card .rd-refs{text-align:left;margin:var(--sp-2) 0;padding-top:var(--sp-2);border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:var(--sp-1);align-items:center}
+.rd-card .rd-refs .rd-sh{width:100%}
+.rd-card .rd-refs a{text-decoration:none}

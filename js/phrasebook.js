@@ -380,6 +380,6 @@
     paint(); ensureWorld();
   }
 
-  App.register('phrasebook', { title: '手冊', icon: '📖', nav: false, navParent: 'lookup', render });
+  App.register('phrasebook', { title: '旅遊手冊', icon: '📖', nav: false, navParent: 'lookup', render });
   window.Phrasebook = { MUST, EMER, SYN, terms, search: q => search(q).ph, loadWorld, kataKana, showBig, romOf, kanaOf, showRom };
 })();

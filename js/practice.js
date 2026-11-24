@@ -1057,6 +1057,6 @@
     hud(); guide(false); round();
   }
   const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
-  App.register('menu', { title: '情境挑戰', icon: '🧾', nav: false, navParent: 'path', render: renderMenu });
+  App.register('menu', { title: '情境任務', icon: '🧾', nav: false, navParent: 'path', render: renderMenu });
   window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS, backup };
 })();

@@ -7,7 +7,7 @@
        寒暄／感嘆詞、與文法同形的詞、2 字平假名片段放「補充 n」（每課 ≤8 詞，小考 ≤5 題），詞庫每個詞都在某一課
      五十音 每課 ≤10 字（KanaLesson.units）→ 字卡 → 聽音 5 題
      商務 每個 BIZ 單元拆成 單字 1／單字 2／句子 1／句子＋句型（各 ≤10 張＋≤5 題）＋對話與 Email（進 biz-unit）
-     歌曲新聞 依程度的短文路線（read-article）＋熱門歌單元（song）＋近三天新聞
+     歌曲新聞 依程度的短文路線（read-article）＋公有領域歌曲（song，維基文庫）＋最近的新聞（維基百科）
    資料用 App.loadScript 依分頁需要才載入。
    對外 window.Path：
      units(goal, {lv?, all?, subs?}) -> [{id, icon, title, sub, total, done, stars, complete, route?, params?}]   // goal：travel|exam|work|fun|kana；travel＋all／subs：含各包小單元
@@ -269,9 +269,9 @@
   }
   const bizUnit = id => arr(window.BIZ && BIZ.units).find(u => u.id === id);
 
-  /* ---------------- 歌曲新聞：依程度短文＋熱門歌 ---------------- */
-  // 熱門歌清單以 Songs.HOT 為準（songs.js 匯出後），未匯出前用這份 [歌名, 歌手, YouTube id]
-  const HOT0 = [['アイドル', 'YOASOBI', 'ZRtdQ81jPUQ'], ['夜に駆ける', 'YOASOBI', 'by4SYYWlhEs'], ['ライラック', 'Mrs. GREEN APPLE', 'QjrkrVmC-8M'], ['怪獣の花唄', 'Vaundy', 'UM9XNpgrqVk'], ['Lemon', '米津玄師', 'SX_ViT4Ra7k'], ['新時代', 'Ado', '1FliVTcX8bQ'], ['Pretender', 'Official髭男dism', 'TQ8WlA2GXbk'], ['水平線', 'back number', 'iqEr3P78fz8'], ['紅蓮華', 'LiSA', 'x1FV6IrjZCY'], ['群青', 'YOASOBI', 'Y4nEEZwckuU'], ['青と夏', 'Mrs. GREEN APPLE', '-MKfbxHy_NA'], ['ドライフラワー', '優里', 'kzZ6KXDM1RI']];
+  /* ---------------- 歌曲新聞：依程度短文＋公有領域歌曲 ---------------- */
+  // 公有領域歌曲清單以 Songs.HOT 為準（songs.js 匯出後），未匯出前用這份 [歌名, 作者, key]（與 songs.js HOT 同步）
+  const HOT0 = [["赤とんぼ","三木露風 作詞","akatonbo"],["さくらさくら","日本古謠","sakura"],["ちょうちょう","野村秋足 作詞","chouchou"],["どんぐりころころ","青木存義 作詞","donguri"],["シャボン玉","野口雨情 作詞","shabondama"],["浜辺の歌","林古渓 作詞","hamabe"],["早春賦","吉丸一昌 作詞","soushunfu"],["椰子の実","島崎藤村 作詞","yashinomi"],["故郷の空","大和田建樹 作詞","furusatonosora"],["星めぐりの歌","宮沢賢治 作詞","hoshimeguri"],["かもめの水兵さん","武内俊子 作詞","kamome"],["証城寺の狸囃子","野口雨情 作詞","shojoji"],["あんたがたどこさ","わらべうた","antagata"],["仰げば尊し","文部省唱歌","aogeba"],["蛍の光","稲垣千頴 作詞","hotaru"]];
   const hotList = () => (window.Songs && Array.isArray(Songs.HOT) && Songs.HOT.length ? Songs.HOT : HOT0);
   const RLV = ['zero', 'n5', 'n4', 'n3', 'n2', 'n1'];
   function readOrder() {
@@ -283,9 +283,9 @@
     const arts = arr(R && R.daily).slice().sort((a, b) => ord.indexOf(a.lv) - ord.indexOf(b.lv));
     const LVN = l => l === 'zero' ? '入門' : String(l).toUpperCase();
     const reads = arts.map(a => { const s = App.stars ? App.stars('read:' + a.id) : 0; return { id: 'fun-r-' + a.id, icon: a.icon || '📰', title: a.title, sub: LVN(a.lv) + '・' + (a.zh || '') + '・' + arr(a.p).length + ' 段', total: 1, done: s ? 1 : 0, stars: s, complete: s > 0, route: 'read-article', params: { daily: a.id }, sec: 'read' }; });
-    const hs = [['🌅', '示範曲（自編童謠）', '語音朗讀・可以先試', 'song:demo', { id: 'demo' }]].concat(hotList().map(h => ['🎵', h[0], h[1], 'song:yt:' + h[2], { id: 'yt:' + h[2], hot: h[2] }]));
+    const hs = [['🌅', '示範曲（自編童謠）', '語音朗讀・可以先試', 'song:demo', { id: 'demo' }]].concat(hotList().map(h => ['📜', h[0], h[1], 'song:pd:' + h[2], { id: 'pd:' + h[2], hot: h[2] }]));
     const songs = hs.map(([icon, t, a, key, params], i) => { const s = App.stars ? App.stars(key) : 0; return { id: 'fun-s-' + i, icon, title: t, sub: a, total: 1, done: s ? 1 : 0, stars: s, complete: s > 0, route: 'song', params, sec: 'song' }; });
-    return reads.concat(songs, [{ id: 'fun-news', icon: '🗞️', title: '近三天新聞', sub: '看懂新聞標題與重點', total: null, done: null, stars: 0, route: 'read', params: { sec: 'news' }, sec: 'news', noNext: true }]);
+    return reads.concat(songs, [{ id: 'fun-news', icon: '🗞️', title: '最近的新聞', sub: '維基百科「最近の出来事」：每天的新聞摘要', total: null, done: null, stars: 0, route: 'read', params: { sec: 'news' }, sec: 'news', noNext: true }]);
   }
 
   /* ---------------- 單元 id ---------------- */
@@ -578,19 +578,19 @@
         html += `<button type="button" class="pa-grp${isOpen ? ' on' : ''}" data-bz="${esc(m.id)}" aria-expanded="${isOpen}"><span aria-hidden="true">${esc(m.icon)}</span><b>${esc(m.title)}</b><small>${esc(m.lv)}${lvI(m.lv) >= lvI(lvNow()) && cur === m.id ? '・適合你' : ''}・${dn}／${g.length}</small>${window.BIZ.stars(m.id) ? `<span class="pa-st">${starTxt(window.BIZ.stars(m.id))}</span>` : ''}</button>`;
         if (isOpen) html += grid(g, nx);
       });
-      html += '<button type="button" class="btn block pa-free" data-go="biz">📚 商務閱讀與全部單元</button>';
+      html += '<button type="button" class="btn block pa-free" data-go="biz">🗂️ 商務單元與文章</button>';
     } else if (tab === 'fun') {
       const reads = list.filter(u => u.sec === 'read'), songs = list.filter(u => u.sec === 'song'), news = list.filter(u => u.sec === 'news');
       const nr = nextOf(reads), ns = nextOf(songs), wr = windowed(reads, nr, 'funr'), ws = windowed(songs, ns, 'funs');
       html = `<h2 class="pa-h">📖 短文路線 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
-        <h2 class="pa-h">🎵 熱門歌 <small>唱過 ${songs.filter(u => u.complete).length}／${songs.length} 首</small></h2>${grid(ws.shown, ns)}${ws.more}
+        <h2 class="pa-h">📜 公有領域歌曲 <small>唱過 ${songs.filter(u => u.complete).length}／${songs.length} 首</small></h2>${grid(ws.shown, ns)}${ws.more}
         ${grid(news, null, true)}<p class="pa-note">歌詞與文章裡點過的詞會自動收進今日課。</p>`;
     } else {
       const w = windowed(list, nx, tab);
       html = grid(w.shown, nx) + w.more;
       if (tab === 'travel') {
         const rg = region();
-        html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 自由逛日本（冒險地圖）</button>`;
+        html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 冒險地圖：自由逛日本</button>`;
       }
       if (tab === 'kana') html = (window.KanaPrep ? (KanaPrep.need() ? KanaPrep.box('') : KanaPrep.mini()) : '') + '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
     }

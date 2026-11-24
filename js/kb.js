@@ -587,8 +587,8 @@
     document.addEventListener('profilechange', () => { const m = document.getElementById('main'); if (m && /route-kb/.test(m.className)) App.render(); });
   }
   M.kb = { ST, saveST, stOf, setSt, getItem, words, loadLv, gramPath, why: id => WHY.get(id) || null, open: id => App.go('kb-page', { id }) };
-  App.register('kb', { title: '知識庫', icon: '📚', nav: false, navParent: 'lookup', render });
-  App.register('kb-page', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb', render: renderPage });
+  App.register('kb', { title: '辭典', icon: '📘', nav: false, navParent: 'lookup', render });
+  App.register('kb-page', { title: '辭典', icon: '📘', nav: false, navParent: 'kb', render: renderPage });
   // 舊路由 mind：轉址（{focus}/{script} 進 3D，其餘進知識庫）
-  App.register('mind', { title: '知識庫', icon: '📚', nav: false, navParent: 'kb', transient: true, render(el, p) { p = p || {}; App.go(p.focus || p.script ? 'mind3d' : 'kb', p.focus || p.script ? p : {}); } });
+  App.register('mind', { title: '辭典', icon: '📘', nav: false, navParent: 'kb', transient: true, render(el, p) { p = p || {}; App.go(p.focus || p.script ? 'mind3d' : 'kb', p.focus || p.script ? p : {}); } });
 })();

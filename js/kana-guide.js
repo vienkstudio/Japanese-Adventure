@@ -116,6 +116,6 @@
       next.querySelector('[data-n=go]').onclick = () => { KanaPrep.mark('drill'); goStart(); };
     }
   }
-  App.register('kana-guide', { title: '入門講義', icon: '📖', nav: false, navParent: 'path', render: (el, p) => render(el, p, 'kana-guide') });
+  App.register('kana-guide', { title: '入門講義', icon: '🎓', nav: false, navParent: 'path', render: (el, p) => render(el, p, 'kana-guide') });
   App.register('kana-drill', { title: '50 音訓練表', icon: '🎯', nav: false, navParent: 'path', render: (el, p) => render(el, p, 'kana-drill') });
 })();

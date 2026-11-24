@@ -126,7 +126,7 @@
     if (!d.done && pg && pg.done > 0) return `做到一半・已做 ${pg.done}／${pg.tot}，按上面接著做`;
     if (!d.done) return due ? `還沒開始・先複習 ${due} 個，再學新的` : '還沒開始・今天要學新的';
     if (!d.applied) return `主課完成 ✓ 還差應用：${d.apLabel || '用出來一次'}`;
-    return due ? `今天的課完成 ✓ 還有 ${due} 個到期，可以到「我的」複習` : '今天全部完成 ✓ 想多學可以再上一課';
+    return due ? `今天的課完成 ✓ 還有 ${due} 個到期，可以按「到期複習」` : '今天全部完成 ✓ 想多學可以再上一課';
   }
 
   function render(el) {
@@ -150,12 +150,14 @@
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}・${sk.days ? `🔥 連續 ${sk.days} 天${sk.done ? " ✓" : ""}` : esc(dayStatus(d, d.done ? dueAll : due))}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
       ${!km && gs.length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
+      <div class="hm-mini"><button type="button" class="hm-cont" data-go="cards"><span class="ic" aria-hidden="true">🎴</span><span><b>字卡</b><small>五十音・日檢・不會清單</small></span></button><button type="button" class="hm-cont" data-go="review"><span class="ic" aria-hidden="true">🔁</span><span><b>到期複習</b><small>${dueAll ? `今天到期 ${dueAll} 個` : '今天沒有到期'}</small></span></button></div>
       ${contHTML()}
-      <h2 class="hm-sec">全部內容</h2>
+      <h2 class="hm-sec">🧭 學習</h2>
       <div class="hm-all">${mainCards(p)}</div>
     </section>`;
     el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
-    el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.SECTIONS.find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
+    el.querySelectorAll('.hm-mini [data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
+    el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.mainSections().find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
     const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
     if (gb) gb.onclick = () => { const i = gs.indexOf(goal); d.goal = gs[(i + 1) % gs.length]; App.save(); render(el); };
@@ -166,13 +168,13 @@
     if (!c || Date.now() - (c.t || 0) > 14 * 864e5) return '';
     return `<button type="button" class="hm-cont" id="hm-cont"><span class="ic" aria-hidden="true">⏯</span><span><b>繼續上次：${esc(c.title)}</b><small>${esc(c.where || '')}</small></span><span aria-hidden="true">›</span></button>`;
   }
-  // 全部主選項：每類一張，附目前狀態；自己的目的排前面
+  // 學習的 5 個目的分頁（NAV.mainSections＝NAV.GOALS）：每個一張，附目前狀態；自己的目的排前面
   function mainCards(p) {
     const S = window.NAV && NAV.mainSections ? NAV.mainSections() : [];
     const gs = p.goals || [], dueN = window.Learn ? Learn.due(15).length : 0;
     const info = {
       kana: `平假名 ${kanaSeen()}／${KANA_N}`, travel: '14 個場景包', exam: 'N5–N1 單字・文法', work: '敬語・Email・會議', fun: '跟唱・新聞・文章',
-      daily: dueN ? `今天到期 ${dueN} 個` : '今天沒有到期', me: '紀錄・設定・備份'
+      me: '紀錄・設定・備份'
     };
     const mine = x => gs.includes(x.id) || (x.id === 'kana' && p.lv === 'zero');
     const list = S.filter(mine).concat(S.filter(x => !mine(x)));
@@ -237,7 +239,7 @@
       Q.fresh.push({ id, type: t, jp: w.jp, kana: w.kana || '', zh: w.zh || '', hint: w.when || '', lv: u.lv || '', source: '💼 ' + (u.title || '商務') });
     }
   }
-  // 歌曲新聞：先載入歌曲模組（Songs.HOT／importHot／DEMO），Learn.prepare('fun') 才能取熱門歌歌詞詞
+  // 歌曲新聞：先載入歌曲模組（Songs.HOT／importHot／DEMO），Learn.prepare('fun') 才能取公有領域歌曲的歌詞詞
   const SONG_JS = ['js/phrase.js', 'data/loan.js'].concat(SC, ['data/reading/daily.js', 'data/reading/biz.js', 'js/jp-text.js', 'js/link-import.js', 'js/reader.js', 'js/songs.js']);
   const ACT_JS = ['js/phrase.js', 'js/activity.js', 'js/activities/flashcard.js', 'js/activities/choice.js', 'js/activities/wordbank.js', 'js/activities/listen.js'];
   // 零基礎＋旅遊的「用出來」：剛學的旅遊句所在的旅遊單元；沒有就下一個五十音單元（直接進單元，不停在路線分頁）

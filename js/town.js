@@ -533,7 +533,7 @@
     next(0);
   }
   App.register('drill', {
-    title: '練習', icon: '🎯', nav: false, navParent: 'path',
+    title: '對話', icon: '🎭', nav: false, navParent: 'path',
     render(el, params) {
       params = params || {};
       const list = arr(params.scenes).map(findScene).filter(Boolean);

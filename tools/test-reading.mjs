@@ -6,7 +6,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function mk(full) {
   const ctx = { console, localStorage: { getItem: () => null, setItem() { } } }; ctx.window = ctx; ctx.globalThis = ctx; vm.createContext(ctx);
   const load = f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
-  ['data/mind/conj.js', 'data/mind/lex-n5.js', 'data/mind/lex-n4.js', 'data/mind/lex-n3.js'].concat(full ? ['data/mind/lex-n2.js', 'data/mind/lex-n1.js'] : [], ['data/reading/dict-news.js', 'js/jp-text.js']).forEach(f => { try { load(f); } catch (e) { console.error('載入失敗', f, e.message); } });
+  ['data/mind/conj.js', 'data/mind/lex-n5.js', 'data/mind/lex-n4.js', 'data/mind/lex-n3.js'].concat(full ? ['data/mind/lex-n2.js', 'data/mind/lex-n1.js'] : [], ['data/reading/dict-news.js', 'data/reading/dict-fill.js', 'js/jp-text.js']).forEach(f => { try { load(f); } catch (e) { console.error('載入失敗', f, e.message); } });
   ctx.JPText._build(); return ctx.JPText;
 }
 const JS = [['冷啟動', mk(false)], ['完整', mk(true)]];

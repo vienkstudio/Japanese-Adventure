@@ -166,11 +166,11 @@
   }
   function play(id) {
     const q = byId(id);
-    if (!q) { App.toast('找不到這個關卡'); App.go('practice-map'); return; }
+    if (!q) { App.toast('找不到這個關卡'); App.go('path', { tab: 'kana' }); return; }
     if (!isUnlocked(id)) { showLocked(q); return; }
     if (q.type === 'scene') {
       if (!sceneData(q.sceneId)) {
-        App.modal(`<div style="font-size:3em">${q.icon}</div><h2>${App.esc(q.title)}</h2><p>這個場景的內容還在準備中 🚧<br>請稍後再來，或先去其他關卡練習！</p>`, [{ label: '回地圖', cls: 'primary', onClick: () => App.go('practice-map') }]);
+        App.modal(`<div style="font-size:3em">${q.icon}</div><h2>${App.esc(q.title)}</h2><p>這個場景的內容還在準備中 🚧<br>請稍後再來，或先去其他關卡練習！</p>`, [{ label: '回地圖', cls: 'primary', onClick: () => App.go('path', { tab: 'kana' }) }]);
         return;
       }
       App.go('scene', { id: q.sceneId, mission: q.id });
@@ -292,10 +292,10 @@
     const backR = 'stage';
     const FP = params.from === 'path';   // 從路線五十音「更多練習」進來：逃跑／結算返回＝回路線
     const qp = id => FP ? { id, free: true, from: 'path' } : { id, free: true };
-    if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回冒險地圖</button></div>`; el.querySelector('#qBack').onclick = () => App.go('practice-map'); return; }
+    if (!q) { el.innerHTML = `<div class="panel center"><h2>😵 找不到關卡</h2><button class="btn primary" id="qBack">回五十音</button></div>`; el.querySelector('#qBack').onclick = () => App.go('path', { tab: 'kana' }); return; }
     if (!params.free && !isUnlocked(q.id)) {
-      el.innerHTML = `<div class="panel center"><div style="font-size:3em">🔒</div><h2>${App.esc(q.title)}</h2><ul style="text-align:left;display:inline-block">${lockReason(q).map(s => `<li>${s}</li>`).join('')}</ul><br><button class="btn primary" id="qBack">回冒險地圖</button></div>`;
-      el.querySelector('#qBack').onclick = () => App.go('practice-map'); return;
+      el.innerHTML = `<div class="panel center"><div style="font-size:3em">🔒</div><h2>${App.esc(q.title)}</h2><ul style="text-align:left;display:inline-block">${lockReason(q).map(s => `<li>${s}</li>`).join('')}</ul><br><button class="btn primary" id="qBack">回五十音</button></div>`;
+      el.querySelector('#qBack').onclick = () => App.go('path', { tab: 'kana' }); return;
     }
     if (q.type === 'scene') { el.innerHTML = `<div class="panel center muted">前往場景中…</div>`; setTimeout(() => play(q.id), 0); return; }
 
@@ -321,7 +321,7 @@
       <div class="panel" id="qCard" style="margin-top:6px"></div>
     </div>`;
     const $ = s => el.querySelector(s);
-    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => FP ? App.back() : stageP ? App.go('stage', stageP) : App.go('practice-map') }]);
+    $('#qExit').onclick = () => App.modal('<h2>要逃跑嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續戰鬥', cls: 'primary' }, { label: '🏃 逃跑', onClick: () => FP ? App.back() : stageP ? App.go('stage', stageP) : App.go('path', { tab: 'kana' }) }]);
     const hearts = () => { $('#qHearts').textContent = '❤️'.repeat(G.hearts) + '🖤'.repeat(3 - G.hearts); };
     const hpBar = () => { $('#qHp').style.width = (G.hp / HP * 100) + '%'; $('#qHpn').textContent = `HP ${G.hp} / ${HP}`; };
     hearts(); hpBar();

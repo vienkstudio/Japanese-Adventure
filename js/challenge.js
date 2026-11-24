@@ -692,8 +692,8 @@
     });
   }
 
-  App.register('challenge', { title: '挑戰', icon: '🏆', nav: false, navParent: 'path', render: renderMenu });
-  App.register('challenge-play', { title: '挑戰', icon: '🏆', nav: false, navParent: 'path', render: renderPlay });
+  App.register('challenge', { title: '日檢挑戰', icon: '🏆', nav: false, navParent: 'path', render: renderMenu });
+  App.register('challenge-play', { title: '日檢挑戰', icon: '🏆', nav: false, navParent: 'path', render: renderPlay });
   // 自我檢查：每級每題型產生 n 題，回傳有問題的題目（開發用：Challenge.selfTest(200)）
   function selfTest(n) {
     const out = { total: 0, bad: [], perKind: {} };

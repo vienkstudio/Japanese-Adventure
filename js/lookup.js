@@ -181,9 +181,9 @@
   function home() {
     const p = App.profile(), gs = p.goals && p.goals.length ? p.goals : ['travel'], travel = gs.includes('travel'), N = NV();
     const q = travel ? quick(gs.length > 2 ? 3 : 4) : [];
-    const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="emer"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
+    const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="phrasebook~0"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
     const rec = N ? N.forMe(4) : [];
-    const all = N ? N.CATS.map(([c, ic, n]) => { const ts = N.TOOLS.filter(t => t.cat === c); return ts.length ? `<h3 class="lk-ch">${ic} ${esc(n)}</h3><div class="lk-list">${ts.map(navRow).join('')}</div>` : ''; }).join('') : '';
+    const all = N ? N.CATS.map(([c, ic, n]) => { const ts = (N.PLACES || []).filter(t => t.cat === c).concat(N.TOOLS.filter(t => t.cat === c)); return ts.length ? `<h3 class="lk-ch">${ic} ${esc(n)}</h3><div class="lk-list">${ts.map(navRow).join('')}</div>` : ''; }).join('') : '';
     return emer +
       (q.length ? `<h2 class="lk-h">💬 常用句<small>點一下放大給店員看</small></h2><div class="lk-list">${q.map(phRow).join('')}</div>` : '') +
       (rec.length ? `<h2 class="lk-h">✨ 為你推薦</h2><div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) +
@@ -247,8 +247,8 @@
     };
   }
 
-  /* ---------- 熱門歌（未匯入也搜得到）：優先讀 Songs.HOT（songs.js 對外時），否則用這份歌名清單（與 songs.js HOT 同步） ---------- */
-  const HOT0 = [['アイドル', 'YOASOBI', 'ZRtdQ81jPUQ'], ['夜に駆ける', 'YOASOBI', 'by4SYYWlhEs'], ['Bling-Bang-Bang-Born', 'Creepy Nuts', 'mLW35YMzELE'], ['ライラック', 'Mrs. GREEN APPLE', 'QjrkrVmC-8M'], ['ケセラセラ', 'Mrs. GREEN APPLE', 'Jy-QS27q7lA'], ['怪獣の花唄', 'Vaundy', 'UM9XNpgrqVk'], ['Lemon', '米津玄師', 'SX_ViT4Ra7k'], ['KICK BACK', '米津玄師', 'M2cckDmNLMI'], ['新時代', 'Ado', '1FliVTcX8bQ'], ['唱', 'Ado', 'pgXpM4l_MwI'], ['Pretender', 'Official髭男dism', 'TQ8WlA2GXbk'], ['Subtitle', 'Official髭男dism', 'hN5MBlGv2Ac'], ['水平線', 'back number', 'iqEr3P78fz8'], ['SPECIALZ', 'King Gnu', 'fhzKLBZJC3w'], ['はいよろこんで', 'こっちのけんと', 'jzi6RNVEOtA'], ['晩餐歌', 'tuki.', 'oZpYEEcvu5I'], ['ドライフラワー', '優里', 'kzZ6KXDM1RI'], ['紅蓮華', 'LiSA', 'x1FV6IrjZCY'], ['群青', 'YOASOBI', 'Y4nEEZwckuU'], ['ベテルギウス', '優里', 'cbqvxDTLMps'], ['青と夏', 'Mrs. GREEN APPLE', '-MKfbxHy_NA'], ['オトノケ', 'Creepy Nuts', 'tRwHpyOq4P4'], ['さよーならまたいつか！', '米津玄師', '-wb2PAx6aEs']];
+  /* ---------- 公有領域歌曲（維基文庫；未匯入也搜得到）：優先讀 Songs.HOT（songs.js 對外時），否則用這份歌名清單（與 songs.js HOT 同步） ---------- */
+  const HOT0 = [["赤とんぼ","三木露風 作詞","akatonbo"],["さくらさくら","日本古謠","sakura"],["ちょうちょう","野村秋足 作詞","chouchou"],["どんぐりころころ","青木存義 作詞","donguri"],["シャボン玉","野口雨情 作詞","shabondama"],["浜辺の歌","林古渓 作詞","hamabe"],["早春賦","吉丸一昌 作詞","soushunfu"],["椰子の実","島崎藤村 作詞","yashinomi"],["故郷の空","大和田建樹 作詞","furusatonosora"],["星めぐりの歌","宮沢賢治 作詞","hoshimeguri"],["かもめの水兵さん","武内俊子 作詞","kamome"],["証城寺の狸囃子","野口雨情 作詞","shojoji"],["あんたがたどこさ","わらべうた","antagata"],["仰げば尊し","文部省唱歌","aogeba"],["蛍の光","稲垣千頴 作詞","hotaru"]];
   const hotList = () => (window.Songs && Array.isArray(Songs.HOT) && Songs.HOT.length ? Songs.HOT : HOT0);
   function findHot(q, n) {
     const have = new Set(MINE.songs.map(x => String(x.id))), out = [];
@@ -258,13 +258,13 @@
       if (t === q) s = 0; else if (t.startsWith(q)) s = 1;
       else if (q.length >= 2 && (t.includes(q) || toHira(t).includes(toHira(q)))) s = 2;
       else if (q.length >= 2 && a.includes(q)) s = 3;
-      if (s < 9 && !have.has('yt:' + h[2])) out.push([s, { t: h[0], a: h[1], yt: h[2] }]);
+      if (s < 9 && !have.has('pd:' + h[2])) out.push([s, { t: h[0], a: h[1], yt: h[2] }]);
     });
     return out.sort((x, y) => x[0] - y[0]).slice(0, n).map(x => x[1]);
   }
-  // 點熱門歌：未匯入 → Songs.importHot（若有）；否則開歌曲列表、按那首的「一鍵匯入」（匯入完自動進歌曲頁）
+  // 點公有領域歌曲：未匯入 → Songs.importHot（若有）；否則開歌曲列表、按那首的「一鍵匯入」（匯入完自動進歌曲頁）
   function openHot(h) {
-    const id = 'yt:' + h.yt;
+    const id = 'pd:' + h.yt;
     if (MINE.songs.some(x => String(x.id) === id)) return App.go('song', { id });
     if (window.Songs && typeof Songs.importHot === 'function') {
       App.toast('⏳ 匯入歌詞中…');
@@ -288,7 +288,7 @@
     const pl = findPlace(q, qh, qa, 4);
     const ws = findWords(q, qh, qa, 4), gm = findGram(q, qa, 3), ln = findLoan(q, qa, 2), my = findMine(q, 2), hot = findHot(q, 3);
     HOTK = hot;
-    const hotH = hot.length ? `<h2 class="lk-h">🎵 熱門歌<small>點一下匯入歌詞、開始跟唱</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
+    const hotH = hot.length ? `<h2 class="lk-h">📜 公有領域歌曲<small>維基文庫・點一下匯入歌詞</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
     const funQ = ((App.profile().goals || [])[0] === 'fun');
     let h = funQ ? hotH : '';
     if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;

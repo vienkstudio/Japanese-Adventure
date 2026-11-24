@@ -8,7 +8,8 @@
   if (!document.querySelector('link[href$="css/reader.css"]')) {
     const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'css/reader.css'; document.head.appendChild(l);
   }
-  const NHK = LinkImport.NHK;
+  // 開放授權來源的標示（CC BY／BY-SA 要求標出處與授權）：維基系列網址 → 「維基百科・CC BY-SA 4.0」
+  const licOf = url => { try { const w = LinkImport.wikiOf(new URL(url)); return w ? `<span class="muted rd-lic">${esc(LinkImport.WIKI_NAME[w.project] + '・' + LinkImport.WIKI_LIC[w.project])}</span>` : ''; } catch (e) { return ''; } };
   const MAXLEN = 50000;
   const ST = () => { const S = App.state; if (!S.read || typeof S.read !== 'object') S.read = {}; if (!S.read.done) S.read.done = {}; return S.read; };
   const prof = () => { try { if (typeof App.profile === 'function') return App.profile() || {}; } catch (e) { } return {}; };
@@ -90,7 +91,7 @@
 
   /* ---------------- 閱讀首頁 ---------------- */
   App.register('read', {
-    title: '閱讀', icon: '📰', nav: false, navParent: 'lookup',
+    title: '閱讀', icon: '📄', nav: false, navParent: 'lookup',
     render(el, params) {
       params = params || {};
       const sh = readShare();
@@ -110,23 +111,22 @@
     const tab = params.lv || lv;
     const list = READING.daily.filter(a => a.lv === tab);
     const doneMark = id => st.done[id] ? `<span class="rd-done" title="已讀">✔</span>` : '';
-    const nc = params.news || newsCat || 'domestic';
+    const nc = LinkImport.NEWS_CATS.some(c => c.id === (params.news || newsCat)) ? params.news || newsCat : 'wp';
     const sec = params.sec || readSec || 'news'; readSec = sec;
     el.innerHTML = `<div class="rd-home">
       ${Reader.sectTabs(sec)}
       <section class="rd-news"${sec === 'news' ? '' : ' hidden'}>
-        <div class="rd-sech"><h3 class="rd-h3" id="rdNewsH">🗞️ 近三天新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
+        <div class="rd-sech"><h3 class="rd-h3" id="rdNewsH">🗞️ 最近的新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
         <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
         <p class="muted rd-tip rd-nnote"></p>
         <div class="rd-list" id="rdNews"><p class="muted rd-tip">讀取新聞中…</p></div>
-        <details class="rd-box rd-det rd-support"><summary>ℹ️ 哪些來源可以匯入？</summary>
+        <details class="rd-box rd-det rd-support"><summary>ℹ️ 哪些來源可以匯入？（只用開放授權）</summary>
           <ul class="rd-sup">
-            <li>✅ <b>Yahoo!ニュース</b>：國內、國際、經濟、娛樂、運動、科技、科學、生活、地方，列近三天，點標題自動匯入全文。</li>
-            <li>✅ <b>MATCHA 簡單日文</b>：原文振假名會自動帶入（標題和內文都有讀音）。</li>
-            <li>✅ <b>提供 RSS 的網站</b>：貼 RSS 網址，會匯入最新一篇。</li>
-            <li>✅ <b>公開的單篇文章網址</b>：部落格、新聞、觀光介紹等，經 Jina Reader 代讀擷取正文。</li>
-            <li>⚠️ <b>NHK 新聞</b>：全文要登入 NHK ONE，只能抓到摘要，請用「貼上文章」。</li>
-            <li>❌ 需要登入或付費的文章（日經、朝日會員限定等）、PDF、圖片裡的文字、影片。</li>
+            <li>✅ <b>維基百科「最近の出来事」</b>：每天更新的新聞摘要，點一則讀相關條目（CC BY-SA 4.0）。</li>
+            <li>✅ <b>維基新聞</b>：日文版 2026 年起停止更新，過去的報導都能讀（CC BY 2.5）。</li>
+            <li>✅ <b>維基文庫</b>：著作權已過期的唱歌、童謠與文學（公有領域）。</li>
+            <li>✅ <b>維基百科、維基教科書、維基語錄、維基導遊的任一頁網址</b>：自動擷取正文。</li>
+            <li>✍️ <b>其他網站</b>：不自動抓取（新聞、部落格多半受著作權保護）。請自己貼上文字，只存在你的裝置。</li>
           </ul>
           <p class="muted rd-tip">匯入後一律自動標讀音、羅馬字、中文，文末列出本文單字、片語、文法，都能加入不會清單。</p>
         </details>
@@ -165,7 +165,6 @@
     el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
       const a = b.dataset.act;
       if (a === 'songs') App.go('songs');
-      else if (a === 'nhk') App.go('read', { mode: 'url', url: NHK, auto: true });
       else App.go('read', { mode: a });
     });
     docIndex().then(idx => {
@@ -195,14 +194,14 @@
   async function drawNews(el, id) {
     const box = el.querySelector('#rdNews'); if (!box) return;
     const cat = LinkImport.NEWS_CATS.find(c => c.id === id) || LinkImport.NEWS_CATS[0];
-    el.querySelector('.rd-nnote').textContent = cat.note || 'Yahoo!ニュース・點標題自動匯入全文，標好讀音與中文';
-    const hh = el.querySelector('#rdNewsH'); if (hh) hh.textContent = cat.easy ? '🔰 簡單日文新聞（不限日期）' : '🗞️ 近三天新聞';
+    el.querySelector('.rd-nnote').textContent = cat.note || '點標題自動匯入全文，標好讀音與中文';
+    const hh = el.querySelector('#rdNewsH'); if (hh) hh.textContent = cat.id === 'wp' ? '🗞️ 最近的新聞' : cat.icon + ' ' + cat.name;
     box.innerHTML = '<p class="muted rd-tip">讀取新聞中…</p>';
     let items;
-    try { items = await LinkImport.newsList(cat.id, 3); }
+    try { items = await LinkImport.newsList(cat.id, 7); }
     catch (e) { if (box.isConnected) box.innerHTML = '<p class="rd-warn">新聞來源暫時讀不到，請按 🔄 重試，或改用「貼上文章」。</p>'; return; }
     if (!box.isConnected || (newsCat && newsCat !== cat.id)) return;
-    if (!items.length) { box.innerHTML = '<p class="muted rd-tip">這個分類近三天沒有新聞。</p>'; return; }
+    if (!items.length) { box.innerHTML = '<p class="muted rd-tip">這個來源目前沒有內容。</p>'; return; }
     const idx = await docIndex();
     const have = new Map(idx.filter(d => d.url).map(d => [d.url, d.id]));
     const lim = box.dataset.more ? items.length : 8;
@@ -256,11 +255,11 @@
     el.innerHTML = `<div class="rd-home">
       <h2 class="rd-h2">🔗 匯入日文文章</h2>
       <form id="rdImport">
-        <label class="rd-lbl">公開文章網址<input id="rdU" class="rd-in" type="url" inputmode="url" placeholder="https://…" value="${esc(params.url || '')}" required></label>
+        <label class="rd-lbl">開放授權網頁網址（維基百科、維基文庫…）<input id="rdU" class="rd-in" type="url" inputmode="url" placeholder="https://ja.wikipedia.org/wiki/…" value="${esc(params.url || '')}" required></label>
         <div class="rd-row"><button type="submit" class="btn primary" id="rdFetch">匯入並開始讀</button><button type="button" class="btn" id="rdPaste">手動貼上全文</button></div>
         <p id="rdImportStatus" class="rd-tip" role="status" aria-live="polite"></p>
       </form>
-      <p class="muted rd-tip">支援單篇日文文章、RSS 網址、MATCHA 簡單日文（原文振假名會自動帶入）。NHK 新聞全文現需登入 NHK ONE，建議用「手動貼上全文」。需要代讀時，網址會交由 Jina Reader 擷取文字。</p>
+      <p class="muted rd-tip">只自動匯入開放授權的網站：維基百科、維基文庫、維基新聞、維基教科書、維基語錄、維基導遊。其他網站的文章請按「手動貼上全文」（只存在你的裝置，不上傳）。</p>
       <details class="rd-box rd-det"><summary>開啟原文或使用書籤小工具</summary>
         <p><button type="button" class="btn" id="rdOpen">開啟原網頁</button></p>
         <p>可把按鈕拖到書籤列，在原網頁按一下就送出選取的文字。${httpOK ? '' : '（需透過網站開啟日語冒險。）'}</p>
@@ -279,9 +278,9 @@
       const url = val();
       if (!url) { status.textContent = '請輸入公開的文章網址'; u.focus(); return; }
       submit.disabled = true;
-      status.textContent = LinkImport.nhkHome(url) ? '正在找最新的簡單日文新聞…' : '正在擷取文章正文…';
+      status.textContent = '正在擷取文章正文…';
       try {
-        const d = LinkImport.nhkHome(url) ? await LinkImport.latestEasy() : await LinkImport.article(url.href);
+        const d = await LinkImport.article(url.href);
         if (!form.isConnected) return;
         const id = await saveDoc({ ...d, src: 'url' });
         if (form.isConnected) App.go('read-article', { doc: id });
@@ -316,9 +315,10 @@
       if (t.sym) return t.s === '\n' ? '<br>' : esc(t.s);
       const lv = t.lv ? ' l-' + t.lv.toLowerCase() : '';
       const tracked = Tracker.has('word:' + t.base) ? ' tk' : '';
-      const g0 = t.zh ? String(t.zh).split(/[；;，,（(]/)[0].slice(0, 8) : '';
+      // 逐詞中文：辭書形意思＋活用語意（JPText.gloss：忘れられない→忘記不了、会いたかった→好想見面）
+      const g0 = t.zh ? (JPText.gloss ? JPText.gloss(t) : String(t.zh).split(/[；;，,（(]/)[0].slice(0, 8)) : '';
       // 否定形：「見えない」顯示「不 看得見」；字典沒有的漢字詞顯示「未收錄」（整詞保留）
-      const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${t.neg ? '不 ' : ''}${esc(g0)}</span>` : t.unreg ? '<span class="rd-gl rd-unreg">未收錄</span>' : '';
+      const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${esc(g0)}</span>` : t.unreg ? '<span class="rd-gl rd-unreg">未收錄</span>' : '';
       const og = window.Loan && Loan.isKata(t.s) ? Loan.label(t.s) : '';
       return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}${og ? `<span class="rd-og" lang="en">${esc(og)}</span>` : ''}</span>`;
     });
@@ -327,6 +327,10 @@
     const s = JPText.sentences(text).find(x => i >= x.i && i < x.i + x.s.length);
     return s ? s.s.trim() : '';
   }
+  // 多管道查詢（知識是公共財）：只連開放授權的辭典與例句庫，本站不抓取它們的內容
+  const REFS = [['維基詞典・日', w => 'https://ja.wiktionary.org/wiki/' + encodeURIComponent(w)], ['維基詞典・中', w => 'https://zh.wiktionary.org/wiki/' + encodeURIComponent(w)],
+    ['維基百科', w => 'https://ja.wikipedia.org/wiki/' + encodeURIComponent(w)], ['Tatoeba 例句', w => 'https://tatoeba.org/zh-tw/sentences/search?' + new URLSearchParams({ query: w, from: 'jpn', to: 'cmn' })]];
+  const refLinks = w => w ? `<div class="rd-refs"><b class="rd-sh">查更多（開放資料）</b>${REFS.map(([n, u]) => `<a href="${esc(u(w))}" target="_blank" rel="noopener" class="chip">${esc(n)} ↗</a>`).join('')}</div>` : '';
   // ctx: {title, sentence, source:'📖 閱讀'|'🎵 歌曲', zh(整句中文，可無), onClose}
   function wordCard(t, ctx) {
     ctx = ctx || {};
@@ -338,9 +342,11 @@
       <div class="rd-big" lang="ja">${JPText.ruby(t.s, t.kana)}</div>
       <div class="rd-kana" lang="ja">${esc(t.kana || '')}${t.romaji ? ' ・ ' + esc(t.romaji) : ''}</div>
       ${base !== t.s ? `<div class="rd-base">原形：<b lang="ja">${esc(base)}</b>${bk && bk !== base ? `（${esc(bk)}）` : ''}${esc(form)}</div>` : ''}
-      <div class="rd-mean">${t.frag ? '<span class="muted">這是前一個詞的活用或口語語尾（例：〜ちゃ＝〜ては、〜とく＝〜ておく），不是獨立的單字，請點前一個詞看意思。</span>' : t.zh ? (t.neg ? '<span class="chip">否定</span> ' : '') + esc(t.zh) : t.unreg ? `<span class="muted">未收錄：字典還沒有「${esc(t.s)}」這個詞${t.kana ? (t.src ? '，讀音取自原文' : '') : '，讀音未知'}。可在下面自己填中文。</span>` : '<span class="muted">字典沒有這個詞</span>'}</div>
+      <div class="rd-mean">${t.frag ? '<span class="muted">這是前一個詞的活用或口語語尾（例：〜ちゃ＝〜ては、〜とく＝〜ておく），不是獨立的單字，請點前一個詞看意思。</span>' : t.zh ? (t.neg ? '<span class="chip">否定</span> ' : '') + esc(String(t.zh).split('｜')[0]) : t.unreg ? `<span class="muted">未收錄：字典還沒有「${esc(t.s)}」這個詞${t.kana ? (t.src ? '，讀音取自原文' : '') : '，讀音未知'}。可在下面自己填中文。</span>` : '<span class="muted">字典沒有這個詞</span>'}</div>
       ${window.Loan && Loan.label(t.s, 1) ? `<div class="rd-loan">${esc(Loan.label(t.s, 1))}</div>` : window.Loan && Loan.isKata(t.s) && t.s.length > 2 && !(window.LOAN[t.s] && LOAN[t.s][0] === 'ja') ? `<div class="rd-loan muted">🌐 外來語（字典尚未收錄原文，讀音：${esc(t.romaji || '')}）</div>` : ''}
       <div class="chips rd-chips">${t.lv ? lvBadge(t.lv) : ''}${t.pos && JPText.POS_ZH[t.pos] ? `<span class="chip">${esc(JPText.POS_ZH[t.pos])}</span>` : ''}</div>
+      <div class="rd-sen" hidden></div><div class="rd-kj" hidden></div>
+      ${t.frag || t.hon ? '' : refLinks(base)}
       ${t.alts && t.alts.length ? `<div class="rd-alts muted">也可能是：${t.alts.map(a => `${esc(a.jp)}（${esc(String(a.zh).split(/[；;]/)[0])}）`).join('、')}</div>` : ''}
       ${(!t.known && !t.frag) || t.user ? `<div class="rd-user"><input class="rd-in" id="rdUz" placeholder="自己填中文意思" value="${esc(t.user ? t.zh : '')}"><button type="button" class="btn sm" id="rdUs">存</button></div>` : ''}
       ${ctx.sentence ? `<div class="rd-sent" lang="ja">「${esc(ctx.sentence)}」</div>` : ''}
@@ -352,6 +358,17 @@
     if (!bg) return;
     const $ = s => bg.querySelector(s);
     $('#rdSay').onclick = () => App.speak(t.s, .8);
+    // 多義（data/reading/senses.js）與漢字音讀／訓讀（data/reading/kanji.js）：點開詞卡才載，載完補上
+    if (t.known && !t.frag && JPText.senses) JPText.senses(t).then(G => {
+      const box = $('.rd-sen'); if (!box || !G.length || G.reduce((a, g) => a + g.list.length, 0) < 2) return;
+      box.innerHTML = `<b class="rd-sh">意思</b>` + G.map(g => `${G.length > 1 && g.kana ? `<div class="rd-sk" lang="ja">${esc(g.kana)}</div>` : ''}<ol class="rd-sl">${g.list.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`).join('');
+      box.hidden = false;
+    }).catch(() => { });
+    if (t.known && !t.frag && JPText.kanji && JPText.hasKanji(t.base || t.s)) JPText.kanji(t).then(P => {
+      const box = $('.rd-kj'); if (!box || !P.length) return;
+      box.innerHTML = `<b class="rd-sh">漢字</b>${P[0] && P[0].jukuji ? '<p class="rd-kn muted">整詞特殊讀法（熟字訓），不能逐字拆音讀／訓讀</p>' : ''}<div class="rd-kl">${P.map(p => `<div class="rd-k"><span class="rd-kc" lang="ja">${esc(p.k)}</span><span class="rd-kr" lang="ja">${esc(p.r || '')}${p.t ? `<i class="rd-kt ${p.t === '音' ? 'on' : 'kun'}">${p.t}讀</i>` : ''}</span><small class="rd-kz">${esc(p.zh || '')}</small><small class="rd-ko muted" lang="ja">${p.on ? '音 ' + esc(p.on.replace(/,/g, '、')) : ''}${p.on && p.kun ? '・' : ''}${p.kun ? '訓 ' + esc(p.kun.replace(/,/g, '、')) : ''}</small></div>`).join('')}</div>`;
+      box.hidden = false;
+    }).catch(() => { });
     if ($('#rdSayS')) $('#rdSayS').onclick = () => App.speak(ctx.sentence, .85);
     if ($('#rdUs')) $('#rdUs').onclick = () => { const v = $('#rdUz').value.trim(); JPText.setUser(t.s, v); toast(v ? '✅ 已存，下次會顯示' : '已清除', 'ok'); };
     // 背景點掉也要刷新底線
@@ -364,7 +381,7 @@
 
   /* ---------------- 閱讀器 ---------------- */
   App.register('read-article', {
-    title: '閱讀', icon: '📰', nav: false, navParent: 'read',
+    title: '閱讀', icon: '📄', nav: false, navParent: 'read',
     render(el, params) { articleView(el, params || {}); }
   });
 
@@ -414,7 +431,7 @@
         <button type="button" class="btn sm primary rd-topdone" aria-label="讀完了">✔ 讀完</button>
       </div>
       <div class="rd-doc ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''} ${A.daily ? 'daily' : 'mine'}">
-        <div class="rd-meta">${A.lv ? lvBadge(A.lv) : '<span class="chip">我的文章</span>'}<span class="muted">${len} 字</span>${A.url ? `<a href="${esc(A.url)}" target="_blank" rel="noopener" class="muted">原文 ↗</a>` : ''}</div>
+        <div class="rd-meta">${A.lv ? lvBadge(A.lv) : '<span class="chip">我的文章</span>'}<span class="muted">${len} 字</span>${A.url ? `<a href="${esc(A.url)}" target="_blank" rel="noopener" class="muted">原文 ↗</a>` : ''}${licOf(A.url)}</div>
         <h1 class="rd-title" lang="ja">${A.icon ? `<span aria-hidden="true">${A.icon}</span> ` : ''}<span class="rd-tt">${tokensHTML(S.titleTk, 't')}</span></h1>
         ${A.zh ? `<div class="rd-zh rd-tzh">${esc(A.zh)}</div>` : ''}
         <p class="muted rd-tip rd-hint">👆 點任何一個詞：看讀音、中文，加入不會清單</p>

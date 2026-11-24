@@ -810,7 +810,7 @@
     if (a === 'close') return select(null);
     if (a === 'learn' && SEL && SEL.type === 'gram') { if (ST.learned[SEL.id]) delete ST.learned[SEL.id]; else ST.learned[SEL.id] = 1; saveST(); NEXT = (nextOf() || {}).id || null; restyle(); renderBar(); return renderPanel(); }
     if (a === 'verb' && SEL && SEL.type === 'word') { const w = SEL.ref; return goV({ mode: 'tense', verb: jp0(w) + '|' + w.grp + '|' + w.zh, sel: null }); }
-    if (a === 'scene' && SEL && SEL.type === 'sub') return App.go('scene', { id: SEL.sub });
+    if (a === 'scene' && SEL && SEL.type === 'sub') { const pk = { konbini: 'konbini', yakiniku: 'eat', ramen: 'ramen', station: 'station', directions: 'station', hotel: 'hotel', airport: 'airport', cafe: 'cafe', drugstore: 'drug', clothes: 'shop', izakaya: 'izakaya', shrine: 'sight', emergency: 'emer' }[SEL.sub]; return pk ? App.go('path-unit', { id: 'tr-' + pk }) : App.go('path', { tab: 'travel' }); }   // 不再進舊模組 scene
   }
 
   /* ---------------- 路由 ---------------- */
@@ -884,5 +884,5 @@
     enter(mode) { F.mode = mode || 'game'; SEL = null; HL.clear(); resetLabels(); renderPanel(); },
     learn(id, on) { if (on === false) delete ST.learned[id]; else ST.learned[id] = 1; saveST(); NEXT = (nextOf() || {}).id || null; restyle(); }
   };
-  App.register('mind3d', { title: '3D 心智圖', icon: '🌐', nav: false, navParent: 'kb', render });
+  App.register('mind3d', { title: '3D 心智圖', icon: '🧠', nav: false, navParent: 'kb', render });
 })();
