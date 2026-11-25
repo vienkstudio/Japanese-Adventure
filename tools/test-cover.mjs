@@ -110,6 +110,18 @@ for (const [title, author, wt, wa, wb] of CASES) {
   if (errs.length) fail++;
   rows.push([errs.length ? '✗' : '✓', title, `歌名 ${p.track}｜原唱 ${p.artist || '—'}｜${p.cover ? '翻唱 ' + p.by : '非翻唱'}${p.hot ? '｜熱門' : ''}｜候選 ${p.cands.slice(0, 3).map(c => c.track).join('、')}`, errs.join('；')]);
 }
+// 使用者回報：同一段歌詞同時出現日文與英文翻譯字幕、時序跑掉 → parseLRC 要丟掉翻譯行
+{
+  const LI = ctx.LinkImport;
+  const tr = LI.parseLRC('[00:10.00]夜に駆ける\n[00:10.00]Racing into the night\n[00:15.00]沈むように溶けてゆくように\n[00:15.20]Like sinking, like melting\n[00:20.00]二人だけの空が広がる夜に\n[00:20.00]On a night where only our sky spreads\n[00:25.00]さよならだけだった\n[00:25.10]It was only goodbye\n[00:30.00]very happy');
+  const bad = [];
+  if (tr.some(l => /Racing|sinking|goodbye|our sky/.test(l.jp))) bad.push('翻譯行沒丟：' + tr.map(l => l.jp).join('／'));
+  if (tr.length !== 5) bad.push('行數 ' + tr.length);
+  if (!tr.some(l => l.jp === 'very happy')) bad.push('歌詞本身的英文被丟掉');
+  const mixed = LI.parseLRC('[00:01.00]Bling-Bang-Bang-Born\n[00:03.00]一番偉いのは誰\n[00:05.00]very happy\n[00:07.00]あきらかにダントツでピカイチ');
+  if (mixed.length !== 4) bad.push('日英混合歌詞被刪：' + mixed.length);
+  if (bad.length) { fail++; console.log('✗ 歌詞翻譯行過濾：' + bad.join('；')); } else console.log('✓ 歌詞翻譯行過濾');
+}
 rows.forEach(r => { if (verbose || r[0] === '✗') console.log(`${r[0]} ${r[1]}\n    → ${r[2]}${r[3] ? '\n    ✗ ' + r[3] : ''}`); });
 console.log(`翻唱標題解析：${CASES.length - fail}/${CASES.length} 通過`);
 process.exit(fail ? 1 : 0);

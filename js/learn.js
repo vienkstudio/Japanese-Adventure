@@ -334,7 +334,7 @@
   }
   // 歌曲新聞：先用閱讀／歌曲收進來還沒學的詞 → 最後播放（或最近存的）那首歌的歌詞詞彙 → 今日短文的句子 → 同級其他短文；不用旅遊句補位
   function dailyPick() { let lv = 'zero'; try { lv = App.profile().lv; } catch (e) { } const R = window.READING; return R && typeof R.pick === 'function' ? R.pick(lv, App.today()) : null; }
-  let SONG = null;   // prepare('fun') 時讀出的歌：{id, title, lines:[{jp,zh}]}；SONGS＝候選（上次那首 → 我的歌 → 公有領域第一首 → 示範曲）
+  let SONG = null;   // prepare('fun') 時讀出的歌：{id, title, lines:[{jp,zh}]}；SONGS＝候選（上次那首 → 我的歌 → 熱門第一首）
   let SONGS = [];
   const okSong = s => s && Array.isArray(s.lines) && s.lines.length ? { id: s.id, title: s.title || '', lines: s.lines } : null;
   function loadSong() {
@@ -347,12 +347,11 @@
       return Promise.all(ids.slice(0, 4).map(getS));
     }).then(list => {
       SONGS = list.map(okSong).filter(Boolean);
-      // 還沒有歌：匯入公有領域第一首（最多等 6 秒；離線就用示範曲）
+      // 還沒有歌：匯入熱門第一首（最多等 6 秒）
       if (SONGS.length || !SG || typeof SG.importHot !== 'function' || !Array.isArray(SG.HOT) || !SG.HOT[0]) return null;
       const imp = SG.importHot(0).then(id => id ? getS(id) : null).catch(() => null);
       return Promise.race([imp, new Promise(r => setTimeout(() => r(null), 6000))]).then(s => { s = okSong(s); if (s) SONGS.push(s); });
     }).then(() => {
-      if (!SONGS.length && window.Songs && Songs.DEMO) SONGS.push(okSong(Songs.DEMO));
       SONGS = SONGS.filter(Boolean);
       return (SONG = SONGS[0] || null);
     }).catch(() => (SONG = null));
@@ -386,7 +385,7 @@
     if (out.length) SONG = SONGS.find(x => x.id === out[0].song) || SONG;
     return out;
   }
-  // 歌曲新聞：歌詞詞優先（上次那首 → 我的歌 → 公有領域第一首 → 示範曲）→ 閱讀／歌曲收進來還沒學的詞 → 今日短文的句子；不用旅遊句補位
+  // 歌曲新聞：歌詞詞優先（上次那首 → 我的歌 → 熱門第一首）→ 閱讀／歌曲收進來還沒學的詞 → 今日短文的句子；不用旅遊句補位
   function funFresh(n) {
     const LL = L(), out = songWords(n);
     for (const id in LL) {
@@ -438,7 +437,7 @@
       if (SONG && SONG.id) return { route: 'song', params: { id: SONG.id }, label: '唱一首歌：' + (SONG.title || '今天那首') };
       const last = S().songLast, H = window.Songs && Array.isArray(Songs.HOT) && Songs.HOT[0];
       return last && last.id ? { route: 'song', params: { id: last.id }, label: '唱一首歌：' + (last.title || '上次那首') }
-        : H ? { route: 'song', params: { id: 'pd:' + H[2] }, label: '唱一首歌：' + H[0] } : { route: 'songs', params: {}, label: '唱一首歌：公有領域歌曲' };
+        : H ? { route: 'song', params: { id: 'yt:' + H[2] }, label: '唱一首歌：' + H[0] } : { route: 'songs', params: {}, label: '唱一首歌：熱門精選第一首' };
     },
     work: () => ({ route: 'biz', params: {}, label: '商務情境練習' })
   };

@@ -89,25 +89,17 @@
     }
   });
 
-  // 公有領域歌曲（開放資料原則，docs/資料來源.md）：著作權已過期的唱歌・童謠，歌詞從維基文庫匯入、語音朗讀；不內建也不自動抓取流行歌歌詞
-  // [歌名, 作者, key, 0, 'ws:維基文庫頁名']；歌曲 id＝'pd:'+key
-  const HOT = [["赤とんぼ","三木露風 作詞","akatonbo",0,"ws:赤とんぼ"],["さくらさくら","日本古謠","sakura",0,"ws:さくらさくら"],["ちょうちょう","野村秋足 作詞","chouchou",0,"ws:ちょうちょう"],["どんぐりころころ","青木存義 作詞","donguri",0,"ws:どんぐりころころ"],["シャボン玉","野口雨情 作詞","shabondama",0,"ws:シャボン玉"],["浜辺の歌","林古渓 作詞","hamabe",0,"ws:浜辺の歌"],["早春賦","吉丸一昌 作詞","soushunfu",0,"ws:早春賦"],["椰子の実","島崎藤村 作詞","yashinomi",0,"ws:椰子の実"],["故郷の空","大和田建樹 作詞","furusatonosora",0,"ws:故郷の空"],["星めぐりの歌","宮沢賢治 作詞","hoshimeguri",0,"ws:星めぐりの歌"],["かもめの水兵さん","武内俊子 作詞","kamome",0,"ws:かもめの水兵さん"],["証城寺の狸囃子","野口雨情 作詞","shojoji",0,"ws:証城寺の狸囃子"],["あんたがたどこさ","わらべうた","antagata",0,"ws:あんたがたどこさ"],["仰げば尊し","文部省唱歌","aogeba",0,"ws:仰げば尊し"],["蛍の光","稲垣千頴 作詞","hotaru",0,"ws:蛍の光"]];
-  // 對外：Songs.importHot(x)，x＝'pd:<key>'｜key｜歌名｜HOT 索引 → 匯入後回傳歌曲 id（不是清單裡的歌回傳 null）
+  // 熱門精選：一鍵匯入（YouTube 官方影片＋LRCLIB 逐句時間歌詞；使用者指定的例外，見 docs/資料來源.md）
+  // [歌名, 歌手, YouTube id, 影片秒數, LRCLIB id]：固定和這支 MV 長度相符的時間軸版本
+  const HOT = [["アイドル","YOASOBI","ZRtdQ81jPUQ",226,7159727],["夜に駆ける","YOASOBI","by4SYYWlhEs",261,9203852],["Bling-Bang-Bang-Born","Creepy Nuts","mLW35YMzELE",172,8248862],["ライラック","Mrs. GREEN APPLE","QjrkrVmC-8M",303,24754735],["ケセラセラ","Mrs. GREEN APPLE","Jy-QS27q7lA",314,16310136],["怪獣の花唄","Vaundy","UM9XNpgrqVk",233,19912792],["Lemon","米津玄師","SX_ViT4Ra7k",274,8948466],["KICK BACK","米津玄師","M2cckDmNLMI",227,10451203],["新時代","Ado","1FliVTcX8bQ",237,29694107],["唱","Ado","pgXpM4l_MwI",189,20169960],["Pretender","Official髭男dism","TQ8WlA2GXbk",336,29363557],["Subtitle","Official髭男dism","hN5MBlGv2Ac",322,36160284],["水平線","back number","iqEr3P78fz8",312,34777897],["SPECIALZ","King Gnu","fhzKLBZJC3w",241,8426482],["はいよろこんで","こっちのけんと","jzi6RNVEOtA",163,33555395],["晩餐歌","tuki.","oZpYEEcvu5I",220,36140303],["ドライフラワー","優里","kzZ6KXDM1RI",288,20605926],["紅蓮華","LiSA","x1FV6IrjZCY",235,29931709],["群青","YOASOBI","Y4nEEZwckuU",262,8996513],["ベテルギウス","優里","cbqvxDTLMps",291,39334885],["青と夏","Mrs. GREEN APPLE","-MKfbxHy_NA",273,20430644],["オトノケ","Creepy Nuts","tRwHpyOq4P4",196,15897258],["さよーならまたいつか！","米津玄師","-wb2PAx6aEs",208,36434512]];
+  // 對外：Songs.importHot(x)，x＝'yt:<id>'｜YouTube id｜歌名｜HOT 索引 → 匯入後回傳歌曲 id（不是熱門歌回傳 null）
   function hotRow(x) {
     if (typeof x === 'number') return HOT[x] || null;
-    const k = String(x || '').replace(/^(?:yt|pd):/, '');
+    const k = String(x || '').replace(/^yt:/, '');
     return HOT.find(h => h[2] === k || h[0] === k) || null;
   }
   function importHotX(x) { const h = hotRow(x); return h ? importHot.apply(null, h) : Promise.resolve(null); }
   async function importHot(t, a, yt, dur, lrc) {
-    if (/^ws:/.test(lrc || '')) {   // 公有領域（維基文庫）：語音朗讀、沒有時間軸
-      const id = 'pd:' + yt, old = await getSong(id);
-      if (old && old.lines.length && old.pdv === 2) return id;   // 舊版（線上抓、可能抓錯）一律換成內建版
-      const L = await LinkImport.lyricsById(lrc).catch(() => null);
-      if (!L || !L.lines.length) throw new Error('維基文庫暫時讀不到');
-      await putSong({ id, title: `${t}（${a}）`, src: { type: 'tts' }, lines: L.lines, url: L.url, license: '維基文庫・公有領域', note: L.note || '', pdv: 2 });
-      return id;
-    }
     const id = 'yt:' + yt, old = await getSong(id);
     // 已有歌詞：自己對過時的不動；舊版自動匯入、時間軸超過影片長度（挑錯版本）的才換成固定版本
     if (old && old.lines.length && (old.synced || !(lastT(old) > dur + 1 || (old.lrc && old.lrc.id !== lrc)))) return id;
@@ -146,13 +138,11 @@
         <div class="rd-row"><button type="submit" id="sgFetch" class="btn primary">一鍵匯入歌曲</button><button type="button" class="btn" id="sgNew">上傳音檔或貼歌詞</button></div>
         <p class="rd-tip" id="sgImportStatus" role="status" aria-live="polite"></p>
       </form>
-      <p class="muted rd-tip">依開放資料原則，不自動抓取流行歌歌詞。YouTube 只播放你貼的影片；歌詞請按「上傳音檔或貼歌詞」自己貼上（只存在這台裝置）。</p>
+      <p class="muted rd-tip">YouTube 會自動帶入標題，再用歌名與歌手找日文歌詞與逐句時間。沒有找到時，可以自己貼歌詞。</p>
       <h3 class="rd-h3">我的歌</h3>
       <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
-      <h3 class="rd-h3">📜 公有領域歌曲 <small class="muted">著作權已過期的唱歌・童謠，歌詞來自維基文庫，語音朗讀</small></h3>
+      <h3 class="rd-h3">🔥 熱門精選 <small class="muted">點一下自動匯入影片與逐句歌詞</small></h3>
       <div class="rd-list sg-hot">${HOT.map(([t, a, yt], k) => `<button type="button" class="rd-item" data-hot="${k}"><span class="rd-ic sg-hn" aria-hidden="true">${k + 1}</span><span class="rd-it"><b lang="ja">${esc(t)}</b><small class="muted" lang="ja">${esc(a)}</small></span><span class="rd-go" aria-hidden="true">▶</span></button>`).join('')}</div>
-      <h3 class="rd-h3">示範曲</h3>
-      <div class="rd-list"><button type="button" class="rd-item" data-song="demo"><span class="rd-ic" aria-hidden="true">🌅</span><span class="rd-it"><b lang="ja">${esc(DEMO.title)}</b><small class="muted">自編童謠・${DEMO.lines.length} 句・語音朗讀</small></span>${App.state.cleared && App.state.cleared['song:demo'] ? '<span class="rd-done">✔</span>' : ''}</button></div>
       <p class="muted rd-tip">儲存的歌曲留在這台裝置。YouTube 與音訊網址播放時需要連網。</p>
     </div>`;
     Reader.bindSect(el);
@@ -160,7 +150,7 @@
     el.querySelectorAll('[data-hot]').forEach(b => b.onclick = async () => {
       if (b.disabled) return;
       const [t, a, yt, dur, lrc] = HOT[+b.dataset.hot], sm = b.querySelector('small'), old = sm.textContent;
-      b.disabled = true; sm.textContent = '從維基文庫匯入歌詞中…';
+      b.disabled = true; sm.textContent = '匯入歌詞中…';
       try { const id = await importHot(t, a, yt, dur, lrc); if (b.isConnected) App.go('song', { id }); }
       catch (e) { if (b.isConnected) { sm.textContent = '匯入失敗，請稍後再試'; setTimeout(() => { if (sm.isConnected) sm.textContent = old; }, 4000); } }
       finally { b.disabled = false; }
@@ -174,7 +164,7 @@
       if (!yt && !audio) { status.textContent = '請貼上 YouTube、YouTube Music 或 HTTPS 音訊檔網址（例如 .mp3、.m4a）'; input.focus(); return; }
       const id = yt ? 'yt:' + yt : 'audio:' + audio.href;
       submit.disabled = true;
-      status.textContent = yt ? '正在匯入影片…' : '正在匯入音訊…';
+      status.textContent = yt ? '正在讀取歌曲資訊與搜尋歌詞…' : '正在匯入音訊…';
       try {
         const existing = await getSong(id);
         if (!existing || !existing.lines.length || existing.lines.every(l => l.t == null)) {
@@ -380,7 +370,7 @@
   /* ---------------- 跟唱頁 ---------------- */
   App.register('song', {
     title: '歌曲', icon: '🎶', nav: false, navParent: 'read',
-    render(el, params) { songView(el, (params || {}).id || 'demo'); }
+    render(el, params) { const id = (params || {}).id; if (!id || id === 'demo') { App.go('songs'); return; } songView(el, id); }
   });
 
   async function songView(el, id) {
@@ -417,7 +407,6 @@
       <div class="tabs sg-modes" role="tablist" ${hasLyrics ? '' : 'hidden'}>
         <button type="button" data-mode="sing" class="on" role="tab">🎤 跟唱</button>
         ${s.src.type === 'tts' ? '' : '<button type="button" data-mode="mark" role="tab">⏱ 對時</button>'}
-        <button type="button" data-mode="dict" role="tab">✍️ 填空</button>
       </div>
       <div class="rd-tg sg-tg" role="group" aria-label="顯示" ${hasLyrics ? '' : 'hidden'}>
         <button type="button" data-t="y" aria-pressed="${!!P.y}" class="${P.y ? 'on' : ''}">讀音</button>
@@ -427,7 +416,7 @@
       </div>
       <div class="sg-help muted rd-tip"></div>
       <div class="sg-lyr rd-doc mine ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''}" lang="ja"></div>
-      ${s.demo || s.src.type === 'tts' || hasLyrics ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary block sg-paste">📋 貼上歌詞</button><p class="muted rd-tip">流行歌、翻唱：從你有權使用的來源複製歌詞貼上（只存在這台裝置）。</p><details class="sg-pd"><summary>童謠・唱歌？找公有領域歌詞</summary><button type="button" class="btn sg-find">🔍 從維基文庫找</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></details></div>`}
+      ${s.demo || s.src.type === 'tts' || (hasLyrics && s.lines.every(l => l.t != null)) ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary sg-find">🔍 自動找${hasLyrics ? '時間軸' : '歌詞與時間軸'}</button><button type="button" class="btn sg-paste">📋 自己貼歌詞</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></div>`}
       <div class="sg-vocab"></div>
       <div class="sg-recs"></div>
       <div class="sg-ctl" role="toolbar" aria-label="播放控制">
@@ -494,7 +483,7 @@
         const dur = V.P2 && V.P2.dur ? Math.round(V.P2.dur() || 0) : 0;
         const L = await LinkImport.lyrics($('.sg-q').value, $('.sg-a').value, dur);
         if (!V.root.isConnected) return;
-        if (!L || !L.lines.length) { st.textContent = '維基文庫沒有這首（只收著作權已過期的唱歌・童謠）。請按 ✏️ 貼上你有權使用的歌詞。'; return; }
+        if (!L || !L.lines.length) { st.textContent = '找不到相符的日文歌詞。可修改歌名／歌手再試，或按「📋 自己貼歌詞」。'; return; }
         let r = mergeLyrics(s, L.lines);
         if (!r) {
           const ok = await new Promise(res => App.modal(`<h2>用找到的歌詞取代？</h2><p class="muted">找到「${esc(L.title)}」${L.timed ? '（含時間軸）' : ''}，和目前歌詞不同。取代後原本的歌詞、中文與校時會被覆蓋。</p>`, [{ label: '保留原本', onClick: () => res(false) }, { label: '取代', cls: 'primary', onClick: () => res(true) }]));
@@ -515,7 +504,7 @@
     showWarn(V);
 
     if (hasLyrics) setMode(V, 'sing');
-    else $('.sg-help').textContent = '音源已匯入，還沒有歌詞：按下方「📋 貼上歌詞」。';
+    else $('.sg-help').textContent = '音源已匯入，還沒有歌詞：按下方「🔍 自動找歌詞」或「📋 自己貼歌詞」。';
     // 計時：高亮、循環、錄音自動停、離開頁面清理
     V.timer = setInterval(() => tick(V), 150);
   }

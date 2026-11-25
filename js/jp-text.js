@@ -817,6 +817,12 @@
   }
   // 斷詞後修正（評審 v16 P0）：名詞＋がい…（君がいなくなった）是「が＋いる」，不是「がい＝害處」；と＋思う／言う 的と是引用
   function postFix(out, text) {
+    // 片假名寫的一般詞（コレ、ソレ、ヤバイ、カワイイ）：字典沒有片假名寫法時，改查平假名（使用者回報：基本字顯示「字典沒有這個詞」）
+    for (const t of out) {
+      if (t.known || t.sym || !/^[ァ-ヶ]{2,}$/.test(t.s)) continue;
+      const h = toHira(t.s), r = tokenize(h).filter(x => !x.sym);
+      if (r.length === 1 && r[0].known && r[0].s === h && !/^(part|aux|cop)$/.test(r[0].pos)) Object.assign(t, { zh: r[0].zh, pos: r[0].pos, base: r[0].base, bkana: r[0].bkana, kana: t.s, lv: r[0].lv, known: true, unreg: false, viaKana: true, form: r[0].form || '' });
+    }
     for (let k = 1; k < out.length; k++) {
       const t = out[k], p = out[k - 1];
       if (t.s === 'がい' && /^(n|pron|name|unk)$/.test(p.pos || '') && !/^(v|i)$/.test(p.pos || '')) {
@@ -852,6 +858,8 @@
       // 「あの日」「いい日」「楽しい日」的 日＝日子、那天（字典第一義是太陽）
       if (t.s === '日' && t.kana === 'ひ' && (/^(pre|i|na)$/.test(p.pos || '') || /^(の|な|た|だ|る)$/.test(String(p.s || '').slice(-1)))) Object.assign(t, { zh: '日子；（那）天' });
       if (t.s === '目' && (p.pos === 'num' || /[日回人番年つ度杯個軒本枚週]$/.test(p.s))) Object.assign(t, { kana: 'め', bkana: 'め', zh: '（接尾）第…', pos: 'suf' });
+      // 動詞連用形＋ねー（認めねー）＝ない的口語
+      if (/^ねぇ?ー?$/.test(t.s) && t.s !== 'ね' && /^(v|aux)$/.test(p.pos || '') && p.form === 'stem') Object.assign(t, { zh: '（口語）＝ない：不…', pos: 'aux' });
       if (t.s === 'と' && t.pos === 'part') {
         const nx = out[k + 1] || {}, nb = nx.base || nx.s || '';
         // 評審 v18：引用的と（〜と発表、「…」と、〜と伝える）、〜となる、動詞／形容詞＋と（條件）

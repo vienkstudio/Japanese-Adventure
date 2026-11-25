@@ -288,21 +288,52 @@
 
   // duration：影片長度（秒，可無），用來挑時間軸長度相符的 LRC 版本
   // 回傳 {title, lines, track, artist, timed, id, dur, cover, coverBy, want, origTitle, note, choices:[{id, track, artist, dur, timed}]}
-  // YouTube：嵌入使用者自己貼的影片＋oEmbed 取標題（使用者指定保留的例外，見 docs/資料來源.md）；不自動找流行歌歌詞（著作權）
-  async function youtube(id) {
-    const endpoint = 'https://www.youtube.com/oembed?' + new URLSearchParams({ url: 'https://www.youtube.com/watch?v=' + id, format: 'json' });
+  async function youtube(id, duration) {
+    const address = 'https://www.youtube.com/watch?v=' + id;
+    const endpoint = 'https://www.youtube.com/oembed?' + new URLSearchParams({ url: address, format: 'json' });
     const meta = await request(endpoint, 'application/json', 5000).catch(() => null);
-    const raw = meta && meta.title ? String(meta.title) : '', author = meta && meta.author_name ? String(meta.author_name) : '';
-    const note = '歌詞請按 📋 貼上你有權使用的歌詞（只存在你的裝置）。';
-    if (!raw) return { title: 'YouTube・' + id, lines: [], note };
-    // 評審 v18：翻唱辨識（歌名／原唱／翻唱者）。解析不到就用原標題
-    let p = null; try { p = coverParse(raw, author, hotList()); } catch (e) { }
-    if (p && p.track) {
-      const track = trimSym(p.track).slice(0, 40), artist = trimSym(p.artist || '').slice(0, 30);
-      if (p.cover) return { title: coverTitle({ track, artist: artist || '?' }, p.by), track, artist, cover: true, coverBy: p.by || '', origTitle: track + (artist ? '（' + artist + '）' : ''), rawTitle: raw, lines: [], note };
-      return { title: artist ? track + '（' + artist + '）' : track, track, artist, rawTitle: raw, lines: [], note };
+    const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
+    const result = { title, lines: [] };
+    if (!meta || /\b(?:reaction|shorts)\b/i.test(title)) return result;
+    const p = coverParse(title, meta.author_name || '', hotList());
+    let found = null, choices = [];
+    // 1) 熱門歌：用固定的 LRCLIB 版本（影片長度差很多時改用長度相符的版本）
+    if (p.hot) {
+      const [t, a, , hd, lrc] = p.hot;
+      if (duration && hd && Math.abs(hd - duration) > 10) found = await lyrics(t, a, duration).catch(() => null);
+      if (!found && lrc) found = await lyricsById(lrc).catch(() => null);
+      if (!found) found = await lyrics(t, a, duration).catch(() => null);
     }
-    return { title: raw, rawTitle: raw, lines: [], note };
+    // 2) 多個歌名候選平行查 LRCLIB：查到的歌名要和候選歌名相符；分數＝歌詞分數＋候選先後
+    if (!found && p.cands.length) {
+      const top = p.cands.filter(c => c.prior > -20).slice(0, 4);
+      const lists = await Promise.all(top.map((c, n) => lyricsRank(c.track, c.artists, duration).then(list => list.filter(x => sameSong(x.r.trackName, c.track)).map(x => ({ s: x.s + Math.max(-4, Math.min(4, c.prior / 15)) - n, r: x.r, sc: x.s }))).catch(() => [])));
+      const bySong = new Map();
+      lists.flat().forEach(x => { const k = key(baseTitle(x.r.trackName)); const o = bySong.get(k); if (!o || x.s > o.s) bySong.set(k, x); });
+      const list = [...bySong.values()].sort((a, b) => b.s - a.s);
+      const same = (a, b) => b && sameSong(a.r.trackName.replace(/[【\[][^】\]]*[】\]]/g, ''), b.r.trackName.replace(/[【\[][^】\]]*[】\]]/g, '')) && key(a.r.artistName) === key(b.r.artistName);   // 「【Ado】うっせぇわ」與「うっせぇわ」同一首
+      if (list[0] && (!list[1] || list[0].s - list[1].s >= 3 || (same(list[0], list[1]) && (!list[2] || same(list[0], list[2]) || list[0].s - list[2].s >= 3)))) found = lrcResult(list[0].r, list[0].sc);
+      else choices = list.slice(0, 3).map(x => pickRow(x.r));
+    }
+    // 3) 都對不上：用清理後的標題整句搜尋，給使用者挑
+    if (!found && !choices.length && p.cands.length) {
+      const q = p.cands.slice(0, 2).map(c => c.track).concat(p.artist ? [p.artist] : []).join(' ');
+      const rows = await request(LYRICS + '?' + new URLSearchParams({ q }), 'application/json', 7000).catch(() => []);
+      const seen = new Set();
+      choices = (Array.isArray(rows) ? rows : []).filter(r => r && !r.instrumental && hasJapanese(r.syncedLyrics || r.plainLyrics, 8) && !seen.has(key(r.trackName) + key(r.artistName)) && seen.add(key(r.trackName) + key(r.artistName))).slice(0, 3).map(pickRow);
+    }
+    if (found) Object.assign(result, found);
+    if (p.cover) {
+      result.cover = true; result.want = found ? found.track : p.track;
+      result.coverBy = found ? coverBy(p, found.track, found.artist) : p.by;
+      // 原唱：LRCLIB 的歌手和標題裡認得的歌手不同時，用標題的（避免「k k」這類雜訊版本）
+      const ta = p.artist && ARTISTS.some(a => key(a) === key(p.artist)) ? p.artist : '';
+      if (found && ta && !key(found.artist).includes(key(ta)) && !key(ta).includes(key(found.artist))) found.artist = ta;
+      if (found) { result.origTitle = found.title; result.title = coverTitle(found, result.coverBy); }
+    }
+    if (!found && choices.length) { result.choices = choices; result.note = `${p.cover ? '翻唱影片：' : ''}找到幾首可能的原曲，請選一首。`; }
+    else if (!found && p.cover) result.note = `翻唱影片：找不到和「${p.track || title}」相符的歌詞，只匯入影片。可以按 ✏️ 編輯，用歌名手動搜尋歌詞。`;
+    return result;
   }
   const pickRow = r => ({ id: r.id, track: r.trackName, artist: r.artistName, dur: r.duration ? Math.round(r.duration) : 0, timed: !!r.syncedLyrics });
   // 歌名比對：去掉「-Arrange ver.-」「(TV size)」這類版本標記後，歌名要相同或互相包含
@@ -324,11 +355,23 @@
       if (!tags.length || !jp) return;
       tags.forEach(m => out.push({ jp, zh: '', t: Math.round((+m[1] * 60 + parseFloat(m[2].replace(':', '.'))) * 10) / 10 }));
     });
-    return out.sort((a, b) => a.t - b.t).slice(0, 300);
+    return dropTrans(out.sort((a, b) => a.t - b.t)).slice(0, 300);
   }
-
+  // 歌詞版本把英文翻譯夾在日文行之間：①同一時間點（差 0.3 秒內）有日文行就丟掉純英文行；②純英文行大多緊跟在日文行後面（交錯）→ 全部當翻譯丟掉
+  const JP_RE = /[\u3040-\u30ff\u3400-\u9fff々]/;
+  function dropTrans(lines) {
+    const isEn = l => !JP_RE.test(l.jp) && /[A-Za-z]{2}/.test(l.jp);
+    let out = lines.filter((l, i) => !(isEn(l) && l.t != null && lines.some((m, j) => j !== i && !isEn(m) && m.t != null && Math.abs(m.t - l.t) <= .3)));
+    const en = out.filter(isEn).length, ja = out.length - en;
+    if (en >= 4 && ja >= 4) {
+      const after = out.filter((l, i) => isEn(l) && i > 0 && !isEn(out[i - 1])).length;
+      if (after / en >= .7 && en / ja >= .5) out = out.filter(l => !isEn(l));
+    }
+    return out;
+  }
   const key = value => String(value || '').normalize('NFKC').toLowerCase().replace(/\(.*?\)|（.*?）/g, '').replace(/[\s\p{P}\p{S}]/gu, '');
   // 歌詞：只找公有領域的唱歌・童謠（維基文庫）。流行歌歌詞受著作權保護，不自動抓取；請使用者自己貼上（只存在自己的裝置）
+  const LYRICS = 'https://lrclib.net/api/search';   // 歌詞：LRCLIB（使用者指定的例外，只在使用者裝置上即時查，不收進專案）
   const WS = 'ja.wikisource.org';
   const WS_CATS = ['Category:唱歌・童謡', 'Category:文部省唱歌'];
   let wsList = null;
@@ -349,42 +392,49 @@
     const lines = tidy(raw).split('\n').map(x => plain(x).trim()).filter(x => (x.match(/[ぁ-ゖァ-ヺ一-鿿々]/g) || []).length >= 2 && x.length <= 80 && plain(x) !== p.title && !/著作|作者|著者|作詞|作曲|訳|出典|底本|ISBN|編集|姉妹プロジェクト|データ項目/.test(x)).slice(0, 200);
     return { title: p.title, lines, url: p.url };
   }
-  const rowOf = (title, L) => ({ id: 'ws:' + title, trackName: title, artistName: '維基文庫・公有領域', plainLyrics: L.lines.join('\n'), duration: 0, url: L.url });
-  async function lyrics(track) {
-    const k0 = key(baseTitle(track));
-    if (!window.SONGS_PD && window.App && App.loadScript) await App.loadScript('data/reading/songs-pd.js').catch(() => { });
-    const pdHit = Object.keys(window.SONGS_PD || {}).find(t => key(t) === k0);
-    if (pdHit) return pdSong(pdHit);
-    const best = (await lyricsRank(track))[0];
+  // 依歌名（＋歌手）在 LRCLIB 找歌詞；優先有時間軸的版本。回傳 {title, artist, lines, timed} 或 null
+  async function lyrics(track, artist, duration) {
+    const best = (await lyricsRank(track, artist, duration))[0];
     return best ? lrcResult(best.r, best.s) : null;
   }
-  // 排名版：維基文庫唱歌・童謠的歌名和 track 相同或互相包含 → [{s, r}]
-  async function lyricsRank(track) {
+  // 排名版：artist 可為字串或多個候選原唱；回傳 [{s, r}]（分數 ≥ 4，高到低）
+  async function lyricsRank(track, artist, duration) {
     track = String(track || '').trim();
     if (!track) return [];
-    const k = key(track), list = await wsSongs().catch(() => []);
-    const hits = list.map(t => { const kt = key(baseTitle(t.replace(/\s*\(.*?\)$/, ''))); return { t, s: kt === k ? 10 : (kt.includes(k) || k.includes(kt)) && Math.min(kt.length, k.length) >= 2 ? 6 : 0 }; }).filter(x => x.s).sort((a, b) => b.s - a.s).slice(0, 3);
-    const out = [];
-    for (const h of hits) { const L = await wsLyrics(h.t).catch(() => null); if (L && L.lines.length >= 2) out.push({ s: h.s, r: rowOf(h.t, L) }); }
-    return out;
+    const artists = (Array.isArray(artist) ? artist : [artist]).map(a => String(a || '').replace(/\s*-\s*Topic$/i, '').trim()).filter(Boolean);
+    const singers = artists.map(a => key(a).replace(/official(?:channel)?$/, '').replace(/topic$/, '').replace(/vevo$/, '')).filter(x => x.length >= 2);
+    const queries = [{ track_name: track }, { q: (track + ' ' + (artists[0] || '')).trim() }];
+    if (singers.length) queries.unshift({ track_name: track, artist_name: artists[0] });
+    const seen = new Map();
+    const get = q => request(LYRICS + '?' + new URLSearchParams(q), 'application/json', 7000);
+    const res = await Promise.all(queries.map(q => get(q).catch(() => new Promise(r => setTimeout(r, 900)).then(() => get(q)).catch(() => []))));   // 失敗（限流、逾時）重試一次
+    res.forEach(rows => { if (Array.isArray(rows)) rows.forEach(r => r && r.id != null && !seen.has(r.id) && seen.set(r.id, r)); });
+    const all = key(track + artists.join(''));
+    const score = r => {
+      if (!hasJapanese(r.syncedLyrics || r.plainLyrics, 8) || r.instrumental) return -1;
+      const a = key(r.artistName), t = key(r.trackName), k = key(track);
+      let s = t === k ? 6 : (t.includes(k) || k.includes(t)) && Math.min(t.length, k.length) >= 2 ? 3 : 0;
+      if (!s) return -1;
+      if (a.length >= 2 && singers.some(g => g.includes(a) || a.includes(g))) s += 5;
+      else if (singers.length && !all.includes(a)) s -= 2;
+      if (/\b(?:live|remix|acoustic|instrumental|ver\.?|version)\b|ライブ|弾き語り/i.test(r.trackName + ' ' + (r.albumName || '')) && !/live|ver/i.test(track)) s -= 3;
+      if (r.syncedLyrics) s += 3;
+      // 影片長度相符的版本優先；差太多（例：紅蓮華 5 分半的版本配 3 分 55 秒的 MV）扣分；最後一句超過影片長度也扣分
+      if (duration && r.duration) { const d = Math.abs(r.duration - duration); s += d < 4 ? 4 : d < 10 ? 1 : d > 20 ? -5 : -2; }
+      if (duration && r.syncedLyrics) { const m = [...r.syncedLyrics.matchAll(/\[(\d{1,2}):(\d{1,2}(?:\.\d+)?)\]/g)].pop(); if (m && +m[1] * 60 + +m[2] > duration + 1) s -= 6; }
+      return s;
+    };
+    return [...seen.values()].map(r => ({ s: score(r), r })).filter(x => x.s >= 4).sort((a, b) => b.s - a.s);
   }
-  // 內建公有領域歌詞（data/reading/songs-pd.js）：離線可用、現代假名、附中文；有就不連網
-  async function pdSong(t) {
-    if (!window.SONGS_PD && window.App && App.loadScript) await App.loadScript('data/reading/songs-pd.js').catch(() => { });
-    const P = window.SONGS_PD && window.SONGS_PD[t]; if (!P) return null;
-    const lines = P.lines.filter(l => l[0]).map(([jp, zh]) => ({ jp, zh: zh || '', t: null }));
-    return { title: `${t}（${P.by}・公有領域）`, track: t, artist: P.by, note: P.note || '', lines, timed: false, score: 20, id: 'ws:' + t, dur: 0, url: 'https://' + WS + '/wiki/' + encodeURIComponent(t) };
-  }
+  // 指定 LRCLIB 版本（熱門精選固定版本，避免挑到長度不符的時間軸）
   async function lyricsById(id) {
-    const t = String(id || '').replace(/^ws:/, ''); if (!t) return null;
-    const pd = await pdSong(t); if (pd) return pd;
-    const L = await wsLyrics(t).catch(() => null);
-    return L && L.lines.length >= 2 ? lrcResult(rowOf(t, L), 20) : null;
+    const r = await request('https://lrclib.net/api/get/' + encodeURIComponent(id), 'application/json', 7000).catch(() => null);
+    return r && r.id != null && hasJapanese(r.syncedLyrics || r.plainLyrics, 8) ? lrcResult(r, 20) : null;
   }
   function lrcResult(r, score) {
     const timed = r.syncedLyrics ? parseLRC(r.syncedLyrics) : [];
-    const lines = timed.length >= 4 ? timed : tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null }));
-    return { title: `${r.trackName}（${r.artistName}）`, track: r.trackName, artist: r.artistName, lines, timed: timed.length >= 4, score, id: r.id, dur: r.duration ? Math.round(r.duration) : 0, url: r.url || '' };
+    const lines = timed.length >= 4 ? timed : dropTrans(tidy(r.plainLyrics).split('\n').slice(0, 300).map(jp => ({ jp, zh: '', t: null })));
+    return { title: `${r.trackName}（${r.artistName}）`, track: r.trackName, artist: r.artistName, lines, timed: timed.length >= 4, score, id: r.id, dur: r.duration ? Math.round(r.duration) : 0 };
   }
 
   // 最近新聞（多管道，皆開放授權）：維基百科「最近の出来事」（每天更新）、維基新聞（過去報導）、維基文庫（唱歌・名作）

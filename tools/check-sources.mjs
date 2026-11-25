@@ -17,9 +17,10 @@ const OK_HOST = [
   /^(ja|zh|en)\.(m\.)?(wikipedia|wikinews|wikisource|wikibooks|wikiquote|wikivoyage|wiktionary)\.org$/,
   /^tatoeba\.org$/,
   /^(www\.)?youtube-nocookie\.com$/, /^(www\.|m\.|music\.)?youtube\.com$/, /^youtu\.be$/,   // 使用者自己貼的影片：嵌入播放＋oEmbed 取標題（例外，見 docs/資料來源.md）
+  /^lrclib\.net$/,   // 歌詞：使用者指定保留的例外（docs/資料來源.md）
   /^www\.w3\.org$/   // XML 命名空間，不是連線
 ];
-const BANNED = /lrclib|jina\.ai|news\.yahoo|nhk\.or\.jp|news\.web\.nhk|matcha-jp/i;   // YouTube oEmbed（取標題）為使用者指定保留的例外
+const BANNED = /jina\.ai|news\.yahoo|nhk\.or\.jp|news\.web\.nhk|matcha-jp/i;   // YouTube oEmbed（取標題）為使用者指定保留的例外
 const files = [];
 const walk = d => fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).forEach(e => { const p = d ? d + '/' + e.name : e.name; if (e.isDirectory()) { if (d === '' && /^(js|css)$/.test(e.name)) walk(p); else if (/^js\//.test(p)) walk(p); } else if (/\.(js|css|html)$/.test(e.name) && (d !== '' || /\.(html)$|^sw\.js$/.test(e.name))) files.push(p); });
 walk('');
