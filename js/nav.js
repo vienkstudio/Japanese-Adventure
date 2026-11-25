@@ -14,7 +14,7 @@
   'use strict';
   const esc = App.esc;
   const arr = a => Array.isArray(a) ? a : [];
-  const CATS = [['today', '🏠', '首頁'], ['kana', '🔤', '五十音'], ['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲・閱讀'], ['lookup', '🔍', '查'], ['me', '👤', '我的']];
+  const CATS = [['today', '🏠', '首頁'], ['kana', '🔤', '五十音'], ['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['song', '🎵', '歌曲'], ['fun', '📚', '閱讀'], ['lookup', '🔍', '查'], ['me', '👤', '我的']];
   // 旅遊包（與 js/path.js PACKS 同步；有 Path.PACKS 時以它為準）
   const PACK0 = [['konbini', '🏪', '便利商店'], ['eat', '🍱', '餐廳・燒肉'], ['ramen', '🍜', '拉麵・麵店'], ['station', '🚉', '車站與交通'], ['hotel', '🏨', '飯店・旅館'], ['airport', '✈️', '機場'], ['cafe', '☕', '咖啡・甜點'],
     ['drug', '💊', '藥妝店'], ['shop', '🛍️', '購物・伴手禮'], ['izakaya', '🏮', '居酒屋'], ['sight', '⛩️', '觀光・寺社'], ['market', '🦀', '市場・美食街'], ['rental', '🚗', '租車・租借'], ['emer', '🆘', '緊急・醫療']];
@@ -38,8 +38,8 @@
     T('task', 'travel', '🧾', '情境任務', '點餐、結帳、買票的限時任務，店員這樣說你怎麼回', ['情境任務', '小遊戲', '遊戲', '限時', '拉麵', '券売機', '買票', '結帳', 'game', '狀況題', '情境題', '店員問', '怎麼回'], { need: 'pack', pre: ['x:menu:', 'x:ev:'] }),
     T('boot', 'travel', '🎧', '聽力特訓', '店員問句聽解、看板、數字、量詞', ['特訓', '聽力', '聽力特訓', '看板', '數字', '量詞', '聽解', 'listening'], { route: 'boot' }),
     T('chal', 'exam', '🏆', '日檢挑戰', '文字、文法、讀解、聽解分科題與模擬考', ['挑戰', '日檢挑戰', '模擬考', '考古題', '測驗', '讀解', '聽解', '分科', 'mock', 'test'], { route: 'challenge' }),
-    T('songs', 'fun', '🎶', '歌曲', '公有領域唱歌・童謠，或貼自己的歌詞跟唱、看懂歌詞', ['歌', '歌曲', '歌詞', '跟唱', '唱歌', '日文歌', '翻唱', 'cover', '卡拉ok', 'karaoke', 'youtube', '動漫', '动漫', 'anime', 'song', 'music'], { route: 'songs' }),
-    T('read', 'fun', '📄', '閱讀', '每日短文、新聞、商務文章、匯入網址', ['閱讀', '阅读', '文章', '短文', '我的文章', 'reading', '新聞', '新闻', 'news', 'nhk', 'yahoo', '網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link', '商務閱讀', '商業文章', '職場文章'], { route: 'read', params: { sec: 'art' },
+    T('songs', 'song', '🎶', '跟唱', '熱門歌、我的歌、貼 YouTube 跟唱、看懂歌詞', ['歌', '歌曲', '歌詞', '跟唱', '唱歌', '日文歌', '翻唱', 'cover', '卡拉ok', 'karaoke', 'youtube', '動漫', '动漫', 'anime', 'song', 'music'], { route: 'songs' }),
+    T('read', 'fun', '📄', '文章・新聞', '每日短文、新聞、商務文章、匯入網址', ['閱讀', '阅读', '文章', '短文', '我的文章', 'reading', '新聞', '新闻', 'news', 'nhk', 'yahoo', '網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link', '商務閱讀', '商業文章', '職場文章'], { route: 'read', params: { sec: 'art' },
       sub: [{ name: '新聞', route: 'read', params: { sec: 'news' }, kw: ['新聞', '新闻', 'news', 'nhk', 'yahoo'] }, { name: '匯入網址', route: 'read', params: { mode: 'url' }, kw: ['網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link'] },
         { name: '商務文章', kw: ['商務閱讀', '商業文章', '職場文章'], run: () => { App.go('biz'); let n = 0; const tick = () => { const a = document.querySelector('#main [data-art]'); if (a) { a.scrollIntoView({ block: 'center' }); return; } if (++n < 40) setTimeout(tick, 150); }; setTimeout(tick, 200); } }] }),
     T('dict', 'lookup', '📘', '辭典', 'N5–N1 單字、文法、敬語、活用；3D 心智圖', ['辭典', '字典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab', '知識庫', '資料庫', '百科', 'database', '文法', '句型', '语法', '接續', 'grammar', '敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo', '心智圖', '思維導圖', '3d', 'mindmap', '關聯圖'], { route: 'kb',
@@ -57,7 +57,8 @@
     T('travel', 'travel', '🧳', '旅遊', '14 個場景包：必備句、單字、進階句', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊路線', 'travel', 'trip'], { route: 'path', params: { tab: 'travel' }, place: true }),
     T('exam', 'exam', '📝', '日檢', 'N5–N1 每課 8 單字＋2 文法', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
     T('work', 'work', '💼', '商務', '敬語、電話、Email、開會、報連相', ['商務', '商務日語', '商用', '工作', '上班', '職場', 'email', 'mail', '信件', '開會', '會議', '电话', '電話', 'business'], { route: 'path', params: { tab: 'work' }, place: true }),
-    T('fun', 'fun', '🎵', '歌曲・閱讀', '跟唱、每日短文、新聞', ['歌曲閱讀', '歌曲・閱讀', '動漫', '娛樂'], { route: 'path', params: { tab: 'fun' }, place: true })
+    T('song', 'song', '🎵', '歌曲', '熱門歌・我的歌：跟唱、看懂歌詞（不排進每日進度）', ['歌曲', '唱歌', '跟唱', '動漫', '娛樂', 'j-pop', 'jpop'], { route: 'songs', params: {}, place: true }),
+    T('fun', 'fun', '📚', '閱讀', '每日短文、新聞、匯入文章（不排進每日進度）', ['閱讀', '文章', '短文', '新聞'], { route: 'path', params: { tab: 'fun' }, place: true })
   ];
   // 子入口：「工具 id~序號」→ 帶子入口 route／params／run 的工具副本（名稱「工具・子入口」）
   function subOf(t, i) {
@@ -186,7 +187,8 @@
     { id: 'travel', group: 'packsFlat', tools: ['play', 'dialog', 'task', 'boot'] },   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
     { id: 'work', group: 'biz', tools: ['dict~2', 'read~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
-    { id: 'fun', tools: ['songs', 'read'] }
+    { id: 'song', tools: ['songs'] },
+    { id: 'fun', tools: ['read'] }
   ].map(g => Object.assign({}, PLACES.find(x => x.id === g.id), g));
   const SECTIONS = [
     { id: 'home', icon: '🏠', name: '首頁', route: 'home', tools: ['today', 'cards'] },
@@ -218,7 +220,7 @@
     if (/^(kana-quiz|quest)$/.test(name)) return G('kana', T('kana-test'));
     if (/^(biz|biz-unit)$/.test(name)) return G('work');
     if (name === 'biz-read') return G('work', { sub: '商務文章' });
-    if (/^(songs|song)$/.test(name)) return G('fun', T('songs'));
+    if (/^(songs|song)$/.test(name)) return G('song');
     if (/^(read|read-article)$/.test(name)) return G('fun', T('read'));
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));
     if (/^(play|event|map)$/.test(name)) return G('travel', T('play'));
@@ -289,7 +291,7 @@
     const goalHTML = g => {
       const k = 'learn:' + g.id, op = OPEN.has(k) || hg === g.id;
       return `<details class="nv-g nv-goal" data-g="${esc(k)}"${op ? ' open' : ''}><summary class="${hg === g.id ? 'on' : ''}"><span aria-hidden="true">${g.icon}</span> ${esc(g.name)}</summary>
-        <button type="button" class="nv-n nv-all" data-r="path" data-p="${esc(JSON.stringify(g.params))}">前往${esc(g.name)}分頁 ›</button>${groupHTML(Object.assign({}, g, { id: 'learn-' + g.id }))}${tools(g.tools)}</details>`;
+        <button type="button" class="nv-n nv-all" data-r="${esc(g.route || 'path')}" data-p="${esc(JSON.stringify(g.params || {}))}">前往${esc(g.name)}${g.route === 'path' ? '分頁' : ''} ›</button>${groupHTML(Object.assign({}, g, { id: 'learn-' + g.id }))}${tools(g.tools)}</details>`;
     };
     return `<div class="nv-head"><b>🗂️ 全部內容</b><button type="button" class="nv-x" data-x aria-label="關閉選單">✕</button></div>
       <nav class="nv-tree" aria-label="全部內容">${SECTIONS.map(sec => {

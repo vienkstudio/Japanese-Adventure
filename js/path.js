@@ -23,7 +23,7 @@
   'use strict';
   const esc = s => App.esc(String(s == null ? '' : s));
   const arr = a => Array.isArray(a) ? a : [];
-  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '🎵', '歌曲・閱讀']];
+  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '📚', '閱讀']];
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const KN = ['kana-data.js', 'js/kana-lesson.js'];
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
@@ -283,9 +283,7 @@
     const arts = arr(R && R.daily).slice().sort((a, b) => ord.indexOf(a.lv) - ord.indexOf(b.lv));
     const LVN = l => l === 'zero' ? '入門' : String(l).toUpperCase();
     const reads = arts.map(a => { const s = App.stars ? App.stars('read:' + a.id) : 0; return { id: 'fun-r-' + a.id, icon: a.icon || '📰', title: a.title, sub: LVN(a.lv) + '・' + (a.zh || '') + '・' + arr(a.p).length + ' 段', total: 1, done: s ? 1 : 0, stars: s, complete: s > 0, route: 'read-article', params: { daily: a.id }, sec: 'read' }; });
-    const hs = hotList().map(h => ['🎵', h[0], h[1], 'song:yt:' + h[2], { id: 'yt:' + h[2], hot: h[2] }]);
-    const songs = hs.map(([icon, t, a, key, params], i) => { const s = App.stars ? App.stars(key) : 0; return { id: 'fun-s-' + i, icon, title: t, sub: a, total: 1, done: s ? 1 : 0, stars: s, complete: s > 0, route: 'song', params, sec: 'song' }; });
-    return reads.concat(songs, [{ id: 'fun-news', icon: '🗞️', title: '最近的新聞', sub: '維基百科「最近の出来事」：每天的新聞摘要', total: null, done: null, stars: 0, route: 'read', params: { sec: 'news' }, sec: 'news', noNext: true }]);
+    return reads.concat([{ id: 'fun-news', icon: '🗞️', title: '最近的新聞', sub: '維基百科「最近の出来事」：每天的新聞摘要', total: null, done: null, stars: 0, route: 'read', params: { sec: 'news' }, sec: 'news', noNext: true }]);
   }
 
   /* ---------------- 單元 id ---------------- */
@@ -580,12 +578,11 @@
       });
       html += '<button type="button" class="btn block pa-free" data-go="biz">🗂️ 商務單元與文章</button>';
     } else if (tab === 'fun') {
-      const reads = list.filter(u => u.sec === 'read'), songs = list.filter(u => u.sec === 'song'), news = list.filter(u => u.sec === 'news');
-      const nr = nextOf(reads), ns = nextOf(songs), wr = windowed(reads, nr, 'funr'), ws = windowed(songs, ns, 'funs');
-      html = `<h2 class="pa-h">📖 短文路線 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
-        <button type="button" class="btn block pa-free" data-go="songs">🎤 我的歌・貼 YouTube 網址跟唱</button>
-        <h2 class="pa-h">🔥 熱門歌 <small>唱過 ${songs.filter(u => u.complete).length}／${songs.length} 首</small></h2>${grid(ws.shown, ns)}${ws.more}
-        ${grid(news, null, true)}<p class="pa-note">歌詞與文章裡點過的詞會自動收進今日課。</p>`;
+      // 閱讀（歌曲已獨立成「🎶 歌曲」）：想讀就讀，不排進每日進度
+      const reads = list.filter(u => u.sec === 'read'), news = list.filter(u => u.sec === 'news');
+      const nr = nextOf(reads), wr = windowed(reads, nr, 'funr');
+      html = `<p class="pa-note">想讀再讀，不算進每日進度；文章裡點「＋不會清單」的詞才會排進複習。</p><h2 class="pa-h">📖 短文 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
+        ${grid(news, null, true)}<button type="button" class="btn block pa-free" data-go="read">📄 我的文章・匯入網址</button>`;
     } else {
       const w = windowed(list, nx, tab);
       html = grid(w.shown, nx) + w.more;

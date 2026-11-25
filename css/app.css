@@ -498,6 +498,8 @@ div.nv-sec>.nv-n{padding-left:10px;font-weight:800;font-size:var(--fs-md)}
 .hm .hm-cat small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hm .hm-cat b{min-width:0}
 .hm .hm-goal{min-height:40px;margin:var(--sp-2) auto 0;padding:4px 14px}
+.hm-target{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);margin:var(--sp-2) auto 0;min-height:36px;padding:2px 12px;border:0;background:none;color:var(--muted);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+.hm-target span{color:var(--pri);font-weight:700}
 .hm .hm-main{min-height:76px;padding:var(--sp-3) var(--sp-4)}
 .hm .hm-sec{margin-top:var(--sp-3)}
 .hm .hm-cont{margin-top:var(--sp-2)}
@@ -525,4 +527,4 @@ body.ob-mode .nv-drawer,body.ob-mode .nv-menu,body.ob-mode .nv-crumb{display:non
 .hm-mini .hm-cont{margin-top:var(--sp-3);min-width:0}
 .hm-mini .hm-cont b{white-space:nowrap}
 @media (max-width:359px){.hm-mini{grid-template-columns:1fr}}
-[data-fs=xl] .hm-mini{display:none}   /* 評審 v18：特大字首頁要一屏；字卡、到期複習在今日課與側邊樹都有 */
+[data-fs=xl] .hm-mini,[data-fs=xl] .hm-target{display:none}   /* 評審 v18：特大字首頁要一屏；字卡、到期複習在今日課與側邊樹都有 */

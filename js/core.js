@@ -6,7 +6,7 @@
 (function () {
   const KEY = 'jpQuest.v1';
   // App 版本（V主.次.修）：和 sw.js 的 VERSION（'jpq-v' + 版本）必須一致，tools/check-version.mjs 會檢查；規則見 CONTRACT.md「版本編號」
-  const APP_VERSION = '3.6.0';
+  const APP_VERSION = '3.7.0';
   const SCHEMA = 2;
   const MIGS = [];
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
@@ -24,6 +24,9 @@
     if (!LV_IDS.includes(p.lv)) p.lv = 'zero';
     if (!Array.isArray(p.goals) || !p.goals.length) p.goals = ['travel'];
     if (!['full', 'some', 'none'].includes(p.assist)) p.assist = ASSIST_DEF[p.lv];
+    // 每日目標（使用者自訂）：mins＝每天幾分鐘（今日課長度、每日任務量都依這個調）；fresh＝每天新學幾個（null＝依程度自動）
+    if (![5, 8, 15, 30].includes(p.mins)) p.mins = 8;
+    if (p.fresh != null && !(Number.isInteger(p.fresh) && p.fresh >= 0 && p.fresh <= 15)) p.fresh = null;
     return p;
   }
   // 舊存檔：冒險世界有進度就用 world.lv，否則用舊旅程 trip.level；都沒有＝新玩家（要做首次定位）
@@ -556,7 +559,7 @@
   }
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (S.ui.theme === 'system') { applyTheme(); document.dispatchEvent(new CustomEvent('themechange', { detail: Object.assign({}, S.ui) })); } }); } catch (e) { }
   /* ---------------- 單一程度 ---------------- */
-  function profile() { const p = normProfile(S.profile || (S.profile = {})); return { lv: p.lv, goals: p.goals.slice(), assist: p.assist, placed: !!p.placed }; }
+  function profile() { const p = normProfile(S.profile || (S.profile = {})); return { lv: p.lv, goals: p.goals.slice(), assist: p.assist, placed: !!p.placed, mins: p.mins, fresh: p.fresh }; }
   function setProfile(patch) {
     patch = patch || {};
     const p = S.profile || (S.profile = {}), was = p.lv;

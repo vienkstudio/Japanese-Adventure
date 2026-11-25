@@ -81,7 +81,7 @@
 
   /* ---------------- 歌曲清單 ---------------- */
   App.register('songs', {
-    title: '歌曲', icon: '🎶', nav: false, navParent: 'read',
+    title: '跟唱', icon: '🎶', nav: false, navParent: 'read',
     render(el, params) {
       params = params || {};
       if (params.mode === 'new' || params.edit) return editView(el, params.edit || null);
@@ -369,7 +369,7 @@
 
   /* ---------------- 跟唱頁 ---------------- */
   App.register('song', {
-    title: '歌曲', icon: '🎶', nav: false, navParent: 'read',
+    title: '跟唱', icon: '🎶', nav: false, navParent: 'read',
     render(el, params) { const id = (params || {}).id; if (!id || id === 'demo') { App.go('songs'); return; } songView(el, id); }
   });
 

@@ -58,7 +58,7 @@
      今天：首頁
      ========================================================= */
   const GOALS = [['travel', '🧳', '去日本旅遊', '點餐、購物、問路、緊急求助'], ['exam', '📝', '考日檢', 'N5–N1 單字、文法、挑戰題'],
-    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・動漫・新聞', '跟唱、看懂歌詞與文章']];
+    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・文章', '想唱就唱、想讀就讀（不排進每日課）']];
   const GOAL_OF = Object.fromEntries(GOALS.map(g => [g[0], g]));
   const GOAL_SHORT = { travel: '旅遊', exam: '日檢', work: '商務', fun: '歌曲新聞' };
   const KANA_N = 46;
@@ -71,20 +71,23 @@
   // 已學平假名數：與手冊五十音同一個來源（Learn.kanaLearned）
   const kanaSeen = () => window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : (((App.state.kanaL || {}).h) || []).length;
   const kanaMode = p => p.lv === 'zero' && kanaSeen() < KANA_N;
+  // 今日課的目的：歌曲・文章是興趣，不排進每日課（只選這個的人，今日課用日檢單字）
+  const lessonGoals = p => { const gs = ((p || App.profile()).goals || []).filter(g => g !== 'fun'); return gs.length ? gs : ['exam']; };
   function curGoal(p) {
     p = p || App.profile();
-    const g = dayRec().goal, gs = p.goals && p.goals.length ? p.goals : ['travel'];
+    const g = dayRec().goal, gs = lessonGoals(p);
     return gs.includes(g) ? g : gs[0];
   }
-  const freshN = lv => ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6;
+  // 每天新學幾個：使用者自訂（設定 → 每日目標）優先，沒設才依程度；分鐘數少就少學一點
+  const freshN = lv => { const p = App.profile(); if (p.fresh != null) return p.fresh; const b = ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6; return p.mins <= 5 ? Math.min(b, 3) : p.mins >= 15 ? b + (p.mins >= 30 ? 6 : 3) : b; };
   // 應用只做一個小節：旅遊＝店內 1 個任務、日檢＝5 題、商務＝單元中 1 個小節、歌曲新聞＝唱一首歌、五十音＝下一個單元
   const APPLY_TXT = { travel: '進店完成 1 個任務', exam: '日檢 5 題', fun: '唱一首歌', work: '商務 1 小節', kana: '五十音下一個單元' };
   // 今日課時間估計（秒）：複習卡 8、新學（卡＋小測驗）20、應用依目的；總長 ≤8 分鐘 → 複習數依剩下的時間決定上限
   const APPLY_SEC = { travel: 180, exam: 75, fun: 180, work: 240, kana: 300 };
-  const BUDGET = 480;
+  const budget = () => (App.profile().mins || 8) * 60;   // 今日課長度＝使用者自訂的每天分鐘數
   function plan(goal, lv, dueAll, nFresh) {
-    const n = nFresh != null ? nFresh : freshN(lv), ap = APPLY_SEC[goal] || 180;
-    const cap = Math.max(0, Math.min(15, Math.floor((BUDGET - n * 20 - ap) / 8)));
+    const n = nFresh != null ? nFresh : freshN(lv), ap = APPLY_SEC[goal] || 180, B = budget();
+    const cap = Math.max(0, Math.min(Math.max(15, Math.round(B / 30)), Math.floor((B - n * 20 - ap) / 8)));
     const due = Math.min(cap, dueAll || 0);
     return { n, due, cap, min: Math.max(1, Math.ceil((due * 8 + n * 20 + ap) / 60)) };
   }
@@ -92,7 +95,7 @@
   // 一天新學量：讓明天到期 ≤20（Learn.freshBudget）；當天第一課至少 2 個，「再上一課」可以是 0（只複習）
   function freshFor(g2, lv, dueAll) {
     const base = freshN(lv), pd = plan(g2, lv, dueAll, base).due;
-    return window.Learn && Learn.freshBudget ? Learn.freshBudget(base, pd, dayRec().done ? 0 : 2) : base;
+    return window.Learn && Learn.freshBudget ? Learn.freshBudget(base, pd, dayRec().done || base === 0 ? 0 : Math.min(2, base)) : base;
   }
   const kanaPh = () => kanaSeen() >= 10 ? 2 : 1;   // 零基礎＋旅遊：五十音之外混入的旅遊必備句數
   /* ---- 商務：依程度排單元（「適合你」等級 → 更高 → 較低的當選修複習） ---- */
@@ -149,7 +152,8 @@
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}・${sk.days ? `🔥 連續 ${sk.days} 天${sk.done ? " ✓" : ""}` : esc(dayStatus(d, d.done ? dueAll : due))}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
-      ${!km && gs.length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
+      <button type="button" class="hm-target" id="hm-target">🎯 每日目標：${p.mins} 分鐘・新學 ${n} 個<span aria-hidden="true">調整 ›</span></button>
+      ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
       <div class="hm-mini"><button type="button" class="hm-cont" data-go="cards"><span class="ic" aria-hidden="true">🎴</span><span><b>字卡</b><small>五十音・日檢・不會清單</small></span></button><button type="button" class="hm-cont" data-go="review"><span class="ic" aria-hidden="true">🔁</span><span><b>到期複習</b><small>${dueAll ? `今天到期 ${dueAll} 個` : '今天沒有到期'}</small></span></button></div>
       ${contHTML()}
       <h2 class="hm-sec">🧭 學習</h2>
@@ -160,7 +164,8 @@
     el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.mainSections().find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
     const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
-    if (gb) gb.onclick = () => { const i = gs.indexOf(goal); d.goal = gs[(i + 1) % gs.length]; App.save(); render(el); };
+    if (gb) gb.onclick = () => { const lg = lessonGoals(p), i = lg.indexOf(goal); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); };
+    el.querySelector('#hm-target').onclick = () => App.go('settings', { focus: 'daily' });
   }
   // 繼續上次（js/nav.js 記錄最後一個內容頁：單元、講義、歌曲、文章、小遊戲…；14 天內）
   function contHTML() {
@@ -173,10 +178,10 @@
     const S = window.NAV && NAV.mainSections ? NAV.mainSections() : [];
     const gs = p.goals || [], dueN = window.Learn ? Learn.due(15).length : 0;
     const info = {
-      kana: `平假名 ${kanaSeen()}／${KANA_N}`, travel: '14 個場景包', exam: 'N5–N1 單字・文法', work: '敬語・Email・會議', fun: '跟唱・新聞・文章',
+      kana: `平假名 ${kanaSeen()}／${KANA_N}`, travel: '14 個場景包', exam: 'N5–N1 單字・文法', work: '敬語・Email・會議', song: '熱門歌・我的歌', fun: '短文・新聞',
       me: '紀錄・設定・備份'
     };
-    const mine = x => gs.includes(x.id) || (x.id === 'kana' && p.lv === 'zero');
+    const mine = x => gs.includes(x.id) || (x.id === 'song' && gs.includes('fun')) || (x.id === 'kana' && p.lv === 'zero');
     const list = S.filter(mine).concat(S.filter(x => !mine(x)));
     return list.map(x => `<button type="button" class="hm-cat${mine(x) ? ' mine' : ''}" data-sec="${x.id}"><span class="ic" aria-hidden="true">${x.icon}</span><b>${esc(x.name)}</b><small>${esc(info[x.id] || '')}</small></button>`).join('');
   }
@@ -323,7 +328,7 @@
   let RUN = null;   // 進行中的今日課（離開再回來可接著上）：{key, goal, Q, phase:'run'|'end', res:[], t0}
   function lesson(el, params) {
     params = params || {};
-    const p = App.profile(), goal = params.goal || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
+    const p = App.profile(), goal = (params.goal && params.goal !== 'fun' ? params.goal : '') || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
     const d0 = dayRec(); applyDone(d0);
     // 零基礎第一次學五十音：先看入門講義、50 音訓練表（js/kana-guide.js），再進分行
     if (goal === 'kana' && !params.more && !(RUN && RUN.key === key) && window.KanaPrep && KanaPrep.need()) {
@@ -560,7 +565,7 @@
     // 語音清單晚載入時（Chrome 常見）補畫一次
     if (!(App.jaVoices && App.jaVoices().length)) document.addEventListener('voiceschange', () => { if (el.isConnected && el.querySelector('.st-voice')) again(); }, { once: true });
   }
-  function settings(el) {
+  function settings(el, params) {
     const u = App.state.ui, p = App.profile(), G = window.Game;
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${n}</button>`).join('')}</div>`;
     el.innerHTML = `<section class="st">
@@ -570,6 +575,10 @@
         <p class="st-lbl">提示（讀音、中文、答案提示）</p>${seg('assist', p.assist, [['full', '全部顯示'], ['some', '只給讀音'], ['none', '不要提示']])}
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>
+      </div>
+      <div class="st-box" id="st-daily"><h2>🎯 每日目標</h2><p class="st-note">今日課長度、新學數量、每日任務都照這個調；歌曲、文章不算進每日進度，想做再做</p>
+        <p class="st-lbl">每天學多久</p>${seg('mins', String(p.mins), [['5', '5 分'], ['8', '8 分'], ['15', '15 分'], ['30', '30 分']])}
+        <p class="st-lbl">每天新學幾個</p>${seg('fresh', p.fresh == null ? 'auto' : String(p.fresh), [['auto', '自動'], ['0', '只複習'], ['3', '3'], ['5', '5'], ['8', '8'], ['12', '12']])}
       </div>
       <div class="st-box"><h2>🎯 學日文的目的</h2><p class="st-note">可複選，首頁會依這個推薦</p>
         <div class="ob-list">${goalList(p.goals)}</div>
@@ -597,12 +606,15 @@
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); settings(el); });
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { App.setProfile({ lv: b.dataset.lv }); App.toast(`程度改為：${App.LV_NAMES[b.dataset.lv]}`, 'ok'); settings(el); });
     el.querySelectorAll('[data-assist]').forEach(b => b.onclick = () => { App.setProfile({ assist: b.dataset.assist }); settings(el); });
+    el.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => { App.setProfile({ mins: +b.dataset.mins }); App.toast(`每日目標：每天 ${b.dataset.mins} 分鐘`, 'ok'); settings(el, { focus: 'daily' }); });
+    el.querySelectorAll('[data-fresh]').forEach(b => b.onclick = () => { App.setProfile({ fresh: b.dataset.fresh === 'auto' ? null : +b.dataset.fresh }); settings(el, { focus: 'daily' }); });
     el.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => {
       const g = App.profile().goals, i = g.indexOf(b.dataset.goal);
       if (i < 0) g.push(b.dataset.goal); else if (g.length > 1) g.splice(i, 1); else return App.toast('至少選一個目的');
       App.setProfile({ goals: g }); settings(el);
     });
     q('#st-quiz').onclick = () => quiz(el, 0);
+    if (params && params.focus === 'daily') { const x = q('#st-daily'); if (x) setTimeout(() => x.scrollIntoView({ block: 'start' }), 50); }
     bindVoice(el);
     const sf =q('#st-sfx'); if (sf) sf.onclick = () => { G.toggleSfx(); settings(el); };
     q('#st-av').onclick = () => {

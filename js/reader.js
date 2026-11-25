@@ -91,7 +91,7 @@
 
   /* ---------------- 閱讀首頁 ---------------- */
   App.register('read', {
-    title: '閱讀', icon: '📄', nav: false, navParent: 'lookup',
+    title: '文章・新聞', icon: '📄', nav: false, navParent: 'lookup',
     render(el, params) {
       params = params || {};
       const sh = readShare();

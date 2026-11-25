@@ -94,10 +94,13 @@
 
   /* ---------------- 每日任務 ---------------- */
   // label 會帶進度數字（例：答對 20 題（5/20）），首頁進度條直接顯示
+  // 目標量依使用者自訂的每天分鐘數調整（5 分：答對 10、複習 3；8 分：20／5；15 分：30／10；30 分：50／20）
+  const SCALE = { 5: [10, 3], 8: [20, 5], 15: [30, 10], 30: [50, 20] };
+  const mins = () => { try { return (App.profile().mins) || 8; } catch (e) { return 8; } };
   const DAILY = [
-    { id: 'ok', name: '答對 20 題', icon: '✅', goal: 20, xp: 20 },
+    { id: 'ok', icon: '✅', xp: 20, get goal() { return (SCALE[mins()] || SCALE[8])[0]; }, get name() { return '答對 ' + this.goal + ' 題'; } },
     { id: 'quests', name: '完成 1 個關卡或任務', icon: '⚔️', goal: 1, xp: 25 },
-    { id: 'review', name: '複習 5 次', icon: '📌', goal: 5, xp: 15 }
+    { id: 'review', icon: '📌', xp: 15, get goal() { return (SCALE[mins()] || SCALE[8])[1]; }, get name() { return '複習 ' + this.goal + ' 次'; } }
   ];
   DAILY.forEach(m => Object.defineProperty(m, 'label', { enumerable: true, get() { let v = 0; try { v = Math.min(m.goal, prog(m.id)); } catch (e) { } return m.name + '（' + v + '/' + m.goal + '）'; } }));
   // quests＝冒險世界在店內完成目標（world 組呼叫 bump('quests')）；clear＝其他模組過關（閱讀、五十音、特訓…）
@@ -232,7 +235,7 @@
   const _cq = App.completeQuest;
   App.completeQuest = function (id, stars, xp) { const r = _cq.apply(this, arguments); if (stars > 0) bump('clear'); return r; };
   const _rw = App.reward;
-  App.reward = function (id, stars) { const r = _rw.apply(this, arguments); if (stars > 0) bump('clear'); return r; };
+  App.reward = function (id, stars) { const r = _rw.apply(this, arguments); if (stars > 0 && !/^(song|read):/.test(String(id))) bump('clear'); return r; };   // 歌曲、文章不算進每日任務
   const _mark =Tracker.mark.bind(Tracker);
   Tracker.mark = function (id, ok) { const r = _mark(id, ok); bump('review'); return r; };
 
