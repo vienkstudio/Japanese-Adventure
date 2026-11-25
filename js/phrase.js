@@ -195,7 +195,8 @@
       can = false;
       // 2. 已知平假名詞（て形之後也可：入ってすぐ）
       if (!cur || (/[てで]$/.test(cur) && cur.length > 1)) {
-        const w = LEX.find(x => rest.startsWith(x));
+        // 已知詞後面接小字（うちゅう）不算；うち 只在後面是助詞或結尾時才算（うちあげ 是一個詞）
+        const w = LEX.find(x => rest.startsWith(x) && !/^[ゃゅょぁぃぅぇぉっー]/.test(rest.slice(x.length)) && (x !== 'うち' || /^(?:[のにではもがをへ、。！？\s]|$)/.test(rest.slice(x.length))));
         if (w) { begin(w); i += w.length; flush(); out[out.length - 1].lex = true; can = true; continue; }
       }
       // 3. 句尾、補助動詞前切開
@@ -326,7 +327,9 @@
   }
   // 全站唯一的羅馬字：romaji(kana, jp)；也接受 (jp, kana)（第一個參數有漢字或數字、第二個沒有時自動對調）
   // 平假名寫的外來語（かーど、こーひー）先轉成片假名，長音符才不會在分詞時被吃掉
-  const hiraLong = t => String(t).replace(/[ぁ-ゖ]+ー[ぁ-ゖー]*/g, m => m.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)));
+  // 評審 v18：平假名寫的外來語（ぷろじぇくと、ふぁいる）含 ぁぃぇぉゔ 小字，也當外來語整詞，免得 と 被切成助詞
+  const toKataRun = m => m.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+  const hiraLong = t => String(t).replace(/[ぁ-ゖ]+ー[ぁ-ゖー]*/g, toKataRun).replace(/^[ぁ-ゖ]*[ぁぃぇぉゔ][ぁ-ゖ]*$/, toKataRun);
   function romaji(s, jp) {
     s = hiraLong(s == null ? '' : s);
     if (jp != null) jp = hiraLong(jp);

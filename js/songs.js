@@ -47,10 +47,15 @@
     let n = 0; s.lines.forEach((l, i) => { if (l.t == null && lines[i].t != null) { l.t = lines[i].t; n++; } });
     return n ? 'time' : '';
   }
+  // 「找歌詞」欄位預填：翻唱用原曲資訊；「歌名（X 翻唱・原唱 Y）」取 Y；原始影片標題交給 coverParse（評審 v18）
   function guessTitle(s) {
-    const t = String(s.title || '').replace(/\s*・.*$/, '');
-    const m = t.match(/^(.+?)（(.+)）$/);
-    return m ? { track: m[1], artist: m[2] } : LinkImport.songTitle(t, '');
+    const pair = x => { const m = String(x || '').match(/^(.+?)（(.+)）$/); return m ? { track: m[1].trim(), artist: m[2].trim() } : null; };
+    if (s.cover && s.cover.orig && pair(s.cover.orig)) return pair(s.cover.orig);
+    const full = String(s.title || ''), cv = full.match(/^(.+?)（[^（）]*翻唱・原唱\s*(.+)）$/);
+    if (cv) return { track: cv[1].trim(), artist: cv[2].trim() === '?' ? '' : cv[2].trim() };
+    if (/[【】\[\]|｜]|歌ってみた|cover/i.test(full) && LinkImport.coverParse) { const p = LinkImport.coverParse(full, ''); if (p && p.track) return { track: p.track, artist: p.artist || '' }; }
+    const t = full.replace(/\s*・.*$/, '');
+    return pair(t) || LinkImport.songTitle(t, '');
   }
 
   // 最後播放的歌（首頁「繼續上次那首歌」）：App.state.songLast ＝ {id, title, at}
@@ -142,12 +147,12 @@
         <p class="rd-tip" id="sgImportStatus" role="status" aria-live="polite"></p>
       </form>
       <p class="muted rd-tip">依開放資料原則，不自動抓取流行歌歌詞。YouTube 只播放你貼的影片；歌詞請按「上傳音檔或貼歌詞」自己貼上（只存在這台裝置）。</p>
+      <h3 class="rd-h3">我的歌</h3>
+      <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
       <h3 class="rd-h3">📜 公有領域歌曲 <small class="muted">著作權已過期的唱歌・童謠，歌詞來自維基文庫，語音朗讀</small></h3>
       <div class="rd-list sg-hot">${HOT.map(([t, a, yt], k) => `<button type="button" class="rd-item" data-hot="${k}"><span class="rd-ic sg-hn" aria-hidden="true">${k + 1}</span><span class="rd-it"><b lang="ja">${esc(t)}</b><small class="muted" lang="ja">${esc(a)}</small></span><span class="rd-go" aria-hidden="true">▶</span></button>`).join('')}</div>
       <h3 class="rd-h3">示範曲</h3>
       <div class="rd-list"><button type="button" class="rd-item" data-song="demo"><span class="rd-ic" aria-hidden="true">🌅</span><span class="rd-it"><b lang="ja">${esc(DEMO.title)}</b><small class="muted">自編童謠・${DEMO.lines.length} 句・語音朗讀</small></span>${App.state.cleared && App.state.cleared['song:demo'] ? '<span class="rd-done">✔</span>' : ''}</button></div>
-      <h3 class="rd-h3">我的歌</h3>
-      <div class="rd-list" id="sgMine"><p class="muted rd-tip">讀取中…</p></div>
       <p class="muted rd-tip">儲存的歌曲留在這台裝置。YouTube 與音訊網址播放時需要連網。</p>
     </div>`;
     Reader.bindSect(el);
@@ -317,7 +322,13 @@
         if (typeof info.playbackRate === 'number') rt = info.playbackRate;
         if (typeof info.duration === 'number') d = info.duration;
       }
-      if (m.event === 'onError') { note.hidden = false; note.textContent = '😵 這部影片不允許嵌入播放。請到「編輯」改用音檔或語音朗讀。'; }
+      if (m.event === 'onError') {
+        // 評審 v18：官方 MV 多半禁止嵌入（錯誤 101／150）；改成「到 YouTube 播放＋這裡看歌詞」
+        const code = typeof info === 'number' ? info : 0, ban = code === 101 || code === 150 || code === 153;
+        note.hidden = false;
+        note.innerHTML = (ban ? '😵 這部影片（多半是官方 MV）不允許在其他網站播放。' : '😵 這部影片暫時無法播放。')
+          + '<br>可以：① <a href="https://www.youtube.com/watch?v=' + encodeURIComponent(s.src.yt) + '" target="_blank" rel="noopener">在 YouTube 開啟 ↗</a>，邊聽邊在這裡看歌詞跟唱；② 改貼 lyric video 或翻唱影片的網址；③ 按 🔊 用語音朗讀。';
+      }
       onState && onState();
     };
     window.addEventListener('message', onMsg);
@@ -416,7 +427,7 @@
       </div>
       <div class="sg-help muted rd-tip"></div>
       <div class="sg-lyr rd-doc mine ${P.y ? 'y' : ''} ${P.r ? 'r' : ''} ${P.z ? 'z' : ''}" lang="ja"></div>
-      ${s.demo || s.src.type === 'tts' || hasLyrics ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary sg-find">🔍 找公有領域歌詞（維基文庫）</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></div>`}
+      ${s.demo || s.src.type === 'tts' || hasLyrics ? '' : `<div class="sg-auto rd-box"><button type="button" class="btn primary block sg-paste">📋 貼上歌詞</button><p class="muted rd-tip">流行歌、翻唱：從你有權使用的來源複製歌詞貼上（只存在這台裝置）。</p><details class="sg-pd"><summary>童謠・唱歌？找公有領域歌詞</summary><button type="button" class="btn sg-find">🔍 從維基文庫找</button><div class="rd-row"><label class="rd-lbl">歌名<input class="rd-in sg-q" lang="ja" value="${esc(guessTitle(s).track || '')}"></label><label class="rd-lbl">歌手<input class="rd-in sg-a" lang="ja" value="${esc(guessTitle(s).artist || '')}"></label></div><p class="muted rd-tip sg-fst" role="status"></p></details></div>`}
       <div class="sg-vocab"></div>
       <div class="sg-recs"></div>
       <div class="sg-ctl" role="toolbar" aria-label="播放控制">
@@ -457,6 +468,7 @@
 
     // 綁定
     if ($('.sg-edit')) $('.sg-edit').onclick = () => App.go('songs', { edit: s.id });
+    if ($('.sg-paste')) $('.sg-paste').onclick = () => App.go('songs', { edit: s.id });
     V.root.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       const k = b.dataset.t, v = !b.classList.contains('on');
       b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); setPref(k, v); V.P[k] = v;
@@ -503,7 +515,7 @@
     showWarn(V);
 
     if (hasLyrics) setMode(V, 'sing');
-    else $('.sg-help').textContent = '音源已匯入。點上方「編輯」即可加入日文歌詞。';
+    else $('.sg-help').textContent = '音源已匯入，還沒有歌詞：按下方「📋 貼上歌詞」。';
     // 計時：高亮、循環、錄音自動停、離開頁面清理
     V.timer = setInterval(() => tick(V), 150);
   }

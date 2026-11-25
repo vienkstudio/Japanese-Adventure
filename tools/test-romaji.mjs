@@ -15,6 +15,11 @@ const verbose = process.argv.includes('-v');
 
 // [jp, kana, 期望, 評審報告的錯例]
 const CASES = [
+  // 評審 v18 P1：已知詞後接小字、平假名外來語
+  ['うちゅう', 'うちゅう', 'uchuu', 'uchi yuu'],
+  ['うちあげ', 'うちあげ', 'uchiage', 'uchi age'],
+  ['ぷろじぇくと', 'ぷろじぇくと', 'purojekuto', 'purojeku to'],
+  ['おおもり', 'おおもり', 'oomori', 'oumori'],
   // 複合漢語（需要 JPText；本測試沒載入斷詞時仍可黏字，不檢查）
   // 評審 v16 P1：を、數字後的動詞、〜用／ように
   ['おみくじをください', 'おみくじをください', 'omikuji o kudasai', 'omikujio kudasai'],

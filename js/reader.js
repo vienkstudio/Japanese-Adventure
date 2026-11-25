@@ -321,7 +321,7 @@
       // 否定形：「見えない」顯示「不 看得見」；字典沒有的漢字詞顯示「未收錄」（整詞保留）
       const gl = CONTENT.test(t.pos) && t.zh && t.pos !== 'num' ? `<span class="rd-gl">${esc(g0)}</span>` : t.unreg ? '<span class="rd-gl rd-unreg">未收錄</span>' : '';
       const og = window.Loan && Loan.isKata(t.s) ? Loan.label(t.s) : '';
-      return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}${og ? `<span class="rd-og" lang="en">${esc(og)}</span>` : ''}</span>`;
+      return `<span class="rd-w${lv}${tracked}${t.known ? '' : ' unk'}" data-k="${key}:${k}"><span class="rd-s">${JPText.ruby(t.s, t.pos === 'num' && /[0-9０-９]/.test(t.s) && String(t.kana || '').length > 6 ? '' : t.kana)}</span><span class="rd-ro">${esc(t.romaji || '')}</span>${gl}${og ? `<span class="rd-og" lang="en">${esc(og)}</span>` : ''}</span>`;
     });
   }
   function sentenceOf(text, i) {

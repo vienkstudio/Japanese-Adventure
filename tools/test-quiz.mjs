@@ -29,11 +29,12 @@ const { Path, Challenge, MIND } = ctx;
 
 const unesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 const OWN = new Map(MIND.gram.map(g => [g.id, g.ex && g.ex[0]]));
-let total = 0, mid = [], same = [], prob = [], noGram = [];
+let total = 0, mid = [], same = [], prob = [], noGram = [], leak = [];
 function check(q, L, where) {
   total++;
   const p = Challenge.problems(q, L); if (p.length) prob.push([where, L, q.k, p.join('；')]);
   if (q.k === 'mean' && q.item && Challenge.sameForm({ jp: q.item.jp, zh: q.opts[q.ans] })) same.push([where, q.item.jp, q.opts[q.ans]]);
+  if (q.k === 'ctx') { const z = (String(q.body).match(/<p class="muted center">([\s\S]*?)<\/p>/) || [])[1]; const ans = q.opts[q.ans]; if (z && [...ans].some(c => /[㐀-鿿々]/.test(c) && unesc(z).includes(c))) leak.push([where, L, ans, unesc(z)]); }
   if (q.k !== 'form' && q.k !== 'ctx') return;
   const m = String(q.body).match(/class="ch-sent jp">([\s\S]*?)<span class="ch-blank">[^<]*<\/span>([\s\S]*?)<\/div>/); if (!m) return;
   const pre = unesc(m[1]), post = unesc(m[2]), ans = q.opts[q.ans], s = pre + ans + post, a = pre.length, b = a + ans.length;
@@ -77,4 +78,5 @@ const fakeKana = [];
 const KOK = x => !/^[っゃゅょーん]|っ$/.test(x) && !/っ(?![かきくけこさしすせそたちつてとぱぴぷぺぽ])/.test(x) && !/[んっー]っ/.test(x) && !/(^|[^きしちにひみりぎじぢびぴ])[ゃゅょ]/.test(x);
 for (const L of ['N5', 'N4', 'N3', 'N2', 'N1']) for (const r of (MIND.lex[L] || [])) { const k = String(r[1] || ''); if (!/^[ぁ-ゖー]{2,}$/.test(k)) continue; for (const m of Challenge.mutate(k)) if (!KOK(m) || (/[ぢづ]/.test(m) && !/[ぢづ]/.test(k))) fakeKana.push([L, r[0], k, m]); }
 show('讀音干擾項是假字', fakeKana);
-process.exit(mid.length || same.length || noGram.length || prob.length || fakeKana.length ? 1 : 0);
+show('文脈規定中文洩答案', leak);
+process.exit(mid.length || same.length || noGram.length || prob.length || fakeKana.length || leak.length ? 1 : 0);

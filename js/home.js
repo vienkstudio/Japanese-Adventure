@@ -310,7 +310,10 @@
       if (goal === 'kana') Q.apply = kanaApply(Q) || { route: 'path', params: { goal: 'kana' }, label: '五十音下一個單元', kana: 1 };
       if (goal === 'exam') {
         // 日檢：用今天新學的字與文法出 5 題
-        const ids = Q.fresh.filter(x => /^(v|g):/.test(x.id || '')).map(x => x.id), L = (p.lv && p.lv !== 'zero' ? p.lv : 'n5').toUpperCase();
+        // 評審 v18：不要 5 題都考 1 分鐘前剛看過的卡：今天新學最多 2 個＋以前學過的同級詞；不夠就從題庫隨機出
+        const L = (p.lv && p.lv !== 'zero' ? p.lv : 'n5').toUpperCase(), fr = Q.fresh.filter(x => /^(v|g):/.test(x.id || '')).map(x => x.id);
+        const LL = App.state.learn || {}, old = App.shuffle(Object.keys(LL).filter(id => /^v:/.test(id) && !fr.includes(id) && LL[id].reps && (!LL[id].m || !LL[id].m.lv || LL[id].m.lv === L))).slice(0, 3);
+        const ids = old.length >= 2 ? fr.slice(0, 2).concat(old) : [];
         Q.apply = { route: 'act', params: { steps: [{ type: 'choice', params: Object.assign({ lv: L, kind: ['mean', 'ctx', 'form'], n: 5, quiz: true }, ids.length >= 3 ? { ids } : {}), title: L + ' 日檢 5 題' }], title: L + ' 日檢 5 題', lv: L, reward: 'apply:exam', back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: L + ' 日檢 5 題' };
       }
       Q.fresh.forEach(it => { const ex = exOf(it); if (ex && !it.ex) it.ex = ex; });
@@ -487,8 +490,10 @@
       <p class="lead">可以選好幾個，首頁會依這個推薦（之後能在「我的」→ 設定改）</p>
       <div class="ob-list">${goalList(sel)}</div>
       <button type="button" class="btn primary block" id="ob-go" disabled>選好了，開始！</button>
+      <button type="button" class="btn ghost block" id="ob-any">還不確定，先都看看</button>
     </section>`;
     const go = el.querySelector('#ob-go');
+    el.querySelector('#ob-any').onclick = () => { App.setProfile({ goals: GOALS.map(g => g[0]) }); App.go('home'); };   // 評審 v18：目的頁加「還不確定」
     el.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => {
       const g = b.dataset.goal, i = sel.indexOf(g);
       if (i < 0) sel.push(g); else sel.splice(i, 1);

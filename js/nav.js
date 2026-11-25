@@ -79,7 +79,7 @@
   const PRESET = {
     zero: ['kana-guide', 'kana-test', 'cards'],
     travel: ['phrasebook', 'dialog', 'task'],
-    examLo: ['dict~1', 'dict', 'chal'], examHi: ['chal', 'dict~1', 'read'],
+    examLo: ['dict~1', 'cards', 'chal'], examHi: ['chal', 'dict~1', 'read'],
     work: ['dict~2', 'read~2', 'work'],
     fun: ['songs', 'read', 'read~1']
   };
@@ -183,9 +183,9 @@
   // 一條分類軸＝底部 4 鈕：首頁／學習（5 個目的分頁）／查／我的。tools 都是 NAV.TOOLS 的 id，每個工具只在一個地方。
   const GOALS = [
     { id: 'kana', group: 'kana', tools: ['kana-guide', 'kana-test'] },
-    { id: 'travel', group: 'packs', tools: ['play', 'dialog', 'task', 'boot'] },
+    { id: 'travel', group: 'packsFlat', tools: ['play', 'dialog', 'task', 'boot'] },   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
-    { id: 'work', group: 'biz', tools: [] },
+    { id: 'work', group: 'biz', tools: ['dict~2', 'read~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
     { id: 'fun', tools: ['songs', 'read'] }
   ].map(g => Object.assign({}, PLACES.find(x => x.id === g.id), g));
   const SECTIONS = [
@@ -217,7 +217,7 @@
     if (/^(kana-guide|kana-drill)$/.test(name)) return G('kana', T('kana-guide'));
     if (/^(kana-quiz|quest)$/.test(name)) return G('kana', T('kana-test'));
     if (/^(biz|biz-unit)$/.test(name)) return G('work');
-    if (name === 'biz-read') return G('fun', T('read'));
+    if (name === 'biz-read') return G('work', { sub: '商務文章' });
     if (/^(songs|song)$/.test(name)) return G('fun', T('songs'));
     if (/^(read|read-article)$/.test(name)) return G('fun', T('read'));
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));

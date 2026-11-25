@@ -67,6 +67,26 @@
     ['emer', 'ここに書いてください。', 'ここにかいてください', 'koko ni kaite kudasai', '請寫在這裡。', '聽不懂時請對方寫下來（漢字常看得懂）']
   ].map(([cat, jp, kana, romaji, zh, use]) => ({ cat, jp, kana, romaji, zh, use, src: '⭐ 必備' }));
 
+  /* ---------- 🗺️ 熱門地點（給計程車司機、站務員看；評審 v18：嵐山、伏見稻荷、奈良、環球影城搜不到） ---------- */
+  const SPOTS = [
+    ['嵐山', 'あらしやま', '嵐山（京都）', '嵐山 arashiyama 渡月橋 竹林'],
+    ['伏見稲荷大社', 'ふしみいなりたいしゃ', '伏見稻荷大社（京都）', '伏見稻荷 伏見 稻荷 千本鳥居 fushimi inari'],
+    ['金閣寺', 'きんかくじ', '金閣寺（京都）', '金閣寺 kinkakuji'],
+    ['清水寺', 'きよみずでら', '清水寺（京都）', '清水寺 kiyomizu'],
+    ['京都駅', 'きょうとえき', '京都車站', '京都車站 京都站 kyoto station'],
+    ['奈良公園', 'ならこうえん', '奈良公園（鹿）', '奈良 奈良公園 鹿 nara'],
+    ['東大寺', 'とうだいじ', '東大寺（奈良）', '東大寺 大佛 奈良 todaiji'],
+    ['ユニバーサル・スタジオ・ジャパン', 'ゆにばーさるすたじおじゃぱん', '日本環球影城（大阪）', '環球影城 環球 usj universal'],
+    ['大阪城', 'おおさかじょう', '大阪城', '大阪城 osaka castle'],
+    ['道頓堀', 'どうとんぼり', '道頓堀（大阪）', '道頓堀 dotonbori'],
+    ['関西空港', 'かんさいくうこう', '關西機場', '關西機場 關西空港 kix'],
+    ['浅草寺', 'せんそうじ', '淺草寺（東京）', '淺草寺 淺草 asakusa'],
+    ['東京駅', 'とうきょうえき', '東京車站', '東京車站 東京站 tokyo station'],
+    ['成田空港', 'なりたくうこう', '成田機場', '成田機場 narita'],
+    ['羽田空港', 'はねだくうこう', '羽田機場', '羽田機場 haneda']
+  ].map(([n, k, zh, kw]) => ({ cat: 'move', jp: n + 'までお願いします。', kana: k + 'までおねがいします', zh: '請到' + zh + '。', use: '給計程車司機看；問路可改說「' + n + 'はどこですか」・' + kw, src: '🗺️ 地點' }))
+    .concat([{ cat: 'shop', jp: '安くできますか。', kana: 'やすくできますか', zh: '可以算便宜一點嗎？', use: '市集、二手店、家電行（一般商店多半不議價）便宜 殺價', src: '⭐ 必備' }]);
+
   /* ---------- 🆘 緊急：號碼卡＋求救句（緊急分類最上方） ---------- */
   const TEL = [['110', '🚓', '警察', '事故、竊盜、遇到危險'], ['119', '🚑', '救護車・消防', '急病、受傷、火災（免費）']];
   const HOTLINE = ['050-3816-2787', 'Japan Visitor Hotline（24 小時，可說中文）'];
@@ -147,11 +167,13 @@
   const MACRON = { ā: 'aa', ī: 'ii', ū: 'uu', ē: 'ei', ō: 'ou' };
   function romOf(w) {
     if (w._r != null) return w._r;
-    let r = w.romaji ? String(w.romaji).replace(/[āīūēō]/g, c => MACRON[c]) : '';
+    // 評審 v18：資料的長音符號（ō 可能是 おお 或 おう）無法判斷，有讀音就一律由 Phrase.romaji 依讀音產生（全站同一套：oo／ou 照假名）
+    let r = w.romaji && !/[āīūēō]/.test(w.romaji) ? String(w.romaji) : '';
     if (!r) try {
       const src = w.kana || (/^[぀-ヿー、。！？\s〜]+$/.test(w.jp || '') ? w.jp : '');
       if (src && window.Phrase && Phrase.romaji) r = Phrase.romaji(src, w.jp);
     } catch (e) { r = ''; }
+    if (!r && w.romaji) r = String(w.romaji).replace(/[āīūēō]/g, c => MACRON[c]);
     return (w._r = r.replace(/\s+/g, ' ').trim());
   }
   const showRom = () => { const p = App.profile(); return p.lv === 'zero' || p.assist === 'full'; };
@@ -277,6 +299,7 @@
     const add = (arr, w, src) => { const id = bare(w.jp); if (!id || seen.has(id)) return; const lk = loose(w); if (seen.has(lk)) return; seen.add(id); seen.add(lk); arr.push(src ? Object.assign({}, w, { src: w.src || src }) : w); };
     MUST.filter(hit).forEach(w => add(ph, w));
     EMER.filter(hit).forEach(w => add(ph, w));
+    SPOTS.filter(hit).forEach(w => add(ph, w));
     scenes().forEach(sc => (sc.phrases || []).filter(hit).forEach(w => add(ph, w, '💬 ' + sc.name)));
     worldIdx().filter(w => w.kind !== 'item').filter(hit).forEach(w => add(ph, w));
     worldIdx().filter(w => w.kind === 'item').filter(hit).forEach(w => add(ph, w));
@@ -296,12 +319,13 @@
         (vo.length ? `<h2>📚 單字（${vo.length}）</h2><div class="pb-voc">${vo.slice(0, 60).map(vocab).join('')}</div>` : '') + loading;
     }
     const cat = CATS.find(c => c[0] === UI.cat) || CATS[0];
-    const must = MUST.filter(w => cat[0] === 'must' || w.cat === cat[0]);
+    const must = MUST.concat(SPOTS.filter(w => w.cat !== 'move')).filter(w => cat[0] === 'must' ? w.src === '⭐ 必備' : w.cat === cat[0]);
+    const spotH = cat[0] === 'move' ? `<h2>🗺️ 熱門地點（放大給司機看）</h2>${SPOTS.filter(w => w.cat === 'move').map(w => row(w, '🗺️ 地點')).join('')}` : '';
     const mustH = must.length ? `<h2>⭐ 必備句</h2>${must.map(w => row(w, '⭐ 必備')).join('')}` : '';
     // 緊急：號碼卡與求救句置頂，必備句放最後
     const seenE = new Set(EMER.map(w => bare(w.jp)));
     const emerH = cat[0] === 'emer' ? `<h2>🆘 緊急電話</h2>${telCard()}<h2>🆘 求救</h2>${EMER.map(w => row(w, '🆘 緊急')).join('')}` : '';
-    return (emerH || mustH) +
+    return (emerH || mustH) + spotH +
       cat[2].map(sceneOf).filter(Boolean).map(sc => `<h2>${esc(sc.icon || '')} ${esc(sc.name)}</h2>
       ${(sc.phrases || []).filter(w => !emerH || !seenE.has(bare(w.jp))).map(w => row(w, sc.name)).join('')}
       <details><summary>📚 常用單字 ${(sc.vocab || []).length} 個</summary><div class="pb-voc">${(sc.vocab || []).map(vocab).join('')}</div></details>`).join('') + (emerH ? mustH : '');
@@ -381,5 +405,5 @@
   }
 
   App.register('phrasebook', { title: '旅遊手冊', icon: '📖', nav: false, navParent: 'lookup', render });
-  window.Phrasebook = { MUST, EMER, SYN, terms, search: q => search(q).ph, loadWorld, kataKana, showBig, romOf, kanaOf, showRom };
+  window.Phrasebook = { MUST, EMER, SPOTS, SYN, terms, search: q => search(q).ph, loadWorld, kataKana, showBig, romOf, kanaOf, showRom };
 })();

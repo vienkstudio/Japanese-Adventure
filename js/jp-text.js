@@ -1024,6 +1024,7 @@
   // 字串＝整個 token；陣列＝依序的片段（可從活用形詞中間開始，例：延期させて＋いただきます）
   const IDK = ['いただきます', 'いただけます', 'いただけません', 'いただけませんか', 'いただきたい', 'いただきたく', 'いただいて', 'いただいた', 'いただければ', 'いただけない', 'いただく', 'いただき'];
   const GRAM_ALIAS = {
+    'gram:〜ようになる': ['ようになった', 'ようになって', 'ようになり', 'ようになりました', 'ようになります', 'ようになれ'],   // 評審 v18：活用形也要抓
     'gram:〜によると／〜によれば': ['によりますと', 'によれば'],
     'gram:〜について': ['につきまして', 'につきましては'],
     'gram:〜させていただく': IDK.map(x => ['させて', x]),
@@ -1089,6 +1090,13 @@
     // 評審 v18：京都まで、屋根まで、二十四時まで、百五十円台まで 是「到…」；只有人／事物＋まで＋も、或後面不是移動／時間動詞才算「甚至」
     // 〜かける（做到一半）：前面要是動詞ます形；「迷惑をおかけ」「声をかけ」不是
     'gram:〜かける／〜かけ': p => !!p && /^(v|aux)$/.test(p.pos || ''),
+    // 評審 v18：「キロとなり」＝と＋なる；〜なり（一～就）前面要是動詞辭書形
+    'gram:〜なり（一～就）': p => !!p && p.pos === 'v' && !p.form && p.s !== 'と',
+    // 〜ことに（は）（令人…的是）：後面接「、」或「は」；「ことに驚く」是 こと＋に＋驚く
+    'gram:〜ことに（は）': (p, sn, idx, ct, x) => /^(?:は|、|，)/.test(sn.slice(idx + x.seg.length)),
+    // 「ようになる」不是目的的ように；「話せる」的せる是可能形不是使役
+    'gram:〜ように（目的）': (p, sn, idx, ct, x) => !/^(?:な[るっりれ]|しな)/.test(sn.slice(idx + x.seg.length)),
+    'gram:〜（さ）せる（使役）': (p, sn, idx, ct) => !(ct && ct.form === 'pot'),
     'gram:〜まで（甚至）': (p, sn, idx) => madeExtreme(p, sn, idx),
     'gram:〜まで（極端）': (p, sn, idx) => madeExtreme(p, sn, idx),
     // 〜(よ)うと（不管）：後面接 する／思う／考える…是「〜ようとする」「〜ようと思う」
@@ -1115,7 +1123,7 @@
   }
   // 依使用者程度：N3 以上不列 N5／N4；排序＝自己的等級→更難→（較簡單的放最後）
   function lvRank(glv, u) { const L = GLV[glv]; if (L == null) return 20; return L >= u ? L - u : 10 + (u - L); }
-  function lvKeep(glv, u) { const L = GLV[glv]; return u < 2 || L == null || L >= 2; }
+  function lvKeep(glv, u, pat) { const L = GLV[glv]; return u < 2 || L == null || L >= 2 || (u === 2 && L === 1) || (!!pat && String(pat).replace(/（[^）]*）|\([^)]*\)/g, '').split(/[／/・]/)[0].replace(/[〜～\s]/g, '').length >= 7); }   // 評審 v18：N3 也列 N4 句型；なければならない 這種長句型各級都列
   // 依 token 邊界確認：片段結尾要落在 token 結尾；開頭不是 〜 的句型，起點要落在 token 開頭
   // opts：{lv:'n3'}（不給就讀 App.profile()）
   function findGrammar(text, tokens, max, opts) {
@@ -1130,7 +1138,7 @@
     const sents = sentences(text);
     const hits = [];
     for (const G of GRAM) {
-      if (!lvKeep(G.g.lv, u)) continue;
+      if (!lvKeep(G.g.lv, u, G.g.pat)) continue;
       const EX = GRAM_EXCL[G.g.id];
       let found = null, count = 0;
       const spans = [];

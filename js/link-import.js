@@ -292,8 +292,17 @@
   async function youtube(id) {
     const endpoint = 'https://www.youtube.com/oembed?' + new URLSearchParams({ url: 'https://www.youtube.com/watch?v=' + id, format: 'json' });
     const meta = await request(endpoint, 'application/json', 5000).catch(() => null);
-    const title = meta && meta.title ? String(meta.title) : 'YouTube・' + id;
-    return { title, lines: [], note: '歌詞請按 ✏️ 貼上你有權使用的歌詞（只存在你的裝置）；公有領域的唱歌・童謠可以按「找公有領域歌詞」從維基文庫匯入。' };
+    const raw = meta && meta.title ? String(meta.title) : '', author = meta && meta.author_name ? String(meta.author_name) : '';
+    const note = '歌詞請按 📋 貼上你有權使用的歌詞（只存在你的裝置）。';
+    if (!raw) return { title: 'YouTube・' + id, lines: [], note };
+    // 評審 v18：翻唱辨識（歌名／原唱／翻唱者）。解析不到就用原標題
+    let p = null; try { p = coverParse(raw, author, hotList()); } catch (e) { }
+    if (p && p.track) {
+      const track = trimSym(p.track).slice(0, 40), artist = trimSym(p.artist || '').slice(0, 30);
+      if (p.cover) return { title: coverTitle({ track, artist: artist || '?' }, p.by), track, artist, cover: true, coverBy: p.by || '', origTitle: track + (artist ? '（' + artist + '）' : ''), rawTitle: raw, lines: [], note };
+      return { title: artist ? track + '（' + artist + '）' : track, track, artist, rawTitle: raw, lines: [], note };
+    }
+    return { title: raw, rawTitle: raw, lines: [], note };
   }
   const pickRow = r => ({ id: r.id, track: r.trackName, artist: r.artistName, dur: r.duration ? Math.round(r.duration) : 0, timed: !!r.syncedLyrics });
   // 歌名比對：去掉「-Arrange ver.-」「(TV size)」這類版本標記後，歌名要相同或互相包含

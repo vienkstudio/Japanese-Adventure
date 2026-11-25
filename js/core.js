@@ -6,14 +6,14 @@
 (function () {
   const KEY = 'jpQuest.v1';
   // App 版本（V主.次.修）：和 sw.js 的 VERSION（'jpq-v' + 版本）必須一致，tools/check-version.mjs 會檢查；規則見 CONTRACT.md「版本編號」
-  const APP_VERSION = '3.5.0';
+  const APP_VERSION = '3.5.1';
   const SCHEMA = 2;
   const MIGS = [];
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
   const fresh = () => JSON.parse(JSON.stringify(DEF));
   /* ---- 單一程度 profile（取代 world.lv、trip.level、L1–L4）與外觀 ui ---- */
   const LV_IDS = ['zero', 'n5', 'n4', 'n3', 'n2', 'n1'];
-  const LV_NAMES = { zero: '完全沒學過', n5: '會五十音', n4: '會簡單句', n3: '日常會話', n2: '工作程度', n1: '接近母語' };
+  const LV_NAMES = { zero: '完全沒學過', n5: '會五十音', n4: '會簡單句', n3: '日常會話', n2: '工作程度', n1: '已過 N2・準備 N1' };   // 評審 v18：要考 N1 的人選得到
   const LV_DESC = { zero: '從五十音開始，每個字都有讀音和中文', n5: '看得懂假名，想學旅行常用句', n4: '會說簡單的句子，想更自然', n3: '能日常對話，想聽懂店員的各種說法', n2: '能用敬語，想練交涉與正式場合', n1: '幾乎沒問題，想挑戰言外之意' };
   const ASSIST_DEF = { zero: 'full', n5: 'full', n4: 'some', n3: 'none', n2: 'none', n1: 'none' };
   const OLD2LV = { K0: 'zero', N5: 'n5', N4: 'n4', N3: 'n3', N2: 'n2', N1: 'n1' };

@@ -67,6 +67,7 @@
   function normRomaji(s) {
     s = String(s == null ? '' : s).toLowerCase();
     s = s.replace(/[āīūēōâîûêô]/g, c => MACRON[c]);
+    s = s.replace(/ou|oo|oh(?![aiueo])/g, 'o').replace(/ei|ee/g, 'e').replace(/uu/g, 'u').replace(/aa/g, 'a').replace(/ii/g, 'i');   // 長音寫法（ou／oo／ō）都算對
     s = s.normalize ? s.normalize('NFKD').replace(/[̀-ͯ]/g, '') : s;
     s = s.replace(/[^a-z]/g, '');               // 空白、標點、長音符號 - ー ' 全去掉
     // 訓令式 → 平文式

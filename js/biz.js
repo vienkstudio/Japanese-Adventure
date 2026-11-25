@@ -41,7 +41,7 @@
       const i = META.findIndex(m => !starsOf(m.id));
       if (i >= 0) {
         const m = META[i], P = runOf(m.id);
-        return { label: '商務日語：' + m.title, sub: P ? `續做：第 ${Math.min(doneCount(P) + 1, secCount(P))} / ${secCount(P)} 小節・每節約 5 分` : `第 ${i + 1} 課・${m.lv}・分 ${secCount({ cards: Array(34) })} 小節，每節約 5 分`, route: 'biz-unit', params: { id: m.id }, icon: m.icon };
+        return { label: '商務日語：' + m.title, sub: P ? `續做：第 ${Math.min(doneCount(P) + 1, secCount(P))} / ${secCount(P)} 小節・每節約 5 分` : `第 ${i + 1} 課・${m.lv}・分 ${unitOf(m.id) ? parts(unitOf(m.id)).length + 2 : 6} 小節，每節約 5 分`, route: 'biz-unit', params: { id: m.id }, icon: m.icon };
       }
       const low = META.slice().sort((a, b) => starsOf(a.id) - starsOf(b.id))[0];
       if (starsOf(low.id) < 3) return { label: '商務日語複習：' + low.title, sub: '再挑戰拿滿 3 星', route: 'biz-unit', params: { id: low.id }, icon: low.icon };
@@ -203,7 +203,9 @@
     const key = h.when ? 'when' : 'zh', right = h[key];
     const wrong = App.shuffle(u.phrases.filter(p => normS(p.jp) !== normS(h.jp)).map(p => p[key]).filter(x => x && x !== right)).filter((x, i, arr) => arr.indexOf(x) === i).slice(0, 2);
     if (!right || wrong.length < 2) return d;
-    return { t: key === 'when' ? 'when' : 'mean', q: key === 'when' ? '這句話最適合用在什麼情況？' : '這句話是什麼意思？', jp: z, opts: [right].concat(wrong), exp: d.exp, ref: d.ref };
+    // 評審 v18：改成選情境／選意思後，解說也要講這一題（原題解說講的是別的重點）
+    const exp = `「${z}」＝${h.zh || ''}${h.when ? '；用在：' + h.when : ''}`;
+    return { t: key === 'when' ? 'when' : 'mean', q: key === 'when' ? '這句話最適合用在什麼情況？' : '這句話是什麼意思？', jp: z, opts: [right].concat(wrong), exp, ref: d.ref };
   }
   function quizSteps(u, sh) {
     const seen = u.phrases.map(p => ({ jp: p.jp, zh: p.zh, when: p.when }));
@@ -229,7 +231,8 @@
     if (!P) P = { v: 2, done: [], ok: 0, total: 0, known: 0, wrong: [], rec: {} };
     P.rec = P.rec || {}; P.done = P.done || []; P.wrong = P.wrong || []; P.n = PS.length + 2;
     PS.forEach((x, i) => { if (x.refs.every(learned)) P.done[i] = true; });
-    P.skip = PS.reduce((n, x) => n + x.refs.filter(learned).length, 0);
+    // 評審 v18：「略過」只算第一次進單元前就學過的卡（之後在本單元學會的不算被略過）
+    if (P.skip == null) P.skip = PS.reduce((n, x) => n + x.refs.filter(learned).length, 0);
     const secs = [], steps = [];
     const add = (title, short, icon, list, extra) => { secs.push(Object.assign({ title, short, icon, from: steps.length, to: steps.length + list.length }, extra || {})); steps.push(...list); };
     // 每個字卡小節最後補 3 題四選一（評審 v16 P1：不再連續 28 張卡沒有題目）
@@ -347,7 +350,7 @@
     } else if (s.k === 'sec') {
       const T = { dlg: ['💬', '對話演練', `情境：${u.dialogue.title}。每一輪選出最得體的說法，答錯可以再選一次。`], mail: ['✉️', 'Email 填空', `${u.email.title}：把空格填上最適合的說法。`], quiz: ['📝', '小測驗', `填空、選情境、重組句子、敬語轉換，共 ${u.quiz.length} 題。`] }[s.st];
       body = `<div class="card bz-card bz-intro"><div class="bz-intro-i">${T[0]}</div><h2>${T[1]}</h2><p>${esc(T[2])}</p>
-        ${s.st === 'dlg' && R.P.known ? `<p class="muted">卡片已記住 ${R.P.known} 張。</p>` : ''}</div>` + nextBtn('開始 ➜');
+        ${s.st === 'dlg' ? (() => { const all = parts(u).flatMap(x => x.refs), k = all.filter(learned).length; return k ? `<p class="muted">本單元卡片已記住 ${k}／${all.length} 張。</p>` : ''; })() : ''}</div>` + nextBtn('開始 ➜');
     } else if (s.k === 'd') {
       body = dlgHTML(u, s) + (s.done ? nextBtn(endLabel('下一步 ➜')) : '');
     } else if (s.k === 'm') {

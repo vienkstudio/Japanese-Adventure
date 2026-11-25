@@ -67,7 +67,7 @@ const rec = (lv, goals, placed = true) => { state.profile = { lv, goals, placed 
 const CASES = [
   ['零基礎旅客', 'zero', ['travel'], ['kana-guide', 'kana-test', 'cards', 'phrasebook']],
   ['N5 旅客', 'n5', ['travel'], ['phrasebook', 'dialog', 'task']],
-  ['N3 日檢', 'n3', ['exam'], ['dict~1', 'dict', 'chal']],
+  ['N3 日檢', 'n3', ['exam'], ['dict~1', 'cards', 'chal']],
   ['N1 日檢', 'n1', ['exam'], ['chal', 'dict~1', 'read']],
   ['N1 商務', 'n1', ['work'], ['dict~2', 'read~2', 'work']],
   ['N4 歌曲', 'n4', ['fun'], ['songs', 'read', 'read~1']]

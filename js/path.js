@@ -583,6 +583,7 @@
       const reads = list.filter(u => u.sec === 'read'), songs = list.filter(u => u.sec === 'song'), news = list.filter(u => u.sec === 'news');
       const nr = nextOf(reads), ns = nextOf(songs), wr = windowed(reads, nr, 'funr'), ws = windowed(songs, ns, 'funs');
       html = `<h2 class="pa-h">📖 短文路線 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
+        <button type="button" class="btn block pa-free" data-go="songs">🎤 我的歌・貼 YouTube 網址跟唱</button>
         <h2 class="pa-h">📜 公有領域歌曲 <small>唱過 ${songs.filter(u => u.complete).length}／${songs.length} 首</small></h2>${grid(ws.shown, ns)}${ws.more}
         ${grid(news, null, true)}<p class="pa-note">歌詞與文章裡點過的詞會自動收進今日課。</p>`;
     } else {

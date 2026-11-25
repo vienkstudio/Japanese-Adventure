@@ -525,3 +525,4 @@ body.ob-mode .nv-drawer,body.ob-mode .nv-menu,body.ob-mode .nv-crumb{display:non
 .hm-mini .hm-cont{margin-top:var(--sp-3);min-width:0}
 .hm-mini .hm-cont b{white-space:nowrap}
 @media (max-width:359px){.hm-mini{grid-template-columns:1fr}}
+[data-fs=xl] .hm-mini{display:none}   /* 評審 v18：特大字首頁要一屏；字卡、到期複習在今日課與側邊樹都有 */

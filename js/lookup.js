@@ -184,9 +184,10 @@
     const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="phrasebook~0"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
     const rec = N ? N.forMe(4) : [];
     const all = N ? N.CATS.map(([c, ic, n]) => { const ts = (N.PLACES || []).filter(t => t.cat === c).concat(N.TOOLS.filter(t => t.cat === c)); return ts.length ? `<h3 class="lk-ch">${ic} ${esc(n)}</h3><div class="lk-list">${ts.map(navRow).join('')}</div>` : ''; }).join('') : '';
-    return emer +
+    // 評審 v18：不是旅遊目的的人，緊急求助放到推薦後面（仍在第一屏）
+    return (travel ? emer : '') +
       (q.length ? `<h2 class="lk-h">💬 常用句<small>點一下放大給店員看</small></h2><div class="lk-list">${q.map(phRow).join('')}</div>` : '') +
-      (rec.length ? `<h2 class="lk-h">✨ 為你推薦</h2><div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) +
+      (rec.length ? `<h2 class="lk-h">✨ 為你推薦</h2><div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) + (travel ? '' : emer) +
       `<button type="button" class="lk-fix" data-fix="1">推薦不準？改目的與程度 ›</button>` +
       (N ? `<details class="lk-more lk-allf"${ALLOPEN ? ' open' : ''}><summary>全部功能<small>☆ 釘選到推薦</small></summary>${all}</details>` : '');
   }

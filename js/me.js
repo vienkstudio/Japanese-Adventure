@@ -58,7 +58,8 @@
     const hasGos = travel && ((window.World && typeof World.goshuin === 'function') || stampN() > 0);
     const tile = (n, lbl, sub) => `<div class="my-tile"><b>${n}</b><span>${esc(lbl)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`;
     const lrn = b => b.learning ? `學習中 ${b.learning}` : '';
-    const tiles = (zero ? [tile(kana + '<small>/' + KANA_N + '</small>', '平假名')] : [])
+    // 評審 v18：平假名也用「學會」同一定義（隔天以上還記得），看過的另列，和下方「全部共學會」一致
+    const tiles = (zero ? [tile(C.kana.known + '<small>/' + KANA_N + '</small>', '平假名', kana > C.kana.known ? `看過 ${kana}` : '')] : [])
       .concat([tile(C.v.known, '單字', lrn(C.v)), tile(C.p.known, '句子', lrn(C.p)), tile(C.g.known, '文法', lrn(C.g))]);
     el.innerHTML = `<section class="my">
       <div class="my-head"><span class="my-av" aria-hidden="true">${esc(G && G.avatar ? G.avatar() : '🙂')}</span>

@@ -273,6 +273,22 @@
     return true;
   }
 
+  // 假名寫的詞：中文裡和它同音的漢字寫法（あいまい→曖昧）拿掉
+  let KANA2KJ = null;
+  function zhNoSpell(w) {
+    if (!w || !w.zh || KJ.test(w.jp)) return w && w.zh;
+    if (!KANA2KJ) { KANA2KJ = new Map(); const lex = (window.MIND && MIND.lex) || {}; Object.keys(lex).forEach(L => (lex[L] || []).forEach(r => { const j = String(r[0] || '').split(/[;；,、(（]/)[0].trim(), k = String(r[1] || '').split(/[;；,、(（]/)[0].trim(); if (j && k && KJ.test(j)) { if (!KANA2KJ.has(k)) KANA2KJ.set(k, new Set()); KANA2KJ.get(k).add(j); } })); }
+    const S = KANA2KJ.get(w.kana || w.jp) || new Set(), k0 = String(w.kana || w.jp);
+    const sameRead = s => { if (!/^[㐀-鿿々]{2,}$/.test(s) || !window.JPText || !JPText.tokenize) return false; try { const t = JPText.tokenize(s).filter(x => !x.sym); return t.length === 1 && t[0].known && JPText.toHira(t[0].kana || '') === JPText.toHira(k0); } catch (e) { return false; } };
+    const parts = String(w.zh).split(/[；;]/).map(s => s.trim()).filter(Boolean), keep = parts.filter(s => !S.has(s) && !sameRead(s));
+    return keep.length && keep.length < parts.length ? keep.join('；') : w.zh;
+  }
+  // 評審 v18：句子中文會洩答案（社長→「從社長那裡」、だから→「正因為如此」）就不顯示
+  function zhLeak(zh, w) {
+    zh = String(zh || ''); if (!zh) return false;
+    if ([...String(w.jp)].some(ch => KJ.test(ch) && zh.includes(ch))) return true;
+    return String(w.zh || '').replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,、／/]/).map(s => s.trim()).some(s => s.length >= 2 && zh.includes(s));
+  }
   /* ---------------- 題目產生器 ---------------- */
   // 題目：{k, label, ask, body, opts, ans, explain, item, mk:[kind,i], say, col, key}
   const wordItem = (w, L) => ({ id: 'word:' + w.jp, jp: w.jp, kana: w.kana !== w.jp ? w.kana : '', romaji: '', zh: w.zh, hint: '', source: '🏆 挑戰 ' + L });
@@ -347,11 +363,11 @@
     ctx(B, used, w0) {
       const c = unusedOf(ctxOf(B).filter(c => !avoided(c.jp) && (!w0 || c.w === w0)), used, c => 'w' + c.w.i); if (!c) return null;
       const w = c.w, ok = sameWordOK(B, w);
-      const cand = B.words.filter(x => ok(x) && !c.jp.includes(x.jp));
+      const cand = B.words.filter(x => ok(x) && !c.jp.includes(x.jp) && !(x.jp.length === 1 && w.jp.length > 1));   // 評審 v18：不拿單字碎片（営、様）當干擾
       const near = cand.filter(x => x.pos === w.pos && Math.abs(x.jp.length - w.jp.length) <= 1 && KJ.test(x.jp) === KJ.test(w.jp));
       const dis = pick([near, cand.filter(x => x.pos === w.pos)], 3, (x, o) => !overlap(x.jp, w.jp) && !o.some(y => overlap(y.jp, x.jp) || zhClash(y.zh, x.zh))).map(x => x.jp);
       const s = esc(c.jp.slice(0, c.k)) + '<span class="ch-blank">（　　）</span>' + esc(c.jp.slice(c.k + w.jp.length));
-      return build({ k: 'ctx', key: 'w' + w.i, ask: '（　　）裡放哪個字最適合？', body: `<div class="ch-sent jp">${s}</div>` + (zhOK(B.L) ? `<p class="muted center">${esc(c.zh)}</p>` : ''), explain: wordExplain(w) + `<br><span class="jp">${esc(c.jp)}</span><br><span class="muted">${esc(c.zh)}</span>`, item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
+      return build({ k: 'ctx', key: 'w' + w.i, ask: '（　　）裡放哪個字最適合？', body: `<div class="ch-sent jp">${s}</div>` + (zhOK(B.L) && !zhLeak(c.zh, w) ? `<p class="muted center">${esc(c.zh)}</p>` : ''), explain: wordExplain(w) + `<br><span class="jp">${esc(c.jp)}</span><br><span class="muted">${esc(c.zh)}</span>`, item: wordItem(w, B.L), mk: ['w', w.i] }, w.jp, dis);
     },
     // 語意：單字的中文意思（中文同形詞如 原則＝原則 看字就對，改出讀音題或文脈題）
     mean(B, used) {
@@ -360,7 +376,9 @@
       const ok = sameWordOK(B, w);
       const cand = B.words.filter(ok);
       const dis = pick(posPools(w, cand), 3, (x, o) => !o.some(y => zhClash(y.zh, x.zh))).map(x => x.zh);
-      return build({ k: 'mean', key: 'w' + w.i, ask: '意思是哪一個？', body: `<div class="ch-big jp">${esc(w.jp)}</div>${w.kana !== w.jp ? `<p class="muted center jp">${esc(w.kana)}</p>` : ''}`, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.zh, dis);
+      // 評審 v18：N2／N1 不附讀音；假名詞（あいまい）的中文若寫出漢字寫法（曖昧；模糊），把那一段拿掉免得送分
+      const showKana = w.kana !== w.jp && !/^N[12]$/.test(B.L);
+      return build({ k: 'mean', key: 'w' + w.i, ask: '意思是哪一個？', body: `<div class="ch-big jp">${esc(w.jp)}</div>${showKana ? `<p class="muted center jp">${esc(w.kana)}</p>` : ''}`, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, zhNoSpell(w), dis);
     },
     // 文法形式判斷：（　　）裡放哪個句型
     form(B, used) {
@@ -577,16 +595,24 @@
       if (left <= 0) { stopMock(); stopTimer(); G.timeUp = true; finish(el, G); }
     }, 500);
   }
+  // 評審 v18：「繼續上次」回到同一場（同等級同題型、還沒交卷）接著作答，不重開新的一份；重新挑戰才出新題
+  let LASTG = null;
   function renderPlay(el, params) {
     stopTimer(); stopMock();
     const L = LVS.includes(params && params.lv) ? params.lv : lvKey();
     const t = typeOf(params && params.t) ? params.t : 'vocab';
+    if (LASTG && !LASTG.over && LASTG.L === L && LASTG.t === t && !(params && params.fresh) && LASTG.i < LASTG.qs.length) {
+      const G = LASTG; if (G.answered === G.i) G.i++;   // 上次已作答、還沒按下一題
+      if (G.i >= G.qs.length) return finish(el, G);
+      if (t === 'mock' && G.deadline) { if (G.deadline <= Date.now()) { G.timeUp = true; return finish(el, G); } startMock(el, G); }
+      return play(el, G);
+    }
     el.innerHTML = '<p class="center muted" style="margin:48px 0">出題中…</p>';
     need(L).then(() => {
       if (!el.isConnected) return;
       const qs = makeRound(L, t);
       if (!qs.length) { el.innerHTML = '<div class="panel center"><p>😵 這個等級暫時出不了題</p></div>'; return; }
-      const G = { L, t, qs, i: 0, ok: 0, wrong: [], sec: {}, timed: !!rec().timed && t !== 'mock' };
+      const G = LASTG = { L, t, qs, i: 0, ok: 0, wrong: [], sec: {}, timed: !!rec().timed && t !== 'mock' };
       // 模擬考：整場計時（預設開，可關；時間到直接交卷，沒作答的算錯）
       if (t === 'mock') { G.limit = qs.reduce((n, q) => n + (SECS[q.k] || 30), 0); if (rec().mockTimer !== false) G.deadline = Date.now() + G.limit * 1000; startMock(el, G); }
       play(el, G);
@@ -626,7 +652,7 @@
     }
     let done = false;
     const answer = k => {
-      if (done) return; done = true; stopTimer();
+      if (done) return; done = true; stopTimer(); G.answered = G.i;
       const ok = k === q.ans, bs = el.querySelectorAll('.choice');
       bs.forEach((b, i) => { b.disabled = true; if (i === q.ans) b.classList.add('ok'); else if (i === k) b.classList.add('ng'); });
       if (ok) G.ok++;
@@ -701,7 +727,7 @@
     selLv = G.L;   // N5→N4…；N1 沒有下一級
     App.showResult({
       title, stars, correct: G.ok, total: n, gained: r.gained, wrong: G.wrong, note,
-      retry: () => App.go('challenge-play', { lv: G.L, t: G.t }),
+      retry: () => App.go('challenge-play', { lv: G.L, t: G.t, fresh: 1 }),
       back: { label: nextLv ? '挑戰選單' : '換題型', route: G.t === 'mix' ? 'challenge' : undefined },
       next: stars && nextLv && G.t !== 'mock' && G.t !== 'mix' ? { label: `挑戰 ${nextLv} ➜`, route: 'challenge-play', params: { lv: nextLv, t: G.t } } : null
     });
@@ -728,5 +754,5 @@
     });
     return out;
   }
-  window.Challenge = { bank, makeRound, makeQuestions, need, mutate, chunks, GEN, LVS, TYPES, problems, selfTest, midWord, sameForm };
+  window.Challenge = { zhNoSpell, bank, makeRound, makeQuestions, need, mutate, chunks, GEN, LVS, TYPES, problems, selfTest, midWord, sameForm };
 })();
