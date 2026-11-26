@@ -206,7 +206,7 @@
       <button type="button" class="kb-ti${on('conj')}" data-nav="conj">🔁 動詞變化<small>${CONJ.length}</small></button>
       <button type="button" class="kb-ti${on('fav')}" data-nav="fav">⭐ 收藏<small>${Learn.views(e => e.fav).length}</small></button>
       <button type="button" class="kb-ti${on('recent')}" data-nav="recent">🕘 最近開啟</button>
-      <button type="button" class="kb-ti" data-nav="3d">🌐 3D 心智圖</button>
+      <button type="button" class="kb-ti" data-nav="3d">🌳 相依樹</button>
     </div>`;
   }
 
@@ -251,7 +251,6 @@
           ${ready ? `<p class="kb-ready">✨ 已學 80%，可挑戰 ${LV[LVI[lv] + 1]}</p>` : ''}</div>` : ''}</div>`;
     };
     c.innerHTML = `<h1 class="kb-h1">📚 知識庫</h1>
-      <button type="button" class="btn" data-nav="3d">🌐 開啟 3D 心智圖</button>
       ${nextCard()}
       <div class="kb-sec">各等級進度</div>
       ${LV.map(lvCard).join('')}
@@ -468,7 +467,7 @@
       <div class="kb-props">${props}</div>
       <div class="kb-seg" role="group" aria-label="學習狀態">${ST_NAME.map((n, i) => `<button type="button" class="kb-sg${s === i ? ' on' : ''}" data-setst="${esc(it.id)}" data-s="${i}" aria-pressed="${s === i}">${ST_ICON[i]} ${n}</button>`).join('')}</div>
       ${main}${more}
-      <div class="kb-iact">${it.kind !== 'conj' ? App.trackBtn(trackItem(it)) : ''}<button type="button" class="btn sm" data-a="to3d" data-id="${esc(it.id)}">🌐 在 3D 中看</button></div>
+      <div class="kb-iact">${it.kind !== 'conj' ? App.trackBtn(trackItem(it)) : ''}<button type="button" class="btn sm" data-a="to3d" data-id="${esc(it.id)}">🌳 先學／後續</button></div>
     </article>`;
   }
   function openItem(id) {
@@ -528,7 +527,7 @@
       if (d.nav === 'home') return App.go('kb', {});
       if (d.nav === 'lv') return App.go('kb', { p: 'lv', lv: d.lv });
       if (d.nav === 'db') return App.go('kb', Object.assign({ p: 'db', kind: d.kind, lv: d.lv }, d.preset ? { preset: d.preset } : {}));
-      if (d.nav === '3d') return App.go('mind3d', {});
+      if (d.nav === '3d') return App.go('tree', {});
       return App.go('kb', { p: d.nav });
     }
     if (d.go) { let p = {}; try { p = JSON.parse(d.go); } catch (er) { } return App.go('kb', p); }
@@ -556,7 +555,7 @@
     if (a === 'lvcard') { PR.home = PR.home || {}; PR.home[d.lv] = !homeOpen(d.lv); savePR(); return rerender(); }
     if (a === 'fpanel') { const fp = ROOT.querySelector('.kb-fp'); fp.hidden = !fp.hidden; if (!fp.hidden) fpanel(fp); return; }
     if (a === 'freset') { const v = VS(DB.kind); v.f = { lv: [profLv()] }; savePR(); const q = ROOT.querySelector('.kb-q'); if (q) q.value = ''; LIM = {}; PAGE = 0; chips(); return body(); }
-    if (a === 'to3d') return App.go('mind3d', { focus: d.id });
+    if (a === 'to3d') return App.go('tree', { focus: d.id });
     if (a === 'lvknown') {
       // 不跳 confirm：直接標記，提供一鍵復原
       const ch = GRAM.filter(g => LVI[g.lv] <= LVI[d.lv] && stOf(g.id) !== 2).map(g => [g.id, stOf(g.id) === 1]);
@@ -589,6 +588,6 @@
   M.kb = { ST, saveST, stOf, setSt, getItem, words, loadLv, gramPath, why: id => WHY.get(id) || null, open: id => App.go('kb-page', { id }) };
   App.register('kb', { title: '辭典', icon: '📘', nav: false, navParent: 'lookup', render });
   App.register('kb-page', { title: '辭典', icon: '📘', nav: false, navParent: 'kb', render: renderPage });
-  // 舊路由 mind：轉址（{focus}/{script} 進 3D，其餘進知識庫）
-  App.register('mind', { title: '辭典', icon: '📘', nav: false, navParent: 'kb', transient: true, render(el, p) { p = p || {}; App.go(p.focus || p.script ? 'mind3d' : 'kb', p.focus || p.script ? p : {}); } });
+  // 舊路由 mind：轉址（{focus} 進相依樹，其餘進知識庫）
+  App.register('mind', { title: '辭典', icon: '📘', nav: false, navParent: 'kb', transient: true, render(el, p) { p = p || {}; App.go(p.focus ? 'tree' : 'kb', p.focus ? { focus: p.focus } : {}); } });
 })();

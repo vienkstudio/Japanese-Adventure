@@ -90,7 +90,7 @@ const Q = [
   ['kana', 'kana'], ['50音', 'kana'], ['五十音图', 'kana'], ['點菜', 'dialog'], ['點餐', 'dialog'], ['口說', 'dialog'], ['拉麵', 'task'], ['狀況題', 'task'], ['救命', 'phrasebook~0'], ['警察', 'phrasebook~0'],
   ['醫院', 'phrasebook~0'], ['翻唱', 'songs'], ['cover', 'songs'], ['歌詞', 'songs'], ['卡拉OK', 'songs'], ['YouTube', 'songs'], ['JLPT', 'exam'], ['N2', 'exam'],
   ['模擬考', 'chal'], ['文法', 'dict~1'], ['语法', 'dict~1'], ['單字', 'dict~0'], ['字典', 'dict~0'], ['敬語', 'dict~2'], ['email', 'work'], ['開會', 'work'], ['字太小', 'settings'], ['字太大', 'settings'],
-  ['深色', 'settings'], ['夜間', 'settings'], ['備份', 'backup'], ['換手機', 'backup'], ['心智圖', 'dict~3'], ['3D', 'dict~3'], ['網址', 'read~1'], ['新聞', 'read~0'],
+  ['深色', 'settings'], ['夜間', 'settings'], ['備份', 'backup'], ['換手機', 'backup'], ['心智圖', 'dict~3'], ['相依', 'dict~3'], ['網址', 'read~1'], ['新聞', 'read~0'],
   ['複習', 'today~0'], ['忘記了', 'today~0'], ['我想看五十音表', 'kana'], ['御朱印', 'goshuin'], ['特訓', 'boot'], ['講義', 'kana-guide'], ['零基礎', 'kana-guide'], ['訓練表', 'kana-guide~0'], ['書寫', 'kana-guide~0'], ['列印', 'kana-guide~0'],
   ['小考', 'kana-test'], ['戰鬥', 'kana-test'], ['字卡', 'cards'], ['冒險', 'play'], ['商務閱讀', 'read~2']
 ];

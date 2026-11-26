@@ -56,10 +56,10 @@
   L([r('phrasebook', '旅遊手冊', '📖', { navParent: 'lookup' })], SC.concat(PH, ['data/world/index.js', 'js/phrasebook.js']));
   L([r('boot', '聽力特訓', '🎧', { navParent: 'path' }), r('boot-play', '聽力特訓', '🎧', { navParent: 'path' })], SC.concat(['data/drills.js', 'js/drill.js']));
   L([r('challenge', '日檢挑戰', '🏆', { navParent: 'path' }), r('challenge-play', '日檢挑戰', '🏆', { navParent: 'path' })], ['data/mind/grammar.js', 'js/challenge.js'], ['css/challenge.css']);
-  // 知識庫（kb、kb-page）；mind3d＝3D 心智圖（實驗功能）
-  const MIND = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js', 'data/mind/scripts.js'];
+  // 知識庫（kb、kb-page）；tree＝相依樹（文法先修、動詞變化來源；舊 mind3d 轉址）
+  const MIND = ['data/mind/taxonomy.js', 'data/mind/conj.js', 'data/mind/grammar.js'];
   L([r('kb', '辭典', '📘', { navParent: 'lookup' }), r('kb-page', '辭典', '📘', { navParent: 'lookup' }), r('mind', '辭典', '📘', { navParent: 'lookup', transient: true })], PH.concat(LO, MIND, ['js/kb.js']), ['css/kb.css']);
-  L([r('mind3d', '3D 心智圖', '🧠', { navParent: 'lookup' })], PH.concat(LO, SC, MIND, ['js/kb.js', 'vendor/3d-force-graph.min.js', 'js/mind3d.js', 'js/mind-game.js']), ['css/kb.css', 'css/mind.css']);
+  L([r('tree', '相依樹', '🌳', { navParent: 'lookup' }), r('mind3d', '相依樹', '🌳', { navParent: 'lookup', transient: true })], ['data/mind/conj.js', 'data/mind/grammar.js', 'js/mind-tree.js'], ['css/kb.css']);
   // 閱讀與歌曲（含商務短文 data/reading/biz.js）
   L([r('read', '文章・新聞', '📄', { navParent: 'lookup' }), r('read-article', '閱讀', '📄', { navParent: 'lookup' }),
     r('songs', '跟唱', '🎶', { navParent: 'lookup' }), r('song', '跟唱', '🎶', { navParent: 'lookup' })],
@@ -67,16 +67,8 @@
   // 商務日語（C）：css/biz.css 由 biz.js 自行插入
   L([r('biz', '商務日語', '💼', { navParent: 'path' }), r('biz-unit', '商務日語', '💼', { navParent: 'path' }), r('biz-read', '商務閱讀', '💼', { navParent: 'path' })],
     PH.concat(['data/biz/units-1.js', 'data/biz/units-2.js', 'data/biz/units-3.js', 'data/biz/units-4.js', 'data/reading/biz.js', 'js/biz.js']), ['css/biz.css']);
-  // 舊模組（v13 拆進主線：路線旅遊包「更多練習」進 trip-event／menu／drill／boot-play，五十音分頁進 quest；入口由 js/classic.js 的 PathExtra 提供）
-  // 舊旅程 13 站、舊練習地圖、情境小遊戲、town 單字測驗／對話／口說、quest 關卡（一起載入，彼此路由互通；舊深連結仍可用）
-  const OLD = K.concat(SC, ['data/cards.js', 'data/menus.js'], TD, PH, LO, ['js/quest.js', 'js/practice.js', 'js/town.js', 'js/travel.js']);
-  const P = { navParent: 'path' };
-  L([r('trip', '旅程・五十音', '🗾', P), r('trip-stop', '站內流程', '📍', { navParent: 'path', transient: true }), r('trip-event', '情境任務', '🧾', P), r('trip-next', '下一站', '🚶', { navParent: 'path', transient: true }),
-    r('practice-map', '原版練習', '🎯', P), r('stage', '場景關卡', '🗺️', P), r('practice', '練習', '🎯', { navParent: 'path', transient: true }), r('menu', '情境任務', '🧾', P),
-    r('town', '日本街道', '🏙️', { navParent: 'path', transient: true }), r('scene', '場景', '🏠', P), r('drill', '對話', '🎭', P),
-    r('map', '冒險地圖', '🗺️', { navParent: 'path', transient: true }), r('quest', '關卡', '⚔️', P)], OLD, ['css/travel.css', 'css/world.css', 'css/kana.css']);
-  // 舊連結 classic（經典練習已拆掉）→ 轉到路線
-  L([r('classic', '路線', '🧭', { navParent: 'path', transient: true })], ['js/classic.js']);
+  // 場景包的練習（入口：js/classic.js 的 PathExtra）：情境任務 menu（practice.js）、對話／口說／單字測驗 drill（town.js）
+  L([r('menu', '情境任務', '🧾', { navParent: 'path' }), r('drill', '對話', '🎭', { navParent: 'path' })], SC.concat(['data/cards.js', 'data/menus.js'], PH, LO, ['js/town.js', 'js/practice.js']), ['css/world.css']);
 })(Home.lazy);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }

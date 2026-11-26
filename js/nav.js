@@ -8,7 +8,7 @@
    NAV.search(q) -> {top:[≤3 功能：名稱或同義詞完全相同／開頭相同], more:[其他功能命中]}
    NAV.go(t)、NAV.note(id, params)、NAV.pin(id)、NAV.pinned(id)、NAV.CATS、NAV.renderPick(el, params)
    狀態存 App.state.nav = { pin:[id], last:{id, params} }（隨備份、雲端走）。
-   不放 v13 收掉的舊模組（trip 13 站、practice-map、scene；深連結照舊可用）。分類原則見 docs/詞庫與分類/01-工具分類.md 第 3 節。
+   舊模組（trip、practice-map、stage、scene、town、quest）已刪除。分類原則見 docs/詞庫與分類/01-工具分類.md 第 3 節。
    ========================================================= */
 (function () {
   'use strict';
@@ -34,16 +34,16 @@
     T('kana-test', 'kana', '✏️', '假名測驗', '聽音選字、看字選音，10 題', ['小考', '測驗', '假名測驗', '五十音測驗', 'quiz', '戰鬥', '闖關', '假名遊戲', 'battle'], { route: 'kana-quiz' }),
     T('play', 'travel', '🗾', '冒險地圖', '逛日本街道、進店實戰、蓋御朱印', ['冒險', '冒險地圖', '地圖', '街道', '逛街', '進店', '實戰', 'map'], { route: 'play' }),
     T('dialog', 'travel', '🎭', '對話', '選一個地方，跟店員來回對話；可打字或開口說', ['對話', '会话', '會話', '點餐', '點菜', '点餐', '店員', '餐廳', '對話練習', 'dialog', '口說', '說話', '開口', '發音', '麥克風', '跟讀', 'speak'], { need: 'pack', pre: ['x:dlg:', 'x:spk:'] }),
-    T('task', 'travel', '🧾', '情境任務', '點餐、結帳、買票的限時任務，店員這樣說你怎麼回', ['情境任務', '小遊戲', '遊戲', '限時', '拉麵', '券売機', '買票', '結帳', 'game', '狀況題', '情境題', '店員問', '怎麼回'], { need: 'pack', pre: ['x:menu:', 'x:ev:'] }),
+    T('task', 'travel', '🧾', '情境任務', '點餐、結帳、買票的限時任務，店員這樣說你怎麼回', ['情境任務', '小遊戲', '遊戲', '限時', '拉麵', '券売機', '買票', '結帳', 'game', '狀況題', '情境題', '店員問', '怎麼回'], { need: 'pack', pre: ['x:menu:'] }),
     T('boot', 'travel', '🎧', '聽力特訓', '店員問句聽解、看板、數字、量詞', ['特訓', '聽力', '聽力特訓', '看板', '數字', '量詞', '聽解', 'listening'], { route: 'boot' }),
     T('chal', 'exam', '🏆', '日檢挑戰', '文字、文法、讀解、聽解分科題與模擬考', ['挑戰', '日檢挑戰', '模擬考', '考古題', '測驗', '讀解', '聽解', '分科', 'mock', 'test'], { route: 'challenge' }),
     T('songs', 'song', '🎶', '跟唱', '熱門歌、我的歌、貼 YouTube 跟唱、看懂歌詞', ['歌', '歌曲', '歌詞', '跟唱', '唱歌', '日文歌', '翻唱', 'cover', '卡拉ok', 'karaoke', 'youtube', '動漫', '动漫', 'anime', 'song', 'music'], { route: 'songs' }),
     T('read', 'fun', '📄', '文章・新聞', '每日短文、新聞、商務文章、匯入網址', ['閱讀', '阅读', '文章', '短文', '我的文章', 'reading', '新聞', '新闻', 'news', 'nhk', 'yahoo', '網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link', '商務閱讀', '商業文章', '職場文章'], { route: 'read', params: { sec: 'art' },
       sub: [{ name: '新聞', route: 'read', params: { sec: 'news' }, kw: ['新聞', '新闻', 'news', 'nhk', 'yahoo'] }, { name: '匯入網址', route: 'read', params: { mode: 'url' }, kw: ['網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link'] },
         { name: '商務文章', kw: ['商務閱讀', '商業文章', '職場文章'], run: () => { App.go('biz'); let n = 0; const tick = () => { const a = document.querySelector('#main [data-art]'); if (a) { a.scrollIntoView({ block: 'center' }); return; } if (++n < 40) setTimeout(tick, 150); }; setTimeout(tick, 200); } }] }),
-    T('dict', 'lookup', '📘', '辭典', 'N5–N1 單字、文法、敬語、活用；3D 心智圖', ['辭典', '字典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab', '知識庫', '資料庫', '百科', 'database', '文法', '句型', '语法', '接續', 'grammar', '敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo', '心智圖', '思維導圖', '3d', 'mindmap', '關聯圖'], { route: 'kb',
+    T('dict', 'lookup', '📘', '辭典', 'N5–N1 單字、文法、敬語、活用；相依樹', ['辭典', '字典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab', '知識庫', '資料庫', '百科', 'database', '文法', '句型', '语法', '接續', 'grammar', '敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo', '心智圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'], { route: 'kb',
       sub: [{ name: '單字', route: 'kb', params: { p: 'db', kind: 'word' }, kw: ['字典', '辭典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab'] }, { name: '文法句型', route: 'lookup', params: { view: 'gram' }, kw: ['文法', '句型', '语法', '接續', 'grammar'] },
-        { name: '敬語', route: 'lookup', params: { view: 'keigo' }, kw: ['敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo'] }, { name: '3D 心智圖', route: 'mind3d', kw: ['心智圖', '思維導圖', '3d', 'mindmap', '關聯圖'] }] }),
+        { name: '敬語', route: 'lookup', params: { view: 'keigo' }, kw: ['敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo'] }, { name: '相依樹', route: 'tree', kw: ['心智圖', '思維導圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'] }] }),
     T('phrasebook', 'lookup', '📖', '旅遊手冊', '點餐、購物、交通、住宿、緊急；大字給店員看', ['手冊', '旅遊手冊', '常用句', '旅遊句', '給店員看', '大字', '出示', 'phrase', '会话', '緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'], { route: 'phrasebook', params: { cat: 'must' },
       sub: [{ name: '緊急求助', icon: '🆘', route: 'phrasebook', params: { cat: 'emer' }, kw: ['緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'] }] }),
     T('settings', 'me', '⚙️', '設定', '程度、目的、字級、深色、語音', ['設定', '设置', '字太小', '字太大', '字級', '大字', '深色', '夜間', '暗色', '黑色', '語音', '聲音', '音效', '程度', '目的', 'settings', 'dark'], { route: 'settings' }),
@@ -66,7 +66,7 @@
   }
   // 舊工具 id（V3.3.0 以前的釘選、上次用的、深連結）→ 合併後的工具或子入口
   const OLD_ID = { 'kana-drill': 'kana-guide~0', 'kana-table': 'kana', 'kana-quiz': 'kana-test', 'kana-battle': 'kana-test', 'kana-cards': 'cards~0', 'ex-cards': 'cards~1', emer: 'phrasebook~0', speak: 'dialog', menu: 'task', event: 'task',
-    'tr-path': 'travel', 'ex-path': 'exam', gram: 'dict~1', keigo: 'dict~2', kb: 'dict', mind3d: 'dict~3', biz: 'work', 'biz-read': 'read~2', news: 'read~0', url: 'read~1', review: 'today~0', path: 'travel' };
+    'tr-path': 'travel', 'ex-path': 'exam', gram: 'dict~1', keigo: 'dict~2', kb: 'dict', mind3d: 'dict~3', tree: 'dict~3', biz: 'work', 'biz-read': 'read~2', news: 'read~0', url: 'read~1', review: 'today~0', path: 'travel' };
   const byId = id => { id = OLD_ID[id] || id; const m = String(id || '').match(/^(.+)~(\d+)$/); if (m) return subOf(TOOLS.find(t => t.id === m[1]), +m[2]); return TOOLS.find(t => t.id === id) || PLACES.find(t => t.id === id) || null; };
 
   /* ---------- 狀態 ---------- */
@@ -216,7 +216,7 @@
       return { sec: sec('learn') };
     }
     if (/^(kana-guide|kana-drill)$/.test(name)) return G('kana', T('kana-guide'));
-    if (/^(kana-quiz|quest)$/.test(name)) return G('kana', T('kana-test'));
+    if (name === 'kana-quiz') return G('kana', T('kana-test'));
     if (/^(biz|biz-unit)$/.test(name)) return G('work');
     if (name === 'biz-read') return G('work', { sub: '商務文章' });
     if (/^(songs|song)$/.test(name)) return G('fun', { tool: byId('songs') });
@@ -224,10 +224,9 @@
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));
     if (/^(play|event|map)$/.test(name)) return G('travel', T('play'));
     if (name === 'drill') return G('travel', T('dialog'));
-    if (/^(menu|trip-event)$/.test(name)) return G('travel', T('task'));
+    if (name === 'menu') return G('travel', T('task'));
     if (/^(boot|boot-play)$/.test(name)) return G('travel', T('boot'));
-    if (/^(trip|trip-stop|trip-next|practice-map|practice|stage|scene|town)$/.test(name)) return G('travel');
-    if (/^(kb|kb-page|mind|mind3d)$/.test(name) || (name === 'lookup' && /^(gram|keigo)$/.test(p.view || ''))) return { sec: sec('lookup'), tool: byId('dict') };
+    if (/^(kb|kb-page|mind|mind3d|tree)$/.test(name) || (name === 'lookup' && /^(gram|keigo)$/.test(p.view || ''))) return { sec: sec('lookup'), tool: byId('dict') };
     if (name === 'phrasebook') return { sec: sec('lookup'), tool: byId('phrasebook') };
     if (name === 'lookup' && p.pick) { const t = byId(p.pick); return G('travel', { tool: t }); }
     if (name === 'lookup') return { sec: sec('lookup') };
@@ -244,7 +243,7 @@
   }
 
   /* ---------- 繼續上次：最後一個「內容頁」（單元、講義、歌曲、文章、小遊戲…） ---------- */
-  const CONT = /^(path-unit|kana-guide|kana-drill|kana-quiz|quest|song|read-article|biz-unit|biz-read|challenge-play|menu|drill|trip-event|boot-play|kb-page|mind3d|phrasebook|play)$/;
+  const CONT = /^(path-unit|kana-guide|kana-drill|kana-quiz|song|read-article|biz-unit|biz-read|challenge-play|menu|drill|boot-play|kb-page|tree|phrasebook|play)$/;
   const TITLE_SEL = ['.sg-head h2', '.rd-art h1', '.rd-title', '.pa-uh h1', '.bz-intro h2', '.bz h2', '.kg-host', '.lk-title', '.wd-title b', '#main h1', '#main h2'];
   function remember(name, p) {
     if (!CONT.test(name)) return;

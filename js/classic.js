@@ -1,9 +1,9 @@
 /* =========================================================
    路線額外練習 window.PathExtra（v13：經典練習拆進主線，不再有「🏯 經典練習」集中頁）
    PathExtra.list(goal, key) -> [{ id, icon, label, sub, go() }]
-     key 'tr-<包>'（旅遊包）：該場景的舊旅程狀況題（trip-event）、情境小遊戲（menu）、對話演練／口說（town drill）、
+     key 'tr-<包>'（旅遊包）：情境小遊戲（menu）、對話演練／口說（town drill）、
                              聽力特訓（boot-play：店員問句、看板、數字、量詞，依場景過濾）
-     key 'kana' 或 goal 'kana'：假名戰鬥（quest 平／片／濁拗音／畢業大考）、50 音小考（kana-quiz）、五十音字卡（cards）
+     key 'kana' 或 goal 'kana'：50 音小考（kana-quiz）、五十音字卡（cards）
      goal 'exam'：日檢字卡（cards jlpt）、日檢挑戰（challenge）
      其他：[]
    PathExtra.kanaTable(el)：五十音表（平／片切換、清音／濁音／拗音、點字發音、已學 ✓、點行首進對應路線五十音單元 path-unit kana-k*）
@@ -55,7 +55,6 @@
   }
   function travel(key) {
     const k = String(key).replace(/^tr-/, ''), scs = packScenes(k), out = [];
-    scs.forEach(sc => out.push(item('x:ev:' + sc, '⚡', SC[sc][1] + '狀況題', '店員這樣說，你怎麼回？5 題', 'trip-event', { stop: sc })));
     scs.forEach(sc => menuNames(sc).forEach(([ic, n], i) => out.push(item('x:menu:' + sc + ':' + i, ic, n, SC[sc][0] + ' 情境任務・限時', 'menu', { id: sc, m: i }))));
     if (scs.length) {
       const nm = scs.map(s => SC[s][1]).join('・');
@@ -154,11 +153,8 @@
     title: '假名測驗', icon: '✏️', nav: false, navParent: 'path',
     render(el) {
       if (!window.KanaLesson || !KanaLesson.quiz) { el.innerHTML = '<p class="center muted" style="margin:48px 0">載入中…</p>'; return; }
-      el.innerHTML = '<section class="kq"><h1>✏️ 假名測驗</h1><div class="tabs kq-mode" role="group" aria-label="模式"><button type="button" class="on" aria-pressed="true">✏️ 小考 10 題</button><button type="button" id="kqBattle" aria-pressed="false">⚔️ 戰鬥模式</button></div><div id="kqBox"></div></section>';
-      el.querySelector('#kqBattle').onclick = () => { const x = PathExtra.list('kana', 'kana')[0]; if (x) x.go(); else App.go('quest', { id: 'h-a', free: true, from: 'path' }); };
+      el.innerHTML = '<section class="kq"><h1>✏️ 假名測驗</h1><div id="kqBox"></div></section>';
       KanaLesson.quiz(el.querySelector('#kqBox'));
     }
   });
-  // 舊連結 classic → 路線（經典練習已拆進各旅遊包與五十音分頁）
-  App.register('classic', { title: '路線', icon: '🧭', nav: false, transient: true, navParent: 'path', render() { setTimeout(() => App.go('path'), 0); } });
 })();

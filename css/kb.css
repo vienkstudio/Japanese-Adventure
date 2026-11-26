@@ -225,3 +225,25 @@
 
 /* 「我已會 N? 以下文法」toast 的復原鈕（#toastBox 本身不接點擊） */
 #toastBox .kb-undo{pointer-events:auto;margin-left:8px;padding:2px 10px;border:1px solid currentColor;border-radius:var(--r-pill);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+/* 相依樹（js/mind-tree.js） */
+.mt-t{font-size:var(--fs-xl);margin:var(--sp-2) 0}
+.mt-q{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border:1px solid var(--line2);border-radius:var(--r-m);background:var(--card);color:var(--text);margin:0 0 var(--sp-3)}
+.mt-tree,.mt-tree ul{list-style:none;margin:0;padding:0}
+.mt-tree ul{margin-left:14px;padding-left:10px;border-left:2px solid var(--line2)}
+.mt-tree li{margin:4px 0}
+.mt-tree details>summary{list-style:none;display:flex;align-items:center;gap:6px;cursor:pointer}
+.mt-tree details>summary::-webkit-details-marker{display:none}
+.mt-tree details>summary::before{content:"▸";color:var(--muted);width:1em;flex:none;transition:transform .15s}
+.mt-tree details[open]>summary::before{transform:rotate(90deg)}
+.mt-leaf{padding-left:calc(1em + 6px)}
+.mt-n{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden;min-height:40px;border:none;border-radius:var(--r-m);background:var(--card);color:var(--text);font:inherit;text-align:left;padding:6px 10px;cursor:pointer;box-shadow:var(--shadow)}
+.mt-n b{white-space:nowrap}
+.mt-n .mt-zh,.mt-n .mt-ex{color:var(--muted);font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mt-n em{margin-left:auto;font-style:normal;color:var(--acc-d)}
+.mt-n.ing{box-shadow:inset 3px 0 0 var(--gold),var(--shadow)}
+.mt-n.ok{box-shadow:inset 3px 0 0 var(--acc),var(--shadow)}
+.mt-lv{font-style:normal;font-size:var(--fs-xs);color:var(--muted);flex:none}
+.mt-k{order:2;flex:none;font-size:var(--fs-xs);color:var(--muted)}
+.mt-cur{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:var(--sp-3);background:var(--pri-t);border-radius:var(--r-m)}
+.mt-cur b{font-size:var(--fs-lg)}
+.mt-h{font-size:var(--fs-md);margin:var(--sp-4) 0 var(--sp-2)}

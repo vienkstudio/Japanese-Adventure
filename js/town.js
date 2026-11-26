@@ -1,6 +1,6 @@
 /* =========================================================
    日語冒險 — 場景互動 town.js
-   路由：town（日本街道）、scene（場景：單字/常用句/對話演練/小測驗/任務模式）
+   路由：drill（場景包的對話、口說、單字測驗）；TownAPI 提供對話與測驗元件給 menu（js/practice.js）
    ========================================================= */
 (function () {
   'use strict';
@@ -77,10 +77,8 @@
   const scenes = () => (Array.isArray(window.SCENES) ? window.SCENES.filter(s => s && s.id) : []);
   const findScene = id => scenes().find(s => s.id === id) || null;
   const unlocked = () => true;   // 等級不再當鎖
-  const isDone = id => !!(App.state.sceneDone && App.state.sceneDone[id]);
   const arr = a => (Array.isArray(a) ? a : []);
   let aidOn = App.profile().assist !== 'none';   // 顯示讀音/中文：預設依 profile.assist
-  const tabMem = {};                // 每個場景記住目前分頁
   let listenOn = false;             // 聽力挑戰：對方的話先模糊
   let micOn = false;                // 口說模式：預設用說的回答
 
@@ -130,123 +128,12 @@
   const bindTrack = () => { };
   function errorView(el, title, msg) {
     el.innerHTML = `<div class="panel t-err"><div class="t-big">🧭</div><h2>${esc(title)}</h2><p class="muted">${esc(msg)}</p>
-      <button class="btn primary" id="tBack">🏙️ 返回日本街道</button></div>`;
-    el.querySelector('#tBack').onclick = () => App.go('town');
+      <button class="btn primary" id="tBack">↩ 回上一頁</button></div>`;
+    el.querySelector('#tBack').onclick = () => App.back();
   }
   function starsOf(ratio) { return ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0; }
 
-  /* ---------------- 路由：town ---------------- */
-  App.register('town', {
-    title: '日本街道', icon: '🏙️', nav: false,
-    render() { setTimeout(() => App.go('practice-map'), 0); }
-  });
-
-  /* ---------------- 路由：scene ---------------- */
-  App.register('scene', {
-    title: '場景', icon: '🏠', nav: false,
-    render(el, params) {
-      params = params || {};
-      const sc = findScene(params.id);
-      if (!sc) return errorView(el, '找不到這個場景', params.id ? `場景「${params.id}」不存在或資料尚未載入。` : '沒有指定場景。');
-      const mission = params.mission || '';
-      if (!mission && !params.free && !unlocked(sc)) {
-        el.innerHTML = `<div class="panel t-err"><div class="t-big">🔒</div><h2>${esc(sc.icon || '')} ${esc(sc.name)} 尚未解鎖</h2>
-          <p>需要 <b>Lv.${sc.unlockLevel || 1}</b>，你目前是 Lv.${App.level}。</p><p class="muted">到冒險地圖完成任務累積經驗值就能解鎖！</p>
-          <button class="btn" id="tBack">🏙️ 返回日本街道</button><button class="btn primary" id="tMap">🗺️ 冒險地圖</button></div>`;
-        el.querySelector('#tBack').onclick = () => App.go('town');
-        el.querySelector('#tMap').onclick = () => App.go('practice-map');
-        return;
-      }
-      const tips = arr(sc.tips);
-      el.innerHTML = `
-        <div class="panel t-head" style="--tc:${esc(sc.color || 'var(--line2)')}">
-          <div class="t-icon">${esc(sc.icon || '🏠')}</div>
-          <div class="t-info"><h2>${esc(sc.name)}</h2><div class="muted">${esc(sc.desc || '')}</div></div>
-          <button class="btn sm ghost" id="tBack">${mission ? '🗺️ 冒險地圖' : '🏙️ 返回街道'}</button>
-        </div>
-        ${tips.length ? `<div class="panel t-tips"><details${mission ? '' : ' open'}><summary>🎌 文化小知識（${tips.length}）</summary><ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details></div>` : ''}
-        <div id="tBody"></div>`;
-      el.querySelector('#tBack').onclick = () => (mission ? App.go('practice-map') : App.go('stage', { id: sc.id }));
-      const body = el.querySelector('#tBody');
-      if (mission) return missionMode(body, sc, mission);
-
-      const TABS = [['vocab', '📚 單字'], ['phrase', '💬 常用句'], ['dialog', '🎭 對話演練'], ['quiz', '⚡ 小測驗']].concat((window.MENUS || {})[sc.id] ? [['menu', '🗺️ 情境關卡']] : []);
-      body.innerHTML = `<div class="tabs t-tabs">${TABS.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div><div class="panel" id="tPane"></div>`;
-      const pane = body.querySelector('#tPane');
-      const show = k => {
-        tabMem[sc.id] = k;
-        body.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === k));
-        if (window.speechSynthesis) speechSynthesis.cancel();
-        ({ vocab: () => wordsView(pane, sc, 'word'), phrase: () => wordsView(pane, sc, 'phrase'), dialog: () => dialogMenu(pane, sc), quiz: () => quizIntro(pane, sc), menu: () => { tabMem[sc.id] = 'vocab'; App.go('stage', { id: sc.id }); } })[k]();
-      };
-      body.querySelectorAll('[data-t]').forEach(b => b.onclick = () => show(b.dataset.t));
-      show(params.tab || tabMem[sc.id] || 'vocab');
-    }
-  });
-
-  /* ---------------- 單字 / 常用句 ---------------- */
-  function wordsView(pane, sc, kind) {
-    const list = arr(kind === 'word' ? sc.vocab : sc.phrases);
-    if (!list.length) { pane.innerHTML = '<p class="muted center">這個場景還沒有資料。</p>'; return; }
-    const items = {};
-    pane.innerHTML = `<p class="muted" style="margin-top:0">👆 點卡片聽發音・底線顏色＝JLPT 參考分級</p>
-      <div class="lv-legend" style="margin-bottom:8px">${['N5', 'N4', 'N3', 'N2', 'N1', 'x'].map(lvBadge).join('')}</div>
-      <div class="t-words${kind === 'phrase' ? ' t-phr' : ''}">${list.map((w, i) => {
-        const it = App.wordItem(w, sc.name, kind); items[it.id] = it;
-        const lv = lvOf(w.jp, kind);
-        return `<div class="card t-word" data-i="${i}">
-          <span class="t-lv">${lvBadge(lv)}</span>
-          ${w.emoji ? `<div class="t-emo">${esc(w.emoji)}</div>` : ''}
-          <div class="t-jp jp"><span class="lv-u ${lvCls(lv)}">${esc(w.jp)}</span> <span style="font-size:.6em">🔊</span></div>
-          ${w.kana && w.kana !== w.jp ? `<div class="t-kana jp">${esc(w.kana)}</div>` : ''}
-          ${w.romaji ? `<div class="t-rom">${esc(w.romaji)}</div>` : ''}
-          <div class="t-zh">${esc(w.zh || '')}</div>
-          ${w.hint ? `<div class="t-hint">${esc(w.hint)}</div>` : ''}
-          ${kind === 'phrase' && w.use ? `<div class="t-use">🕒 <b>使用時機：</b>${esc(w.use)}</div>` : ''}
-          <div>${App.trackBtn(it)}</div></div>`;
-      }).join('')}</div>`;
-    pane.querySelectorAll('.t-word').forEach(c => c.onclick = () => { const w = list[+c.dataset.i]; App.speak(w.kana || w.jp); });
-    bindTrack(pane, items);
-  }
-
   /* ---------------- 對話演練 ---------------- */
-  function dialogMenu(pane, sc) {
-    const ds = arr(sc.dialogues);
-    if (!ds.length) { pane.innerHTML = '<p class="muted center">這個場景還沒有對話。</p>'; return; }
-    pane.innerHTML = `<p style="margin-top:0">選一段對話開始演練：店員/路人會先說話，你從選項中挑出適合的回答。</p>
-      <div class="t-dlist">${ds.map((d, i) => `<div class="card click" data-d="${i}"><div class="icon">🎭</div><b>${esc(d.title || '對話 ' + (i + 1))}</b>
-        <div class="muted">${arr(d.steps).length} 步</div></div>`).join('')}</div>`;
-    pane.querySelectorAll('[data-d]').forEach(c => c.onclick = () => practice(pane, sc, +c.dataset.d));
-  }
-
-  function practice(pane, sc, di) {
-    const d = arr(sc.dialogues)[di];
-    pane.innerHTML = `<div class="t-dbar"><h3 style="margin:0">🎭 ${esc(d.title || '')}</h3><button class="btn sm ghost" id="tDl">↩ 選其他對話</button></div><div id="tRun"></div>`;
-    pane.querySelector('#tDl').onclick = () => dialogMenu(pane, sc);
-    runDialogue(pane.querySelector('#tRun'), sc, d, res => {
-      const box = document.createElement('div');
-      box.className = 't-sum';
-      const pct = res.total ? Math.round(res.first / res.total * 100) : 100;
-      const rw = App.reward('scene-dlg:' + sc.id + ':' + di, starsOf(pct / 100), '場景練習');
-      box.innerHTML = `<div class="t-big">${pct >= 90 ? '🎉' : pct >= 60 ? '👍' : '💪'}</div><h3>對話完成！</h3>
-        <p>一次就選對 <b>${res.first}</b> / ${res.total} 步（${pct}%）</p>
-        ${rw.gained ? `<p class="xpgain">+${rw.gained} XP${rw.prevStars && rw.gained <= 3 ? '<br><small class="muted">重玩沒刷新星數，只給 3 XP</small>' : ''}</p>` : ''}
-        ${res.wrong.length ? `<div class="muted">選錯的句子已加入 📌不會清單：</div><div class="chips" style="justify-content:center">${res.wrong.map(w => `<span class="chip red jp">${esc(w.jp)} <small>${esc(w.zh)}</small></span>`).join('')}</div>` : ''}
-        <button class="btn" id="tAgain">🔄 再練一次</button><button class="btn primary" id="tOther">選其他對話 ➜</button>`;
-      pane.querySelector('#tRun').appendChild(box);
-      box.querySelector('#tAgain').onclick = () => practice(pane, sc, di);
-      box.querySelector('#tOther').onclick = () => dialogMenu(pane, sc);
-      if (!App.state.sceneDone) App.state.sceneDone = {};
-      App.state.sceneDone[sc.id] = true;
-      App.save();
-      box.scrollIntoView && box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-  }
-
-  /**
-   * 執行一段對話。onDone({total, first, wrong:[trackerItem]})
-   * opts.onStep(firstTryCorrect) 每步完成時呼叫（任務模式進度條用）
-   */
   function runDialogue(host, sc, d, onDone, opts) {
     opts = opts || {};
     const steps = arr(d.steps);
@@ -372,55 +259,6 @@
     step(0);
   }
 
-  /* ---------------- 任務模式 ---------------- */
-  function missionMode(body, sc, mission) {
-    const ds = arr(sc.dialogues);
-    const q = (window.QUESTS || []).find(x => x.id === mission);
-    const total = ds.reduce((n, d) => n + arr(d.steps).length, 0);
-    let doneSteps = 0, first = 0;
-    const wrong = [];
-    body.innerHTML = `<div class="t-mission">⚔️ 任務模式${q && q.title ? '：' + esc(q.title) : ''}
-        <div class="bar"><div id="tMBar" style="width:0%"></div></div><span id="tMTxt">0/${total}</span></div>
-      <div class="panel" id="tMPane"></div>`;
-    const pane = body.querySelector('#tMPane'), bar = body.querySelector('#tMBar'), txt = body.querySelector('#tMTxt');
-    if (!total) { pane.innerHTML = '<p class="muted center">這個場景還沒有對話資料，暫時無法進行任務。</p>'; return; }
-    const onStep = () => { doneSteps++; bar.style.width = (doneSteps / total * 100) + '%'; txt.textContent = doneSteps + '/' + total; };
-
-    function play(i) {
-      while (i < ds.length && !arr(ds[i].steps).length) i++;
-      if (i >= ds.length) return finish();
-      const d = ds[i];
-      pane.innerHTML = `<h3 style="margin-top:0">第 ${i + 1} / ${ds.length} 段：${esc(d.title || '')}</h3><div id="tRun"></div>`;
-      runDialogue(pane.querySelector('#tRun'), sc, d, res => {
-        first += res.first;
-        res.wrong.forEach(w => { if (!wrong.some(x => x.id === w.id)) wrong.push(w); });
-        const more = ds.slice(i + 1).some(x => arr(x.steps).length);
-        const box = document.createElement('div');
-        box.className = 't-sum';
-        box.innerHTML = `<p>本段一次答對 <b>${res.first}</b> / ${res.total}</p><button class="btn primary">${more ? '下一段 ➜' : '查看結果 🏁'}</button>`;
-        pane.querySelector('#tRun').appendChild(box);
-        box.querySelector('button').onclick = () => play(i + 1);
-      }, { onStep });
-    }
-    function finish() {
-      const ratio = total ? first / total : 0;
-      const stars = starsOf(ratio);
-      const r = App.completeQuest(mission, stars, (q && q.xp) || 40);
-      pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🏆' : '💪'}</div><h3>${stars ? '任務完成！' : '任務失敗，再挑戰一次吧！'}</h3>
-        <p>一次答對 ${first} / ${total}（${Math.round(ratio * 100)}%）</p>
-        <button class="btn" id="tRe">🔄 重新挑戰</button><button class="btn primary" id="tMap">🗺️ 回冒險地圖</button></div>`;
-      const retry = () => App.go('scene', { id: sc.id, mission });
-      pane.querySelector('#tRe').onclick = retry;
-      pane.querySelector('#tMap').onclick = () => App.go('practice-map');
-      App.showResult({
-        title: stars ? `任務完成！${sc.name}` : '任務失敗，再試一次！',
-        stars, correct: first, total, gained: r && r.gained, wrong,
-        retry, next: { label: '回冒險地圖', route: 'practice-map' }
-      });
-    }
-    play(0);
-  }
-
   /* ---------------- 小測驗 ---------------- */
   // 題庫：kinds = ['word','phrase']；每題記住來源場景名稱
   function poolOf(list, kinds) {
@@ -429,19 +267,6 @@
       kinds.includes('word') ? arr(sc.vocab).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'word', s: sc.name })) : [],
       kinds.includes('phrase') ? arr(sc.phrases).filter(w => w && w.jp && w.zh).map(w => ({ w, kind: 'phrase', s: sc.name })) : []));
   }
-  const pool = sc => poolOf([sc]);
-  function quizIntro(pane, sc) {
-    const P = pool(sc);
-    if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
-    pane.innerHTML = `<div class="center"><div class="q-big">⚡</div><h3>${esc(sc.name)} 小測驗</h3>
-      <p class="muted">從本場景的單字與常用句隨機出 ${Math.min(10, P.length)} 題：日→中、中→日、聽音選字。<br>答錯的會自動加入 📌不會清單。</p>
-      <button class="btn primary" id="tGo">開始測驗 ➜</button></div>`;
-    pane.querySelector('#tGo').onclick = () => quiz(pane, sc);
-  }
-  function quiz(pane, sc) {
-    quizRun(pane, pool(sc), { count: 10, reason: '場景小測驗', id: 'scene-quiz:' + sc.id, onEnd: () => quizIntro(pane, sc), retry: () => quiz(pane, sc) });
-  }
-  // 通用測驗：P 題庫、opts {count, reason, onEnd, retry, back}
   function quizRun(pane, P, opts) {
     opts = opts || {};
     const qs = App.sample(P, Math.min(opts.count || 10, P.length)).map(p => {
@@ -545,17 +370,10 @@
       const one = list.length === 1 ? list[0] : null;
       el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || 'var(--pri)' : 'var(--pri)')}">
           <div class="t-icon">${esc(one ? one.icon : '🗾')}</div>
-          <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div>
-          <button class="btn sm ghost" id="tBack">↩ 練習選單</button></div>
+          <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div></div>
         <div class="panel" id="tPane"></div>`;
-      const FP = params.from === 'path';   // 從路線旅遊包「更多練習」進來：返回＝回路線（頂列 ←），頁內不放返回鍵
-      const home = FP ? { label: '回路線' } : params.trip ? { label: '本站下一步 ➜', route: 'trip-stop' } : params.sit ? { label: '🗺️ 關卡地圖', route: 'stage', params: { id: params.sit.split(':')[0] } } : { label: '🎯 練習選單', route: 'practice' };
-      const saveSit = st => { if (params.sit && window.PracticeAPI) PracticeAPI.setSit(params.sit, st); };
-      el.querySelector('#tBack').textContent = params.trip ? '🗺️ 回地圖' : params.sit ? '🗺️ 關卡地圖' : '↩ 練習選單';
-      if (params.trip) home.back = 1;
-      el.querySelector('#tBack').onclick = () => params.trip ? App.go('trip') : home.route ? App.go(home.route, home.params) : App.back();
-      if (FP) el.querySelector('#tBack').remove();
-      const toHome = () => home.route ? App.go(home.route, home.params) : App.back();
+      const home = { label: '回上一頁' }, saveSit = () => { };
+      const toHome = () => App.back();
       const pane = el.querySelector('#tPane');
       const again = () => App.go('drill', params);
       if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {

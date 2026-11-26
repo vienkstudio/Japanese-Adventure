@@ -1,11 +1,7 @@
 /* =========================================================
-   日語冒險 — 自由練習 practice.js
-   路由：practice（nav：🎯 練習）
-     分頁「🧭 現在要去哪？」：選目的地 → 細分情境（互動菜單／各段對話／口說／單字／句子）
-     分頁「🎚️ 自選等級」：先選等級＋類別＋模式，直接開打（不受地圖解鎖限制）
-     分頁「🎴 分級字卡」：單字／會話句／形容詞／片語／諺語，JLPT 參考分級底線，自評難度可儲存
-   路由：menu（互動菜單小遊戲，params {id}）
-   依賴：App、Tracker、QuestAPI（quest.js）、TownAPI（town.js，render 時才取用）、MENUS、CARDS
+   日語冒險 — 字卡與情境任務 practice.js
+   路由：cards（分級字卡：五十音／日檢／場景／不會清單，自評難度可儲存）、menu（情境任務小遊戲，params {id, m}）
+   依賴：App、Tracker、TownAPI（town.js，render 時才取用）、MENUS、CARDS
    ========================================================= */
 (function () {
   'use strict';
@@ -15,43 +11,7 @@
     const st = document.createElement('style'); st.id = 'css-practice';
     st.textContent = `
 /* 首頁 */
-.h-me{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;color:var(--on-pri);background:var(--pri)}
-.h-av{font-size:2.3em;width:60px;height:60px;flex:none;border-radius:50%;background:var(--card);border:none;cursor:pointer;animation:float 3s ease-in-out infinite;padding:0}
-.h-inf{flex:1;min-width:0}
-.h-inf b{font-size:1.1em;color:var(--on-pri)}
-.h-inf .bar{margin:6px 0;background:color-mix(in srgb,var(--on-pri) 35%,transparent)}
-.h-inf .bar>div{background:var(--card)}
-.h-inf small{font-size:.78em;opacity:.92}
-.h-next{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border:none;border-radius:20px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .1s}
-.h-next:active{transform:scale(.97)}
-.h-next .i{font-size:2em;width:52px;height:52px;flex:none;border-radius:50%;background:var(--pri-t);display:flex;align-items:center;justify-content:center}
-.h-next .t{flex:1;min-width:0;line-height:1.3}
-.h-next small{color:var(--muted);font-size:.78em;display:block}
-.h-next b{font-size:1.15em}
-.h-next .go{width:40px;height:40px;border-radius:50%;background:var(--pri);color:var(--on-pri);display:flex;align-items:center;justify-content:center;font-size:1em;flex:none}
 @keyframes hpulse{0%,100%{transform:none}50%{transform:scale(1.015)}}
-.h-daily{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0}
-.h-daily>div{position:relative;overflow:hidden;background:var(--card);border:none;border-radius:14px;padding:6px 8px;font-size:.72em;line-height:1.25;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow)}
-.h-daily>div span{font-size:1.3em}
-.h-daily i{position:absolute;left:0;bottom:0;height:3px;background:var(--acc)}
-.h-daily .ok{background:var(--acc-t)}
-.h-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.h-lv button{border:none;border-radius:16px;background:var(--card);padding:8px 2px;cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);line-height:1.25;transition:transform .1s}
-.h-lv button:active{transform:scale(.95)}
-.h-lv button b{display:block;font-size:1em}
-.h-lv button small{display:block;font-size:.68em;color:var(--muted)}
-.h-lv button i{font-style:normal;font-size:.66em;color:var(--muted)}
-.h-lv button.on{background:var(--pri);color:var(--on-pri)}
-.h-lv button.on small,.h-lv button.on i{color:var(--on-pri-2)}
-.h-worlds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.h-w{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 8px 12px;border:none;border-radius:20px;background:var(--card);cursor:pointer;font-family:inherit;color:var(--text);box-shadow:var(--shadow);transition:transform .1s}
-.h-w:active{transform:scale(.96)}
-.h-w .ic{font-size:2.2em;line-height:1.1;width:56px;height:56px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
-.h-w b{font-size:.98em}
-.h-w small{font-size:.72em;color:var(--muted)}
-.h-w .pg{width:76%;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
-.h-w .pg i{display:block;height:100%;background:var(--acc);border-radius:3px}
-.h-w .md{position:absolute;top:6px;right:8px;font-size:1.2em}
 /* 場景關卡地圖 */
 .p-stage{position:relative;overflow:hidden;border-radius:22px;padding:16px;color:var(--text);margin-bottom:8px;background:var(--card);box-shadow:var(--shadow)}
 .p-sbig{position:absolute;right:14px;top:12px;font-size:3em;width:72px;height:72px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center}
@@ -178,11 +138,6 @@
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
-.h-save{margin:8px 2px 0;font-size:.78em;color:var(--muted);text-align:center}
-.h-save a{color:var(--pri);font-weight:700}
-.h-gsb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:10px 0 0;padding:10px;border:none;border-radius:999px;background:var(--card);color:var(--text);cursor:pointer;box-shadow:var(--shadow);font-family:inherit;font-weight:700;transition:transform .1s}
-.h-gsb:active{transform:scale(.97)}
-.h-gsb b{color:var(--pri)}
 .gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;padding:4px}
 .gs-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
 .gs-seal{width:72px;height:72px;border-radius:50%;background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.6;filter:grayscale(1)}
@@ -204,82 +159,7 @@
   const lvCls = lv => (lv || 'x').toLowerCase();
   const T = () => window.TownAPI || {};
 
-  // 等級 → 世界（地點）。入門/初級＝假名世界（冒險地圖的章節），中級/高級＝日本場景
-  const LEVELS = [
-    { id: 'L1', name: '入門', sub: '五十音', worlds: ['ch1', 'ch2'] },
-    { id: 'L2', name: '初級', sub: '濁音拗音', worlds: ['ch3'] },
-    { id: 'L3', name: '中級', sub: '生活場景', worlds: ['konbini', 'ramen', 'yakiniku', 'directions', 'cafe', 'station', 'drugstore', 'hotel'] },
-    { id: 'L4', name: '高級', sub: '旅遊進階', worlds: ['izakaya', 'clothes', 'shrine', 'airport', 'emergency'] }
-  ];
   const UI = { lv: '', deck: (() => { try { return App.profile && App.profile().lv === 'zero' ? 'hira' : 'word'; } catch (e) { return 'word'; } })(), lvF: 'all', dF: 'all', ci: 0 };
-  const chapOf = id => /^ch\d$/.test(id) ? (window.QUEST_CHAPTERS || []).find(c => 'ch' + c.n === id) || null : null;
-  function worldInfo(id) {
-    const c = chapOf(id);
-    if (c) return { id, icon: c.icon, name: c.name, desc: c.desc, color: c.color };
-    const s = findScene(id);
-    return s ? { id, icon: s.icon, name: s.name, desc: s.desc, color: s.color } : null;
-  }
-
-  // 備份碼：複製一段文字保存，之後貼回即可還原（任何環境都能用）
-  // 備份：分享到手機（存到 iCloud 雲碟／Google 雲端硬碟／LINE…）、存成檔案（自選位置）、複製備份碼；還原：選檔案或貼備份碼
-  const backup = () => App.backup();
-
-  /* ---------------- 御朱印帳：地點全部節點三星即可得 ---------------- */
-  const allWorlds = () => LEVELS.flatMap(L => L.worlds).filter(w => worldInfo(w));
-  const hasGoshuin = w => { const s = stageStars(w); return s.max > 0 && s.got >= s.max; };
-  const goshuinGot = () => allWorlds().filter(hasGoshuin).length;
-  function goshuin() {
-    const ws = allWorlds();
-    App.modal(`<h2 style="margin:.2em 0">⛩️ 御朱印帳</h2><p class="muted" style="font-size:.82em;margin:.2em 0">把一個地點的所有關卡都拿到 ⭐⭐⭐，就能蓋上朱印</p>
-      <div class="gs-grid">${ws.map(w => { const i = worldInfo(w), ok = hasGoshuin(w), st = stageStars(w);
-        return `<div class="gs-cell${ok ? ' ok' : ''}"><div class="gs-seal">${ok ? `<span class="gs-ic">${esc(i.icon)}</span><span class="gs-nm">${esc(i.name)}</span>` : `<span class="gs-ic">${esc(i.icon)}</span>`}</div><small>${ok ? '奉拝' : `⭐${st.got}/${st.max}`}</small></div>`; }).join('')}</div>
-      <p style="margin:.4em 0">已得 <b style="color:var(--shu)">${goshuinGot()}</b> / ${ws.length}</p>`, [{ label: '閉じる 關閉', cls: 'primary' }]);
-  }
-
-  /* ---------------- 首頁：選等級 → 選地點 ---------------- */
-  function renderHome(el) {
-    const S = App.state, lv = App.level, lo = App.LEVELS[lv - 1], hi = App.LEVELS[lv] || lo + 1000;
-    if (!UI.lv) UI.lv = ({ zero: 'L1', n5: 'L2', n4: 'L3' })[App.profile().lv] || 'L4';   // 預設分頁依單一程度 App.profile()
-    const L = LEVELS.find(x => x.id === UI.lv);
-    // 下一關：目前等級第一個還沒拿星的節點
-    let nextW = null, nextN = null;
-    const lvOrder = [L].concat(LEVELS.filter(x => x !== L));
-    for (const Lx of lvOrder) { for (const w of Lx.worlds) { const n = stageNodes(w).find(x => sitStars(x.key) === 0); if (n) { nextW = w; nextN = n; break; } } if (nextN) break; }
-    const d = window.Game ? Game.daily() : null;
-    const ss = App.saveStatus;
-    el.innerHTML = `
-      <div class="h-me">
-        <button class="h-av" id="avBtn" title="換角色">${window.Game ? Game.avatar() : '🧳'}</button>
-        <div class="h-inf"><b>Lv.${lv} ${esc(App.TITLES[lv - 1] || '')}</b>
-          <div class="bar"><div style="width:${Math.min(100, (S.xp - lo) / (hi - lo) * 100)}%"></div></div>
-          <small>${S.xp} XP・🔥 ${S.streak.days} 天・${ss === 'cloud' ? '☁️ 雲端存檔' : ss === 'local' ? '💾 本機存檔' : '⚠️ 無法存檔'}</small></div>
-      </div>
-      ${ss !== 'cloud' ? `<div class="h-save">${ss === 'none' ? '⚠️ 無法自動存檔' : '📱 進度只存在這台裝置'}，<a href="#" id="hBk">點 💾 備份</a></div>` : ''}
-      ${nextN ? `<button class="h-next" id="hNext"><span class="i">${esc(nextN.icon)}</span><span class="t"><small>繼續冒險・${esc(worldInfo(nextW).name)}</small><b>${esc(nextN.name)}</b></span><span class="go">▶</span></button>` : '<div class="panel center">🏆 全部制霸！</div>'}
-      ${d ? `<div class="h-daily">${Game.DAILY.map(m => { const v = Math.min(m.goal, d[m.id] || 0); return `<div class="${d.claimed[m.id] ? 'ok' : ''}"><span>${d.claimed[m.id] ? '✅' : m.icon}</span><small>${esc(m.label)}</small><i style="width:${v / m.goal * 100}%"></i></div>`; }).join('')}</div>` : ''}
-      <button class="h-gsb" id="hGos">⛩️ 御朱印帳 <b>${goshuinGot()}/${allWorlds().length}</b></button>
-      <div class="sec-t">① 選練習類型</div>
-      <div class="h-lv">${LEVELS.map(x => { const st = x.worlds.reduce((a, w) => { const s = stageStars(w); return [a[0] + s.got, a[1] + s.max]; }, [0, 0]);
-        return `<button data-lv="${x.id}" class="${x.id === UI.lv ? 'on' : ''}"><b>${x.name}</b><small>${x.sub}</small><i>⭐${st[0]}/${st[1]}</i></button>`; }).join('')}</div>
-      <div class="sec-t">② 選地點</div>
-      <div class="h-worlds">${L.worlds.map(w => { const info = worldInfo(w); if (!info) return ''; const st = stageStars(w), pct = st.max ? st.got / st.max * 100 : 0;
-        return `<button class="h-w" data-w="${w}" style="--tc:${esc(info.color || 'var(--n4)')}">${pct >= 100 ? '<span class="md">🏅</span>' : ''}<span class="ic">${esc(info.icon)}</span><b>${esc(info.name)}</b>
-          <span class="pg"><i style="width:${pct}%"></i></span><small>⭐ ${st.got}/${st.max}・${st.n} 關</small></button>`; }).join('')}</div>
-      <p class="center muted" style="font-size:.8em;margin-top:18px"><a href="日文講義.html">🎓 入門講義</a>・<a href="50音訓練表.html">🎯 50音表</a>・<a href="#" id="bk">💾 備份／分享／還原進度</a>・<a href="#" id="reset">重置</a></p>`;
-    el.querySelector('#avBtn').onclick = () => window.Game && Game.pickAvatar(() => App.render());
-    const hn = el.querySelector('#hNext'); if (hn) hn.onclick = () => nextN.go();
-    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { UI.lv = b.dataset.lv; renderHome(el); });
-    el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => App.go('stage', { id: b.dataset.w }));
-    el.querySelector('#bk').onclick = e => { e.preventDefault(); backup(); };
-    const hb = el.querySelector('#hBk'); if (hb) hb.onclick = e => { e.preventDefault(); backup(); };
-    el.querySelector('#hGos').onclick = goshuin;
-    if (ss === 'none' && !UI.warned) { UI.warned = true; App.toast('⚠️ 這個環境無法自動存檔，請用「💾 備份進度」保存'); }
-    el.querySelector('#reset').onclick = e => { e.preventDefault(); App.modal('<h2>確定重置？</h2><p>經驗值、星星、不會清單都會清空。</p>', [{ label: '取消' }, { label: '重置', cls: 'primary', onClick: App.resetAll }]); };
-  }
-
-  /* ---- 情境星數（存檔：App.state.sit） ---- */
-  App.register('practice-map', { title: '原版練習', icon: '🎯', nav: false, render: renderHome });
-
   const sitStars = key => /^q:/.test(key) ? App.stars(key.slice(2)) : ((App.state.sit || {})[key] || 0);
   function setSit(key, stars) {
     if (!key) return;
@@ -288,78 +168,6 @@
     if ((stars | 0) > prev) { App.state.sit[key] = stars | 0; App.save(); if (!prev && App.noteClear) App.noteClear(); }
   }
   const menusOf = id => { const m = (window.MENUS || {})[id]; return Array.isArray(m) ? m : m ? [m] : []; };
-  const TYPE_LB = { order: '點餐購物', ticket: '買票', ask: '詢問', request: '索取', pref: '說明需求', qa: '對答', kenbaiki: '券売機', okonomi: '說喜好' };
-  // 場景的所有細分關卡
-  // 各場景依實際到店流程排序（m＝情境遊戲、d＝對話）
-  const TIMELINE = {
-    konbini: ['d1', 'm0', 'm1', 'm2', 'd0'], ramen: ['d0', 'm0', 'm1', 'd1', 'm2'], cafe: ['m0', 'm1', 'm2', 'd0', 'd1'],
-    drugstore: ['m2', 'd0', 'm0', 'd1', 'm1', 'd2'], izakaya: ['m0', 'd0', 'm1', 'd1', 'm2', 'm3', 'd2'], clothes: ['m0', 'm2', 'd0', 'm1', 'd1'],
-    directions: ['m0', 'd0', 'm1', 'd1', 'm2'], station: ['m0', 'm1', 'd0', 'm2', 'd1'], hotel: ['d0', 'm1', 'm0', 'm2', 'd1'],
-    shrine: ['m2', 'm0', 'm1', 'd0', 'd1'], airport: ['m0', 'd0', 'm1', 'm2', 'd1'], emergency: ['m2', 'd1', 'm1', 'm0', 'd0', 'd2'],
-    yakiniku: ['m0', 'd0', 'm1', 'm2', 'm3', 'm4', 'd1', 'm5']
-  };
-  function stageNodes(id) {
-    const ch = chapOf(id);
-    if (ch) return (window.QUESTS || []).filter(q => q.chapter === ch.n && q.type === 'kana').map(q => ({ key: 'q:' + q.id, icon: q.icon, name: q.title.replace(/^BOSS：/, '').replace(/：.*/, ''), sub: q.boss ? '👑 BOSS' : '⚔️ 假名戰鬥', boss: q.boss, go: () => App.go('quest', { id: q.id, free: true }) }));
-    const s = findScene(id); if (!s) return [];
-    const ms = menusOf(id), ds = arr(s.dialogues), out = [];
-    const mNode = i => ({ key: id + ':m' + i, icon: ms[i].icon || '🧾', name: ms[i].name, sub: '🧾 ' + (TYPE_LB[ms[i].type] || '互動'), go: () => App.go('menu', { id, m: i }) });
-    const dNode = i => ({ key: id + ':d' + i, icon: '🎭', name: ds[i].title || '對話 ' + (i + 1), sub: '🎭 對話', go: () => App.go('drill', { scenes: [id], kind: 'dialog', dialog: i, sit: id + ':d' + i }) });
-    let seq = TIMELINE[id];
-    if (!seq) { seq = []; for (let i = 0; i < Math.max(ms.length, ds.length); i++) { if (ms[i]) seq.push('m' + i); if (ds[i]) seq.push('d' + i); } }
-    const seen = new Set();
-    seq.concat(ms.map((_, i) => 'm' + i), ds.map((_, i) => 'd' + i)).forEach(k => {
-      if (seen.has(k)) return; seen.add(k);
-      const i = +k.slice(1);
-      if (k[0] === 'm' && ms[i]) out.push(mNode(i)); else if (k[0] === 'd' && ds[i]) out.push(dNode(i));
-    });
-    out.push({ key: id + ':word', icon: '📚', name: '單字特訓', sub: '📚 測驗', go: () => App.go('drill', { scenes: [id], kind: 'word', count: 10, sit: id + ':word' }) });
-    if (T().hasSR) out.push({ key: id + ':speak', icon: '🎤', name: '口說挑戰', sub: '🎤 用說的', go: () => App.go('drill', { scenes: [id], kind: 'speak', count: ds.length, sit: id + ':speak' }) });
-    else out.push({ key: id + ':speak', icon: '🔁', name: '跟讀練習', sub: '🔁 先聽再選', go: () => App.go('drill', { scenes: [id], kind: 'shadow', count: ds.length, sit: id + ':speak' }) });
-    out.push({ key: id + ':boss', icon: '👑', name: '店長考驗', sub: '👑 BOSS', boss: true, go: () => App.go('drill', { scenes: [id], kind: 'mix', count: 15, sit: id + ':boss', title: s.name + '・店長考驗' }) });
-    return out;
-  }
-  const stageStars = id => { const n = stageNodes(id); return { got: n.reduce((a, x) => a + sitStars(x.key), 0), max: n.length * 3, n: n.length }; };
-
-  function situations(id) { App.go('stage', { id }); }
-
-  /* ---- 路由：stage（場景關卡地圖） ---- */
-  function renderStage(el, params) {
-    const id = (params || {}).id, s = worldInfo(id);
-    if (!s) { App.go('practice-map'); return; }
-    const nodes = stageNodes(id), st = stageStars(id);
-    const cur = nodes.find(n => sitStars(n.key) === 0) || null;
-    const X = [50, 76, 70, 42, 22, 30, 58, 78, 50];
-    const H = 126;
-    el.innerHTML = `<div class="p-stage" style="--tc:${esc(s.color || 'var(--pri)')}">
-        <div class="p-sbig">${esc(s.icon)}</div>
-        <div class="p-stt"><small>現在去</small><h2>${esc(s.name)}</h2><div class="p-sdesc">${esc(s.desc || '')}</div></div>
-        <div class="p-sbar"><div class="bar"><div style="width:${st.max ? st.got / st.max * 100 : 0}%"></div></div><span>⭐ ${st.got}/${st.max}</span></div>
-        <div class="p-sbtn"><button class="btn sm" id="sBack">↩ 選地點</button>${chapOf(id) ? '' : '<button class="btn sm" id="sLearn">📖 單字・小知識</button>'}${cur ? '<button class="btn sm primary" id="sGo">▶ 下一關</button>' : '<span class="pill">🏅 全制霸</span>'}</div>
-      </div>
-      <div class="q-path" style="height:${nodes.length * H + 30}px">
-        <svg class="q-svg" preserveAspectRatio="none" viewBox="0 0 100 ${nodes.length * H + 30}"><path d="${nodes.map((n, i) => `${i ? 'L' : 'M'}${X[i % X.length]} ${i * H + 46}`).join(' ')}" fill="none" style="stroke:var(--line2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
-        ${nodes.map((n, i) => {
-          const k = sitStars(n.key), isCur = cur && cur.key === n.key;
-          return `<div class="q-nd ${k ? 'cl' : isCur ? 'open' : 'todo'}${n.boss ? ' boss' : ''}${isCur ? ' cur' : ''}" data-i="${i}" style="left:${X[i % X.length]}%;top:${i * H + (n.boss ? 0 : 8)}px">
-            ${isCur ? `<div class="q-me">${window.Game ? Game.avatar() : '🧳'}</div>` : ''}
-            <div class="q-circ">${esc(n.icon)}</div><div class="q-s">${'★'.repeat(k)}${'☆'.repeat(3 - k)}</div>
-            <div class="q-lbl">${esc(n.name)}</div><div class="p-nsub">${esc(n.sub)}</div></div>`; }).join('')}
-      </div>`;
-    el.querySelector('#sBack').onclick = () => App.go('practice-map');
-    const sl = el.querySelector('#sLearn'); if (sl) sl.onclick = () => App.go('scene', { id, free: true });
-    const g = el.querySelector('#sGo'); if (g) g.onclick = () => cur.go();
-    el.querySelectorAll('.q-nd[data-i]').forEach(d => d.onclick = () => {
-      const n = nodes[+d.dataset.i], k = sitStars(n.key);
-      App.modal(`<div style="font-size:3em;line-height:1">${esc(n.icon)}</div><h2 style="margin:.2em 0">${esc(n.name)}</h2>
-        <p><span class="chip">${esc(n.sub)}</span> <span class="chip">${esc(s.name)}</span></p>${/^q:/.test(n.key) ? '<p class="muted" style="font-size:.88em">答對＝攻擊，答錯被反擊扣 ❤️，剩幾顆心拿幾顆星</p>' : ''}<p style="font-size:1.6em;color:var(--kin);margin:.2em">${'★'.repeat(k)}${'☆'.repeat(3 - k)}</p>`,
-        [{ label: '取消' }, { label: '⚔️ 開始', cls: 'primary', onClick: n.go }]);
-    });
-    const c = el.querySelector('.q-nd.cur');
-    if (c && c.scrollIntoView && nodes.indexOf(cur) > 2) setTimeout(() => c.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
-  }
-  App.register('stage', { title: '場景關卡', icon: '🗺️', nav: false, render: renderStage });
-
   /* ---- 🎴 分級字卡 ---- */
   const DECKS = [['hira', 'あ', '平假名'], ['kata', 'ア', '片假名'], ['daku', '゛', '濁音・拗音'], ['mine', '📌', '不會清單'], ['sent', '🃏', '冒險句卡'], ['jlpt', '📗', 'N5–N1 單字'], ['word', '📚', '場景單字'], ['phrase', '💬', '會話句'], ['adj', '🎨', '形容詞'], ['idiom', '🧩', '片語'], ['proverb', '📜', '諺語']];
   const KANA_DECK = { hira: 1, kata: 1, daku: 1 };
@@ -470,7 +278,6 @@
   }
 
   App.register('cards', { title: '字卡', icon: '🎴', nav: false, navParent: 'review', render(el, p) { if (p && p.deck && DECKS.some(d => d[0] === p.deck)) { UI.deck = p.deck; UI.lvF = 'all'; UI.ci = 0; } el.innerHTML = '<div class="sec-t" style="margin-top:4px">🎴 字卡</div><div id="pBody"></div>'; cardsView(el.querySelector('#pBody')); } });
-  App.register('practice', { title: '練習', icon: '🎯', nav: false, transient: true, render() { setTimeout(() => App.go('practice-map'), 0); } });
 
   /* =========================================================
      路由：menu — 互動情境遊戲（params {id, m}）
@@ -603,12 +410,12 @@
     params = params || {};
     { const host = el; el = document.createElement('div'); host.appendChild(el); }   // 換頁時舊計時器能偵測到自己已脫離畫面
     const id = params.id, mi = +params.m || 0, ms = menusOf(id), m = ms[mi], sc = findScene(id);
-    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回首頁</button></div>`; el.querySelector('#mB').onclick = () => params.from === 'path' ? App.back() : App.go('practice-map'); return; }
-    const LV = params.lv || '', TRIP = !!params.trip, FP = params.from === 'path';   // FP：從路線旅遊包「更多練習」進來，返回＝回路線
+    if (!m || !sc) { el.innerHTML = `<div class="panel center"><h2>🧭 找不到這個情境</h2><button class="btn primary" id="mB">回上一頁</button></div>`; el.querySelector('#mB').onclick = () => App.back(); return; }
+    const LV = params.lv || '';
     // 依程度調整：耐心秒數、中文看板、讀音提示、小意外次數
     const DIFF = { N5: { pat: 60, zh: true, aid: true, inc: 1 }, N4: { pat: 50, zh: false, aid: true, inc: 1 }, N3: { pat: 40, zh: false, aid: false, inc: 2 }, N2: { pat: 32, zh: false, aid: false, inc: 2 }, N1: { pat: 26, zh: false, aid: false, inc: 3 } }[LV] || { pat: 45, zh: GOPT.zh, aid: App.profile().assist !== 'none', inc: 1 };
     if (LV) GOPT.zh = DIFF.zh;
-    const back = FP ? { label: '回路線' } : TRIP ? { label: '本站下一步 ➜', route: 'trip-stop' } : { label: '🗺️ 關卡地圖', route: 'stage', params: { id } };
+    const back = { label: '回上一頁' };   // 返回＝上一頁（頂列 ←）
     const key = id + ':m' + mi + (LV ? '@' + LV : ''), G_ = window.Game || { sfx() { }, floatText() { }, burst() { }, vibrate() { } };
     const N = m.type === 'qa' && m.seq ? Math.min(8, m.qs.length) : 5, PAT = DIFF.pat;   // 旅伴人數；依序對答的情境＝每個流程一位
     // 真實小意外：每局必出一次（店員講太快要請他重說／品項賣完）
@@ -627,7 +434,7 @@
       <div class="g-opt"${LV ? ' style="display:none"' : ''}><label class="t-aidsw"><input type="checkbox" id="gRelax"${GOPT.relax ? ' checked' : ''}> 🐢 慢慢來（不計時）</label><label class="t-aidsw"><input type="checkbox" id="gZh"${GOPT.zh ? ' checked' : ''}> 看板顯示中文</label></div>
       <div class="panel${GOPT.zh ? '' : ' m-noz'}${DIFF.aid ? '' : ' t-noaid'}" id="mPane" style="margin-top:6px"></div>`;
     const $ = s => el.querySelector(s), pane = $('#mPane');
-    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => FP ? App.back() : App.go(TRIP ? 'trip' : back.route, TRIP ? null : back.params) }]);
+    $('#gX').onclick = () => App.modal('<h2>要離開嗎？</h2><p>這一關的進度不會保存。</p>', [{ label: '繼續玩', cls: 'primary' }, { label: '離開', onClick: () => App.back() }]);
     $('#gRelax').onchange = e => { GOPT.relax = e.target.checked; hud(); };
     $('#gZh').onchange = e => { GOPT.zh = e.target.checked; pane.classList.toggle('m-noz', !GOPT.zh); };
     $('#gHelp').onclick = () => guide(true);
@@ -1044,19 +851,19 @@
       const xp = !stars ? 0 : stars > prevSt ? XPS[stars] - XPS[prevSt] + (stars === 3 ? 10 : 0) : 3;
       const r = xp ? App.addXP(xp, stars === 3 && prevSt < 3 ? '情境挑戰・首次三星' : '情境挑戰') : { gained: 0 };
       if (stars) { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[id] = true; App.save(); }
-      const nx = TRIP ? back : mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: Object.assign({}, params, { id, m: mi + 1 }) } : back;
+      const nx = mi + 1 < ms.length ? { label: '下一個情境 ➜', route: 'menu', params: Object.assign({}, params, { id, m: mi + 1 }) } : back;
       pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💀'}</div><h3>${stars ? '任務完成！' : '旅伴們生氣了…'}</h3><p>💯 ${S.score} 分・最高 🔥${S.best} 連擊</p>
         <button class="btn" id="mAg">🔄 再玩一次</button><button class="btn primary" id="mSt">${back.label}</button></div>`;
       pane.querySelector('#mAg').onclick = () => App.go('menu', params);
-      pane.querySelector('#mSt').onclick = () => back.route ? App.go(back.route, back.params) : App.back();
+      pane.querySelector('#mSt').onclick = () => App.back();
       App.showResult({
         title: (stars ? `${m.name} 完成！` : '挑戰失敗，再試一次！') + `（💯 ${S.score}）`, stars, correct: S.ok, total: S.tot, gained: r.gained, wrong: S.wrong,
-        retry: () => App.go('menu', params), back: TRIP ? { label: '🗺️ 回地圖', route: 'trip' } : back, next: stars ? nx : null
+        retry: () => App.go('menu', params), back, next: stars ? nx : null
       });
     }
     hud(); guide(false); round();
   }
   const OKR = [{ jp: 'かしこまりました。', kana: 'かしこまりました', zh: '好的。' }];
   App.register('menu', { title: '情境任務', icon: '🧾', nav: false, navParent: 'path', render: renderMenu });
-  window.PracticeAPI = { situations, yomi, setSit, sitStars, stageNodes, menusOf, renderHome, LEVELS, backup };
+  window.PracticeAPI = { yomi, setSit, sitStars, menusOf };
 })();

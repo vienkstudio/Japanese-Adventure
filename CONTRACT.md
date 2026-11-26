@@ -31,11 +31,11 @@ Home.needSrc([js…], [css…]) -> Promise / Home.loadCSS(href) -> Promise
 | `phrasebook` | K、SC、PH、data/world/index.js、kana-lesson、phrasebook | kana.css |
 | `boot`、`boot-play` | SC、data/drills.js、drill.js | — |
 | `challenge`、`challenge-play` | data/mind/grammar.js、challenge.js | challenge.css |
-| `kb`（nav 4）、`kb-page`、`mind` | PH、LO、data/mind/{taxonomy,conj,grammar,scripts}、kb.js | kb.css |
-| `mind3d` | 同 kb ＋ SC、vendor/3d-force-graph、mind3d、mind-game | kb.css、mind.css |
+| `kb`（nav 4）、`kb-page`、`mind` | PH、LO、data/mind/{taxonomy,conj,grammar}、data/mind/grammar-ex.js、kb.js | kb.css |
+| `tree`、`mind3d`（轉址） | data/mind/{conj,grammar}、mind-tree.js | kb.css |
 | `read`（nav 3）、`read-article`、`songs`、`song` | PH、LO、SC、data/reading/daily.js、data/reading/biz.js、jp-text、link-import、reader、songs | reader.css |
 | `biz`、`biz-unit`、`biz-read` | PH、data/biz/units-1..4、data/reading/biz.js、biz.js | biz.css（biz.js 也會自行插入） |
-| `classic` 與全部舊路由（見下） | K、SC、cards、menus、TD、PH、LO、quest、practice、town、travel、classic.js | travel.css、world.css、kana.css |
+| `menu`、`drill` | SC、data/cards.js、data/menus.js、PH、LO、town.js、practice.js | world.css |
 
 ## core.js API
 ```js
@@ -153,19 +153,16 @@ migrate 也會修正型別：`xp` 非有限數字→0（負數→0）、`cleared
 | `play`（nav 2） | world.js | 冒險世界：params `{r, d, s}`；地圖頁（無 d/s）底部有「🏯 經典練習」入口（home.js 附加） |
 | `event` | world-quest.js | 店家狀況題（需 TravelData，延遲載入） |
 | `read`（nav 3）、`read-article`、`songs`、`song` | reader.js、songs.js | 閱讀、歌曲；文章分頁另有「💼 商務」一節（`BIZ_READING`，點了到 `biz-read`） |
-| `kb`（nav 4）、`kb-page`、`mind3d` | kb.js、mind3d.js | 知識庫；`mind3d`＝3D 心智圖（實驗功能，**不分 N 級**：學習路線用 `M.kb.gramPath(null, n)`；任務 66 個） |
+| `kb`（nav 4）、`kb-page`、`tree` | kb.js、mind-tree.js | 知識庫；`tree`＝相依樹：文法 `pre`（先修）與動詞變化 `from` 畫成可展開的樹，`{focus:id}` 顯示先學／後續；舊 `mind3d` 轉址 |
 | `review`（nav 5）、`cards` | review.js、practice.js | 複習（單一 SRS）、字卡 |
 | `phrasebook` | phrasebook.js | 會話手冊＋五十音講義與小考。params `{q}`、`{cat}`、`{tab:'kana', sub:'quiz'}` |
 | `challenge`、`challenge-play` | challenge.js | JLPT 題型挑戰 |
 | `biz`、`biz-unit`、`biz-read` | biz.js（C） | 商務日語：單元列表、單元流程 `{id}`、商務短文 `{id}`；`BIZ.next()` → `{label, sub, route:'biz-unit', params:{id}, icon}`；`BIZ.load()` 載入 data/biz/* |
 | `boot`、`boot-play` | drill.js | 實戰特訓（經典練習內） |
-| `classic` | classic.js | 🏯 經典練習：收納舊模組的單一入口（從冒險地圖頁或設定進入，不在首頁） |
-| `trip`、`trip-stop`（transient）、`trip-event`、`trip-next`（transient） | travel.js | 舊旅程東京 13 站（`{kana:1}`＝舊五十音入門） |
-| `practice-map`、`stage`、`practice`（transient）、`menu` | practice.js | 舊練習地圖、場景關卡、情境小遊戲 `menu {id}` |
-| `town`（transient）、`scene`、`drill` | town.js | 舊單字測驗／對話／口說：`scene {id}`、`drill {scenes:[id]}` |
-| `map`（transient）、`quest` | quest.js | 舊關卡 `quest {id, free}` |
+| `menu` | practice.js | 情境任務小遊戲 `menu {id, m}`（入口：場景單元的練習卡，PathExtra） |
+| `drill` | town.js | 場景包的對話／口說／單字測驗 `drill {scenes:[id], kind}` |
 
-舊模組答錯一律 `Learn.record(item.id, 0, {src:'quest'|'town'|'menu'|'trip'|'boot'|'world', item})`（會進不會清單，與 `Tracker.add` 效果相同）。
+練習答錯一律 `Learn.record(item.id, 0, {src:'town'|'menu'|'boot'|'world', item})`（會進不會清單，與 `Tracker.add` 效果相同）。舊模組 trip、practice-map、stage、scene、town、quest、3D 心智圖已於 V3.11.0 刪除；存檔的 `trip`、`sit`、`sceneDone`、`mind` 欄位保留不讀。
 
 ## 狀況題格式（data/travel*.js）
 `stop.events[難度]` 每題可用物件 `{ scene, prompt, translation, answers:[正解, ...干擾], explanation, reading? }`，或舊的位置陣列 `[scene, prompt, translation, answers, explanation, reading?]`（travel.js 的 `evObj()` 會轉換）。新資料請用物件格式。
@@ -211,19 +208,13 @@ N5／N4：〜ください・〜お願いします；N3：請求（〜お願い�
 2. node 載入資料檔確認筆數與欄位。
 3. 瀏覽器跑（375px，6 主題×淺深色）：首頁 → 入門一局 → 地圖一站 → 結果 → 不會清單 → 手冊。
 
-## 知識庫 kb ＋ 3D 心智圖 mind3d（C）
-- 主介面 `kb`（js/kb.js、css/kb.css，前綴 `kb-`）；`App.go('kb-page', {id})`，id 可為 `w:N5:12`／`gram:〜ます`／`cj:te`。舊 `mind` 路由＝轉址（帶 focus/script → `mind3d`，其餘 → `kb`）。
-- 3D 改路由 `mind3d`（nav:false, navParent:'kb'，實驗功能）。延遲載入順序：data/mind/{taxonomy,conj,grammar,scripts}.js → js/kb.js →（mind3d 另加）vendor/3d-force-graph.min.js → js/mind3d.js → js/mind-game.js；**kb.js 必須在 mind3d.js 之前**；lex-n5…n1 由 kb.js／mind3d.js 自行載入。
-- 狀態改走 Learn（見「學習進度 Learn」）：`M.ST = Learn.mindST()`；`jpq.mind.v1` 不再寫入。視圖設定 `jpq.kb.v1`；lex 列新增第 8 欄 core。以下為 3D 細節：
-延遲載入：`vendor/3d-force-graph.min.js` → `data/mind/{taxonomy,conj,grammar,scripts}.js` → `js/mind3d.js` → `js/mind-game.js`；詞彙 `data/mind/lex-n{5..1}.js` 用到該等級才載入。樣式 `css/mind.css`（前綴 `mm-`、`route-mind3d`）。
+## 知識庫 kb ＋ 相依樹 tree（C）
+- 主介面 `kb`（js/kb.js、css/kb.css，前綴 `kb-`）；`App.go('kb-page', {id})`，id 可為 `w:N5:12`／`gram:〜ます`／`cj:te`。舊 `mind` 路由＝轉址（帶 focus → `tree`，其餘 → `kb`）。
+- 相依樹 `tree`（js/mind-tree.js，樣式在 kb.css，前綴 `mt-`）：只需 data/mind/{conj,grammar}.js；子節點第一次展開才產生。
+- 狀態改走 Learn（見「學習進度 Learn」）：`M.ST = Learn.mindST()`；`jpq.mind.v1` 不再寫入。視圖設定 `jpq.kb.v1`；lex 列新增第 8 欄 core。
 - 全域 `MIND`：`LEVELS`、`WH`（人事時地物＋狀、虛）、`SCENES`（18 個生活場景）、`SUB`（旅遊場景 → 生活場景）、`POS`、`GRP`、`GCAT`、`CONJ`／`conjugate(動詞, 類別)`／`adjForms`、`gram[]`、`GROUPS`、`lex.N5…`。
 - 詞彙列：`[jp, kana(同 jp 時空字串), zh, pos, grp, wh, 'sc1,sc2,…']`，第一個場景是主場景。加入不會清單用 `word:<jp>`。
 - 文法：`{id:'gram:<句型>', pat, lv, ord, zh, conn, ex:[日,中], cat, wh, sc[], conj[], pre[], rel[], note?}`；`pre` 只指向 `ord` 較小的文法。
-- 四種檢視：`map` 總覽（等級分層×人事時地物扇區×場景群）、`focus` 焦點、`tense` 時態網、`path` 學習路線（螺旋）。`App.go('mind3d', {focus:'節點id'})` 或 `{script:'任務id'}` 可直接進入。
-- 存檔：`M.ST`（＝`Learn.mindST()`）＝ `{learned, ing, fav（Learn 計算）, done:{任務id:星數}, best:最高連擊, toured, recent}`，在 `jpQuest.v1` 的 `learn`／`mind` 內（舊 localStorage `jpq.mind.v1` 只在遷移時讀）。
-- 任務腳本：`data/mind/scripts.js` 的 `MIND.SCRIPTS`（單一任務）與 `MIND.TEMPLATES`（`each` 展開），步驟 op 說明在該檔開頭；引擎在 `js/mind-game.js`（`MIND.game.start(id)`）。新增 op：在 `MIND.game.ops` 加一個 `async (step, run) => {}`。
-- 3D 檢視對腳本開放的 API：`MIND.view`（`setMode`、`focus`、`expand`、`flyTo`、`apply`、`HL` 高亮、`intercept` 攔截節點點擊、`learn`…）。
-- XP：任務完成依星數 10／15／20，規則同全站；答錯的單字自動進不會清單。
 - 資料重建與來源：`docs/資料來源.md`。
 
 ## 冒險世界（路由 `play`、`event`；首頁改由 home.js，`World.home` 不再使用）
