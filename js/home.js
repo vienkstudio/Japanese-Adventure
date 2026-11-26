@@ -123,19 +123,11 @@
     if (ok) { d.applied = 1; App.save(); }
     return ok;
   }
-  // 首頁一句話狀態：主課（複習＋新學）做完才算完成；應用另計；中途離開顯示真實進度
-  function dayStatus(d, due) {
-    const pg = d.prog;
-    if (!d.done && pg && pg.done > 0) return `做到一半・已做 ${pg.done}／${pg.tot}，按上面接著做`;
-    if (!d.done) return due ? `還沒開始・先複習 ${due} 個，再學新的` : '還沒開始・今天要學新的';
-    if (!d.applied) return `主課完成 ✓ 還差應用：${d.apLabel || '用出來一次'}`;
-    return due ? `今天的課完成 ✓ 還有 ${due} 個到期` : '今天全部完成 ✓ 想多學可以再上一課';
-  }
 
   function render(el) {
     const p = App.profile();
     if (!p.placed) return onboard(el);
-    const sk = App.streakInfo(), d = dayRec();
+    const d = dayRec();
     const km = kanaMode(p), goal = curGoal(p), g2 = km ? 'kana' : goal;
     const dueAll = dueAllNow(), pl = plan(g2, p.lv, dueAll, freshFor(g2, p.lv, dueAll)), n = pl.n, due = pl.due;
     const pg = !d.done && d.prog && d.prog.goal === g2 && d.prog.done > 0 ? d.prog : null;
@@ -144,9 +136,8 @@
     applyDone(d);
     const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今天的課' : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
     el.innerHTML = `<section class="hm">
-      <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}・${sk.days ? `🔥 連續 ${sk.days} 天${sk.done ? " ✓" : ""}` : esc(dayStatus(d, d.done ? dueAll : due))}</small></h1>
+      <h1 class="hm-hi">${greet()}</h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
-      <button type="button" class="hm-target" id="hm-target">🎯 每日目標：${p.mins} 分鐘・新學 ${n} 個<span aria-hidden="true">調整 ›</span></button>
       ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
       ${contHTML()}
       ${dueAll && d.done ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>還有 ${dueAll} 個到期</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
@@ -156,7 +147,6 @@
     const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
     if (gb) gb.onclick = () => { const lg = lessonGoals(p), i = lg.indexOf(goal); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); };
-    el.querySelector('#hm-target').onclick = () => App.go('settings', { focus: 'daily' });
   }
   // 繼續上次（js/nav.js 記錄最後一個內容頁：單元、講義、歌曲、文章、小遊戲…；14 天內）
   function contHTML() {
@@ -444,22 +434,10 @@
     const first = !App.profile().placed;
     App.setProfile({ lv });
     App.toast(`程度：${App.LV_NAMES[lv]}${lv === 'zero' ? '・先從五十音開始' : ''}`, 'ok');
-    if (first && el) return fontAsk(el);
+    if (first && el) return goalAsk(el);   // 字級在設定裡改
     App.go('home');
   }
-  // 首次開啟第二題：字級（存 App.state.ui.fs；之後在「我的」→ 設定也能改）
-  function fontAsk(el) {
-    document.body.classList.add('ob-mode');
-    const cur = (App.state.ui || {}).fs || 'm';
-    const FS = [['m', '標準', 100], ['l', '大', 125], ['xl', '特大', 150]];
-    el.innerHTML = `<section class="ob">
-      <h1>字要大一點嗎？</h1>
-      <p class="lead">選一個看得最舒服的（之後隨時能在「我的」→ 設定改）</p>
-      <div class="ob-list">${FS.map(([v, n, pc]) => `<button type="button" class="ob-opt ob-fs${cur === v ? ' on' : ''}" data-fs="${v}" aria-pressed="${cur === v}"><span><b style="font-size:${pc}%">${n}</b><small class="jp" lang="ja" style="font-size:${pc}%">こんにちは・你好</small></span></button>`).join('')}</div>
-    </section>`;
-    el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); goalAsk(el); });
-  }
-  // 首次開啟第三題：學日文的目的（可複選，存 profile.goals；決定首頁快查入口與推薦）
+  // 首次開啟第二題：學日文的目的（可複選，存 profile.goals；決定首頁快查入口與推薦）
   const goalList = sel => GOALS.map(([id, ic, n, d]) => `<button type="button" class="ob-opt${sel.includes(id) ? ' on' : ''}" data-goal="${id}" aria-pressed="${sel.includes(id)}"><span aria-hidden="true">${ic}</span><span><b>${n}</b><small>${d}</small></span></button>`).join('');
   function goalAsk(el) {
     document.body.classList.add('ob-mode');

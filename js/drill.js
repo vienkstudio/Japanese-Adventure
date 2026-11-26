@@ -1,4 +1,4 @@
-/* 實戰特訓：店員問句聽解（多種說法）、看板閱讀、數字快打。
+/* 聽力特訓：店員問句聽解（多種說法）、看板閱讀、數字快打。
    路由：boot（特訓首頁）、boot-play（params {m:'clerk'|'sign'|'num', f:篩選}） */
 (function () {
   'use strict';
@@ -222,7 +222,7 @@
     const o = OPT(), best = App.state.drill || {};
     const rates = [[0.7, '慢'], [0.85, '正常'], [1.05, '快']];
     el.innerHTML = `<section class="dr">
-      <h1 class="dr-h">🎧 實戰特訓</h1>
+      <h1 class="dr-h">🎧 聽力特訓</h1>
       <p class="dr-sub">旅行時最難的是：聽懂店員、看懂看板、抓住數字</p>${App.voiceHTML ? App.voiceHTML() : ""}
       <div class="dr-set"><div class="dr-g"><span>提示</span><button type="button" class="dr-tg${o.hint ? ' on' : ''}" id="dr-hint">${o.hint ? '👀 顯示文字' : '🙈 只聽聲音'}</button>
         </div><div class="dr-g"><span>語速</span>${rates.map(([r, n]) => `<button type="button" class="dr-tg${o.rate === r ? ' on' : ''}" data-rate="${r}">${n}</button>`).join('')}</div></div>
@@ -268,7 +268,7 @@
       if (stars > (best[mode] || 0)) best[mode] = stars;
       App.save();
       // 全站 XP 規則：首次依星數、刷新星數補差額、重玩沒進步只給 3 XP
-      const gained = App.reward('boot:' + mode + ':' + f, stars, '實戰特訓・' + M.name).gained;
+      const gained = App.reward('boot:' + mode + ':' + f, stars, '聽力特訓・' + M.name).gained;
       App.showResult({
         title: stars ? `${M.icon} ${M.name} 完成！` : '再練一次',
         stars, correct: R.pts, total: R.max, gained, wrong: R.wrong,

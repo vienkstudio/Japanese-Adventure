@@ -55,42 +55,30 @@
   }
   function travel(key) {
     const k = String(key).replace(/^tr-/, ''), scs = packScenes(k), out = [];
-    scs.forEach(sc => out.push(item('x:ev:' + sc, '⚡', '情境任務：' + SC[sc][1] + '狀況題', '店員這樣說，你怎麼回？5 題', 'trip-event', { stop: sc })));
+    scs.forEach(sc => out.push(item('x:ev:' + sc, '⚡', SC[sc][1] + '狀況題', '店員這樣說，你怎麼回？5 題', 'trip-event', { stop: sc })));
     scs.forEach(sc => menuNames(sc).forEach(([ic, n], i) => out.push(item('x:menu:' + sc + ':' + i, ic, n, SC[sc][0] + ' 情境任務・限時', 'menu', { id: sc, m: i }))));
     if (scs.length) {
       const nm = scs.map(s => SC[s][1]).join('・');
-      out.push(item('x:dlg:' + k, '🎭', '對話：打字', nm + '：跟店員來回對話', 'drill', { scenes: scs, kind: 'dialog', title: nm }));
-      out.push(item('x:spk:' + k, '🎤', '對話：口說', '開口說出回答（不支援麥克風時改跟讀）', 'drill', { scenes: scs, kind: 'speak', title: nm }));
+      out.push(item('x:dlg:' + k, '🎭', '打字對話', nm + '：跟店員來回對話', 'drill', { scenes: scs, kind: 'dialog', title: nm }));
+      out.push(item('x:spk:' + k, '🎤', '口說對話', '開口說出回答（不支援麥克風時改跟讀）', 'drill', { scenes: scs, kind: 'speak', title: nm }));
     }
     const B = BOOT[k] || {};
-    arr(B.c).forEach(c => out.push(item('x:clerk:' + c, '🗣️', '聽力特訓：店員問句', CLERK_N[c] + '：同一句話的不同講法', 'boot-play', { m: 'clerk', f: c })));
-    if (B.s) out.push(item('x:sign:' + B.s, '🪧', '聽力特訓：看板', SIGN_N[B.s] + '的標示', 'boot-play', { m: 'sign', f: B.s }));
-    if (B.n) out.push(item('x:num:' + B.n, '🔢', '聽力特訓：數字', '聽' + NUM_N[B.n] + '，打出數字', 'boot-play', { m: 'num', f: B.n }));
-    if (B.k) out.push(item('x:cnt', '🧮', '聽力特訓：量詞', '一個、兩杯、三張…', 'boot-play', { m: 'num', f: 'counter' }));
+    arr(B.c).forEach(c => out.push(item('x:clerk:' + c, '🗣️', '聽店員問句', CLERK_N[c] + '：同一句話的不同講法', 'boot-play', { m: 'clerk', f: c })));
+    if (B.s) out.push(item('x:sign:' + B.s, '🪧', '看標示', SIGN_N[B.s] + '的標示', 'boot-play', { m: 'sign', f: B.s }));
+    if (B.n) out.push(item('x:num:' + B.n, '🔢', '聽數字', '聽' + NUM_N[B.n] + '，打出數字', 'boot-play', { m: 'num', f: B.n }));
+    if (B.k) out.push(item('x:cnt', '🧮', '聽量詞', '一個、兩杯、三張…', 'boot-play', { m: 'num', f: 'counter' }));
     return out;
   }
-
-  /* ---------- 五十音：假名戰鬥（js/quest.js 關卡 id）、小考、字卡 ---------- */
-  const QUEST = [
-    ['h', '平假名', '🌲', ['h-a', 'h-ka', 'h-sa', 'h-ta', 'h-na', 'h-ha', 'h-ma', 'h-yrwn', 'h-boss']],
-    ['k', '片假名', '🏯', ['k-aka', 'k-sata', 'k-naha', 'k-maya', 'k-rawan', 'k-boss']],
-    ['d', '濁音・拗音', '⛰️', ['d-daku', 'd-handaku', 'd-yoon', 'd-boss']],
-    ['f', '畢業大考', '🐉', ['final-boss']]
-  ];
-  const cleared = id => !!(App.isCleared && App.isCleared(id));
+  /* ---------- 五十音：小考、字卡 ---------- */
   function kana() {
-    const out = QUEST.map(([k, n, ic, ids]) => {
-      const done = ids.filter(cleared).length, nx = ids.find(id => !cleared(id)) || ids[0];
-      return item('x:quest:' + k, ic, '假名測驗：戰鬥・' + n, ids.length > 1 ? `答對就攻擊，${done}／${ids.length} 關` : (done ? '已通過，再挑戰一次' : '平片濁拗全部混合 BOSS'), 'quest', { id: nx, free: true });
-    });
-    out.push(item('x:kquiz', '✏️', '假名測驗：小考', '聽音選字、看字選音、平↔片，10 題', 'kana-quiz', {}));
-    out.push(item('x:kcards', '🎴', '字卡：五十音', '平假名・片假名・濁音拗音', 'cards', { deck: 'hira' }));
+    const out = [item('x:kquiz', '✏️', '假名小考', '聽音選字、看字選音，10 題', 'kana-quiz', {})];
+    out.push(item('x:kcards', '🎴', '五十音字卡', '平假名・片假名・濁音拗音', 'cards', { deck: 'hira' }));
     return out;
   }
   function exam() {
     return [
-      item('x:jcards', '🎴', '字卡：日檢', 'N5～N1 單字牌組，翻卡自評', 'cards', { deck: 'jlpt' }),
-      item('x:chal', '🏆', '日檢挑戰', '限時題組與模擬考', 'challenge', {})
+      item('x:jcards', '🎴', '日檢字卡', 'N5～N1 單字牌組，翻卡自評', 'cards', { deck: 'jlpt' }),
+      item('x:chal', '🏆', '日檢挑戰', '分科題組、限時、模擬考', 'challenge', {})
     ];
   }
   function list(goal, key) {

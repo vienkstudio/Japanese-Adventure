@@ -54,8 +54,6 @@
     const ach = achievements(sk, C, kana, p), got = ach.filter(a => a[2]).length;
     const daily = G && G.DAILY ? G.DAILY : [];
     const dd = G && G.daily ? G.daily() : { claimed: {} };
-    const travel = (p.goals || []).includes('travel') || !(p.goals || []).length;
-    const hasGos = travel && ((window.World && typeof World.goshuin === 'function') || stampN() > 0);
     const tile = (n, lbl, sub) => `<div class="my-tile"><b>${n}</b><span>${esc(lbl)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`;
     const lrn = b => b.learning ? `學習中 ${b.learning}` : '';
     // 評審 v18：平假名也用「學會」同一定義（隔天以上還記得），看過的另列，和下方「全部共學會」一致
@@ -63,8 +61,7 @@
       .concat([tile(C.v.known, '單字', lrn(C.v)), tile(C.p.known, '句子', lrn(C.p)), tile(C.g.known, '文法', lrn(C.g))]);
     el.innerHTML = `<section class="my">
       <div class="my-head"><span class="my-av" aria-hidden="true">${esc(G && G.avatar ? G.avatar() : '🙂')}</span>
-        <div><b>Lv.${lv} ${esc((App.TITLES || [])[lv - 1] || '')}</b><small>${xp} XP・${esc((App.LV_NAMES || {})[p.lv] || '')}</small></div>
-        <span class="my-fire${sk.done ? ' on' : ''}" title="連續天數">🔥 ${sk.days} 天</span></div>
+        <div><b>Lv.${lv} ${esc((App.TITLES || [])[lv - 1] || '')}</b><small>${xp} XP・${esc((App.LV_NAMES || {})[p.lv] || '')}</small></div></div>
 
       <button type="button" class="my-due${due ? ' hot' : ''}" data-go="review">
         <span class="i" aria-hidden="true">📌</span>
@@ -72,17 +69,16 @@
 
       <div class="my-box"><h2>📊 已學會</h2>
         <div class="my-tiles${tiles.length === 3 ? ' t3' : ''}">${tiles.join('')}</div>
-        <p class="my-note">「學會」＝答對、而且隔天以上還記得（今天剛學的先算「學習中」）；全部共學會 ${C.known} 個（與複習頁相同）</p>
       </div>
 
-      <div class="my-box"><h2>🏆 連勝與成就<small>${got}／${ach.length}</small></h2>
+      <details class="my-box"><summary><h2>🏆 連勝與成就<small>${got}／${ach.length}</small></h2></summary>
         <p class="my-streak">🔥 已連續 <b>${sk.days}</b> 天${sk.done ? '・今天完成 ✓' : sk.risk ? '・今天還沒練，練一題就能保住' : ''}</p>
         ${daily.length ? `<ul class="my-daily">${daily.map(m => { const v = Math.min(m.goal, G.prog(m.id)); return `<li class="${dd.claimed && dd.claimed[m.id] ? 'ok' : ''}"><span aria-hidden="true">${m.icon}</span>${esc(m.name)}<i><b style="width:${v / m.goal * 100}%"></b></i><small>${v}/${m.goal}</small></li>`; }).join('')}</ul>` : ''}
         <div class="my-ach">${ach.map(([i, n, ok]) => `<span class="${ok ? 'ok' : ''}" title="${esc(n)}${ok ? '（已達成）' : ''}"><i aria-hidden="true">${ok ? i : '🔒'}</i>${esc(n)}</span>`).join('')}</div>
-      </div>
+      </details>
 
       <div class="my-rows">
-        ${hasGos ? `<button type="button" class="st-row" data-a="gos">⛩️ 御朱印帳<small>${stampN()} 間店 ›</small></button>` : ''}
+        <button type="button" class="st-row" data-go="cards">🎴 字卡<small>牌組 ›</small></button>
         <button type="button" class="st-row" data-go="settings">⚙️ 設定<small>程度、目的、外觀、語音 ›</small></button>
         <button type="button" class="st-row" data-a="bk">💾 備份／還原<small>${App.saveStatus === 'cloud' ? '已雲端存檔' : '存在這台裝置'}</small></button>
       </div>
@@ -90,11 +86,6 @@
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
     el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
       if (b.dataset.a === 'bk') return App.backup();
-      if (b.dataset.a === 'gos') {
-        if (window.World && typeof World.goshuin === 'function') return World.goshuin();
-        // 冒險世界還沒載入：先載入 play 需要的檔案再開
-        if (window.Home && Home.need) { App.toast('⏳ 載入御朱印帳…'); Home.need('play').then(() => { if (window.World && World.goshuin) World.goshuin(); }).catch(() => App.toast('載入失敗，請稍後再試')); }
-      }
     });
   }
 

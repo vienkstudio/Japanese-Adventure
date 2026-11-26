@@ -320,7 +320,7 @@
       for (const p of path) {
         if (my !== moving || !map.isConnected) return false;
         me.classList.toggle('flip', p[0] < pos[0]);
-        pos = p; place(); follow(true); await wait(70);
+        pos = p; place(); follow(true); await wait(35);
       }
       if (cfg.onMove) cfg.onMove(pos);
       return my === moving && map.isConnected;
@@ -533,12 +533,12 @@
       const paint = () => {
         line.innerHTML = seq.length ? seq.map((t, i) => tileH(t, i, 's')).join('') : '<span class="wd-ph">點下面的詞塊，排成句子</span>';
         bank.innerHTML = tiles.map((t, i) => t.used ? `<span class="wd-tile gone"><b>${esc(t.jp)}</b></span>` : tileH(t, i, 'b')).join('');
-        bank.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { const t = tiles[+b.dataset.b]; t.used = true; seq.push(t); G.sfx('tap'); paint(); });
+        bank.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { const t = tiles[+b.dataset.b]; t.used = true; seq.push(t); G.sfx('tap'); paint(); if (Phrase.check(model, seq.map(x => x.jp)).ok) judge(); });   // 排對就直接說出來
         line.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const t = seq.splice(+b.dataset.s, 1)[0]; t.used = false; paint(); });
       };
       const styles = () => {
         const box = el.querySelector('.wd-styles');
-        if (!model.styles || SIM) { box.hidden = true; return; }
+        if (!model.styles || SIM || li() < 4) { box.hidden = true; return; }   // N2 以上才需要自己選禮貌程度
         box.innerHTML = '<small>說法</small>' + Phrase.STYLES.map(s => `<button type="button" data-st="${s.id}" class="${s.id === model.style ? 'on' : ''}" title="${esc(s.note)}">${esc(s.zh)}</button>`).join('');
         box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { st().style = b.dataset.st; App.save(); reset(); App.toast(esc(Phrase.STYLES.find(s => s.id === b.dataset.st).note)); });
       };
@@ -555,7 +555,7 @@
       };
       hint.onclick = () => { mdl.hidden = false; hint.hidden = true; App.speak(model.jp); };
       el.querySelector('#wd-clr').onclick = () => { seq.splice(0).forEach(t => { t.used = false; }); fb.textContent = ''; paint(); };
-      el.querySelector('#wd-say').onclick = () => {
+      const judge = () => {
         const r = Phrase.check(model, seq.map(t => t.jp));
         if (r.ok) {
           App.speak(model.jp); G.sfx('ok'); G.bump('ok'); G.burst(line, 10); mood('happy');
@@ -573,6 +573,7 @@
           if (miss >= 2 && mdl.hidden) hint.hidden = false;
         }
       };
+      el.querySelector('#wd-say').onclick = judge;
       reset();
     });
   }
@@ -724,7 +725,7 @@
   // 「問店員」按鈕：依櫃台的人換稱呼（問站員、問櫃台、問寺務員…）
   const askWho = () => { const w = staff().who || '店員'; return w === '櫃台人員' ? '櫃台' : w; };
 
-  /* ---- 店內首頁面板：店員開場＋3 個大按鈕＋馬上說一句＋今天想做的事 ---- */
+  /* ---- 店內首頁面板：店員開場＋馬上說一句＋2 個大按鈕＋御朱印 ---- */
   function primary() {
     if (S.kind === 'eat') { const sk = keysOf('seat')[0]; return sk ? ['🍽️', '入座點餐', RUN.toPay ? '吃飽了，去結帳' : '坐下來翻菜單', () => (RUN.toPay ? bill(counters()[0]) : sit(sk))] : null; }
     if (S.kind === 'service') {
@@ -746,7 +747,7 @@
     if (!S || !STAGE || !STAGE.isConnected) return;
     const npc = staff(), p = primary(), q = quickLine(), greet = !RUN.greeted, z0 = zero();
     const line = greetLine();
-    const big = [p, ['💬', '問' + askWho(), '自己組句子開口問', () => clerkSheet(counters()[0])], ['👀', '看看店裡', '規矩、區域、看板', infoSheet]].filter(Boolean);
+    const big = [p, ['💬', '問' + askWho(), '自己組句子開口問', () => clerkSheet(counters()[0])]].filter(Boolean);
     const qq = q ? Phrase.make('where', { x: q.it || q.x }, { style: st().style, lv: lv() }) : null;
     const el = sheet(`${bubble(npc, line)}
       ${qq ? `<button type="button" class="wd-quick" id="wd-quick"><span>⚡</span><span><small>馬上說一句${z0 ? `：${esc(qq.zh)}` : ''}</small><b lang="ja">${esc(qq.jp)}</b>${z0 ? `<i class="wd-k" lang="ja">${esc(qq.kana)}</i><i class="wd-r">${esc(romaOf(qq))}</i>` : ''}</span></button>` : ''}
@@ -1102,16 +1103,16 @@
     const el = sheet(`<div class="wd-zh"><span class="wd-zi">${esc(S.icon)}</span>${tx(S, true)}</div><p>${esc(S.desc)}</p>
       <h3 class="wd-h">🎌 這種店的規矩</h3><ul class="wd-tips">${S.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <h3 class="wd-h">🗺️ 店內有什麼 <small>點一下過去看看</small></h3><div class="wd-legend">${Object.keys(S.zones).filter(k => !['deco', 'menu'].includes(S.zones[k].type)).map(k => `<button type="button" data-z="${esc(k)}">${S.zones[k].type === 'sign' ? signHTML(S.zones[k], 'mini') : `<span>${zIcon(S.zones[k])}</span>`}${tx(S.zones[k], true)}</button>`).join('')}</div>
-      <div class="wd-acts"><button type="button" class="btn" id="wd-board">🎯 挑戰（選做）</button></div>`);
+`);
     el.querySelectorAll('[data-z]').forEach(b => b.onclick = e => { if (e.target.closest('.wd-peek')) return; openZone(b.dataset.z); });
-    el.querySelector('#wd-board').onclick = () => Q.board();
   }
   function renderShop(el, shop, d) {
     S = shop; D = d;
     RUN = { basket: [], vals: {}, entered: false, served: false, toPay: false, incident: false, greeted: false };
-    stage(el, `<div class="wd-title"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name)}</small></div>
+    stage(el, `<button type="button" class="wd-title" id="wd-sinfo" aria-label="這間店的規矩與區域"><b lang="ja">${esc(S.jp)}</b><small>${esc(S.icon)} ${esc(S.name)}・${esc(d.name)} ⓘ</small></button>
       <button type="button" class="wd-hb" id="wd-pb" aria-label="會話手冊快查">📖</button><button type="button" class="wd-hb" id="wd-bk" hidden></button><button type="button" class="wd-hb" id="wd-cards" aria-label="我的句卡"></button>`, 'wd-shop');
     STAGE.querySelector('#wd-pb').onclick = () => App.go('phrasebook', { cat: pbCat(S) });
+    STAGE.querySelector('#wd-sinfo').onclick = infoSheet;
     STAGE.querySelector('.wd-box').innerHTML = sceneHTML(S);
     STAGE.querySelectorAll('.wd-card').forEach(b => b.onclick = () => openZone(b.dataset.z));
     STAGE.querySelector('#wd-clerk').onclick = () => clerkSheet(counters()[0]);

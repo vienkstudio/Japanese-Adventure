@@ -166,8 +166,7 @@
   // 一個包的全部課：第 1 課（必備句＋進店）→ 單字 1..n → 第 2 課起
   function packRows(p) {
     const sh = shopFor(p), S = packSubs(p);
-    const sub = S ? '・另有單字 ' + S.w.length + ' 課、句子 ' + S.s.length + ' 課' : '';
-    const first = row(p.id, p.icon, p.name, (window.WORLD ? '第 1 課・實戰：' + shopLabel(sh) : '第 1 課必備句＋進店') + sub, packIds(p), { hasShop: true, pack: p.id });
+    const first = row(p.id, p.icon, p.name, window.WORLD ? '實戰：' + shopLabel(sh).replace(/^[^・]+・/, '') : '必備句＋進店', packIds(p), { hasShop: true, pack: p.id });
     return [first].concat(S ? S.w.concat(S.s).map(x => row(x.id, x.icon, x.title, x.sub, x.items.map(i => i.id), { pack: p.id, isSub: true })) : []);
   }
   function shopFiles(id) { const W = window.WORLD, R = W && arr(W.regions).find(r => arr(r.shops).some(x => x[1] === id)); return R && !(W.shops && W.shops[id]) ? arr(R.files).map(f => 'data/world/' + f + '.js') : []; }
@@ -253,7 +252,6 @@
   const examNeed = L => seq(['data/mind/grammar.js'].concat(LVS.slice(0, lvI(L) + 1).reverse().map(l => 'data/mind/lex-' + l.toLowerCase() + '.js'), ['data/reading/daily.js', 'js/jp-text.js']))
     .then(() => window.JPText && JPText.ready ? JPText.ready(lvI(L) >= 3) : 0)
     .then(() => { jpOK.base = true; if (lvI(L) >= 3) jpOK.full = true; Object.keys(EXI).forEach(k => { if (lvI(k) >= 3 && !jpOK.full) delete EXI[k]; }); });
-  const CHAL = [['vocab', '🔤', '單字'], ['grammar', '🧩', '文法'], ['reading', '📄', '讀解'], ['listen', '🎧', '聽解']];
 
   /* ---------------- 商務：BIZ 單元 → 小單元 ---------------- */
   function bizParts(u) {
@@ -481,8 +479,8 @@
   function tabs() {
     const p = App.profile(), gs = (p.goals || []).filter(g => GOALS.some(x => x[0] === g));
     const k = ['kana', '🔤', '五十音'];
-    const main = (gs.length ? gs.concat(gs.includes('fun') ? ['song'] : []) : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));
-    const rest = GOALS.filter(g => !main.includes(g));
+    const main = [...new Set((gs.length ? gs : GOALS.map(g => g[0])).map(g => g === 'song' ? 'fun' : g))].map(g => GOALS.find(x => x[0] === g));   // 歌曲放在閱讀分頁裡
+    const rest = GOALS.filter(g => g[0] !== 'song' && !main.includes(g));
     if (zeroKana()) main.unshift(k); else main.push(k);   // 五十音常駐主分頁：零基礎第一、其他人最後
     return { main, rest, all: main.concat(rest) };
   }
@@ -511,9 +509,8 @@
     if (window.NAV && NAV.refresh) NAV.refresh('path', Object.assign({}, params, { tab: UI.tab }));   // 麵包屑、側邊樹跟著畫面上的分頁
     if (params.lv) UI.lv = String(params.lv).toUpperCase();
     const inRest = T.rest.some(t => t[0] === UI.tab), open = UI.open || inRest;
-    const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}">${ic} ${esc(n)}</button>`;
+    const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}"><span aria-hidden="true">${ic}</span> ${esc(n)}</button>`;
     el.innerHTML = `<div class="pa">
-      ${zeroKana() && UI.tab !== 'kana' ? `<button type="button" class="pa-pin" data-tab="kana"><b>🔤 先學五十音 ›</b><span>已會 ${kanaDone()}／46 個平假名，每課 5 個字。</span></button>` : ''}
       <div class="tabs pa-tabs" role="tablist">${(zeroKana() ? T.all : T.all.filter(t => t[0] !== 'kana').concat(T.all.filter(t => t[0] === 'kana'))).map(tb).join('')}</div>
       <div class="pa-body"><p class="center muted pa-load">載入中…</p></div></div>`;
     const body = el.querySelector('.pa-body');
@@ -548,7 +545,7 @@
       let L = []; try { L = arr(X.list(goal, key)).filter(x => x && typeof x.go === 'function'); } catch (e) { L = []; }
       if (!L.length) { box.innerHTML = ''; return; }
       const cards = `<div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
-      box.innerHTML = goal === 'travel' ? `<h3 class="pa-xh">🎮 練習</h3>${cards}` : `<details class="pa-more-d pa-xd"><summary>🎮 更多練習（${L.length}）</summary>${cards}</details>`;   // 旅遊：對話／任務／聽力直接攤開
+      box.innerHTML = `<h3 class="pa-xh">🎮 練習</h3>${cards}`;
       box.querySelectorAll('[data-px]').forEach(b => b.onclick = e => { e.stopPropagation(); try { L[+b.dataset.px].go(); } catch (er) { } });
     };
     if (window.PathExtra) run(); else App.loadScript('js/classic.js').then(run, () => { });
@@ -565,32 +562,30 @@
       const mock = list[list.length - 1], lessons = list.slice(0, -1), w = windowed(lessons, nx, 'exam' + lv);
       const doneN = lessons.filter(u => u.complete).length;
       html = `<label class="pa-lv"><span>等級</span><select data-lvsel aria-label="日檢等級">${LVS.map(L => `<option value="${L}"${L === lv ? ' selected' : ''}>${L}${L === lvNow() ? '（我的程度）' : ''}</option>`).join('')}</select></label>
-        <p class="pa-note">每課 8 個單字＋2 個文法，小考 5 題；寒暄、語氣詞等在「補充」課・已完成 ${doneN}／${lessons.length} 課${w.from > 0 ? `・已跳到第 ${w.from + 1} 課` : ''}</p>
+        <p class="pa-note">已完成 ${doneN}／${lessons.length} 課</p>
         ${grid(w.shown, nx)}${w.more}${grid([mock], null, true)}
-        <details class="pa-more-d"><summary>🏆 ${lv} 分科挑戰題</summary><div class="pa-chal">${CHAL.map(([t, ic, n]) => `<button type="button" class="btn" data-go="challenge-play" data-lv="${lv}" data-t="${t}">${ic} ${n}</button>`).join('')}</div></details>
         <div class="pa-x"></div>`;
     } else if (tab === 'work') {
       const cur = nx ? nx.group : list[0].group, open = UI.bz == null ? cur : UI.bz;
-      html = '<p class="pa-note">每個情境拆成幾個小單元（10 張卡＋5 題），最後做對話與 Email。</p>';
+      html = '';
       window.BIZ.META.forEach(m => {
         const g = list.filter(u => u.group === m.id); if (!g.length) return;
         const dn = g.filter(u => u.complete).length, isOpen = open === m.id;
         html += `<button type="button" class="pa-grp${isOpen ? ' on' : ''}" data-bz="${esc(m.id)}" aria-expanded="${isOpen}"><span aria-hidden="true">${esc(m.icon)}</span><b>${esc(m.title)}</b><small>${esc(m.lv)}${lvI(m.lv) >= lvI(lvNow()) && cur === m.id ? '・適合你' : ''}・${dn}／${g.length}</small>${window.BIZ.stars(m.id) ? `<span class="pa-st">${starTxt(window.BIZ.stars(m.id))}</span>` : ''}</button>`;
         if (isOpen) html += grid(g, nx);
       });
-      html += '<button type="button" class="btn block pa-free" data-go="biz">🗂️ 商務單元與文章</button>';
+      html += '<button type="button" class="btn block pa-free" data-go="biz">📄 商務文章</button>';
     } else if (tab === 'fun') {
       // 閱讀（歌曲已獨立成「🎶 歌曲」）：想讀就讀，不排進每日進度
       const reads = list.filter(u => u.sec === 'read'), news = list.filter(u => u.sec === 'news');
       const nr = nextOf(reads), wr = windowed(reads, nr, 'funr');
-      html = `<p class="pa-note">想讀再讀，不算進每日進度；文章裡點「＋不會清單」的詞才會排進複習。</p><h2 class="pa-h">📖 短文 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
-        ${grid(news, null, true)}<button type="button" class="btn block pa-free" data-go="read">📄 我的文章・匯入網址</button>`;
+      html = `<h2 class="pa-h">📖 短文 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
+        ${grid(news, null, true)}<button type="button" class="btn block pa-free" data-go="songs">🎵 歌曲跟唱</button><button type="button" class="btn block pa-free" data-go="read">📄 我的文章・匯入網址</button>`;
     } else {
       const w = windowed(list, nx, tab);
       html = grid(w.shown, nx) + w.more;
       if (tab === 'travel') {
-        const rg = region();
-        html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 冒險地圖：自由逛日本</button>`;
+        html = html + `<button type="button" class="btn block pa-free" data-go="play">🗾 冒險地圖：自由逛日本</button>`;
       }
       if (tab === 'kana') html = (window.KanaPrep ? KanaPrep.mini() : '') + '<div class="pa-kt"></div><div class="pa-x"></div>';   // 五十音表的行首就是各單元入口，不再重列單元卡；講義、訓練表是選讀，不擋課
     }

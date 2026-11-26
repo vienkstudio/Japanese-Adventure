@@ -45,7 +45,9 @@ ok(N.SECTIONS.map(x => x.id).join() === 'home,learn,lookup,me', '側邊樹應＝
 ok(N.TOOLS.length <= 16, `工具應 ≤16 個，現在 ${N.TOOLS.length}`);
 const homes = {};
 N.SECTIONS.forEach(sec => (sec.tools || []).concat(...(sec.goals || []).map(g => g.tools)).forEach(id => { homes[id] = (homes[id] || 0) + 1; }));
-N.TOOLS.forEach(t => ok(homes[t.id] === 1, `${t.id}：側邊樹裡出現 ${homes[t.id] || 0} 次（應剛好 1 次）`));
+// 不放側邊樹的工具：今日課（首頁大按鈕）、對話／情境任務（場景單元的練習）、御朱印帳（冒險地圖）
+const OFF_TREE = ['today', 'dialog', 'task', 'goshuin'];
+N.TOOLS.forEach(t => ok(homes[t.id] === (OFF_TREE.includes(t.id) ? undefined : 1), `${t.id}：側邊樹裡出現 ${homes[t.id] || 0} 次（應${OFF_TREE.includes(t.id) ? '不出現' : '剛好 1 次'}）`));
 const names = N.TOOLS.concat(N.PLACES).map(t => t.name), icons = N.TOOLS.concat(N.PLACES).map(t => t.icon);
 ok(new Set(names).size === names.length, '名稱重複：' + names.filter((x, i) => names.indexOf(x) !== i).join());
 ok(new Set(icons).size === icons.length, '圖示重複：' + icons.filter((x, i) => icons.indexOf(x) !== i).join());
@@ -90,7 +92,7 @@ const Q = [
   ['模擬考', 'chal'], ['文法', 'dict~1'], ['语法', 'dict~1'], ['單字', 'dict~0'], ['字典', 'dict~0'], ['敬語', 'dict~2'], ['email', 'work'], ['開會', 'work'], ['字太小', 'settings'], ['字太大', 'settings'],
   ['深色', 'settings'], ['夜間', 'settings'], ['備份', 'backup'], ['換手機', 'backup'], ['心智圖', 'dict~3'], ['3D', 'dict~3'], ['網址', 'read~1'], ['新聞', 'read~0'],
   ['複習', 'today~0'], ['忘記了', 'today~0'], ['我想看五十音表', 'kana'], ['御朱印', 'goshuin'], ['特訓', 'boot'], ['講義', 'kana-guide'], ['零基礎', 'kana-guide'], ['訓練表', 'kana-guide~0'], ['書寫', 'kana-guide~0'], ['列印', 'kana-guide~0'],
-  ['小考', 'kana-test'], ['戰鬥', 'kana-test~0'], ['字卡', 'cards'], ['冒險', 'play'], ['商務閱讀', 'read~2']
+  ['小考', 'kana-test'], ['戰鬥', 'kana-test'], ['字卡', 'cards'], ['冒險', 'play'], ['商務閱讀', 'read~2']
 ];
 Q.forEach(([q, want]) => { const s = N.search(q), first = (s.top[0] || s.more[0] || {}).id; ok(first === want, `搜「${q}」第一筆 ${first}，預期 ${want}`); });
 ok(N.search('Lemon').top.length === 0, '「Lemon」不該有置頂功能（歌名先出）');

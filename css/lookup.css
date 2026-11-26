@@ -117,3 +117,4 @@
 .lk-gd .lk-all{margin:var(--sp-2) 0 0}
 .lk-more .lk-emer{margin-top:var(--sp-1)}
 .my-tiles.t3{grid-template-columns:repeat(3,1fr)}
+.my-box>summary{cursor:pointer;list-style:none}.my-box>summary::-webkit-details-marker{display:none}.my-box>summary h2{margin:0}.my-box[open]>summary h2{margin:0 0 var(--sp-3)}.my-box>summary h2::after{content:"▾";color:var(--muted);margin-left:auto;padding-left:var(--sp-2)}
