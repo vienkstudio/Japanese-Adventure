@@ -136,8 +136,7 @@
         return `<button type="button" class="kt-row${done ? ' done' : ''}" data-unit="${esc(r.unit)}" aria-label="${esc(r.name)}：進入單元"><span lang="ja">${esc(nameOf(r))}</span><small>${done ? '✓ 學過' : '學 ›'}</small></button>` +
           r.cells.map(h => { const k = h && R.by[h]; if (!k) return '<span class="kt-c nil" aria-hidden="true"></span>';
             return `<button type="button" class="kt-c${on(h) ? ' on' : ''}" data-ks="${esc(h)}" aria-label="${esc(kt ? k[1] : k[0])} ${esc(rn(k[2]))}"><span class="g" lang="ja">${esc(kt ? k[1] : k[0])}</span><span class="r">${esc(rn(k[2]))}</span></button>`; }).join('');
-      }).join('')}</div>
-      <p class="kt-note">✓＝已學過；點左邊行名進入那一課（字卡＋聽音）</p>`;
+      }).join('')}</div>`;
   }
   function kanaTable(el) {
     if (!el) return;

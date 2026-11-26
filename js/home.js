@@ -309,11 +309,6 @@
     params = params || {};
     const p = App.profile(), goal = (params.goal && params.goal !== 'fun' ? params.goal : '') || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
     const d0 = dayRec(); applyDone(d0);
-    // 零基礎第一次學五十音：先看入門講義、50 音訓練表（js/kana-guide.js），再進分行
-    if (goal === 'kana' && !params.more && !(RUN && RUN.key === key) && window.KanaPrep && KanaPrep.need()) {
-      el.innerHTML = `<section class="kp-wrap">${KanaPrep.box('today')}</section>`;
-      KanaPrep.bind(el, 'today', () => lesson(el, params)); return;
-    }
     if (!params.more && RUN && RUN.key === key) return RUN.phase === 'end' ? endView(el) : runLesson(el);
     const pend = !params.more && d0.done && !d0.applied;
     el.innerHTML = LOADING;

@@ -5,8 +5,7 @@
    原檔內的互連連結（日文講義.html ⇄ 50音訓練表.html）改成 App 路由；頁尾加「下一步」：講義 → 訓練表 → 分行單元（或今日課）。
    初學者引導 window.KanaPrep：
      done() -> 講義與訓練表都看過（App.state.kanaPrep = {guide, drill, skip}）
-     need() -> 零基礎且還沒看過（今日課、路線五十音分頁、五十音單元會先提示）
-     box(then) -> 提示卡 HTML（data-kp="guide|drill|skip"）；bind(el, then) 綁定按鈕
+     need() -> 恆為 false（舊介面相容）；mini() -> 五十音分頁兩張小卡；bind(el, then) 綁定按鈕
    本檔由 index.html 直接載入（很小）；原檔腳本要的 KANA、speak 等在 render 時補載 kana-data.js。
    ========================================================= */
 (function () {
@@ -17,17 +16,9 @@
   const KanaPrep = {
     state: st,
     done: () => { const s = st(); return !!(s.skip || (s.guide && s.drill)); },
-    need: () => App.profile().lv === 'zero' && !KanaPrep.done(),
+    need: () => false,   // 講義、訓練表改為選讀，不再擋今日課與單元
     mark(k) { st()[k] = Date.now(); App.save(); },
-    box(then) {
-      const s = st(), ck = k => s[k] ? '<i aria-label="已看過">✓</i>' : '';
-      return `<div class="kp-box"><b>🔰 第一次學五十音：先看這兩個，再進分行練習</b>
-        <small class="kp-note">第一次約多花 15 分鐘（講義 10 分鐘＋訓練表 5 分鐘），之後就直接上課</small>
-        <button type="button" class="kp-step${s.guide ? ' ok' : ''}" data-kp="guide"><span aria-hidden="true">📖</span><span><b>① 入門講義</b><small>三種文字、母音、圖解＋諧音、易混淆字（約 10 分鐘）</small></span>${ck('guide')}</button>
-        <button type="button" class="kp-step${s.drill ? ' ok' : ''}" data-kp="drill"><span aria-hidden="true">🎯</span><span><b>② 50 音訓練表</b><small>總表背誦、閃卡、測驗、書寫練習紙</small></span>${ck('drill')}</button>
-        <button type="button" class="kp-skip" data-kp="skip">我已經看過了，直接開始</button></div>`;
-    },
-    // 看過以後：五十音分頁常駐兩張小卡（隨時回去複習講義、訓練表）
+    // 五十音分頁常駐兩張小卡（選讀：講義、訓練表）
     mini() { return `<div class="kp-mini"><button type="button" data-kp="guide">🎓 入門講義</button><button type="button" data-kp="drill">🎯 50 音訓練表</button></div>`; },
     bind(el, then, onSkip) {
       el.querySelectorAll('[data-kp]').forEach(b => b.onclick = () => {

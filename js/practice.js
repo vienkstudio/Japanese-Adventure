@@ -412,8 +412,10 @@
     const c = list[UI.ci];
     const LVS = ['N5', 'N4', 'N3', 'N2', 'N1', 'x'];
     body.innerHTML = `<div class="tabs">${DECKS.map(([k, i, n]) => `<button data-dk="${k}" class="${UI.deck === k ? 'on' : ''}">${i} ${n}</button>`).join('')}</div>
+      <details class="c-filt"${UI.lvF !== 'all' || UI.dF !== 'all' ? ' open' : ''}><summary>篩選${UI.lvF !== 'all' || UI.dF !== 'all' ? '（已套用）' : ''}</summary>
       ${KANA_DECK[UI.deck] || UI.deck === 'mine' || UI.deck === 'sent' ? '' : `<div class="tabs" style="margin-top:0"><button data-lf="all" class="${UI.lvF === 'all' ? 'on' : ''}">全部級 ${all.length}</button>${LVS.filter(cnt).map(l => `<button data-lf="${l}" class="${UI.lvF === l ? 'on' : ''}">${CARDS.LV_NAME[l]} ${cnt(l)}</button>`).join('')}</div>`}
       <div class="tabs" style="margin-top:0">${[['all', '全部'], ['3', '😵 困難'], ['2', '🤔 普通'], ['1', '😊 簡單'], ['0', '未評']].map(([k, n]) => `<button data-df="${k}" class="${UI.dF === k ? 'on' : ''}">${n} ${k === 'all' ? '' : all.filter(x => diffOf(x.id) === +k).length}</button>`).join('')}</div>
+      ${KANA_DECK[UI.deck] ? '' : `<div class="lv-legend" style="font-size:.82em">底線顏色：${LVS.map(lvBadge).join('')}</div><div class="muted" style="font-size:.78em;margin-top:4px">${esc(window.CARDS ? CARDS.NOTE : '')}</div>`}</details>
       ${c ? `<div class="c-card" id="cCard"><div class="c-in">
           <div class="c-face"><div class="c-top"><span>${UI.ci + 1} / ${list.length}</span>${c.kind === 'kana' ? '' : lvBadge(c.lv)}</div>
             ${c.emoji ? `<div style="font-size:2em">${esc(c.emoji)}</div>` : ''}
@@ -430,9 +432,7 @@
         <div class="c-nav"><button class="btn sm" id="cPrev">◀ 上一張</button>
           <span><button class="btn sm ghost" id="cSay">🔊</button><button class="track-btn${Tracker.has(c.id) ? ' on' : ''}" id="cTrack">${Tracker.has(c.id) ? '✓ 已在清單' : '＋ 不會清單'}</button></span>
           <button class="btn sm" id="cNext">下一張 ▶</button></div>`
-        : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : UI.deck === 'sent' ? '還沒有句卡：在冒險的店裡說對一句就會收集。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}
-      ${KANA_DECK[UI.deck] ? '' : `<div class="panel" style="font-size:.82em"><div class="lv-legend">底線顏色：${LVS.map(lvBadge).join('')}</div><div class="muted" style="margin-top:6px">${esc(window.CARDS ? CARDS.NOTE : '')}</div>
-        <div class="muted">自評難度會自動儲存在本機，可用上方「困難」篩選集中複習。</div></div>`}`;
+        : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : UI.deck === 'sent' ? '還沒有句卡：在冒險的店裡說對一句就會收集。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}`;
     const re = () => cardsView(body);
     body.querySelectorAll('[data-dk]').forEach(b => b.onclick = () => { UI.deck = b.dataset.dk; UI.lvF = 'all'; UI.ci = 0; re(); });
     body.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => { UI.lvF = b.dataset.lf; UI.ci = 0; re(); });

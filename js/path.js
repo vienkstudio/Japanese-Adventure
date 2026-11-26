@@ -592,7 +592,7 @@
         const rg = region();
         html = `<p class="pa-note">第 1 課：8 句必備句＋排 2 句，再進店用一次；點進去還有場景單字與第 2 課起的進階句${rg ? `・實戰地區：${esc(RG[rg])}` : ''}</p>` + html + `<button type="button" class="btn block pa-free" data-go="play">🗾 冒險地圖：自由逛日本</button>`;
       }
-      if (tab === 'kana') html = (window.KanaPrep ? (KanaPrep.need() ? KanaPrep.box('') : KanaPrep.mini()) : '') + '<div class="pa-kt"></div>' + html + '<div class="pa-x"></div>';
+      if (tab === 'kana') html = (window.KanaPrep ? KanaPrep.mini() : '') + '<div class="pa-kt"></div><div class="pa-x"></div>';   // 五十音表的行首就是各單元入口，不再重列單元卡；講義、訓練表是選讀，不擋課
     }
     body.innerHTML = html;
     if (tab === 'kana' && window.KanaPrep) KanaPrep.bind(body, '', () => App.render());
@@ -608,7 +608,6 @@
     loadUnit(id).then(u => { if (el.isConnected) drawUnit(el, u); })
       .catch(() => { if (el.isConnected) el.innerHTML = '<p class="center pa-load">😵 載入失敗，請檢查網路後再試一次</p>'; });
   }
-  const STEP = { flashcard: '字卡', wordbank: '排句子', shop: '進店用出來', choice: '選選看', listen: '聽音選字' };
   function goalOf(u) { return u.kind === 'biz' ? 'work' : u.kind; }
   function drawUnit(el, u) {
     if (!u || !u.items.length) { el.innerHTML = '<div class="pa"><p class="center pa-load">找不到這個單元</p></div>'; return; }
@@ -617,22 +616,19 @@
     const list = units(goalOf(u), { lv: u.lv, all: true }), k = list.findIndex(x => x.id === u.id), after = list.slice(k + 1).filter(x => !x.noNext);
     const nxt = u.kind === 'biz' ? after[0] : (after.find(x => !x.route && !x.complete) || after[0]);
     const complete = st > 0 || (!u.hasShop && d >= ids.length);
-    const steps = u.steps.map(s => s.params && s.params.quiz ? '小考' : STEP[s.type] || s.type).join(' → ');
     const pr = u.hasShop && !complete && d >= ids.length ? `句子 ${d}／${ids.length}・還差：進店用出來` : `已學 ${d}／${ids.length}`;
     let shops = '', sibs = '';
     if (u.kind === 'travel' && u.pack) {
       const ps = list.filter(x => x.pack === u.pack);
       if (ps.length > 1) sibs = `<h2 class="pa-h">這包的全部課 <small>${ps.filter(x => x.complete).length}／${ps.length}</small></h2><div class="pa-grid pa-sib">${ps.map(x => card(x, false).replace('class="pa-card', 'class="pa-card' + (x.id === u.id ? ' cur' : ''))).join('')}</div>`;
     }
-    if (u.kind === 'travel' && u.hasShop) {
+    if (u.kind === 'travel' && u.hasShop && new Set(u.shops.map(REGION)).size > 1) {   // 只有一個地區時副標已寫實戰地點
       const rs = [...new Set(u.shops.map(REGION))];
       shops = `<div class="pa-rg"><span>實戰地點</span>${rs.length > 1 ? rs.map(r => `<button type="button" class="btn sm${REGION(u.shop) === r ? ' on' : ''}" data-rg="${r}" aria-pressed="${REGION(u.shop) === r}">${esc(RG[r])}</button>`).join('') : ''}<small>${esc(shopLabel(u.shop))}</small></div>`;
     }
     el.innerHTML = `<div class="pa pa-unit">
       <div class="pa-uh"><span class="pa-ic" aria-hidden="true">${esc(u.icon)}</span><div><h1>${esc(u.title)}</h1><p class="muted">${esc(u.sub)}</p></div>${st ? `<span class="pa-st" aria-label="${st} 星">${starTxt(st)}</span>` : ''}</div>
-      ${u.kind === 'kana' && window.KanaPrep && KanaPrep.need() ? KanaPrep.box(u.id) : ''}
       <div class="pa-prog"><span>${esc(pr)}</span><span class="pa-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></div>
-      <p class="pa-note pa-flow">${esc(steps)}・約 ${Math.max(2, Math.round(u.steps.length * 1.5))} 分鐘</p>
       ${shops}
       <button type="button" class="btn primary block pa-start" id="pa-start">${complete ? '▶ 再練一次' : d >= ids.length && u.hasShop ? '▶ 進店用出來' : d ? '▶ 繼續學' : '▶ 開始'}</button>
       ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
