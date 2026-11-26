@@ -180,8 +180,8 @@
       el.innerHTML = `<div class="panel rv-empty">
         <div class="rv-big" aria-hidden="true">📌</div>
         <h2>還沒有要複習的</h2>
-        <p>上課、路線單元學過的字句，會照「答對越多次、隔越久」自動排進這裡。</p>
-        <button type="button" class="btn primary" data-go="path">🧭 去路線學新的</button>
+        <p>上課、學習單元學過的字句，會照「答對越多次、隔越久」自動排進這裡。</p>
+        <button type="button" class="btn primary" data-go="path">🧭 去學習新的</button>
       </div>`;
       el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
       return;
@@ -195,8 +195,9 @@
         <div class="rv-stats"><div class="rv-stat"><b>${r.early ? 0 : n}</b>今天到期</div><div class="rv-stat"><b>${Math.max(0, st.total - st.new - st.known)}</b>學習中</div><div class="rv-stat"><b>${st.known}</b>已學會 ✓</div></div>
         ${r.early ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個：<b class="jp" lang="ja">${esc(nd.jp)}</b>（${when}）` : ''}</div>` : ''}
         ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：想一想→翻面→自評 4 級</small></button>
-        <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習<small>閱讀、歌曲收的字會用原句填空</small></button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去路線學新的</button>`}
-        <p class="rv-info">答對越多次，隔越久再出現；上課、路線、店家學過的到期都會排進來。</p>
+        <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習<small>閱讀、歌曲收的字會用原句填空</small></button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去學習新的</button>`}
+        <p class="rv-info">答對越多次，隔越久再出現；上課、學習單元、店家學過的到期都會排進來。</p>
+        <button type="button" class="btn block" data-go="cards">🎴 字卡牌組<small>五十音・日檢・不會清單</small></button>
       </div>
       <details class="panel rv-more"${ui.open ? ' open' : ''}><summary class="noprint">⋯ 更多：清單、篩選、匯出入、列印</summary>
         <div class="rv-printhead"><h2>📌 日語不會清單</h2><div class="muted" id="rvPrintInfo"></div></div>

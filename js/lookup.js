@@ -176,20 +176,16 @@
   // 功能卡（js/nav.js 的 NAV.TOOLS）：data-nv＝工具 id；推薦卡第 4 格「上次用的」帶參數（data-last）
   const NV = () => window.NAV || null;
   const navCard = (t, cls) => `<button type="button" class="lk-tool${cls ? ' ' + cls : ''}" data-nv="${esc(t.id)}"${t.last ? ' data-last="1"' : ''}><span class="i" aria-hidden="true">${esc(t.icon)}</span><span><b>${esc(t.name)}</b><small>${esc(t.last ? t.lastTxt || '上次用的' : t.desc)}</small></span></button>`;
-  const navRow = t => `<div class="lk-nr">${navCard(t, 'lk-row')}<button type="button" class="lk-pin${NV().pinned(t.id) ? ' on' : ''}" data-pin="${esc(t.id)}" aria-pressed="${NV().pinned(t.id)}" aria-label="${NV().pinned(t.id) ? '取消釘選' : '釘選到推薦'}：${esc(t.name)}">${NV().pinned(t.id) ? '★' : '☆'}</button></div>`;
-  let ALLOPEN = false;
   function home() {
     const p = App.profile(), gs = p.goals && p.goals.length ? p.goals : ['travel'], travel = gs.includes('travel'), N = NV();
     const q = travel ? quick(gs.length > 2 ? 3 : 4) : [];
     const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="phrasebook~0"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
-    const rec = N ? N.forMe(4) : [];
-    const all = N ? N.CATS.map(([c, ic, n]) => { const ts = (N.PLACES || []).filter(t => t.cat === c).concat(N.TOOLS.filter(t => t.cat === c)); return ts.length ? `<h3 class="lk-ch">${ic} ${esc(n)}</h3><div class="lk-list">${ts.map(navRow).join('')}</div>` : ''; }).join('') : '';
+    const rec = N ? ['phrasebook', 'dict'].map(N.byId).filter(Boolean) : [];   // 查＝搜尋＋手冊＋辭典；學習類功能在「學習」
     // 評審 v18：不是旅遊目的的人，緊急求助放到推薦後面（仍在第一屏）
     return (travel ? emer : '') +
       (q.length ? `<h2 class="lk-h">💬 常用句<small>點一下放大給店員看</small></h2><div class="lk-list">${q.map(phRow).join('')}</div>` : '') +
-      (rec.length ? `<h2 class="lk-h">✨ 為你推薦</h2><div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) + (travel ? '' : emer) +
-      `<button type="button" class="lk-fix" data-fix="1">推薦不準？改目的與程度 ›</button>` +
-      (N ? `<details class="lk-more lk-allf"${ALLOPEN ? ' open' : ''}><summary>全部功能<small>☆ 釘選到推薦</small></summary>${all}</details>` : '');
+      (rec.length ? `<div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) + (travel ? '' : emer) +
+      '';
   }
   // 搜尋結果最上面：功能命中（≤3）；其他功能命中排在內容後面
   function navHits(raw) {
@@ -292,6 +288,7 @@
     const hotH = hot.length ? `<h2 class="lk-h">🎵 熱門歌<small>點一下匯入歌詞、開始跟唱</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
     const funQ = ((App.profile().goals || [])[0] === 'fun');
     let h = funQ ? hotH : '';
+    if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;   // 單字排最前（查「水」先看到 みず）
     if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;
     // 目的是日檢、或查的字就是文法句型本身：文法排在句子前（「ように」不先出旅遊句「プレゼント用に」；評審 v15 P1-11）
     const gm0 = gm.length && ((App.profile().goals || []).includes('exam') || gm.some(g => g.nj === q));
@@ -299,7 +296,6 @@
     if (gm0) h += gmH;
     if (ph.length) h += `<h2 class="lk-h">💬 句子<small>點一下放大</small></h2><div class="lk-list">${ph.slice(0, 5).map(phRow).join('')}</div>` +
       (ph.length > 5 ? `<button type="button" class="lk-all" data-pbq="1">在手冊看全部 ${ph.length} 句 ›</button>` : '');
-    if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;
     if (!gm0) h += gmH;
     if (ln.length) h += `<h2 class="lk-h">🌐 外來語</h2><div class="lk-list">${ln.map(x => `<button type="button" class="lk-w" data-say="${key({ jp: x.jp })}"><b lang="ja">${esc(x.jp)}</b><span class="zh">${esc(x.o ? x.o.name + '：' + x.o.src : String(x.e[1] || ''))}</span><span class="go" aria-hidden="true">🔊</span></button>`).join('')}</div>`;
     if (!funQ) h += hotH;
@@ -345,14 +341,11 @@
       if (d.big != null) { const w = KEYS[+d.big]; if (!w) return; const pb = PB(); if (pb && pb.showBig) pb.showBig(w); else App.speak(w.kana || w.jp); }
       else if (d.say != null) { const w = KEYS[+d.say]; if (w) App.speak(w.jp); }
       else if (d.nv) { const N = NV(); if (N) N.go(N.byId(d.nv), d.last && (App.state.nav || {}).last); }
-      else if (d.pin) { const N = NV(); if (N) { N.pin(d.pin); ALLOPEN = true; paint(true); } }
-      else if (d.fix) App.go('settings');
       else if (d.kb) App.go('kb-page', { id: d.kb });
       else if (d.pbq) App.go('phrasebook', { q: UI.q });
       else if (d.hot != null) { const hh = HOTK[+d.hot]; if (hh) openHot(hh); }
       else if (d.mine) { const i = d.mine.indexOf(':'), k = d.mine.slice(0, i), id = d.mine.slice(i + 1); App.go(k === 'song' ? 'song' : 'read-article', k === 'song' ? { id } : { doc: id }); }
     };
-    box.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('lk-allf')) ALLOPEN = e.target.open; }, true);
     paint(true); kick();
     if (!NV()) withNav(() => { if (box.isConnected && !UI.q.trim()) paint(true); else refresh(); });
   }

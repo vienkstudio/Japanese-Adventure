@@ -441,6 +441,7 @@ body.ob-mode #main{padding-bottom:calc(24px + var(--safeB))}
 
 /* ===== 樹狀導覽（js/nav.js）：☰ 側邊樹、麵包屑；寬螢幕常駐左側 ===== */
 .nv-menu{flex:none}
+@media (max-width:1023px){.nv-menu{display:none}}   /* 手機只用底部 4 鈕；側邊樹只在寬螢幕常駐 */
 .nv-crumb{min-width:0;flex:0 1 auto;border:none;background:var(--chip);color:var(--text);font:inherit;font-size:var(--fs-sm);font-weight:700;border-radius:var(--r-pill);padding:6px 12px;min-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 #top .in.nv-has-crumb .logo .t{display:none}
 .nv-drawer{position:fixed;inset:0;z-index:80;pointer-events:none}

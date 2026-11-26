@@ -23,7 +23,7 @@
   'use strict';
   const esc = s => App.esc(String(s == null ? '' : s));
   const arr = a => Array.isArray(a) ? a : [];
-  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '📚', '閱讀']];
+  const GOALS = [['travel', '🧳', '旅遊'], ['exam', '📝', '日檢'], ['work', '💼', '商務'], ['fun', '📚', '閱讀'], ['song', '🎵', '歌曲']];   // song 分頁只導向 songs 頁
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const KN = ['kana-data.js', 'js/kana-lesson.js'];
   const LVS = ['N5', 'N4', 'N3', 'N2', 'N1'];
@@ -481,7 +481,7 @@
   function tabs() {
     const p = App.profile(), gs = (p.goals || []).filter(g => GOALS.some(x => x[0] === g));
     const k = ['kana', '🔤', '五十音'];
-    const main = (gs.length ? gs : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));
+    const main = (gs.length ? gs.concat(gs.includes('fun') ? ['song'] : []) : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));
     const rest = GOALS.filter(g => !main.includes(g));
     if (zeroKana()) main.unshift(k); else main.push(k);   // 五十音常駐主分頁：零基礎第一、其他人最後
     return { main, rest, all: main.concat(rest) };
@@ -503,6 +503,7 @@
   }
   function renderPath(el, params) {
     params = params || {};
+    if ((params.tab || params.goal) === 'song') return App.go('songs');
     const T = tabs();
     if (params.goal && !params.tab) params = Object.assign({}, params, { tab: params.goal });   // 相容 {goal}
     if (params.tab && T.all.some(t => t[0] === params.tab)) UI.tab = params.tab;
@@ -516,7 +517,7 @@
       <div class="tabs pa-tabs" role="tablist">${(zeroKana() ? T.all : T.all.filter(t => t[0] !== 'kana').concat(T.all.filter(t => t[0] === 'kana'))).map(tb).join('')}</div>
       <div class="pa-body"><p class="center muted pa-load">載入中…</p></div></div>`;
     const body = el.querySelector('.pa-body');
-    el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { UI.tab = b.dataset.tab; renderPath(el, {}); });
+    el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { if (b.dataset.tab === 'song') return App.go('songs'); UI.tab = b.dataset.tab; renderPath(el, {}); });
     const tab = UI.tab, lv = UI.lv || lvNow();
     load(tab, { lv }).then(() => { if (el.isConnected && UI.tab === tab) paint(body, tab); })
       .catch(() => { if (el.isConnected) body.innerHTML = '<p class="center pa-load">😵 載入失敗，請檢查網路後再試一次</p>'; });
@@ -546,7 +547,8 @@
       const box = host.querySelector('.pa-x'); if (!box || typeof X.list !== 'function') return;
       let L = []; try { L = arr(X.list(goal, key)).filter(x => x && typeof x.go === 'function'); } catch (e) { L = []; }
       if (!L.length) { box.innerHTML = ''; return; }
-      box.innerHTML = `<details class="pa-more-d pa-xd"><summary>🎮 更多練習（${L.length}）</summary><div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div></details>`;
+      const cards = `<div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
+      box.innerHTML = goal === 'travel' ? `<h3 class="pa-xh">🎮 練習</h3>${cards}` : `<details class="pa-more-d pa-xd"><summary>🎮 更多練習（${L.length}）</summary>${cards}</details>`;   // 旅遊：對話／任務／聽力直接攤開
       box.querySelectorAll('[data-px]').forEach(b => b.onclick = e => { e.stopPropagation(); try { L[+b.dataset.px].go(); } catch (er) { } });
     };
     if (window.PathExtra) run(); else App.loadScript('js/classic.js').then(run, () => { });
@@ -633,13 +635,13 @@
       <p class="pa-note pa-flow">${esc(steps)}・約 ${Math.max(2, Math.round(u.steps.length * 1.5))} 分鐘</p>
       ${shops}
       <button type="button" class="btn primary block pa-start" id="pa-start">${complete ? '▶ 再練一次' : d >= ids.length && u.hasShop ? '▶ 進店用出來' : d ? '▶ 繼續學' : '▶ 開始'}</button>
+      ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
       ${u.intro ? `<div class="pa-intro">${u.intro}</div>` : ''}
       ${u.more ? `<details class="pa-more-d"><summary>📘 ${esc(u.more.title)}</summary><div class="kn">${u.more.html}</div></details>` : ''}
       ${u.kind !== 'kana' ? `<details class="pa-more-d"><summary>📋 這課會學到（${u.items.length}）</summary><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul></details>` : ''}
       ${u.kind === 'biz' && !(nxt && nxt.route) ? `<button type="button" class="btn block pa-next" data-biz="${esc(u.biz)}">💬 對話演練＋Email（${esc(bizUnit(u.biz).title)}）›</button>` : ''}
       ${nxt ? `<button type="button" class="btn block pa-next" data-u="${esc(nxt.id)}">下一單元：${esc(nxt.title)} ›</button>` : ''}
       ${sibs}
-      ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
     </div>`;
     const root = el.querySelector('.pa-unit');
     if (window.KanaPrep) KanaPrep.bind(root, u.id, () => drawUnit(el, u));   // 初學者：先講義、訓練表

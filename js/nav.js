@@ -191,10 +191,10 @@
     { id: 'fun', tools: ['read'] }
   ].map(g => Object.assign({}, PLACES.find(x => x.id === g.id), g));
   const SECTIONS = [
-    { id: 'home', icon: '🏠', name: '首頁', route: 'home', tools: ['today', 'cards'] },
+    { id: 'home', icon: '🏠', name: '首頁', route: 'home', tools: ['today'] },
     { id: 'learn', icon: '🧭', name: '學習', route: 'path', goals: GOALS },
     { id: 'lookup', icon: '🔍', name: '查', route: 'lookup', tools: ['dict', 'phrasebook'] },
-    { id: 'me', icon: '👤', name: '我的', route: 'me', tools: ['settings', 'backup', 'goshuin'] }
+    { id: 'me', icon: '👤', name: '我的', route: 'me', tools: ['cards', 'settings', 'backup', 'goshuin'] }
   ];
   const LVL = ['N5', 'N4', 'N3', 'N2', 'N1'];
   // 路由 → 位置 {sec（4 鈕之一）, goal（學習分頁）, tool, sub}：麵包屑、側邊樹高亮
@@ -204,8 +204,9 @@
     const G = (g, o) => Object.assign({ sec: sec('learn'), goal: goal(g) }, o || {});
     const T = (id, o) => Object.assign({ tool: byId(id) }, o || {});
     if (name === 'home') return { sec: sec('home') };
-    if (/^(today|review)$/.test(name)) return { sec: sec('home'), tool: byId('today') };
-    if (name === 'cards') return { sec: sec('home'), tool: byId('cards') };
+    if (name === 'today') return { sec: sec('home'), tool: byId('today') };
+    if (name === 'review') return { sec: sec('me'), tool: Object.assign({}, byId('today~0'), { name: '到期複習' }) };
+    if (name === 'cards') return { sec: sec('me'), tool: byId('cards') };
     if (name === 'path') { const tab = p.tab || p.goal; return goal(tab) ? G(tab, { sub: tab === 'exam' && p.lv ? String(p.lv).toUpperCase() : '' }) : { sec: sec('learn') }; }
     if (name === 'path-unit') {
       const id = String(p.id || '');
@@ -230,7 +231,7 @@
     if (/^(trip|trip-stop|trip-next|practice-map|practice|stage|scene|town)$/.test(name)) return G('travel');
     if (/^(kb|kb-page|mind|mind3d)$/.test(name) || (name === 'lookup' && /^(gram|keigo)$/.test(p.view || ''))) return { sec: sec('lookup'), tool: byId('dict') };
     if (name === 'phrasebook') return { sec: sec('lookup'), tool: byId('phrasebook') };
-    if (name === 'lookup' && p.pick) { const t = byId(p.pick); return G(t && t.cat === 'travel' ? 'travel' : 'travel', { tool: t }); }
+    if (name === 'lookup' && p.pick) { const t = byId(p.pick); return G('travel', { tool: t }); }
     if (name === 'lookup') return { sec: sec('lookup') };
     if (name === 'settings') return { sec: sec('me'), tool: byId('settings') };
     if (name === 'me') return { sec: sec('me') };
@@ -358,10 +359,10 @@
     }
     let cb = document.getElementById('nvCrumb');
     const logo = top.querySelector('.logo');
-    if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => open(); if (logo) logo.after(cb); else top.appendChild(cb); }
+    if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => { const L = locate(curName, curP); if (!L || !L.sec) return; if (L.goal) App.go('path', { tab: L.goal.id }); else App.go(L.sec.route); }; if (logo) logo.after(cb); else top.appendChild(cb); }
     const c = crumb(curName, curP);
     const L0 = locate(curName, curP), xl = document.documentElement.dataset.fs === 'xl';
-    cb.textContent = xl && L0 && L0.sec ? where(L0).icon + ' ›' : c; cb.hidden = !c; cb.setAttribute('aria-label', c ? '目前位置：' + c + '（開啟選單）' : '');
+    cb.textContent = xl && L0 && L0.sec ? where(L0).icon + ' ›' : c; cb.hidden = !c || /^(home|path|lookup|me)$/.test(curName); cb.setAttribute('aria-label', c ? '目前位置：' + c + '（回上層）' : '');
     top.classList.toggle('nv-has-crumb', !!c);
   }
   document.addEventListener('routechange', e => {

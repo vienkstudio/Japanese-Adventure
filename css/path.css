@@ -80,6 +80,7 @@
 /* v13：旅遊包全部課、更多練習（PathExtra）、五十音表 */
 .pa-sib .pa-card.cur{border:2px solid var(--pri)}
 .pa-x:empty,.pa-kt:empty{display:none}
+.pa-xh{font-size:var(--fs-sm);margin:var(--sp-3) 0 var(--sp-2);color:var(--muted)}
 .pa-x .pa-h{margin-top:var(--sp-4)}
 .pa-xc{background:var(--chip)}
 .pa-kt{margin:0 0 var(--sp-3);min-width:0;overflow-x:auto}

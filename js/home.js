@@ -129,7 +129,7 @@
     if (!d.done && pg && pg.done > 0) return `做到一半・已做 ${pg.done}／${pg.tot}，按上面接著做`;
     if (!d.done) return due ? `還沒開始・先複習 ${due} 個，再學新的` : '還沒開始・今天要學新的';
     if (!d.applied) return `主課完成 ✓ 還差應用：${d.apLabel || '用出來一次'}`;
-    return due ? `今天的課完成 ✓ 還有 ${due} 個到期，可以按「到期複習」` : '今天全部完成 ✓ 想多學可以再上一課';
+    return due ? `今天的課完成 ✓ 還有 ${due} 個到期` : '今天全部完成 ✓ 想多學可以再上一課';
   }
 
   function render(el) {
@@ -143,25 +143,16 @@
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
     applyDone(d);
     const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今天的課' : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
-    const steps = [
-      { b: '複習', v: d.done ? (dueAll ? `還有 ${dueAll} 個到期` : d.reviewed ? `${d.reviewed} 個 ✓` : '不用 ✓') : pg ? (pg.revN ? `${pg.rev}／${pg.revN}` : '今天沒有') : due ? `${due} 個到期` : '今天沒有', ok: !!d.done && !dueAll },
-      { b: '新學', v: d.done ? `${d.learned} 個 ✓` : pg ? `${pg.neu}／${pg.neuN}` : `0／${n}`, ok: !!d.done },
-      { b: '應用', v: d.applied ? '✓' : d.applyAt ? '進行中' : '—', ok: !!d.applied }
-    ];
-    const gs = p.goals || [];
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}<small>程度：${esc(App.LV_NAMES[p.lv])}・${sk.days ? `🔥 連續 ${sk.days} 天${sk.done ? " ✓" : ""}` : esc(dayStatus(d, d.done ? dueAll : due))}</small></h1>
       <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
       <button type="button" class="hm-target" id="hm-target">🎯 每日目標：${p.mins} 分鐘・新學 ${n} 個<span aria-hidden="true">調整 ›</span></button>
       ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
-      <div class="hm-mini"><button type="button" class="hm-cont" data-go="cards"><span class="ic" aria-hidden="true">🎴</span><span><b>字卡</b><small>五十音・日檢・不會清單</small></span></button><button type="button" class="hm-cont" data-go="review"><span class="ic" aria-hidden="true">🔁</span><span><b>到期複習</b><small>${dueAll ? `今天到期 ${dueAll} 個` : '今天沒有到期'}</small></span></button></div>
       ${contHTML()}
-      <h2 class="hm-sec">🧭 學習</h2>
-      <div class="hm-all">${mainCards(p)}</div>
+      ${dueAll && d.done ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>還有 ${dueAll} 個到期</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
     </section>`;
     el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
-    el.querySelectorAll('.hm-mini [data-go]').forEach(b => b.onclick = () => App.go(b.dataset.go));
-    el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { const x = window.NAV && NAV.mainSections().find(o => o.id === b.dataset.sec); if (x) App.go(x.route, Object.assign({}, x.params || {})); });
+    const db = el.querySelector('#hm-due'); if (db) db.onclick = () => App.go('review');
     const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
     if (gb) gb.onclick = () => { const lg = lessonGoals(p), i = lg.indexOf(goal); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); };
@@ -172,18 +163,6 @@
     const c = window.NAV && NAV.cont && NAV.cont();
     if (!c || Date.now() - (c.t || 0) > 14 * 864e5) return '';
     return `<button type="button" class="hm-cont" id="hm-cont"><span class="ic" aria-hidden="true">⏯</span><span><b>繼續上次：${esc(c.title)}</b><small>${esc(c.where || '')}</small></span><span aria-hidden="true">›</span></button>`;
-  }
-  // 學習的 5 個目的分頁（NAV.mainSections＝NAV.GOALS）：每個一張，附目前狀態；自己的目的排前面
-  function mainCards(p) {
-    const S = window.NAV && NAV.mainSections ? NAV.mainSections() : [];
-    const gs = p.goals || [], dueN = window.Learn ? Learn.due(15).length : 0;
-    const info = {
-      kana: `平假名 ${kanaSeen()}／${KANA_N}`, travel: '14 個場景包', exam: 'N5–N1 單字・文法', work: '敬語・Email・會議', song: '熱門歌・我的歌', fun: '短文・新聞',
-      me: '紀錄・設定・備份'
-    };
-    const mine = x => gs.includes(x.id) || (x.id === 'song' && gs.includes('fun')) || (x.id === 'kana' && p.lv === 'zero');
-    const list = S.filter(mine).concat(S.filter(x => !mine(x)));
-    return list.map(x => `<button type="button" class="hm-cat${mine(x) ? ' mine' : ''}" data-sec="${x.id}"><span class="ic" aria-hidden="true">${x.icon}</span><b>${esc(x.name)}</b><small>${esc(info[x.id] || '')}</small></button>`).join('');
   }
   function greet() {
     const h = new Date().getHours();
@@ -593,7 +572,6 @@
       <div class="st-box"><h2>🧰 其他</h2><div class="st-rows">
         ${G ? `<button type="button" class="st-row" id="st-sfx">${G.sfxOn() ? '🔊 音效' : '🔇 音效'}<small>${G.sfxOn() ? '開' : '關'}</small></button>` : ''}
         <button type="button" class="st-row" id="st-av">🎭 換頭像<small>›</small></button>
-        <button type="button" class="st-row" id="st-bk">💾 備份／還原存檔<small>${App.saveStatus === 'cloud' ? '已雲端存檔' : '存在這台裝置'}</small></button>
       </div></div>
       <div class="st-box"><h2>⚠️ 危險區</h2>
         <button type="button" class="btn block st-danger" id="st-clear">🗑️ 清除全部進度</button>
@@ -620,7 +598,6 @@
     q('#st-av').onclick = () => {
       if (G && has(G, 'pickAvatar')) G.pickAvatar(() => App.render());
     };
-    q('#st-bk').onclick = () => App.backup();
     q('#st-clear').onclick = () => {
       if (!clearArmed) { clearArmed = true; App.toast('⚠️ 會清除 XP、不會清單、所有進度。再點一次確定'); setTimeout(() => { clearArmed = false; }, 3000); return; }
       clearArmed = false; App.resetAll();

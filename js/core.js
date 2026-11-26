@@ -6,7 +6,7 @@
 (function () {
   const KEY = 'jpQuest.v1';
   // App 版本（V主.次.修）：和 sw.js 的 VERSION（'jpq-v' + 版本）必須一致，tools/check-version.mjs 會檢查；規則見 CONTRACT.md「版本編號」
-  const APP_VERSION = '3.7.0';
+  const APP_VERSION = '3.9.0';
   const SCHEMA = 2;
   const MIGS = [];
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
@@ -516,7 +516,11 @@
   function renderNav() {
     const nav = document.getElementById('nav');
     if (!nav) return;
-    const cur0 = parseHash().name, r0 = routes[cur0], cur = (r0 && r0.navParent) || (r0 && r0.nav ? cur0 : 'home');   // 沒指定 navParent 的子頁點亮首頁
+    const cur0 = parseHash().name, r0 = routes[cur0];
+    const SEC_R = { home: 'home', learn: 'path', lookup: 'lookup', me: 'me' };
+    let cur = '';
+    try { const L = window.NAV && NAV.locate(cur0, parseHash().params); if (L && L.sec) cur = SEC_R[L.sec.id] || ''; } catch (e) { }   // 底部亮燈＝麵包屑同一來源（NAV.locate）
+    if (!cur) { let x = cur0; for (let i = 0; i < 4 && x && routes[x] && !routes[x].nav; i++) x = routes[x].navParent; cur = x && routes[x] && routes[x].nav ? x : 'home'; }
     nav.innerHTML = order.filter(n => routes[n].nav).sort((a, b) => (routes[a].navOrder || 9) - (routes[b].navOrder || 9)).map(n => {
       const r = routes[n];
       const dn = n === 'me' || n === 'review' ? (window.Learn ? Learn.due(15).length : Tracker.dueCount()) : 0;   // 紅點＝今天到期數（與首頁、我的同一個 Learn.due(15).length）
@@ -536,7 +540,7 @@
       document.getElementById('lvBtn').onclick = () => modal(`<h2>Lv.${lv} ${esc(titles()[lv - 1] || '')}</h2><p class="muted">程度：${esc(LV_NAMES[S.profile.lv])}（在「我的」→ 設定可改）</p><p>${S.xp} XP・下一級還差 <b>${Math.max(0, hi - S.xp)}</b> XP</p><p>🔥 連續 ${sk.days} 天${sk.risk ? '（今天還沒練！練一題就能保住）' : ''}</p>`, [{ label: '關閉', cls: 'primary' }]);
       let bk = document.getElementById('backBtn');
       if (!bk) { bk = document.createElement('button'); bk.id = 'backBtn'; bk.className = 'icon-btn'; bk.title = '回上一頁'; bk.textContent = '←'; const top = document.querySelector('#top .in'); top.insertBefore(bk, top.firstChild); bk.onclick = back; }
-      bk.hidden = cur0 === 'home';   // 首頁不顯示（不留空位，logo 貼齊左緣）；#backBtn 是全站唯一返回鍵，頁內不再放 ←
+      bk.hidden = !!(routes[cur0] && routes[cur0].nav);   // 首頁不顯示（不留空位，logo 貼齊左緣）；#backBtn 是全站唯一返回鍵，頁內不再放 ←
     }
   }
   /* ---------------- 外觀：主題色、淺深色、字級 ---------------- */
