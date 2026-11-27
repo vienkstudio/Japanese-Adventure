@@ -1,6 +1,6 @@
 /* =========================================================
    「今天」首頁 home、今日練習 today、設定頁 settings、首次開啟的程度選擇、延遲載入 Home.lazy
-   首頁：唯一主按鈕「▶ 開始今天的課」＋連勝＋今日進度（含頂列與導覽可點元素 ≤10）
+   首頁 5 區：程度＋切換、學習目標（有目標才有今日練習）、繼續上次、8 個功能入口、設定＋新開始
    今日練習：Learn.prepare(目的) → 到期複習（≤15）→ 新學 5–8 個（卡片）→ 小測驗 → 結算（＋1 個應用）
    依賴：App、Learn、Tracker（core／learn）；Game（選用）；其他資料／模組都在今日練習開始時才載入
    ========================================================= */
@@ -153,42 +153,51 @@
     return ok;
   }
 
+  // 首頁功能入口（各自獨立，每格一行說明）
+  const TILES = [['🔤', '五十音', '平假名・片假名，依行學', 'path', { tab: 'kana' }], ['🧳', '旅遊場景', '和店員對話、聽力、選句', 'path', { tab: 'travel' }],
+    ['📝', '日檢', 'N5–N1 單字與文法', 'path', { tab: 'exam' }], ['💼', '商務', '敬語、電話、Email、開會', 'path', { tab: 'work' }],
+    ['📚', '閱讀', '短文、新聞、匯入文章', 'read', {}], ['🎵', '歌曲', '熱門歌跟唱、看懂歌詞', 'songs', {}],
+    ['🔍', '查單字', '日文、假名、羅馬字、中文', 'lookup', {}], ['🎴', '字卡複習', '翻卡複習、不會清單', 'cards', {}]];
+  let lvOpen = false;
   function render(el) {
     const p = App.profile();
     if (!p.placed) return onboard(el);
-    const g = goalInfo(p);
-    if (!g) {   // 沒設學習目標：不排今日練習，只提示設定目標
-      el.innerHTML = `<section class="hm">
-      <h1 class="hm-hi">${greet()}</h1>
-      <button type="button" class="hm-main" id="hm-set"><span class="ic" aria-hidden="true">🎯</span><span><b>設定學習目標</b><small>設定要學多少字詞、到哪一天，才會每天排今日練習</small></span></button>
-      ${contHTML()}
-    </section>`;
-      el.querySelector('#hm-set').onclick = () => App.go('settings', { focus: 'daily' });
-      const cb0 = el.querySelector('#hm-cont'); if (cb0) cb0.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
-      return;
+    const g = goalInfo(p), d = dayRec(), dueAll = dueAllNow();
+    let goalHTML;
+    if (!g) goalHTML = `<button type="button" class="hm-cont hm-setgoal" id="hm-set"><span class="ic" aria-hidden="true">🎯</span><span><b>設定學習目標</b><small>設好字詞量和截止日，才會每天排今日練習</small></span><span aria-hidden="true">›</span></button>`;
+    else {
+      const km = kanaMode(p), goal = curGoal(p), g2 = km ? 'kana' : goal;
+      const pl = plan(g2, p.lv, dueAll, freshFor(g2, p.lv, dueAll)), n = pl.n, due = pl.due;
+      const pg = !d.done && d.prog && d.prog.goal === g2 && d.prog.done > 0 ? d.prog : null;
+      const sub = km ? `五十音 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字` : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
+      applyDone(d);
+      const big = pg ? `▶ 繼續今日練習（${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今日練習' : d.applied ? '▶ 再練一次' : '▶ 去用出來（最後一步）';
+      goalHTML = `<button type="button" class="hm-goalbar" id="hm-goalbar" aria-label="學習目標，點一下調整"><b>${esc(goalLine(g))}</b><small>${esc(scopeName(g.t.scope))} ${g.t.words} 個字詞・已學 ${g.studied}・熟悉度 ${Math.round(g.famPct * 100)}%</small><i style="--p:${g.pct}%" aria-hidden="true"></i></button>
+      <button type="button" class="hm-main" id="hm-main" data-g2="${g2}"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '從離開的地方接著做' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多練可以再練一次' : (d.apLabel || '用出來一次'))}</small></span></button>
+      ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}`;
     }
-    const d = dayRec();
-    const km = kanaMode(p), goal = curGoal(p), g2 = km ? 'kana' : goal;
-    const dueAll = dueAllNow(), pl = plan(g2, p.lv, dueAll, freshFor(g2, p.lv, dueAll)), n = pl.n, due = pl.due;
-    const pg = !d.done && d.prog && d.prog.goal === g2 && d.prog.done > 0 ? d.prog : null;
-    const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${(p.goals || []).includes('travel') ? `＋${kanaPh()} 句旅遊句` : ''}，先教再考`
-      : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
-    applyDone(d);
-    const big = pg ? `▶ 繼續今日練習（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今日練習' : d.applied ? '▶ 再練一次' : '▶ 去用出來（最後一步）';
     el.innerHTML = `<section class="hm">
-      <h1 class="hm-hi">${greet()}</h1>
-      <button type="button" class="hm-goalbar" id="hm-goalbar" aria-label="學習目標，點一下調整"><b>${esc(goalLine(g))}</b><small>${esc(scopeName(g.t.scope))} ${g.t.words} 個字詞・已學 ${g.studied}・熟悉度 ${Math.round(g.famPct * 100)}%</small><i style="--p:${g.pct}%" aria-hidden="true"></i></button>
-      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著做' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多練可以再練一次' : (d.apLabel || '用出來一次'))}</small></span></button>
-      ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
+      <div class="hm-top"><h1 class="hm-hi">${greet()}</h1>
+        <button type="button" class="hm-lv" id="hm-lv" aria-expanded="${lvOpen}" aria-label="目前程度，點一下切換">${LV_ICON[p.lv] || ''} ${esc(App.LV_NAMES[p.lv] || '')}<span aria-hidden="true">⇄ 切換</span></button></div>
+      ${lvOpen ? `<div class="hm-lvs" role="group" aria-label="選程度">${App.LV_IDS.map(id => `<button type="button" data-lv="${id}" class="${p.lv === id ? 'on' : ''}" aria-pressed="${p.lv === id}">${LV_ICON[id]} ${esc(App.LV_NAMES[id])}${LV_N[id] ? ' ' + LV_N[id] : ''}</button>`).join('')}</div>` : ''}
+      ${goalHTML}
       ${contHTML()}
-      ${dueAll && d.done ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>還有 ${dueAll} 個到期</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
+      ${dueAll ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>${dueAll} 個字詞到期該複習</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
+      <div class="hm-tiles">${TILES.map(([ic, n, ds], i) => `<button type="button" class="hm-tile" data-tile="${i}"><span class="ic" aria-hidden="true">${ic}</span><b>${n}</b><small>${ds}</small></button>`).join('')}</div>
+      <div class="hm-foot"><button type="button" class="btn ghost" id="hm-st">⚙️ 設定</button><button type="button" class="btn ghost" id="hm-new">🔄 新開始</button></div>
     </section>`;
-    el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
-    const db = el.querySelector('#hm-due'); if (db) db.onclick = () => App.go('review');
-    el.querySelector('#hm-goalbar').onclick = () => App.go('settings', { focus: 'daily' });
-    const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
-    const gb = el.querySelector('#hm-goal');
-    if (gb) gb.onclick = () => { const lg = lessonGoals(p), i = lg.indexOf(goal); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); };
+    const q = s => el.querySelector(s), on = (s, f) => { const x = q(s); if (x) x.onclick = f; };
+    on('#hm-lv', () => { lvOpen = !lvOpen; render(el); });
+    el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { lvOpen = false; App.setProfile({ lv: b.dataset.lv }); App.toast(`程度：${App.LV_NAMES[b.dataset.lv]}（進度保留）`, 'ok'); render(el); });
+    on('#hm-set', () => App.go('settings', { focus: 'daily' }));
+    on('#hm-goalbar', () => App.go('settings', { focus: 'daily' }));
+    on('#hm-main', () => App.go('today', Object.assign({ goal: q('#hm-main').dataset.g2 }, d.done && d.applied ? { more: 1 } : {})));
+    on('#hm-goal', () => { const lg = lessonGoals(p), i = lg.indexOf(curGoal(p)); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); });
+    on('#hm-cont', () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); });
+    on('#hm-due', () => App.go('review'));
+    el.querySelectorAll('[data-tile]').forEach(b => b.onclick = () => { const t = TILES[+b.dataset.tile]; App.go(t[3], Object.assign({}, t[4])); });
+    on('#hm-st', () => App.go('settings'));
+    on('#hm-new', () => { restart = true; document.body.classList.add('ob-mode'); onboard(el, true); });
   }
   // 繼續上次（js/nav.js 記錄最後一個內容頁：單元、講義、歌曲、文章、小遊戲…；14 天內）
   function contHTML() {
@@ -461,6 +470,7 @@
   // 程度選項旁標 JLPT 對照
   const LV_N = { zero: '', n5: '≈N5', n4: '≈N4', n3: '≈N3', n2: '≈N2', n1: '≈N1' };
   const lvName = id => esc(App.LV_NAMES[id]) + (LV_N[id] ? `<em class="ob-n">${LV_N[id]}</em>` : '');
+  let restart = false;   // 首頁「新開始」：重選程度＋目的，進度保留
   function onboard(el, retake) {
     // 首次選程度：隱藏底部導覽與頂列按鈕，必須先選（core.render 換頁時自動解除）
     if (!App.profile().placed) document.body.classList.add('ob-mode');
@@ -477,7 +487,7 @@
     const first = !App.profile().placed;
     App.setProfile({ lv });
     App.toast(`程度：${App.LV_NAMES[lv]}${lv === 'zero' ? '・先從五十音開始' : ''}`, 'ok');
-    if (first && el) return goalAsk(el);   // 字級在設定裡改
+    if ((first || restart) && el) { restart = false; return goalAsk(el); }   // 首次或「新開始」：接著選目的
     App.go('home');
   }
   // 首次開啟第二題：學日文的目的（可複選，存 profile.goals；決定首頁快查入口與推薦）
