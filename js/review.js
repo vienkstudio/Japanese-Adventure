@@ -196,7 +196,7 @@
         ${r.early ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個：<b class="jp" lang="ja">${esc(nd.jp)}</b>（${when}）` : ''}</div>` : ''}
         ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：想一想→翻面→自評 4 級</small></button>
         <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習<small>閱讀、歌曲收的字會用原句填空</small></button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去學習新的</button>`}
-        <p class="rv-info">答對越多次，隔越久再出現；上課、學習單元、店家學過的到期都會排進來。</p>
+        <p class="rv-info">答對越多次，隔越久再出現；每日練習、學習、店家學過的到期都會排進來。</p>
         <button type="button" class="btn block" data-go="cards">🎴 字卡牌組<small>五十音・日檢・不會清單</small></button>
       </div>
       <details class="panel rv-more"${ui.open ? ' open' : ''}><summary class="noprint">⋯ 更多：清單、篩選、匯出入、列印</summary>

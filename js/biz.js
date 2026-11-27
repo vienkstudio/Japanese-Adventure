@@ -41,11 +41,11 @@
       const i = META.findIndex(m => !starsOf(m.id));
       if (i >= 0) {
         const m = META[i], P = runOf(m.id);
-        return { label: '商務日語：' + m.title, sub: P ? `續做：第 ${Math.min(doneCount(P) + 1, secCount(P))} / ${secCount(P)} 小節・每節約 5 分` : `第 ${i + 1} 課・${m.lv}・分 ${unitOf(m.id) ? parts(unitOf(m.id)).length + 2 : 6} 小節，每節約 5 分`, route: 'biz-unit', params: { id: m.id }, icon: m.icon };
+        return { label: '商務日語：' + m.title, sub: P ? `續做 ${Math.min(doneCount(P) + 1, secCount(P))} / ${secCount(P)}・每段約 5 分` : `${m.lv}・${m.desc || "單字、句子、對話、Email"}`, route: 'biz-unit', params: { id: m.id }, icon: m.icon };
       }
       const low = META.slice().sort((a, b) => starsOf(a.id) - starsOf(b.id))[0];
       if (starsOf(low.id) < 3) return { label: '商務日語複習：' + low.title, sub: '再挑戰拿滿 3 星', route: 'biz-unit', params: { id: low.id }, icon: low.icon };
-      return { label: '商務閱讀', sub: '8 課都 3 星了，讀一篇商務短文', route: 'biz', params: {}, icon: '💼' };
+      return { label: '商務閱讀', sub: '8 個情境都 3 星了，讀一篇商務短文', route: 'biz', params: {}, icon: '💼' };
     } catch (e) { return { label: '商務日語', sub: '', route: 'biz', params: {} }; }
   };
 
@@ -154,16 +154,16 @@
     el.innerHTML = `<div class="bz">
       <div class="bz-hero">
         <div class="bz-hero-t"><span class="bz-hero-i">💼</span><div><h2>商務日語</h2><p class="muted">真實職場說法：敬語、電話、Email、開會、報連相</p></div></div>
-        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(p.done / p.total * 100)}%"></div></div><span>${p.done} / ${p.total} 課完成</span></div>
+        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(p.done / p.total * 100)}%"></div></div><span>${p.done} / ${p.total} 個情境完成</span></div>
         ${nx.route === 'biz-unit' ? `<button type="button" class="btn primary block bz-go" data-unit="${esc(nx.params.id)}">▶ ${esc(nx.label.replace(/^商務日語(複習)?：/, ''))}<small>${esc(nx.sub)}</small></button>` : ''}
       </div>
-      <h3 class="bz-sec">情境單元</h3>
+      <h3 class="bz-sec">情境</h3>
       <div class="bz-units">${units.map((u, i) => {
         const s = starsOf(u.id), P = runOf(u.id);
         return `<button type="button" class="bz-unit${s ? ' done' : ''}" data-unit="${esc(u.id)}">
           <span class="bz-u-i">${u.icon}</span>
-          <span class="bz-u-tx"><b>${i + 1}. ${esc(u.title)}</b><small>${esc(u.zh)}</small>
-            <span class="bz-u-meta">${lvB(u.lv)}${P ? `<span class="bz-rec">續做 ${doneCount(P)}/${secCount(P)} 小節</span>` : u.lv === lvNow ? '<span class="bz-rec">適合你</span>' : ''}<span class="bz-stars" aria-label="${s} 星">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span>
+          <span class="bz-u-tx"><b>${esc(u.title)}</b><small>${esc(u.zh)}</small>
+            <span class="bz-u-meta">${lvB(u.lv)}${P ? `<span class="bz-rec">續做 ${doneCount(P)}/${secCount(P)}</span>` : u.lv === lvNow ? '<span class="bz-rec">適合你</span>' : ''}<span class="bz-stars" aria-label="${s} 星">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span>
         </button>`;
       }).join('')}</div>
       <h3 class="bz-sec">商務閱讀</h3>
@@ -186,9 +186,9 @@
   function parts(u) {
     const split = (a, n) => { const k = Math.ceil(a.length / n), o = []; for (let i = 0; i < k; i++) o.push(a.slice(Math.floor(a.length * i / k), Math.floor(a.length * (i + 1) / k))); return o; };
     const out = [], V = (u.vocab || []).map(d => ({ k: 'v', d })), PG = (u.phrases || []).map(d => ({ k: 'p', d })).concat((u.grammar || []).map(d => ({ k: 'g', d })));
-    split(V, CARD_MAX).forEach((cards, i, all) => out.push({ k: 'v', title: '單字' + (all.length > 1 ? ' ' + (i + 1) : ''), cards }));
+    split(V, CARD_MAX).forEach((cards, i, all) => out.push({ k: 'v', title: '單字：' + cards.slice(0, 3).map(c => c.d.jp).join('、') + (cards.length > 3 ? '…' : ''), cards }));
     const ps = split(PG, CARD_MAX);
-    ps.forEach((cards, i) => out.push({ k: 'p', title: (cards.some(c => c.k === 'g') ? '句子＋句型' : '句子') + (ps.length > 1 ? ' ' + (i + 1) : ''), cards }));
+    ps.forEach((cards, i) => out.push({ k: 'p', title: (cards.some(c => c.k === 'g') ? '句子與句型：' : '句子：') + cards.slice(0, 2).map(c => String(c.d.zh || c.d.jp || '').replace(/[（(].*$/, '').replace(/[。？！?!]$/, '').slice(0, 10)).join('、') + (cards.length > 2 ? '…' : ''), cards }));
     return out.map((x, i) => Object.assign(x, { n: i + 1, refs: x.cards.map(refOf) }));
   }
   B.parts = parts;
@@ -296,7 +296,7 @@
   function renderUnit(el, params) {
     if (!needData(el, 'biz-unit', params, renderUnit)) return;
     const u = unitOf(params && params.id);
-    if (!u) { el.innerHTML = '<p class="center bz-load">找不到這個單元。</p>'; return; }
+    if (!u) { el.innerHTML = '<p class="center bz-load">找不到這個情境。</p>'; return; }
     let R = RUNS[u.id];
     // 不在小節中：重建，讓路線、今日課剛學的卡立刻反映到小節進度
     if (!R || (R.cur < 0 && !R.fin)) R = RUNS[u.id] = Object.assign(build(u), { brk: R ? R.brk : -1 });
@@ -319,15 +319,15 @@
     if (R.cur < 0) {
       const nx = nextSec(R), nDone = doneCount(R.P), nS = R.secs.length, brk = R.brk >= 0 ? R.secs[R.brk] : null;
       const cardsLeft = R.secs.some((x, i) => R.steps[x.from].st === 'card' && !R.P.done[i]);
-      const top = brk ? `<div class="bz-intro-i">✅</div><h2>小節完成！</h2><p>${brk.icon} ${esc(brk.title)}</p>
-          <p class="muted">可以先休息，下次回來會從第 ${nx + 1} 小節繼續。</p>`
+      const top = brk ? `<div class="bz-intro-i">✅</div><h2>這一段完成！</h2><p>${brk.icon} ${esc(brk.title)}</p>
+          <p class="muted">可以先休息，下次回來會從這裡繼續。</p>`
         : `<div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="muted">${esc(u.zh)}</p><p class="bz-goal">🎯 ${esc(u.goal)}</p>`;
       el.innerHTML = `<div class="bz bz-run"><div class="card bz-card bz-intro">${top}
-        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(nDone / nS * 100)}%"></div></div><span>小節 ${nDone} / ${nS}</span></div>
+        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(nDone / nS * 100)}%"></div></div><span>${nDone} / ${nS} 段</span></div>
         ${secList(R)}
         ${R.P.skip ? `<p class="muted bz-skipn">已學過的 ${R.P.skip} 張卡片自動略過</p>` : ''}</div>
         <div class="bz-nav">${brk ? '<button type="button" class="btn" data-list>先休息</button>' : cardsLeft ? '<button type="button" class="btn" data-skipcards>已經會了，跳過卡片 ›</button>' : ''}
-          <button type="button" class="btn primary bz-next" data-sec="${nx}">${brk ? '▶ 下一小節' : nDone ? '▶ 繼續第 ' + (nx + 1) + ' 小節' : '▶ 開始第 1 小節'}</button></div></div>`;
+          <button type="button" class="btn primary bz-next" data-sec="${nx}">${brk ? '▶ 下一段' : nDone ? '▶ 繼續' : '▶ 開始'}</button></div></div>`;
       bindHome();
       return;
     }
@@ -341,7 +341,7 @@
     </div>`;
     let body = '';
     const nextBtn = (label, extra) => `<div class="bz-nav">${extra || ''}<button type="button" class="btn primary bz-next" data-next>${label || '下一步 ➜'}</button></div>`;
-    const endLabel = d => last ? '看結果 ➜' : lastInSec ? '完成這一小節 ➜' : d;
+    const endLabel = d => last ? '看結果 ➜' : lastInSec ? '完成這一段 ➜' : d;
     if (s.k === 'v' || s.k === 'p' || s.k === 'g') {
       body = cardHTML(u, s) + `<div class="bz-nav bz-rate">
         <button type="button" class="btn" data-rate="1">🔁 還不熟</button>
@@ -350,7 +350,7 @@
     } else if (s.k === 'sec') {
       const T = { dlg: ['💬', '對話演練', `情境：${u.dialogue.title}。每一輪選出最得體的說法，答錯可以再選一次。`], mail: ['✉️', 'Email 填空', `${u.email.title}：把空格填上最適合的說法。`], quiz: ['📝', '小測驗', `填空、選情境、重組句子、敬語轉換，共 ${u.quiz.length} 題。`] }[s.st];
       body = `<div class="card bz-card bz-intro"><div class="bz-intro-i">${T[0]}</div><h2>${T[1]}</h2><p>${esc(T[2])}</p>
-        ${s.st === 'dlg' ? (() => { const all = parts(u).flatMap(x => x.refs), k = all.filter(learned).length; return k ? `<p class="muted">本單元卡片已記住 ${k}／${all.length} 張。</p>` : ''; })() : ''}</div>` + nextBtn('開始 ➜');
+        ${s.st === 'dlg' ? (() => { const all = parts(u).flatMap(x => x.refs), k = all.filter(learned).length; return k ? `<p class="muted">這個情境的卡片已記住 ${k}／${all.length} 張。</p>` : ''; })() : ''}</div>` + nextBtn('開始 ➜');
     } else if (s.k === 'd') {
       body = dlgHTML(u, s) + (s.done ? nextBtn(endLabel('下一步 ➜')) : '');
     } else if (s.k === 'm') {
@@ -360,7 +360,7 @@
     } else if (s.k === 'o') {
       body = orderHTML(s) + (s.done ? nextBtn(endLabel('下一題 ➜')) : '');
     }
-    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">小節 ${R.cur + 1}/${R.secs.length}・${R.i - S0.from + 1} / ${S0.to - S0.from}</p></div>`;
+    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">第 ${R.cur + 1}/${R.secs.length} 段・${R.i - S0.from + 1} / ${S0.to - S0.from}</p></div>`;
     bindCommon(el);
     const nb = el.querySelector('[data-next]'); if (nb) nb.onclick = () => go(R.i + 1);
     el.querySelectorAll('[data-skipcards]').forEach(b => b.onclick = skipCards);
@@ -485,7 +485,7 @@
     const i = META.findIndex(m => m.id === u.id), nx = META[i + 1];
     const el = document.getElementById('main');
     if (el && onRoute('biz-unit')) el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="bz-stars" aria-label="${stars} 星">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p><p>完成！答對 ${P.ok}／${P.total}${R.best >= 2 ? `・最佳連擊 🔥${R.best}` : ''}</p>
-      <p><button type="button" class="btn" data-again>🔄 再做一次</button><button type="button" class="btn primary" data-list>單元列表</button></p></div></div>`;
+      <p><button type="button" class="btn" data-again>🔄 再做一次</button><button type="button" class="btn primary" data-list>情境列表</button></p></div></div>`;
     try { const G = window.Game; if (G) { G.sfx(stars >= 2 ? 'win' : 'star'); if (stars >= 2 && G.confetti && !(G.reduced && G.reduced())) G.confetti(70); } } catch (e) { }
     if (el) {
       const a = el.querySelector('[data-again]'); if (a) a.onclick = () => renderUnit(el, { id: u.id });
@@ -496,8 +496,8 @@
       stars, correct: P.ok, total: P.total, gained: r.gained, wrong: P.wrong.slice(0, 8),
       note: `<span class="muted">對話 ${u.dialogue.steps.length} 輪＋Email ${u.email.blanks.length} 格＋測驗 ${u.quiz.length} 題・新卡片記住 ${P.known} 張</span>`,
       retry: () => { const m = document.getElementById('main'); if (m) renderUnit(m, { id: u.id }); },
-      back: { label: '單元列表', route: 'biz' },
-      next: nx ? { label: '下一課 ➜', route: 'biz-unit', params: { id: nx.id } } : { label: '商務閱讀 ➜', route: 'biz' }
+      back: { label: '情境列表', route: 'biz' },
+      next: nx ? { label: '下一個情境 ➜', route: 'biz-unit', params: { id: nx.id } } : { label: '商務閱讀 ➜', route: 'biz' }
     });
   }
 

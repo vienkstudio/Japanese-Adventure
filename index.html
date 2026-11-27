@@ -44,7 +44,7 @@
   L([r('event', '狀況題', '⚡', { navParent: 'path' })], WD.concat(TD), ['css/world.css']);
   // 第二階段：路線、活動、查、我的
   // 路線：js/classic.js 提供 PathExtra（旅遊包／五十音／日檢的「更多練習」、五十音表），須先於 path.js 載入
-  L([r('path', '學習', '🧭', { nav: true, navOrder: 2 }), r('path-unit', '單元', '🧭', { navParent: 'path' })], ['js/classic.js', 'js/path.js'], ['css/path.css', 'css/kana.css']);
+  L([r('path', '學習', '🧭', { nav: true, navOrder: 2 }), r('path-unit', '學習', '🧭', { navParent: 'path' })], ['js/classic.js', 'js/path.js'], ['css/path.css', 'css/kana.css']);
   L([r('kana-quiz', '假名測驗', '✏️', { navParent: 'path' })], K.concat(['js/kana-lesson.js', 'js/classic.js']), ['css/kana.css']);
   L([r('act', '練習', '▶', { navParent: 'path' })], PH.concat(['js/activity.js', 'js/activities/flashcard.js', 'js/activities/choice.js', 'js/activities/wordbank.js', 'js/activities/listen.js']), ['css/activity.css']);
   L([r('lookup', '查', '🔍', { nav: true, navOrder: 3 })], PH.concat(['js/phrasebook.js', 'js/lookup.js']), ['css/lookup.css']);

@@ -49,9 +49,9 @@
   ];
   // 學習分頁（不是工具，是「學習」底下的 5 個目的）：供搜尋、查頁「全部功能」、首頁捷徑、側邊樹使用
   const PLACES = [
-    T('kana', 'kana', '🔤', '五十音', '平假名・片假名表、分行單元', ['五十音', '50音', '五十音表', '五十音图', '假名', '假名表', '平假名', '片假名', 'あいうえお', 'アイウエオ', 'aiueo', 'hiragana', 'katakana', 'kana', '注音'], { route: 'path', params: { tab: 'kana' }, place: true }),
+    T('kana', 'kana', '🔤', '五十音', '平假名・片假名表，依行學', ['五十音', '50音', '五十音表', '五十音图', '假名', '假名表', '平假名', '片假名', 'あいうえお', 'アイウエオ', 'aiueo', 'hiragana', 'katakana', 'kana', '注音'], { route: 'path', params: { tab: 'kana' }, place: true }),
     T('travel', 'travel', '🧳', '旅遊', '14 個場景：和店員對話、聽力、選句完成對話', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊路線', 'travel', 'trip', '場景', '對話', '會話', '会话', '點菜', '店員', '口說', '開口', '情境任務', '狀況題', '拉麵', '結帳', '買票'], { route: 'path', params: { tab: 'travel' }, place: true }),
-    T('exam', 'exam', '📝', '日檢', 'N5–N1 每課 8 單字＋2 文法', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
+    T('exam', 'exam', '📝', '日檢', 'N5–N1 單字與文法，依文法分組', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
     T('work', 'work', '💼', '商務', '敬語、電話、Email、開會、報連相', ['商務', '商務日語', '商用', '工作', '上班', '職場', 'email', 'mail', '信件', '開會', '會議', '电话', '電話', 'business'], { route: 'path', params: { tab: 'work' }, place: true }),
     T('song', 'song', '🎵', '歌曲', '熱門歌・我的歌：跟唱、看懂歌詞（不排進每日進度）', ['歌曲', '唱歌', '跟唱', '動漫', '娛樂', 'j-pop', 'jpop'], { route: 'songs', params: {}, place: true }),
     T('fun', 'fun', '📚', '閱讀', '每日短文、新聞、匯入文章（不排進每日進度）', ['閱讀', '文章', '短文', '新聞'], { route: 'path', params: { tab: 'fun' }, place: true })
@@ -146,7 +146,7 @@
   // 一條分類軸＝底部 4 鈕：首頁／學習（5 個目的分頁）／查／我的。tools 都是 NAV.TOOLS 的 id，每個工具只在一個地方。
   const GOALS = [
     { id: 'kana', group: 'kana', tools: ['kana-guide', 'kana-test'] },
-    { id: 'travel', group: 'packsFlat', tools: ['play', 'boot'] },   // 對話、情境任務在各場景單元的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
+    { id: 'travel', group: 'packsFlat', tools: ['play', 'boot'] },   // 對話、情境任務在各場景的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
     { id: 'work', group: 'biz', tools: ['dict~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
     { id: 'song', tools: ['songs'] },
@@ -172,7 +172,7 @@
     if (name === 'path') { const tab = p.tab || p.goal; return goal(tab) ? G(tab, { sub: tab === 'exam' && p.lv ? String(p.lv).toUpperCase() : '' }) : { sec: sec('learn') }; }
     if (name === 'path-unit') {
       const id = String(p.id || '');
-      if (/^kana-/.test(id)) return G('kana', { sub: '分行單元' });
+      if (/^kana-/.test(id)) return G('kana', { sub: '依行學' });
       const m = id.match(/^tr-([a-z]+)/); if (m) { const pk = packs().find(x => x[0] === m[1]); return G('travel', { sub: pk ? pk[2] : '' }); }
       const e = id.match(/^(n[1-5])-/); if (e) return G('exam', { sub: e[1].toUpperCase() });
       if (/^biz/.test(id)) return G('work');
@@ -237,11 +237,11 @@
     const k = sec.id + ':g', open = OPEN.has(k);
     if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open || (curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))) ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
     if (sec.group === 'packsFlat') return `<p class="nv-lab">🏫 場景包</p>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}<p class="nv-lab">🧰 工具</p>`;
-    if (sec.group === 'biz') return nodeBtn({ route: 'biz', icon: '🗂️', name: '商務單元與文章' }, curName === 'biz');
-    if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1 單元</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
+    if (sec.group === 'biz') return nodeBtn({ route: 'biz', icon: '🗂️', name: '商務情境與文章' }, curName === 'biz');
+    if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
     if (sec.group === 'kana') {
       const KU = window.Path && Path.units ? (() => { try { return Path.units('kana'); } catch (e) { return []; } })() : [];
-      return `<details class="nv-g" data-g="${k}" data-lazy="kana"${open ? ' open' : ''}><summary>🔤 分行單元${KU.length ? '（' + KU.length + '）' : ''}</summary>${KU.length ? KU.map(u => nodeBtn({ route: 'path-unit', params: { id: u.id }, icon: u.complete ? '✓' : '•', name: u.title }, curName === 'path-unit' && curP.id === u.id)).join('') : '<p class="nv-load">展開時載入…</p>'}</details>`;
+      return `<details class="nv-g" data-g="${k}" data-lazy="kana"${open ? ' open' : ''}><summary>🔤 依行學${KU.length ? '（' + KU.length + '）' : ''}</summary>${KU.length ? KU.map(u => nodeBtn({ route: 'path-unit', params: { id: u.id }, icon: u.complete ? '✓' : '•', name: u.title }, curName === 'path-unit' && curP.id === u.id)).join('') : '<p class="nv-load">展開時載入…</p>'}</details>`;
     }
     return '';
   }

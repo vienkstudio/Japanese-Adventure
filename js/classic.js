@@ -120,7 +120,7 @@
       ${seg('kt', [['seion', '清音'], ['daku', '濁音'], ['yoon', '拗音']], TS.t)}
       <div class="kt-g${R.cols === 3 ? ' c3' : ''}">${R.list.map(r => {
         const hs = r.cells.filter(Boolean), done = hs.length && hs.every(on);
-        return `<button type="button" class="kt-row${done ? ' done' : ''}" data-unit="${esc(r.unit)}" aria-label="${esc(r.name)}：進入單元"><span lang="ja">${esc(nameOf(r))}</span><small>${done ? '✓ 學過' : '學 ›'}</small></button>` +
+        return `<button type="button" class="kt-row${done ? ' done' : ''}" data-unit="${esc(r.unit)}" aria-label="${esc(r.name)}：開始這一行"><span lang="ja">${esc(nameOf(r))}</span><small>${done ? '✓ 學過' : '學 ›'}</small></button>` +
           r.cells.map(h => { const k = h && R.by[h]; if (!k) return '<span class="kt-c nil" aria-hidden="true"></span>';
             return `<button type="button" class="kt-c${on(h) ? ' on' : ''}" data-ks="${esc(h)}" aria-label="${esc(kt ? k[1] : k[0])} ${esc(rn(k[2]))}"><span class="g" lang="ja">${esc(kt ? k[1] : k[0])}</span><span class="r">${esc(rn(k[2]))}</span></button>`; }).join('');
       }).join('')}</div>`;

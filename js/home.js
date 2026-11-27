@@ -81,7 +81,7 @@
   // 每天新學幾個：使用者自訂（設定 → 每日目標）優先，沒設才依程度；分鐘數少就少學一點
   const freshN = lv => { const p = App.profile(); if (p.fresh != null) return p.fresh; const b = ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6; return p.mins <= 5 ? Math.min(b, 3) : p.mins >= 15 ? b + (p.mins >= 30 ? 6 : 3) : b; };
   // 應用只做一個小節：旅遊＝店內 1 個任務、日檢＝5 題、商務＝單元中 1 個小節、歌曲新聞＝唱一首歌、五十音＝下一個單元
-  const APPLY_TXT = { travel: '進店完成 1 個任務', exam: '日檢 5 題', fun: '唱一首歌', work: '商務 1 小節', kana: '五十音下一個單元' };
+  const APPLY_TXT = { travel: '進店完成 1 個任務', exam: '日檢 5 題', fun: '唱一首歌', work: '商務練一段', kana: '五十音下一行' };
   // 今日課時間估計（秒）：複習卡 8、新學（卡＋小測驗）20、應用依目的；總長 ≤8 分鐘 → 複習數依剩下的時間決定上限
   const APPLY_SEC = { travel: 180, exam: 75, fun: 180, work: 240, kana: 300 };
   const budget = () => (App.profile().mins || 8) * 60;   // 今日課長度＝使用者自訂的每天分鐘數
@@ -230,9 +230,9 @@
       } catch (e) { tu = null; }
     }
     // 零基礎：平假名還沒學到 30 個前，「用出來」固定走下一個五十音單元（不送進整句的旅遊單元；評審 v15 P1-3）
-    if (tu && kanaSeen() >= 30) return { route: 'path-unit', params: { id: tu.id }, label: '旅遊單元：' + tu.title + '（剛學的句子）' };
+    if (tu && kanaSeen() >= 30) return { route: 'path-unit', params: { id: tu.id }, label: '旅遊：' + tu.title + '（剛學的句子）' };
     let ku = null; try { ku = has(P, 'nextUnit') ? P.nextUnit('kana') : null; } catch (e) { ku = null; }
-    return ku ? { route: 'path-unit', params: { id: ku.id }, label: '五十音單元：' + ku.title, kana: 1 } : null;
+    return ku ? { route: 'path-unit', params: { id: ku.id }, label: '五十音：' + ku.title, kana: 1 } : null;
   }
   // 零基礎＋旅遊：混入的旅遊句改用路線旅遊單元（便利商店起）的必備句，學了就能在那個單元用出來
   function kanaTravelPh(k) {
@@ -271,7 +271,7 @@
         const keep = Q.fresh; Q.fresh = [];
         fillWork(Q, n, p.lv, m && m.id);
         if (Q.fresh.length < n) keep.forEach(x => { if (Q.fresh.length < n && !Q.fresh.some(y => y.id === x.id)) Q.fresh.push(x); });
-        Q.apply = m ? { route: 'biz-unit', params: { id: m.id }, label: `商務：${m.title}・做 1 小節（約 4 分）`, biz: m.id } : { route: 'biz', params: {}, label: '商務閱讀 1 篇' };
+        Q.apply = m ? { route: 'biz-unit', params: { id: m.id }, label: `商務：${m.title}・練一段（約 4 分）`, biz: m.id } : { route: 'biz', params: {}, label: '商務閱讀 1 篇' };
       }
       if (goal === 'kana') {
         // 五十音 n 個（預算不足時減少）＋旅遊必備句 1–2 句
@@ -281,7 +281,7 @@
         Q.fresh = kn.slice(0, n >= 5 ? n : Math.max(0, n - ph.length)).concat(ph);
       } else Q.fresh = Q.fresh.slice(0, n);
       Q.due = Q.due.slice(0, plan(goal, p.lv, Q.due.length, Q.fresh.length).due);
-      if (goal === 'kana') Q.apply = kanaApply(Q) || { route: 'path', params: { goal: 'kana' }, label: '五十音下一個單元', kana: 1 };
+      if (goal === 'kana') Q.apply = kanaApply(Q) || { route: 'path', params: { goal: 'kana' }, label: '五十音下一行', kana: 1 };
       if (goal === 'exam') {
         // 日檢：用今天新學的字與文法出 5 題
         // 評審 v18：不要 5 題都考 1 分鐘前剛看過的卡：今天新學最多 2 個＋以前學過的同級詞；不夠就從題庫隨機出
