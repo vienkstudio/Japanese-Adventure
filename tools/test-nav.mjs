@@ -46,7 +46,8 @@ ok(N.TOOLS.length <= 16, `工具應 ≤16 個，現在 ${N.TOOLS.length}`);
 const homes = {};
 N.SECTIONS.forEach(sec => (sec.tools || []).concat(...(sec.goals || []).map(g => g.tools)).forEach(id => { homes[id] = (homes[id] || 0) + 1; }));
 // 不放側邊樹的工具：今日課（首頁大按鈕）、對話／情境任務（場景單元的練習）、御朱印帳（冒險地圖）
-const OFF_TREE = ['today', 'goshuin'];
+// 跟唱、文章・新聞：由「學習 › 歌曲／閱讀」分頁本身代表，不在樹裡重複列
+const OFF_TREE = ['today', 'goshuin', 'songs', 'read'];
 N.TOOLS.forEach(t => ok(homes[t.id] === (OFF_TREE.includes(t.id) ? undefined : 1), `${t.id}：側邊樹裡出現 ${homes[t.id] || 0} 次（應${OFF_TREE.includes(t.id) ? '不出現' : '剛好 1 次'}）`));
 const names = N.TOOLS.concat(N.PLACES).map(t => t.name), icons = N.TOOLS.concat(N.PLACES).map(t => t.icon);
 ok(new Set(names).size === names.length, '名稱重複：' + names.filter((x, i) => names.indexOf(x) !== i).join());

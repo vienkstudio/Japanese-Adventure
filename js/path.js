@@ -509,6 +509,7 @@
   function renderPath(el, params) {
     params = params || {};
     if ((params.tab || params.goal) === 'song') return App.go('songs');
+    if ((params.tab || params.goal) === 'fun') return App.go('read');   // 閱讀只有一個地方：閱讀頁（短文、新聞、我的文章）
     const T = tabs();
     if (params.goal && !params.tab) params = Object.assign({}, params, { tab: params.goal });   // 相容 {goal}
     if (params.tab && T.all.some(t => t[0] === params.tab)) UI.tab = params.tab;
@@ -521,7 +522,7 @@
       <div class="tabs pa-tabs" role="tablist">${(zeroKana() ? T.all : T.all.filter(t => t[0] !== 'kana').concat(T.all.filter(t => t[0] === 'kana'))).map(tb).join('')}</div>
       <div class="pa-body"><p class="center muted pa-load">載入中…</p></div></div>`;
     const body = el.querySelector('.pa-body');
-    el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { if (b.dataset.tab === 'song') return App.go('songs'); UI.tab = b.dataset.tab; renderPath(el, {}); });
+    el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { if (b.dataset.tab === 'song') return App.go('songs'); if (b.dataset.tab === 'fun') return App.go('read'); UI.tab = b.dataset.tab; renderPath(el, {}); });
     const tab = UI.tab, lv = UI.lv || lvNow();
     load(tab, { lv }).then(() => { if (el.isConnected && UI.tab === tab) paint(body, tab); })
       .catch(() => { if (el.isConnected) body.innerHTML = '<p class="center pa-load">😵 載入失敗，請檢查網路後再試一次</p>'; });

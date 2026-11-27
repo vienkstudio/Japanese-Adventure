@@ -39,8 +39,8 @@
       sub: [{ name: '新聞', route: 'read', params: { sec: 'news' }, kw: ['新聞', '新闻', 'news', 'nhk', 'yahoo'] }, { name: '匯入網址', route: 'read', params: { mode: 'url' }, kw: ['網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link'] },
         { name: '商務文章', kw: ['商務閱讀', '商業文章', '職場文章'], run: () => { App.go('biz'); let n = 0; const tick = () => { const a = document.querySelector('#main [data-art]'); if (a) { a.scrollIntoView({ block: 'center' }); return; } if (++n < 40) setTimeout(tick, 150); }; setTimeout(tick, 200); } }] }),
     T('dict', 'lookup', '📘', '辭典', 'N5–N1 單字、文法、敬語、活用；相依樹', ['辭典', '字典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab', '知識庫', '資料庫', '百科', 'database', '文法', '句型', '语法', '接續', 'grammar', '敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo', '心智圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'], { route: 'kb',
-      sub: [{ name: '單字', route: 'kb', params: { p: 'db', kind: 'word' }, kw: ['字典', '辭典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab'] }, { name: '文法句型', route: 'lookup', params: { view: 'gram' }, kw: ['文法', '句型', '语法', '接續', 'grammar'] },
-        { name: '敬語', route: 'lookup', params: { view: 'keigo' }, kw: ['敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo'] }, { name: '相依樹', route: 'tree', kw: ['心智圖', '思維導圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'] }] }),
+      sub: [{ name: '單字', desc: 'N5–N1 單字：讀音、意思、例句', route: 'kb', params: { p: 'db', kind: 'word' }, kw: ['字典', '辭典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab'] }, { name: '文法句型', desc: '依級數查文法：接續、例句、相似文法', route: 'lookup', params: { view: 'gram' }, kw: ['文法', '句型', '语法', '接續', 'grammar'] },
+        { name: '敬語', desc: '尊敬語、謙讓語、丁寧語對照', route: 'lookup', params: { view: 'keigo' }, kw: ['敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo'] }, { name: '相依樹', route: 'tree', kw: ['心智圖', '思維導圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'] }] }),
     T('phrasebook', 'lookup', '📖', '旅遊手冊', '點餐、購物、交通、住宿、緊急；大字給店員看', ['手冊', '旅遊手冊', '常用句', '旅遊句', '給店員看', '大字', '出示', 'phrase', '会话', '緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'], { route: 'phrasebook', params: { cat: 'must' },
       sub: [{ name: '緊急求助', icon: '🆘', route: 'phrasebook', params: { cat: 'emer' }, kw: ['緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'] }] }),
     T('settings', 'me', '⚙️', '設定', '程度、目的、字級、深色、語音', ['設定', '设置', '字太小', '字太大', '字級', '大字', '深色', '夜間', '暗色', '黑色', '語音', '聲音', '音效', '程度', '目的', 'settings', 'dark'], { route: 'settings' }),
@@ -54,7 +54,7 @@
     T('exam', 'exam', '📝', '日檢', 'N5–N1 單字與文法，依文法分組', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
     T('work', 'work', '💼', '商務', '敬語、電話、Email、開會、報連相', ['商務', '商務日語', '商用', '工作', '上班', '職場', 'email', 'mail', '信件', '開會', '會議', '电话', '電話', 'business'], { route: 'path', params: { tab: 'work' }, place: true }),
     T('song', 'song', '🎵', '歌曲', '熱門歌・我的歌：跟唱、看懂歌詞（不排進每日進度）', ['歌曲', '唱歌', '跟唱', '動漫', '娛樂', 'j-pop', 'jpop'], { route: 'songs', params: {}, place: true }),
-    T('fun', 'fun', '📚', '閱讀', '每日短文、新聞、匯入文章（不排進每日進度）', ['閱讀', '文章', '短文', '新聞'], { route: 'path', params: { tab: 'fun' }, place: true })
+    T('fun', 'fun', '📚', '閱讀', '每日短文、新聞、匯入文章（不排進每日進度）', ['閱讀', '文章', '短文', '新聞'], { route: 'read', params: {}, place: true })
   ];
   // 子入口：「工具 id~序號」→ 帶子入口 route／params／run 的工具副本（名稱「工具・子入口」）
   function subOf(t, i) {
@@ -149,8 +149,8 @@
     { id: 'travel', group: 'packsFlat', tools: ['play', 'boot'] },   // 對話、情境任務在各場景的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
     { id: 'work', group: 'biz', tools: ['dict~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
-    { id: 'song', tools: ['songs'] },
-    { id: 'fun', tools: ['read'] }
+    { id: 'song', tools: [] },   // 歌曲、閱讀分頁本身就是功能入口，不再重複列「跟唱」「文章・新聞」
+    { id: 'fun', tools: [] }
   ].map(g => Object.assign({}, PLACES.find(x => x.id === g.id), g));
   const SECTIONS = [
     { id: 'home', icon: '🏠', name: '首頁', route: 'home', tools: [] },
@@ -184,7 +184,7 @@
     if (/^(biz|biz-unit)$/.test(name)) return G('work');
     if (name === 'biz-read') return G('work', { sub: '商務文章' });
     if (/^(songs|song)$/.test(name)) return G('song');
-    if (/^(read|read-article)$/.test(name)) return G('fun', T('read'));
+    if (/^(read|read-article)$/.test(name)) return G('fun');
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));
     if (/^(play|event|map)$/.test(name)) return G('travel', T('play'));
     if (name === 'drill') return G('travel');
@@ -313,7 +313,7 @@
     const top = document.querySelector('#top .in'); if (!top) return;
     let mb = document.getElementById('nvMenu');
     if (!mb) {
-      mb = document.createElement('button'); mb.id = 'nvMenu'; mb.type = 'button'; mb.className = 'icon-btn nv-menu'; mb.setAttribute('aria-label', '全部內容（選單）'); mb.textContent = '☰';
+      mb = document.createElement('button'); mb.id = 'nvMenu'; mb.type = 'button'; mb.className = 'icon-btn nv-menu'; mb.setAttribute('aria-label', '全部內容（選單）'); mb.textContent = '☰ 選單';
       mb.onclick = () => document.body.classList.contains('nv-open') && !isWide() ? close() : open();
       top.insertBefore(mb, top.firstChild);
     }

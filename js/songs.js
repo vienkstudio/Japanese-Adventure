@@ -131,7 +131,6 @@
   }
   function listView(el) {
     el.innerHTML = `<div class="sg-home">
-      ${Reader.sectTabs('song')}
       <div class="sg-head"><h2 class="rd-h2">🎵 歌曲跟唱</h2></div>
       <form id="sgImport">
         <label class="rd-lbl">歌曲網址<input class="rd-in" type="url" id="sgLink" inputmode="url" placeholder="YouTube、YouTube Music 或音訊檔網址" required></label>
@@ -145,7 +144,6 @@
       <div class="rd-list sg-hot">${HOT.map(([t, a, yt], k) => `<button type="button" class="rd-item" data-hot="${k}"><span class="rd-ic sg-hn" aria-hidden="true">${k + 1}</span><span class="rd-it"><b lang="ja">${esc(t)}</b><small class="muted" lang="ja">${esc(a)}</small></span><span class="rd-go" aria-hidden="true">▶</span></button>`).join('')}</div>
       <p class="muted rd-tip">儲存的歌曲留在這台裝置。YouTube 與音訊網址播放時需要連網。</p>
     </div>`;
-    Reader.bindSect(el);
     el.querySelector('#sgNew').onclick = () => App.go('songs', { mode: 'new' });
     el.querySelectorAll('[data-hot]').forEach(b => b.onclick = async () => {
       if (b.disabled) return;

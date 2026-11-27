@@ -172,7 +172,7 @@
   const quick = n => { const pb = PB(); if (!pb || !pb.MUST) return []; return QUICK.map(j => pb.MUST.find(w => w.jp === j)).filter(Boolean).slice(0, n); };
 
   // 搜尋框範例依目的（第一個目的優先）
-  const HINT = '查句子、單字或功能：五十音、點餐';
+  const HINT = '查單字：日文、假名、羅馬字或中文';
   // 功能卡（js/nav.js 的 NAV.TOOLS）：data-nv＝工具 id；推薦卡第 4 格「上次用的」帶參數（data-last）
   const NV = () => window.NAV || null;
   const navCard = (t, cls) => `<button type="button" class="lk-tool${cls ? ' ' + cls : ''}" data-nv="${esc(t.id)}"${t.last ? ' data-last="1"' : ''}><span class="i" aria-hidden="true">${esc(t.icon)}</span><span><b>${esc(t.name)}</b><small>${esc(t.last ? t.lastTxt || '上次用的' : t.desc)}</small></span></button>`;
@@ -180,12 +180,13 @@
     const p = App.profile(), gs = p.goals && p.goals.length ? p.goals : ['travel'], travel = gs.includes('travel'), N = NV();
     const q = travel ? quick(gs.length > 2 ? 3 : 4) : [];
     const emer = `<button type="button" class="lk-emer${travel ? '' : ' sm'}" data-nv="phrasebook~0"><span class="i" aria-hidden="true">🆘</span><span><b>緊急求助</b><small>110 警察・119 救護車・求救句</small></span><span aria-hidden="true">›</span></button>`;
-    const rec = N ? ['phrasebook', 'dict'].map(N.byId).filter(Boolean) : [];   // 查＝搜尋＋手冊＋辭典；學習類功能在「學習」
-    // 評審 v18：不是旅遊目的的人，緊急求助放到推薦後面（仍在第一屏）
-    return (travel ? emer : '') +
+    // 查＝先查單字：辭典三個入口在最上面；旅遊的緊急求助、常用句、手冊放在後面
+    const dict = N ? ['dict~0', 'dict~1', 'dict~2'].map(N.byId).filter(Boolean) : [];
+    const pb = N ? N.byId('phrasebook') : null;
+    return (dict.length ? `<h2 class="lk-h">📘 辭典</h2><div class="lk-tools lk-rec">${dict.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) +
+      (travel ? `<h2 class="lk-h">🧳 旅遊</h2>` + emer : '') +
       (q.length ? `<h2 class="lk-h">💬 常用句<small>點一下放大給店員看</small></h2><div class="lk-list">${q.map(phRow).join('')}</div>` : '') +
-      (rec.length ? `<div class="lk-tools lk-rec">${rec.map(t => navCard(t)).join('')}</div>` : (N ? '' : '<p class="lk-tip">⏳ 載入中…</p>')) + (travel ? '' : emer) +
-      '';
+      (pb ? `<div class="lk-tools lk-rec">${navCard(pb)}</div>` : '') + (travel ? '' : emer);
   }
   // 搜尋結果最上面：功能命中（≤3）；其他功能命中排在內容後面
   function navHits(raw) {
@@ -286,8 +287,7 @@
     const ws = findWords(q, qh, qa, 4), gm = findGram(q, qa, 3), ln = findLoan(q, qa, 2), my = findMine(q, 2), hot = findHot(q, 3);
     HOTK = hot;
     const hotH = hot.length ? `<h2 class="lk-h">🎵 熱門歌<small>點一下匯入歌詞、開始跟唱</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
-    const funQ = ((App.profile().goals || [])[0] === 'fun');
-    let h = funQ ? hotH : '';
+    let h = '';
     if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;   // 單字排最前（查「水」先看到 みず）
     if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;
     // 目的是日檢、或查的字就是文法句型本身：文法排在句子前（「ように」不先出旅遊句「プレゼント用に」；評審 v15 P1-11）
@@ -298,11 +298,11 @@
       (ph.length > 5 ? `<button type="button" class="lk-all" data-pbq="1">在手冊看全部 ${ph.length} 句 ›</button>` : '');
     if (!gm0) h += gmH;
     if (ln.length) h += `<h2 class="lk-h">🌐 外來語</h2><div class="lk-list">${ln.map(x => `<button type="button" class="lk-w" data-say="${key({ jp: x.jp })}"><b lang="ja">${esc(x.jp)}</b><span class="zh">${esc(x.o ? x.o.name + '：' + x.o.src : String(x.e[1] || ''))}</span><span class="go" aria-hidden="true">🔊</span></button>`).join('')}</div>`;
-    if (!funQ) h += hotH;
+    h += hotH;
     if (my.length) h += `<h2 class="lk-h">⭐ 我的文章與歌曲</h2><div class="lk-list">${my.map(x => `<button type="button" class="lk-w" data-mine="${x.k}:${esc(x.id)}"><span aria-hidden="true">${x.k === 'song' ? '🎵' : '📄'}</span><b>${esc(x.t)}</b></button>`).join('')}</div>`;
     const busy = more && !more.done;
     const nv = navHits(raw);
-    h = nv.top + h + nv.more;
+    h = h + nv.top + nv.more;   // 單字永遠在最前面，功能命中放在內容後面
     if (!h) return busy ? `<p class="lk-tip">⏳ 搜尋中…</p>` : `<p class="lk-tip">找不到「${esc(raw)}」，換個說法試試（中文、日文、羅馬字都可以）</p>`;
     return h + (busy ? `<p class="lk-tip">⏳ 還在載入更多資料…</p>` : '');
   }

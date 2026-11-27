@@ -112,19 +112,19 @@
     const list = READING.daily.filter(a => a.lv === tab);
     const doneMark = id => st.done[id] ? `<span class="rd-done" title="已讀">✔</span>` : '';
     const nc = LinkImport.NEWS_CATS.some(c => c.id === (params.news || newsCat)) ? params.news || newsCat : 'wp';
-    const sec = params.sec || readSec || 'news'; readSec = sec;
+    const sec = params.sec === 'news' || params.sec === 'art' ? params.sec : readSec || 'art'; readSec = sec;
     el.innerHTML = `<div class="rd-home">
       ${Reader.sectTabs(sec)}
       <section class="rd-news"${sec === 'news' ? '' : ' hidden'}>
         <div class="rd-sech"><h3 class="rd-h3" id="rdNewsH">🗞️ 最近的新聞</h3><button type="button" class="btn sm ghost" id="rdNewsRe" aria-label="重新整理">🔄</button></div>
-        <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
+        <div class="tabs rd-tabs rd-ncat" role="tablist">${LinkImport.NEWS_CATS.filter(c => !c.hide).map(c => `<button type="button" data-ncat="${c.id}" class="${c.id === nc ? 'on' : ''}" role="tab" aria-selected="${c.id === nc}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
         <p class="muted rd-tip rd-nnote"></p>
         <div class="rd-list" id="rdNews"><p class="muted rd-tip">讀取新聞中…</p></div>
         <details class="rd-box rd-det rd-support"><summary>ℹ️ 哪些來源可以匯入？（只用開放授權）</summary>
           <ul class="rd-sup">
             <li>✅ <b>維基百科「最近の出来事」</b>：每天更新的新聞摘要，點一則讀相關條目（CC BY-SA 4.0）。</li>
             <li>✅ <b>維基新聞</b>：日文版 2026 年起停止更新，過去的報導都能讀（CC BY 2.5）。</li>
-            <li>✅ <b>維基文庫</b>：著作權已過期的唱歌、童謠與文學（公有領域）。</li>
+            <li>✅ <b>維基文庫</b>：著作權已過期的文學作品（公有領域），貼該頁網址即可匯入。</li>
             <li>✅ <b>維基百科、維基教科書、維基語錄、維基導遊的任一頁網址</b>：自動擷取正文。</li>
             <li>✍️ <b>其他網站</b>：不自動抓取（新聞、部落格多半受著作權保護）。請自己貼上文字，只存在你的裝置。</li>
           </ul>
@@ -179,7 +179,7 @@
   let newsCat = '', readSec = '';
   // 閱讀頁與歌曲頁共用的頂部分頁
   function sectTabs(cur) {
-    return `<div class="tabs rd-sects" role="tablist">${[['news', '📰 新聞'], ['art', '📚 文章'], ['song', '🎵 歌曲']].map(([k, n]) => `<button type="button" role="tab" data-sect="${k}" class="${k === cur ? 'on' : ''}" aria-selected="${k === cur}">${n}</button>`).join('')}</div>`;
+    return `<div class="tabs rd-sects" role="tablist">${[['art', '📚 文章'], ['news', '📰 新聞']].map(([k, n]) => `<button type="button" role="tab" data-sect="${k}" class="${k === cur ? 'on' : ''}" aria-selected="${k === cur}">${n}</button>`).join('')}</div>`;
   }
   function bindSect(el, inRead) {
     el.querySelectorAll('[data-sect]').forEach(b => b.onclick = () => {
