@@ -306,7 +306,7 @@
     if (P.kind === 'travel' && P.pack && P.sub) {
       const p = P.pack, S = packSubs(p), part = S && S[P.sub].find(x => x.id === id); if (!part) return null;
       const items = part.items.map(x => Object.assign({}, x)), sh = a => App.shuffle ? App.shuffle(a.slice()) : a.slice();
-      const steps = [{ type: 'flashcard', items, title: part.title, learn: true }];
+      const steps = [{ type: 'listen', items: sh(items).slice(0, Q_N), params: { mode: 'mean', retry: false }, title: part.title + '：聽聽看' }];
       if (P.sub === 'w') steps.push({ type: 'choice', items: sh(items).slice(0, Q_N), params: { retry: false, pool: S.V }, title: part.title + '：選選看' });
       else {
         const wl = s => String(s).replace(/[。、！？!?\s]/g, '').length;
@@ -315,7 +315,7 @@
         const rest = sh(items.filter(x => !wb.includes(x))).slice(0, Q_N - wb.length);
         if (rest.length) steps.push({ type: 'choice', items: rest, params: { retry: false, pool: S.P }, title: part.title + '：選選看' });
       }
-      const qn = steps.slice(1).reduce((n, s) => n + s.items.length, 0);
+      const qn = steps.reduce((n, s) => n + s.items.length, 0);
       return { id, kind: 'travel', icon: part.icon, title: part.title, sub: (P.sub === 'w' ? items.length + ' 個單字' : items.length + ' 句') + '・' + qn + ' 題', items, pack: p.id, steps };
     }
     if (P.kind === 'travel' && P.pack) {
@@ -326,7 +326,7 @@
       return {
         id, kind: 'travel', icon: p.icon, title: p.name, sub: '第 1 課・必備句 ' + items.length + ' 句・實戰：' + shopLabel(shop), items, shop, shops: p.shops, hasShop: true, pack: p.id,
         steps: [
-          { type: 'flashcard', items, title: p.name + '：必備句', learn: true },
+          p.scenes.length ? { type: 'scene', items: [], params: { scenes: p.scenes, n: 4 }, title: p.name + '：和店員對話' } : { type: 'listen', items, params: { mode: 'mean', retry: false }, title: p.name + '：聽聽看' },
           { type: 'wordbank', items: wb, params: { max: 5 }, title: p.name + '：排句子' },
           { type: 'shop', items, params: { shop, region: REGION(shop), goal: id }, title: p.name + '：進店用出來' }
         ]
@@ -479,8 +479,8 @@
   function tabs() {
     const p = App.profile(), gs = (p.goals || []).filter(g => GOALS.some(x => x[0] === g));
     const k = ['kana', '🔤', '五十音'];
-    const main = [...new Set((gs.length ? gs : GOALS.map(g => g[0])).map(g => g === 'song' ? 'fun' : g))].map(g => GOALS.find(x => x[0] === g));   // 歌曲放在閱讀分頁裡
-    const rest = GOALS.filter(g => g[0] !== 'song' && !main.includes(g));
+    const main = (gs.length ? gs : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));   // 歌曲、閱讀是兩個功能，各一個分頁
+    const rest = GOALS.filter(g => !main.includes(g));
     if (zeroKana()) main.unshift(k); else main.push(k);   // 五十音常駐主分頁：零基礎第一、其他人最後
     return { main, rest, all: main.concat(rest) };
   }
@@ -580,7 +580,7 @@
       const reads = list.filter(u => u.sec === 'read'), news = list.filter(u => u.sec === 'news');
       const nr = nextOf(reads), wr = windowed(reads, nr, 'funr');
       html = `<h2 class="pa-h">📖 短文 <small>已讀 ${reads.filter(u => u.complete).length}／${reads.length} 篇</small></h2>${grid(wr.shown, nr)}${wr.more}
-        ${grid(news, null, true)}<button type="button" class="btn block pa-free" data-go="songs">🎵 歌曲跟唱</button><button type="button" class="btn block pa-free" data-go="read">📄 我的文章・匯入網址</button>`;
+        ${grid(news, null, true)}<button type="button" class="btn block pa-free" data-go="read">📄 我的文章・匯入網址</button>`;
     } else {
       const w = windowed(list, nx, tab);
       html = grid(w.shown, nx) + w.more;
@@ -629,7 +629,7 @@
       ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
       ${u.intro ? `<div class="pa-intro">${u.intro}</div>` : ''}
       ${u.more ? `<details class="pa-more-d"><summary>📘 ${esc(u.more.title)}</summary><div class="kn">${u.more.html}</div></details>` : ''}
-      ${u.kind !== 'kana' ? `<details class="pa-more-d"><summary>📋 這課會學到（${u.items.length}）</summary><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul></details>` : ''}
+      ${u.kind !== 'kana' && u.kind !== 'travel' ? `<details class="pa-more-d"><summary>📋 這課會學到（${u.items.length}）</summary><ul class="pa-items">${u.items.map(x => `<li class="s-${Learn.status(x.id)}"><span class="pa-dot" aria-hidden="true">${ST_DOT[Learn.status(x.id)] || '○'}</span><span class="pa-jp"><b lang="ja">${esc(x.jp)}</b>${x.kana && x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}</span><span class="pa-zh">${esc(x.zh)}</span></li>`).join('')}</ul></details>` : ''}
       ${u.kind === 'biz' && !(nxt && nxt.route) ? `<button type="button" class="btn block pa-next" data-biz="${esc(u.biz)}">💬 對話演練＋Email（${esc(bizUnit(u.biz).title)}）›</button>` : ''}
       ${nxt ? `<button type="button" class="btn block pa-next" data-u="${esc(nxt.id)}">下一單元：${esc(nxt.title)} ›</button>` : ''}
       ${sibs}

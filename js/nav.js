@@ -1,12 +1,11 @@
 /* =========================================================
    導引 window.NAV（v14）：全站功能清單的單一來源＋依使用者推薦＋功能搜尋。由「查」頁（js/lookup.js）延遲載入。
-   NAV.TOOLS：16 個工具 [{ id, cat, icon, name, desc, kw[], route?, params?, run?, need?, sub? }]；sub＝子入口（byId('工具~序號')）
-   NAV.PLACES：學習的 5 個目的分頁（五十音、旅遊、日檢、商務、歌曲・閱讀），可被搜尋
-     route：App.go(route, params)；run：動作（備份、御朱印帳…不是路由）；need:'pack'：先選旅遊包（App.go('lookup',{pick:id})），
-     選完呼叫 PathExtra.list('travel','tr-'+包) 裡 id 開頭為 pre 的那一項 go()（js/classic.js，唯一一份場景對照表）。
+   NAV.TOOLS：工具 [{ id, cat, icon, name, desc, kw[], route?, params?, run?, sub? }]；場景模擬（對話、情境任務）只在學習 › 旅遊的場景單元裡，不另設工具；sub＝子入口（byId('工具~序號')）
+   NAV.PLACES：學習的 6 個目的分頁（五十音、旅遊、日檢、商務、閱讀、歌曲），可被搜尋
+     route：App.go(route, params)；run：動作（備份、御朱印帳…不是路由）；
    NAV.forMe() -> 推薦 4 張：☆ 釘選 ＞ 身分預設（goals × lv，固定不依次數重排）；第 4 格＝上次用的（不重複）。
    NAV.search(q) -> {top:[≤3 功能：名稱或同義詞完全相同／開頭相同], more:[其他功能命中]}
-   NAV.go(t)、NAV.note(id, params)、NAV.pin(id)、NAV.pinned(id)、NAV.CATS、NAV.renderPick(el, params)
+   NAV.go(t)、NAV.note(id, params)、NAV.pin(id)、NAV.pinned(id)、NAV.CATS
    狀態存 App.state.nav = { pin:[id], last:{id, params} }（隨備份、雲端走）。
    舊模組（trip、practice-map、stage、scene、town、quest）已刪除。分類原則見 docs/詞庫與分類/01-工具分類.md 第 3 節。
    ========================================================= */
@@ -33,8 +32,6 @@
       sub: [{ name: '50 音訓練表', route: 'kana-drill', kw: ['訓練表', '50音訓練表', '五十音訓練', '書寫', '寫字', '練習紙', '列印', '背五十音'] }] }),
     T('kana-test', 'kana', '✏️', '假名測驗', '聽音選字、看字選音，10 題', ['小考', '測驗', '假名測驗', '五十音測驗', 'quiz', '戰鬥', '闖關', '假名遊戲', 'battle'], { route: 'kana-quiz' }),
     T('play', 'travel', '🗾', '冒險地圖', '逛日本街道、進店實戰、蓋御朱印', ['冒險', '冒險地圖', '地圖', '街道', '逛街', '進店', '實戰', 'map'], { route: 'play' }),
-    T('dialog', 'travel', '🎭', '對話', '選一個地方，跟店員來回對話；可打字或開口說', ['對話', '会话', '會話', '點餐', '點菜', '点餐', '店員', '餐廳', '對話練習', 'dialog', '口說', '說話', '開口', '發音', '麥克風', '跟讀', 'speak'], { need: 'pack', pre: ['x:dlg:', 'x:spk:'] }),
-    T('task', 'travel', '🧾', '情境任務', '點餐、結帳、買票的限時任務，店員這樣說你怎麼回', ['情境任務', '小遊戲', '遊戲', '限時', '拉麵', '券売機', '買票', '結帳', 'game', '狀況題', '情境題', '店員問', '怎麼回'], { need: 'pack', pre: ['x:menu:'] }),
     T('boot', 'travel', '🎧', '聽力特訓', '店員問句聽解、看板、數字、量詞', ['特訓', '聽力', '聽力特訓', '看板', '數字', '量詞', '聽解', 'listening'], { route: 'boot' }),
     T('chal', 'exam', '🏆', '日檢挑戰', '文字、文法、讀解、聽解分科題與模擬考', ['挑戰', '日檢挑戰', '模擬考', '考古題', '測驗', '讀解', '聽解', '分科', 'mock', 'test'], { route: 'challenge' }),
     T('songs', 'song', '🎶', '跟唱', '熱門歌、我的歌、貼 YouTube 跟唱、看懂歌詞', ['歌', '歌曲', '歌詞', '跟唱', '唱歌', '日文歌', '翻唱', 'cover', '卡拉ok', 'karaoke', 'youtube', '動漫', '动漫', 'anime', 'song', 'music'], { route: 'songs' }),
@@ -53,7 +50,7 @@
   // 學習分頁（不是工具，是「學習」底下的 5 個目的）：供搜尋、查頁「全部功能」、首頁捷徑、側邊樹使用
   const PLACES = [
     T('kana', 'kana', '🔤', '五十音', '平假名・片假名表、分行單元', ['五十音', '50音', '五十音表', '五十音图', '假名', '假名表', '平假名', '片假名', 'あいうえお', 'アイウエオ', 'aiueo', 'hiragana', 'katakana', 'kana', '注音'], { route: 'path', params: { tab: 'kana' }, place: true }),
-    T('travel', 'travel', '🧳', '旅遊', '14 個場景包：必備句、單字、進階句', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊路線', 'travel', 'trip'], { route: 'path', params: { tab: 'travel' }, place: true }),
+    T('travel', 'travel', '🧳', '旅遊', '14 個場景：和店員對話、聽力、選句完成對話', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊路線', 'travel', 'trip', '場景', '對話', '會話', '会话', '點菜', '店員', '口說', '開口', '情境任務', '狀況題', '拉麵', '結帳', '買票'], { route: 'path', params: { tab: 'travel' }, place: true }),
     T('exam', 'exam', '📝', '日檢', 'N5–N1 每課 8 單字＋2 文法', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
     T('work', 'work', '💼', '商務', '敬語、電話、Email、開會、報連相', ['商務', '商務日語', '商用', '工作', '上班', '職場', 'email', 'mail', '信件', '開會', '會議', '电话', '電話', 'business'], { route: 'path', params: { tab: 'work' }, place: true }),
     T('song', 'song', '🎵', '歌曲', '熱門歌・我的歌：跟唱、看懂歌詞（不排進每日進度）', ['歌曲', '唱歌', '跟唱', '動漫', '娛樂', 'j-pop', 'jpop'], { route: 'songs', params: {}, place: true }),
@@ -65,7 +62,7 @@
     return Object.assign({}, t, { id: t.id + '~' + i, parent: t.id, name: t.name + '・' + x.name, icon: x.icon || t.icon, desc: x.desc || t.desc, kw: x.kw || [], route: x.route || '', params: x.params || null, run: x.run || null, need: x.need || null, sub: null });
   }
   // 舊工具 id（V3.3.0 以前的釘選、上次用的、深連結）→ 合併後的工具或子入口
-  const OLD_ID = { 'kana-drill': 'kana-guide~0', 'kana-table': 'kana', 'kana-quiz': 'kana-test', 'kana-battle': 'kana-test', 'kana-cards': 'cards~0', 'ex-cards': 'cards~1', emer: 'phrasebook~0', speak: 'dialog', menu: 'task', event: 'task',
+  const OLD_ID = { 'kana-drill': 'kana-guide~0', 'kana-table': 'kana', 'kana-quiz': 'kana-test', 'kana-battle': 'kana-test', 'kana-cards': 'cards~0', 'ex-cards': 'cards~1', emer: 'phrasebook~0', speak: 'travel', dialog: 'travel', menu: 'travel', task: 'travel', event: 'travel',
     'tr-path': 'travel', 'ex-path': 'exam', gram: 'dict~1', keigo: 'dict~2', kb: 'dict', mind3d: 'dict~3', tree: 'dict~3', biz: 'work', 'biz-read': 'read~2', news: 'read~0', url: 'read~1', review: 'today~0', path: 'travel' };
   const byId = id => { id = OLD_ID[id] || id; const m = String(id || '').match(/^(.+)~(\d+)$/); if (m) return subOf(TOOLS.find(t => t.id === m[1]), +m[2]); return TOOLS.find(t => t.id === id) || PLACES.find(t => t.id === id) || null; };
 
@@ -78,7 +75,7 @@
   /* ---------- 推薦（固定）：☆ ＞ 身分預設；第 4 格＝上次用的 ---------- */
   const PRESET = {
     zero: ['kana-guide', 'kana-test', 'cards'],
-    travel: ['phrasebook', 'dialog', 'task'],
+    travel: ['phrasebook', 'play', 'boot'],
     examLo: ['dict~1', 'cards', 'chal'], examHi: ['chal', 'dict~1', 'read'],
     work: ['dict~2', 'read~2', 'work'],
     fun: ['songs', 'read', 'read~1']
@@ -138,44 +135,10 @@
   /* ---------- 執行 ---------- */
   function go(t, last) {
     if (!t) return;
-    if (last && last.params && last.params.pack && t.need === 'pack') return runPack(t, last.params.pack, last.params.x);
     note(t.id, null);
-    if (t.need === 'pack') return App.go('lookup', { pick: t.id });
     if (t.run) return t.run();
     App.go(t.route, Object.assign({}, t.params || {}));
   }
-  const itemsFor = (t, k) => window.PathExtra ? arr(PathExtra.list('travel', 'tr-' + k)).filter(x => [].concat(t.pre).some(p => String(x.id).startsWith(p))) : [];
-  function runPack(t, k, xid) {
-    return classic().then(() => {
-      const xs = itemsFor(t, k), x = xs.find(y => y.id === xid) || (xs.length === 1 ? xs[0] : null);
-      if (x) { note(t.id, { pack: k, x: x.id }); return x.go(); }
-      if (xs.length) { note(t.id, { pack: k }); return App.go('lookup', { pick: t.id, pack: k }); }
-      App.toast('這個地方沒有' + t.name);
-    });
-  }
-  // 選旅遊包（App.go('lookup',{pick})）→ 有多個項目再選一次（{pick, pack}）；返回用頂列 ←
-  function renderPick(el, p) {
-    const t = byId(p.pick); if (!t || t.need !== 'pack') { el.innerHTML = '<p class="lk-tip">找不到這個功能</p>'; return; }
-    el.innerHTML = '<section class="lk"><p class="lk-tip">⏳ 載入中…</p></section>';
-    classic().then(() => {
-      if (!el.isConnected) return;
-      const box = el.querySelector('.lk');
-      if (p.pack) {
-        const xs = itemsFor(t, p.pack), pk = packs().find(x => x[0] === p.pack) || ['', '🧳', ''];
-        box.innerHTML = `<h1 class="lk-title">${esc(t.icon)} ${esc(t.name)}<small>${esc(pk[1] + ' ' + pk[2])}・選一個</small></h1>
-          <div class="lk-list">${xs.map((x, i) => `<button type="button" class="lk-tool lk-row" data-i="${i}"><span class="i" aria-hidden="true">${esc(x.icon || t.icon)}</span><span><b>${esc(x.label)}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
-        box.onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; const x = xs[+b.dataset.i]; if (x) { note(t.id, { pack: p.pack, x: x.id }); x.go(); } };
-        return;
-      }
-      const s = st(), lastK = s.last && s.last.id === t.id && s.last.params ? s.last.params.pack : '';
-      const list = packs().filter(k => itemsFor(t, k[0]).length);
-      list.sort((a, b) => (b[0] === lastK) - (a[0] === lastK));
-      box.innerHTML = `<h1 class="lk-title">${esc(t.icon)} ${esc(t.name)}<small>選一個地方</small></h1>
-        <div class="lk-tools">${list.map(k => `<button type="button" class="lk-tool${k[0] === lastK ? ' on' : ''}" data-k="${esc(k[0])}"><span class="i" aria-hidden="true">${esc(k[1])}</span><span><b>${esc(k[2])}</b>${k[0] === lastK ? '<small>上次用的</small>' : ''}</span></button>`).join('')}</div>`;
-      box.onclick = e => { const b = e.target.closest('[data-k]'); if (b) runPack(t, b.dataset.k); };
-    });
-  }
-
   /* =========================================================
      樹狀導覽（v48）：側邊樹（☰；寬螢幕常駐左側）＋頂列麵包屑＋「繼續上次」
      SECTIONS＝底部 4 鈕（首頁／學習／查／我的）；學習底下是 5 個目的分頁（GOALS），各含工具（TOOLS）與單元群組（展開時才載入）
@@ -186,7 +149,8 @@
     { id: 'travel', group: 'packsFlat', tools: ['play', 'boot'] },   // 對話、情境任務在各場景單元的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
     { id: 'work', group: 'biz', tools: ['dict~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
-    { id: 'fun', tools: ['read', 'songs'] }
+    { id: 'song', tools: ['songs'] },
+    { id: 'fun', tools: ['read'] }
   ].map(g => Object.assign({}, PLACES.find(x => x.id === g.id), g));
   const SECTIONS = [
     { id: 'home', icon: '🏠', name: '首頁', route: 'home', tools: [] },
@@ -219,16 +183,15 @@
     if (name === 'kana-quiz') return G('kana', T('kana-test'));
     if (/^(biz|biz-unit)$/.test(name)) return G('work');
     if (name === 'biz-read') return G('work', { sub: '商務文章' });
-    if (/^(songs|song)$/.test(name)) return G('fun', { tool: byId('songs') });
+    if (/^(songs|song)$/.test(name)) return G('song');
     if (/^(read|read-article)$/.test(name)) return G('fun', T('read'));
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));
     if (/^(play|event|map)$/.test(name)) return G('travel', T('play'));
-    if (name === 'drill') return G('travel', T('dialog'));
-    if (name === 'menu') return G('travel', T('task'));
+    if (name === 'drill') return G('travel');
+    if (name === 'menu') return G('travel');
     if (/^(boot|boot-play)$/.test(name)) return G('travel', T('boot'));
     if (/^(kb|kb-page|mind|mind3d|tree)$/.test(name) || (name === 'lookup' && /^(gram|keigo)$/.test(p.view || ''))) return { sec: sec('lookup'), tool: byId('dict') };
     if (name === 'phrasebook') return { sec: sec('lookup'), tool: byId('phrasebook') };
-    if (name === 'lookup' && p.pick) { const t = byId(p.pick); return G('travel', { tool: t }); }
     if (name === 'lookup') return { sec: sec('lookup') };
     if (name === 'settings') return { sec: sec('me'), tool: byId('settings') };
     if (name === 'me') return { sec: sec('me') };
@@ -376,5 +339,5 @@
   // 頁面自己換分頁（學習頁的分頁鈕）時更新麵包屑與側邊樹
   function refresh(name, p) { curName = name; curP = p || {}; try { topBar(); } catch (e) { } if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree(); }
 
-  window.NAV = { TOOLS, PLACES, GOALS, CATS, byId, forMe, preset, search, go, note, pin, pinned, renderPick, packs, SECTIONS, mainSections, locate, crumb, cont, open, close, refresh };
+  window.NAV = { TOOLS, PLACES, GOALS, CATS, byId, forMe, preset, search, go, note, pin, pinned, packs, SECTIONS, mainSections, locate, crumb, cont, open, close, refresh };
 })();

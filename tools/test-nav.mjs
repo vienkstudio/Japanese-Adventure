@@ -46,7 +46,7 @@ ok(N.TOOLS.length <= 16, `工具應 ≤16 個，現在 ${N.TOOLS.length}`);
 const homes = {};
 N.SECTIONS.forEach(sec => (sec.tools || []).concat(...(sec.goals || []).map(g => g.tools)).forEach(id => { homes[id] = (homes[id] || 0) + 1; }));
 // 不放側邊樹的工具：今日課（首頁大按鈕）、對話／情境任務（場景單元的練習）、御朱印帳（冒險地圖）
-const OFF_TREE = ['today', 'dialog', 'task', 'goshuin'];
+const OFF_TREE = ['today', 'goshuin'];
 N.TOOLS.forEach(t => ok(homes[t.id] === (OFF_TREE.includes(t.id) ? undefined : 1), `${t.id}：側邊樹裡出現 ${homes[t.id] || 0} 次（應${OFF_TREE.includes(t.id) ? '不出現' : '剛好 1 次'}）`));
 const names = N.TOOLS.concat(N.PLACES).map(t => t.name), icons = N.TOOLS.concat(N.PLACES).map(t => t.icon);
 ok(new Set(names).size === names.length, '名稱重複：' + names.filter((x, i) => names.indexOf(x) !== i).join());
@@ -68,7 +68,7 @@ N.SECTIONS.forEach(sec => [[sec, null, sec.tools || []]].concat((sec.goals || []
 const rec = (lv, goals, placed = true) => { state.profile = { lv, goals, placed }; state.nav = {}; return N.forMe(4).map(t => t.id); };
 const CASES = [
   ['零基礎旅客', 'zero', ['travel'], ['kana-guide', 'kana-test', 'cards', 'phrasebook']],
-  ['N5 旅客', 'n5', ['travel'], ['phrasebook', 'dialog', 'task']],
+  ['N5 旅客', 'n5', ['travel'], ['phrasebook', 'play', 'boot']],
   ['N3 日檢', 'n3', ['exam'], ['dict~1', 'cards', 'chal']],
   ['N1 日檢', 'n1', ['exam'], ['chal', 'dict~1', 'read']],
   ['N1 商務', 'n1', ['work'], ['dict~2', 'read~2', 'work']],
@@ -87,7 +87,7 @@ N.pin('songs'); ok(!N.pinned('songs'), '再點一次取消釘選');
 // 4) 搜尋：第一筆
 const Q = [
   ['五十音', 'kana'], ['假名表', 'kana'], ['あいうえお', 'kana'], ['aiueo', 'kana'], ['hiragana', 'kana'], ['katakana', 'kana'],
-  ['kana', 'kana'], ['50音', 'kana'], ['五十音图', 'kana'], ['點菜', 'dialog'], ['點餐', 'dialog'], ['口說', 'dialog'], ['拉麵', 'task'], ['狀況題', 'task'], ['救命', 'phrasebook~0'], ['警察', 'phrasebook~0'],
+  ['kana', 'kana'], ['50音', 'kana'], ['五十音图', 'kana'], ['點菜', 'travel'], ['點餐', 'phrasebook'], ['口說', 'travel'], ['拉麵', 'travel'], ['狀況題', 'travel'], ['救命', 'phrasebook~0'], ['警察', 'phrasebook~0'],
   ['醫院', 'phrasebook~0'], ['翻唱', 'songs'], ['cover', 'songs'], ['歌詞', 'songs'], ['卡拉OK', 'songs'], ['YouTube', 'songs'], ['JLPT', 'exam'], ['N2', 'exam'],
   ['模擬考', 'chal'], ['文法', 'dict~1'], ['语法', 'dict~1'], ['單字', 'dict~0'], ['字典', 'dict~0'], ['敬語', 'dict~2'], ['email', 'work'], ['開會', 'work'], ['字太小', 'settings'], ['字太大', 'settings'],
   ['深色', 'settings'], ['夜間', 'settings'], ['備份', 'backup'], ['換手機', 'backup'], ['心智圖', 'dict~3'], ['相依', 'dict~3'], ['網址', 'read~1'], ['新聞', 'read~0'],

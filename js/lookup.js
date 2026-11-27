@@ -310,7 +310,6 @@
   function render(el, params) {
     params = params || {};
     if (params.view === 'gram' || params.view === 'keigo') return renderGram(el, params.view);
-    if (params.pick) return withNav(() => NAV.renderPick(el, params), el);
     UI.q = params.q != null ? String(params.q) : '';   // 從底部導覽進來＝空白（看推薦）；按返回回到搜尋結果（查詢存在歷史紀錄）
     el.innerHTML = `<section class="lk">
       <div class="lk-sbar"><input class="lk-q" type="search" enterkeyhint="search" autocomplete="off" placeholder="${esc(HINT)}" value="${esc(UI.q)}" aria-label="搜尋">

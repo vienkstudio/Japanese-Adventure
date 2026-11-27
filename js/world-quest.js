@@ -362,12 +362,11 @@
       <h2 class="jp-t">🗾 日本地圖</h2>
       <button type="button" class="jp-cont" id="jp-next"><span>▶</span><span>${esc(n.label)}<small>${esc(n.sub || '')}</small></span></button>
       <div id="jp-mapbox"></div>
-      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-boot">🎧 聽力特訓<small>店員問句・數字</small></button><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
+      <div class="jp-grid"><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
     </section>`;
     japan(el.querySelector('#jp-mapbox'));
     el.querySelector('#jp-next').onclick = () => App.go(n.route, n.params);
     el.querySelector('#jp-gs').onclick = goshuin;
-    el.querySelector('#jp-boot').onclick = () => App.go('boot');
   }
   // 全部店家（index.js 的推薦清單，不必載入地區資料）
   const allShops = () => W.regions.flatMap(r => (r.shops || []).map(([d, s, label]) => ({ r: r.id, d, s, label })));
