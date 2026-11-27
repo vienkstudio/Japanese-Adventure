@@ -1,8 +1,8 @@
 /* =========================================================
-   「今天」首頁 home、今日課 today、設定頁 settings、首次開啟的程度選擇、延遲載入 Home.lazy
+   「今天」首頁 home、今日練習 today、設定頁 settings、首次開啟的程度選擇、延遲載入 Home.lazy
    首頁：唯一主按鈕「▶ 開始今天的課」＋連勝＋今日進度（含頂列與導覽可點元素 ≤10）
-   今日課：Learn.prepare(目的) → 到期複習（≤15）→ 新學 5–8 個（卡片）→ 小測驗 → 結算（＋1 個應用）
-   依賴：App、Learn、Tracker（core／learn）；Game（選用）；其他資料／模組都在今日課開始時才載入
+   今日練習：Learn.prepare(目的) → 到期複習（≤15）→ 新學 5–8 個（卡片）→ 小測驗 → 結算（＋1 個應用）
+   依賴：App、Learn、Tracker（core／learn）；Game（選用）；其他資料／模組都在今日練習開始時才載入
    ========================================================= */
 (function () {
   'use strict';
@@ -58,7 +58,7 @@
      今天：首頁
      ========================================================= */
   const GOALS = [['travel', '🧳', '去日本旅遊', '點餐、購物、問路、緊急求助'], ['exam', '📝', '考日檢', 'N5–N1 單字、文法、挑戰題'],
-    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・文章', '想唱就唱、想讀就讀（不排進每日課）']];
+    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・文章', '想唱就唱、想讀就讀（不排進今日練習）']];
   const GOAL_OF = Object.fromEntries(GOALS.map(g => [g[0], g]));
   const GOAL_SHORT = { travel: '旅遊', exam: '日檢', work: '商務', fun: '歌曲新聞' };
   const KANA_N = 46;
@@ -71,20 +71,49 @@
   // 已學平假名數：與手冊五十音同一個來源（Learn.kanaLearned）
   const kanaSeen = () => window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : (((App.state.kanaL || {}).h) || []).length;
   const kanaMode = p => p.lv === 'zero' && kanaSeen() < KANA_N;
-  // 今日課的目的：歌曲・文章是興趣，不排進每日課（只選這個的人，今日課用日檢單字）
+  // 今日練習的目的：歌曲・文章是興趣，不排進今日練習（只選這個的人，今日練習用日檢單字）
   const lessonGoals = p => { const gs = ((p || App.profile()).goals || []).filter(g => g !== 'fun'); return gs.length ? gs : ['exam']; };
   function curGoal(p) {
     p = p || App.profile();
     const g = dayRec().goal, gs = lessonGoals(p);
     return gs.includes(g) ? g : gs[0];
   }
-  // 每天新學幾個：使用者自訂（設定 → 每日目標）優先，沒設才依程度；分鐘數少就少學一點
-  const freshN = lv => { const p = App.profile(); if (p.fresh != null) return p.fresh; const b = ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6; return p.mins <= 5 ? Math.min(b, 3) : p.mins >= 15 ? b + (p.mins >= 30 ? 6 : 3) : b; };
+  /* ---- 學習目標：進度％＝字詞量 60％＋熟悉度 40％（都以目標字詞量為分母），配合截止日倒數 ----
+     字詞量：範圍內「學過」的詞與句（Learn 的 v:／p:，不是 new）÷ 目標數
+     熟悉度：範圍內每個學過的詞的熟悉度加總 ÷ 目標數；已掌握＝1，其他＝穩定度÷21 天（最多 1）
+     每天新學＝剩下沒學的 ÷ 剩下天數（無條件進位，最多 30） */
+  const W_WORDS = 0.6, W_FAM = 0.4, FAM_DAYS = 21, DAY = 864e5;
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function goalInfo(p) {
+    const t = (p || App.profile()).target; if (!t) return null;
+    const L = App.state.learn || {};
+    let studied = 0, fam = 0;
+    for (const id in L) {
+      if (!/^(v|p):/.test(id)) continue;
+      const e = L[id]; if (!e || (e.s === 'new' && !e.reps)) continue;
+      if (t.scope !== 'all' && !(e.m && e.m.lv === t.scope)) continue;
+      studied++;
+      fam += e.s === 'mastered' ? 1 : Math.min(1, (e.stab || 0) / FAM_DAYS);
+    }
+    const wordPct = Math.min(1, studied / t.words), famPct = Math.min(1, fam / t.words);
+    const pct = Math.round((W_WORDS * wordPct + W_FAM * famPct) * 100);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const end = new Date(t.until + 'T00:00:00');
+    const days = Math.round((end - today) / DAY);   // 0＝今天截止
+    const left = Math.max(0, t.words - studied);
+    const daily = left ? Math.min(30, Math.ceil(left / Math.max(1, days + 1))) : 0;
+    return { t, pct, wordPct, famPct, studied, left, days, daily, over: days < 0, done: pct >= 100 };
+  }
+  const goalLine = g => g.done ? `🎉 目標達成 100%` : g.over ? `⏰ 目標 ${g.pct}%・已過截止日 ${-g.days} 天` : `🎯 目標 ${g.pct}%・${g.days ? '剩 ' + g.days + ' 天' : '今天截止'}`;
+  const scopeName = s => s === 'all' ? '全部' : s;
+  // 每天新學幾個：有學習目標就依「剩下的詞÷剩下天數」；沒有目標才用設定或程度預設
+  const freshN = lv => {
+    const g = goalInfo(); if (g) return g.over ? Math.min(30, g.left) : g.daily; const p = App.profile(); if (p.fresh != null) return p.fresh; const b = ['n3', 'n2', 'n1'].includes(lv) ? 8 : lv === 'zero' ? 5 : 6; return p.mins <= 5 ? Math.min(b, 3) : p.mins >= 15 ? b + (p.mins >= 30 ? 6 : 3) : b; };
   // 應用只做一個小節：旅遊＝店內 1 個任務、日檢＝5 題、商務＝單元中 1 個小節、歌曲新聞＝唱一首歌、五十音＝下一個單元
   const APPLY_TXT = { travel: '進店完成 1 個任務', exam: '日檢 5 題', fun: '唱一首歌', work: '商務練一段', kana: '五十音下一行' };
-  // 今日課時間估計（秒）：複習卡 8、新學（卡＋小測驗）20、應用依目的；總長 ≤8 分鐘 → 複習數依剩下的時間決定上限
+  // 今日練習時間估計（秒）：複習卡 8、新學（卡＋小測驗）20、應用依目的；總長 ≤8 分鐘 → 複習數依剩下的時間決定上限
   const APPLY_SEC = { travel: 180, exam: 75, fun: 180, work: 240, kana: 300 };
-  const budget = () => (App.profile().mins || 8) * 60;   // 今日課長度＝使用者自訂的每天分鐘數
+  const budget = () => (App.profile().mins || 8) * 60;   // 今日練習長度＝使用者自訂的每天分鐘數
   function plan(goal, lv, dueAll, nFresh) {
     const n = nFresh != null ? nFresh : freshN(lv), ap = APPLY_SEC[goal] || 180, B = budget();
     const cap = Math.max(0, Math.min(Math.max(15, Math.round(B / 30)), Math.floor((B - n * 20 - ap) / 8)));
@@ -127,6 +156,17 @@
   function render(el) {
     const p = App.profile();
     if (!p.placed) return onboard(el);
+    const g = goalInfo(p);
+    if (!g) {   // 沒設學習目標：不排今日練習，只提示設定目標
+      el.innerHTML = `<section class="hm">
+      <h1 class="hm-hi">${greet()}</h1>
+      <button type="button" class="hm-main" id="hm-set"><span class="ic" aria-hidden="true">🎯</span><span><b>設定學習目標</b><small>設定要學多少字詞、到哪一天，才會每天排今日練習</small></span></button>
+      ${contHTML()}
+    </section>`;
+      el.querySelector('#hm-set').onclick = () => App.go('settings', { focus: 'daily' });
+      const cb0 = el.querySelector('#hm-cont'); if (cb0) cb0.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
+      return;
+    }
     const d = dayRec();
     const km = kanaMode(p), goal = curGoal(p), g2 = km ? 'kana' : goal;
     const dueAll = dueAllNow(), pl = plan(g2, p.lv, dueAll, freshFor(g2, p.lv, dueAll)), n = pl.n, due = pl.due;
@@ -134,16 +174,18 @@
     const sub = km ? `五十音 平假名 ${kanaSeen()}／${KANA_N}・今天學 ${n} 個字${(p.goals || []).includes('travel') ? `＋${kanaPh()} 句旅遊句` : ''}，先教再考`
       : `${due ? `複習 ${due} 個・` : ''}新學 ${n} 個・${APPLY_TXT[goal]}`;
     applyDone(d);
-    const big = pg ? `▶ 繼續今天的課（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今天的課' : d.applied ? '▶ 再上一課' : '▶ 去用出來（最後一步）';
+    const big = pg ? `▶ 繼續今日練習（已做 ${pg.done}／${pg.tot}）` : !d.done ? '▶ 開始今日練習' : d.applied ? '▶ 再練一次' : '▶ 去用出來（最後一步）';
     el.innerHTML = `<section class="hm">
       <h1 class="hm-hi">${greet()}</h1>
-      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著上' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多學可以再上一課' : (d.apLabel || '用出來一次'))}</small></span></button>
+      <button type="button" class="hm-goalbar" id="hm-goalbar" aria-label="學習目標，點一下調整"><b>${esc(goalLine(g))}</b><small>${esc(scopeName(g.t.scope))} ${g.t.words} 個字詞・已學 ${g.studied}・熟悉度 ${Math.round(g.famPct * 100)}%</small><i style="--p:${g.pct}%" aria-hidden="true"></i></button>
+      <button type="button" class="hm-main" id="hm-main"><span class="ic" aria-hidden="true">${km ? 'あ' : (GOAL_OF[goal] || GOALS[0])[1]}</span><span><b>${esc(big)}</b><small>${esc(pg ? '剛剛做到一半，從離開的地方接著做' : !d.done ? '約 ' + pl.min + ' 分鐘・' + sub : d.applied ? '想多練可以再練一次' : (d.apLabel || '用出來一次'))}</small></span></button>
       ${!km && lessonGoals(p).length > 1 ? `<button type="button" class="hm-goal" id="hm-goal" aria-label="切換今天的目的">今天練：<b>${GOAL_OF[goal][1]} ${esc(GOAL_SHORT[goal])}</b><span aria-hidden="true">⇄ 換</span></button>` : ''}
       ${contHTML()}
       ${dueAll && d.done ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>還有 ${dueAll} 個到期</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
     </section>`;
     el.querySelector('#hm-main').onclick = () => App.go('today', Object.assign({ goal: g2 }, d.done && d.applied ? { more: 1 } : {}));
     const db = el.querySelector('#hm-due'); if (db) db.onclick = () => App.go('review');
+    el.querySelector('#hm-goalbar').onclick = () => App.go('settings', { focus: 'daily' });
     const cb = el.querySelector('#hm-cont'); if (cb) cb.onclick = () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); };
     const gb = el.querySelector('#hm-goal');
     if (gb) gb.onclick = () => { const lg = lessonGoals(p), i = lg.indexOf(goal); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); };
@@ -160,7 +202,7 @@
   }
 
   /* =========================================================
-     今日課 today：params {goal:'travel'|'exam'|'fun'|'work'|'kana'}
+     今日練習 today：params {goal:'travel'|'exam'|'fun'|'work'|'kana'}
      ========================================================= */
   const SC = ['data/scenes-1.js', 'data/scenes-2.js', 'data/scene-ext.js'];
   const BIZ_JS = ['js/biz.js'];   // biz.js 的 BIZ.load() 再載入 data/biz/*
@@ -263,7 +305,7 @@
         let u = null;
         try { const pu = window.Path && has(Path, 'nextUnit') ? Path.nextUnit('travel') : null; u = pu && has(Path, 'unit') ? Path.unit(pu.id) : null; } catch (e) { u = null; }
         const sh = u && (u.steps || []).find(x => x.type === 'shop');
-        Q.apply = sh ? { route: 'act', params: { steps: [sh], title: '用出來：' + u.title, reward: 'apply:' + u.id, back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: '進店完成 1 個任務：' + u.title }
+        Q.apply = sh ? { route: 'act', params: { steps: [sh], title: '用出來：' + u.title, reward: 'apply:' + u.id, back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日練習 ▶' } }, label: '進店完成 1 個任務：' + u.title }
           : { world: 1, route: 'play', params: {}, label: '到冒險店家完成 1 個任務' };
       }
       if (goal === 'work') {
@@ -288,15 +330,16 @@
         const L = (p.lv && p.lv !== 'zero' ? p.lv : 'n5').toUpperCase(), fr = Q.fresh.filter(x => /^(v|g):/.test(x.id || '')).map(x => x.id);
         const LL = App.state.learn || {}, old = App.shuffle(Object.keys(LL).filter(id => /^v:/.test(id) && !fr.includes(id) && LL[id].reps && (!LL[id].m || !LL[id].m.lv || LL[id].m.lv === L))).slice(0, 3);
         const ids = old.length >= 2 ? fr.slice(0, 2).concat(old) : [];
-        Q.apply = { route: 'act', params: { steps: [{ type: 'choice', params: Object.assign({ lv: L, kind: ['mean', 'ctx', 'form'], n: 5, quiz: true }, ids.length >= 3 ? { ids } : {}), title: L + ' 日檢 5 題' }], title: L + ' 日檢 5 題', lv: L, reward: 'apply:exam', back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日課 ▶' } }, label: L + ' 日檢 5 題' };
+        Q.apply = { route: 'act', params: { steps: [{ type: 'choice', params: Object.assign({ lv: L, kind: ['mean', 'ctx', 'form'], n: 5, quiz: true }, ids.length >= 3 ? { ids } : {}), title: L + ' 日檢 5 題' }], title: L + ' 日檢 5 題', lv: L, reward: 'apply:exam', back: { route: 'home', label: '回首頁' }, next: { route: 'today', params: { goal }, label: '回今日練習 ▶' } }, label: L + ' 日檢 5 題' };
       }
       Q.fresh.forEach(it => { const ex = exOf(it); if (ex && !it.ex) it.ex = ex; });
       return fillReading(Q.fresh.concat(Q.due)).then(() => Q);
     });
   }
-  let RUN = null;   // 進行中的今日課（離開再回來可接著上）：{key, goal, Q, phase:'run'|'end', res:[], t0}
+  let RUN = null;   // 進行中的今日練習（離開再回來可接著上）：{key, goal, Q, phase:'run'|'end', res:[], t0}
   function lesson(el, params) {
     params = params || {};
+    if (!goalInfo()) { el.innerHTML = '<section class="panel center" style="margin:32px 0"><p>🎯 還沒設定學習目標</p><p class="muted">設定要學多少字詞、到哪一天，才會排今日練習。</p><button type="button" class="btn primary" id="tp-set">設定學習目標</button></section>'; el.querySelector('#tp-set').onclick = () => App.go('settings', { focus: 'daily' }); return; }
     const p = App.profile(), goal = (params.goal && params.goal !== 'fun' ? params.goal : '') || (kanaMode(p) ? 'kana' : curGoal(p)), key = App.today() + '|' + goal;
     const d0 = dayRec(); applyDone(d0);
     if (!params.more && RUN && RUN.key === key) return RUN.phase === 'end' ? endView(el) : runLesson(el);
@@ -308,9 +351,9 @@
       if (pend) { Object.assign(RUN, { phase: 'end', saved: 1, sum: { learned: d0.learned || 0, rev: d0.reviewed || 0 } }); return endView(el); }
       if (!Q.due.length && !Q.fresh.length) return finishLesson(el);
       runLesson(el);
-    }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日課載入失敗，請檢查網路後再試一次</p>'; });
+    }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日練習載入失敗，請檢查網路後再試一次</p>'; });
   }
-  // 已做過的：每個項目在今日課裡被記錄的次數（字卡在前、小測驗在後）→ 1 次＝字卡做過、新學 2 次＝小測驗也做過
+  // 已做過的：每個項目在今日練習裡被記錄的次數（字卡在前、小測驗在後）→ 1 次＝字卡做過、新學 2 次＝小測驗也做過
   //   用 learnchange 事件計（中途切到別頁、沒按 ✕ 也記得進度）
   const doneSets = R => {
     const fc = new Set(), qz = new Set();
@@ -329,7 +372,7 @@
     const rev = Q.due.filter(x => fc.has(x.id)).length, neu = Q.fresh.filter(x => fc.has(x.id)).length, qd = Q.fresh.filter(x => qz.has(x.id)).length;
     return { goal: R.goal, done: rev + neu + qd, tot: Q.due.length + Q.fresh.length * 2, rev, revN: Q.due.length, neu, neuN: Q.fresh.length };
   }
-  // 今日課＝活動框架：①字卡（到期複習先考、新的先教）→ ②小測驗（四選一、不重考），結算由今日課自己畫
+  // 今日練習＝活動框架：①字卡（到期複習先考、新的先教）→ ②小測驗（四選一、不重考），結算由今日練習自己畫
   function runLesson(el) {
     const R = RUN, Q = R.Q, { fc, qz } = doneSets(R);
     const cards = Q.due.concat(Q.fresh).filter(x => !fc.has(x.id)), quiz = Q.fresh.filter(x => !qz.has(x.id));
@@ -338,12 +381,12 @@
     if (quiz.length) steps.push({ type: 'choice', items: quiz, params: { mode: 'mix', retry: false }, title: '② 小測驗' });
     if (!steps.length) return finishLesson(el);
     const my = R.run = {};
-    Activity.session(el, steps, { title: '今日課', end: false, back: { route: 'home' } }).then(sm => {
+    Activity.session(el, steps, { title: '今日練習', end: false, back: { route: 'home' } }).then(sm => {
       if (RUN !== R || R.run !== my) return;
       if (sm.quit) { dayRec().prog = progOf(R); App.save(); return; }
       R.sm = sm;
       finishLesson(el);
-    }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日課載入失敗，請重新整理再試一次</p>'; });
+    }).catch(e => { console.error(e); el.innerHTML = '<p class="center" style="margin:48px 0">😵 今日練習載入失敗，請重新整理再試一次</p>'; });
   }
   function finishLesson(el) {
     const R = RUN, Q = R.Q;
@@ -517,6 +560,38 @@
     // 語音清單晚載入時（Chrome 常見）補畫一次
     if (!(App.jaVoices && App.jaVoices().length)) document.addEventListener('voiceschange', () => { if (el.isConnected && el.querySelector('.st-voice')) again(); }, { once: true });
   }
+  // 學習目標設定：字詞量、範圍、截止日；每次練習長度沿用 mins
+  function targetBox(p) {
+    const t = p.target || { words: 300, scope: p.lv && p.lv !== 'zero' ? p.lv.toUpperCase() : 'N5', until: ymd(new Date(Date.now() + 60 * DAY)) }, g = goalInfo(p);
+    const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}">${n}</button>`).join('')}</div>`;
+    return `<div class="st-box" id="st-daily"><h2>🎯 學習目標</h2>
+      <p class="st-note">設定後首頁才會排「今日練習」：每天新學＝剩下的字詞÷剩下天數。進度＝字詞量 ${W_WORDS * 100}%＋熟悉度 ${W_FAM * 100}%（熟悉度：已掌握算滿分，其他依記憶穩定度，${FAM_DAYS} 天算滿）。歌曲、文章不算進進度。</p>
+      ${g ? `<p class="st-goalnow"><b>${esc(goalLine(g))}</b>　已學 ${g.studied}／${g.t.words}・熟悉度 ${Math.round(g.famPct * 100)}%${g.daily && !g.over ? '・每天新學 ' + g.daily + ' 個' : ''}</p>` : '<p class="st-goalnow">還沒設定目標</p>'}
+      <p class="st-lbl">要學幾個字詞</p>${seg('tw', t.words, [[100, '100'], [300, '300'], [500, '500'], [1000, '1000'], [2000, '2000']])}
+      <label class="st-lbl">或自己填<input type="number" id="st-tw" min="10" max="20000" step="10" value="${t.words}" inputmode="numeric"></label>
+      <p class="st-lbl">範圍</p>${seg('ts', t.scope, [['all', '全部'], ['N5', 'N5'], ['N4', 'N4'], ['N3', 'N3'], ['N2', 'N2'], ['N1', 'N1']])}
+      <label class="st-lbl">截止日<input type="date" id="st-tu" value="${esc(t.until)}" min="${ymd(new Date())}"></label>
+      <p class="st-lbl">每次練習長度</p>${seg('mins', p.mins, [[5, '5 分'], [8, '8 分'], [15, '15 分'], [30, '30 分']])}
+      <div class="st-row2"><button type="button" class="btn primary" id="st-tsave">${p.target ? '更新目標' : '設定目標'}</button>${p.target ? '<button type="button" class="btn ghost" id="st-tclear">取消目標</button>' : ''}</div>
+    </div>`;
+  }
+  function bindTarget(el) {
+    const box = el.querySelector('#st-daily'); if (!box) return;
+    const tw = box.querySelector('#st-tw'), tu = box.querySelector('#st-tu');
+    let scope = (box.querySelector('[data-ts].on') || {}).dataset ? box.querySelector('[data-ts].on').dataset.ts : 'all';
+    box.querySelectorAll('[data-tw]').forEach(b => b.onclick = () => { tw.value = b.dataset.tw; box.querySelectorAll('[data-tw]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); });
+    box.querySelectorAll('[data-ts]').forEach(b => b.onclick = () => { scope = b.dataset.ts; box.querySelectorAll('[data-ts]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); });
+    box.querySelector('#st-tsave').onclick = () => {
+      const words = Math.round(+tw.value || 0), until = tu.value;
+      if (!(words >= 10 && words <= 20000)) return App.toast('字詞量請填 10～20000');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(until) || until < ymd(new Date())) return App.toast('截止日請選今天或之後');
+      const old = App.profile().target;
+      App.setProfile({ target: { words, scope, until, since: old && old.since ? old.since : ymd(new Date()) } });
+      App.toast('🎯 已設定學習目標', 'ok'); settings(el, { focus: 'daily' });
+    };
+    const c = box.querySelector('#st-tclear');
+    if (c) c.onclick = () => { App.setProfile({ target: null }); App.toast('已取消學習目標，首頁不再排今日練習'); settings(el, { focus: 'daily' }); };
+  }
   function settings(el, params) {
     const u = App.state.ui, p = App.profile(), G = window.Game;
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${n}</button>`).join('')}</div>`;
@@ -528,10 +603,7 @@
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>
       </div>
-      <div class="st-box" id="st-daily"><h2>🎯 每日目標</h2><p class="st-note">今日課長度、新學數量、每日任務都照這個調；歌曲、文章不算進每日進度，想做再做</p>
-        <p class="st-lbl">每天學多久</p>${seg('mins', String(p.mins), [['5', '5 分'], ['8', '8 分'], ['15', '15 分'], ['30', '30 分']])}
-        <p class="st-lbl">每天新學幾個</p>${seg('fresh', p.fresh == null ? 'auto' : String(p.fresh), [['auto', '自動'], ['0', '只複習'], ['3', '3'], ['5', '5'], ['8', '8'], ['12', '12']])}
-      </div>
+      ${targetBox(p)}
       <div class="st-box"><h2>🎯 學日文的目的</h2><p class="st-note">可複選，首頁會依這個推薦</p>
         <div class="ob-list">${goalList(p.goals)}</div>
       </div>
@@ -557,8 +629,8 @@
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { App.setTheme(null, null, b.dataset.fs); settings(el); });
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { App.setProfile({ lv: b.dataset.lv }); App.toast(`程度改為：${App.LV_NAMES[b.dataset.lv]}`, 'ok'); settings(el); });
     el.querySelectorAll('[data-assist]').forEach(b => b.onclick = () => { App.setProfile({ assist: b.dataset.assist }); settings(el); });
-    el.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => { App.setProfile({ mins: +b.dataset.mins }); App.toast(`每日目標：每天 ${b.dataset.mins} 分鐘`, 'ok'); settings(el, { focus: 'daily' }); });
-    el.querySelectorAll('[data-fresh]').forEach(b => b.onclick = () => { App.setProfile({ fresh: b.dataset.fresh === 'auto' ? null : +b.dataset.fresh }); settings(el, { focus: 'daily' }); });
+    el.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => { App.setProfile({ mins: +b.dataset.mins }); App.toast(`每次練習：${b.dataset.mins} 分鐘`, 'ok'); settings(el, { focus: 'daily' }); });
+    bindTarget(el);
     el.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => {
       const g = App.profile().goals, i = g.indexOf(b.dataset.goal);
       if (i < 0) g.push(b.dataset.goal); else if (g.length > 1) g.splice(i, 1); else return App.toast('至少選一個目的');
@@ -579,7 +651,7 @@
 
 
   App.register('home', { title: '首頁', icon: '🏠', nav: true, navOrder: 1, render });
-  App.register('today', { title: '今日課', icon: '▶', nav: false, navParent: 'home', render: lesson });
+  App.register('today', { title: '今日練習', icon: '▶', nav: false, navParent: 'home', render: lesson });
   App.register('settings', { title: '設定', icon: '⚙️', nav: false, navParent: 'me', render: settings });
   window.Home = { render, settings, onboard, lazy, need, needSrc, loadCSS };
 })();

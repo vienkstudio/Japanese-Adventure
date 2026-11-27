@@ -851,7 +851,7 @@
       title: '練完了！', stars, gained: r && r.gained,
       note: tips.length ? `<span class="muted">想拿更多星：${tips.join('、')}。</span>` : '<span class="muted">聽、唱、寫都完成了，很棒！</span>',
       back: { label: '歌曲清單', route: 'songs' }, ok: '繼續練',
-      next: fromToday ? { label: '回今日課 ▶', route: 'today', params: { goal: 'fun' } } : null
+      next: fromToday ? { label: '回今日練習 ▶', route: 'today', params: { goal: 'fun' } } : null
     });
   }
 

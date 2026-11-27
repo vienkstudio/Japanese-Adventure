@@ -503,3 +503,11 @@ body.ob-mode .nv-drawer,body.ob-mode .nv-menu,body.ob-mode .nv-crumb{display:non
 
 [data-fs=xl] .hm-target{display:none}   /* 評審 v18：特大字首頁要一屏 */
 .c-filt{margin:6px 0}.c-filt>summary::after{content:'▾';margin-left:6px}.c-filt>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700;color:var(--muted)}   /* 字卡頁：級數、難度收進篩選 */
+/* 學習目標（首頁進度條、設定頁） */
+.hm-goalbar{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin:var(--sp-2) 0 0;padding:10px 14px 14px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--card);color:var(--text);font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.hm-goalbar b{font-size:var(--fs-md)}
+.hm-goalbar small{color:var(--muted);font-size:var(--fs-sm)}
+.hm-goalbar i{position:absolute;left:0;bottom:0;height:5px;width:var(--p);background:var(--pri);border-radius:0 3px 3px 0}
+.st-goalnow{margin:6px 0 4px;font-size:var(--fs-sm)}
+.st-row2{display:flex;gap:var(--sp-2);margin-top:var(--sp-3)}
+.st-box input[type=number],.st-box input[type=date]{display:block;margin-top:4px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--card);color:var(--text);font:inherit;min-height:40px}
