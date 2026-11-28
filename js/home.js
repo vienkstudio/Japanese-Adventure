@@ -58,9 +58,9 @@
      今天：首頁
      ========================================================= */
   const GOALS = [['travel', '🧳', '去日本旅遊', '點餐、購物、問路、緊急求助'], ['exam', '📝', '考日檢', 'N5–N1 單字、文法、挑戰題'],
-    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・文章', '想唱就唱、想讀就讀（不排進今日練習）']];
+    ['work', '💼', '工作・商務', '敬語、Email、開會'], ['fun', '🎵', '歌曲・閱讀', '想唱就唱、想讀就讀（不排進今日練習）']];
   const GOAL_OF = Object.fromEntries(GOALS.map(g => [g[0], g]));
-  const GOAL_SHORT = { travel: '旅遊', exam: '日檢', work: '商務', fun: '歌曲新聞' };
+  const GOAL_SHORT = { travel: '旅遊', exam: '日檢', work: '商務', fun: '歌曲閱讀' };
   const KANA_N = 46;
   // 今日紀錄（App.state.today，home.js 擁有）：{date, goal, done, learned, reviewed, applied}
   function dayRec() {
@@ -577,8 +577,8 @@
     const t = p.target || { words: 300, scope: p.lv && p.lv !== 'zero' ? p.lv.toUpperCase() : 'N5', until: ymd(new Date(Date.now() + 60 * DAY)) }, g = goalInfo(p);
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}">${n}</button>`).join('')}</div>`;
     return `<div class="st-box" id="st-daily"><h2>🎯 學習目標</h2>
-      <p class="st-note">設定後首頁才會排「今日練習」：每天新學＝剩下的字詞÷剩下天數。進度＝字詞量 ${W_WORDS * 100}%＋熟悉度 ${W_FAM * 100}%（熟悉度：已掌握算滿分，其他依記憶穩定度，${FAM_DAYS} 天算滿）。歌曲、文章不算進進度。</p>
-      ${g ? `<p class="st-goalnow"><b>${esc(goalLine(g))}</b>　已學 ${g.studied}／${g.t.words}・熟悉度 ${Math.round(g.famPct * 100)}%${g.daily && !g.over ? '・每天新學 ' + g.daily + ' 個' : ''}</p>` : '<p class="st-goalnow">還沒設定目標</p>'}
+      <p class="st-note">設定要學幾個字詞、到哪一天，首頁就會每天排「今日練習」。進度％看兩件事：學過幾個（占 ${W_WORDS * 100}%）、記得多牢（占 ${W_FAM * 100}%，複習答對越多次越高）。歌曲、文章不算。</p>
+      ${g ? `<p class="st-goalnow"><b>${esc(goalLine(g))}</b>　已學 ${g.studied}／${g.t.words}・熟悉度 ${Math.round(g.famPct * 100)}%${g.left ? '・今天新學 ' + freshFor(kanaMode(p) ? 'kana' : curGoal(p), p.lv, dueAllNow()) + ' 個' : ''}</p>` : '<p class="st-goalnow">還沒設定目標</p>'}
       <p class="st-lbl">要學幾個字詞</p>${seg('tw', t.words, [[100, '100'], [300, '300'], [500, '500'], [1000, '1000'], [2000, '2000']])}
       <label class="st-lbl">或自己填<input type="number" id="st-tw" min="10" max="20000" step="10" value="${t.words}" inputmode="numeric"></label>
       <p class="st-lbl">範圍</p>${seg('ts', t.scope, [['all', '全部'], ['N5', 'N5'], ['N4', 'N4'], ['N3', 'N3'], ['N2', 'N2'], ['N1', 'N1']])}
@@ -609,13 +609,13 @@
     const seg = (name, cur, list) => `<div class="st-seg" role="group">${list.map(([v, n]) => `<button type="button" data-${name}="${v}" class="${cur === v ? 'on' : ''}" aria-pressed="${cur === v}">${n}</button>`).join('')}</div>`;
     el.innerHTML = `<section class="st">
       <h1>⚙️ 設定</h1>
+      ${targetBox(p)}
       <div class="st-box st-lv"><h2>📶 我的程度</h2>
         <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt${p.lv === id ? ' on' : ''}" data-lv="${id}" aria-pressed="${p.lv === id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${lvName(id)}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
         <p class="st-lbl">提示（讀音、中文、答案提示）</p>${seg('assist', p.assist, [['full', '全部顯示'], ['some', '只給讀音'], ['none', '不要提示']])}
         <p class="st-note">改程度只會換內容與提示，進度、星星、XP 都保留。</p>
         <button type="button" class="btn block" id="st-quiz">🤔 重新做定位測驗</button>
       </div>
-      ${targetBox(p)}
       <div class="st-box"><h2>🎯 學日文的目的</h2><p class="st-note">可複選，首頁會依這個推薦</p>
         <div class="ob-list">${goalList(p.goals)}</div>
       </div>

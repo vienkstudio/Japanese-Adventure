@@ -406,7 +406,7 @@
       <p class="bz-conn"><b>接續</b> <span class="jp">${esc(d.conn)}</span></p>
       <p>${esc(d.zh)}</p>
       <div class="bz-exs">${d.ex.map(e => `<div class="bz-ex">${spk(e[0])}<div><div class="jp bz-jp">${esc(e[0])}</div><div class="bz-zh">${esc(e[1])}</div></div></div>`).join('')}</div>
-      ${d.gid ? `<button type="button" class="btn sm" data-kb="${esc(d.gid)}">📚 在知識庫看這個句型</button>` : ''}</div>`;
+      ${d.gid ? `<button type="button" class="btn sm" data-kb="${esc(d.gid)}">📘 在辭典看這個句型</button>` : ''}</div>`;
   }
   function choiceBtns(s, list, fbOf) {
     return `<div class="bz-opts">${s.o.map(k => {

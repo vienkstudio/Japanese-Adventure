@@ -135,6 +135,7 @@
 .c-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:440px;margin:10px auto}
 .c-rate .btn{margin:0;flex-direction:column;line-height:1.2;font-size:.88em;border-radius:18px}
 .c-rate .btn.on{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
+.c-rate .c-rlab{grid-column:1/-1;text-align:center;font-size:.8em;color:var(--muted)}
 .c-nav{display:flex;justify-content:space-between;align-items:center;max-width:440px;margin:4px auto}
 @media(max-width:640px){.c-card{height:230px}.c-face .c-jp{font-size:2em}}
 @media(min-width:769px){.h-worlds{grid-template-columns:repeat(4,1fr)}}
@@ -236,10 +237,11 @@
             ${c.hint ? `<div style="font-size:.85em;color:var(--warn)">${esc(c.hint)}</div>` : ''}
             ${c.ex ? `<div class="c-ex"><span class="jp">${esc(c.ex)}</span>${c.exzh ? `<br><small class="muted">${esc(c.exzh)}</small>` : ''}</div>` : ''}
           </div></div></div>
-        <div class="c-rate">${[[3, '😵', '困難'], [2, '🤔', '普通'], [1, '😊', '簡單']].map(([v, e, n]) => `<button class="btn${diffOf(c.id) === v ? ' on' : ''}" data-rate="${v}"><span style="font-size:1.4em">${e}</span>${n}</button>`).join('')}</div>
+        <div class="c-rate" role="group" aria-label="標這張的難度"><span class="c-rlab">標難度</span>${[[3, '😵', '困難'], [2, '🤔', '普通'], [1, '😊', '簡單']].map(([v, e, n]) => `<button class="btn${diffOf(c.id) === v ? ' on' : ''}" data-rate="${v}"><span style="font-size:1.4em">${e}</span>${n}</button>`).join('')}</div>
         <div class="c-nav"><button class="btn sm" id="cPrev">◀ 上一張</button>
           <span><button class="btn sm ghost" id="cSay">🔊</button><button class="track-btn${Tracker.has(c.id) ? ' on' : ''}" id="cTrack">${Tracker.has(c.id) ? '✓ 已在清單' : '＋ 不會清單'}</button></span>
-          <button class="btn sm" id="cNext">下一張 ▶</button></div>`
+          <button class="btn sm" id="cNext">下一張 ▶</button></div>
+        ${list.length >= 4 ? `<button class="btn primary block c-quiz" id="cQuiz">✏️ 考考看：這副牌 ${Math.min(10, list.length)} 題四選一</button>` : ''}`
         : `<div class="panel center muted">${UI.deck === 'jlpt' && !(window.MIND && MIND.lex && MIND.lex.N1) ? '📗 載入詞庫中…' : UI.deck === 'mine' ? '不會清單還是空的，答錯或按「＋ 不會清單」就會加進來。' : UI.deck === 'sent' ? '還沒有句卡：在冒險的店裡說對一句就會收集。' : '這個條件下沒有字卡，換個篩選吧！'}</div>`}`;
     const re = () => cardsView(body);
     body.querySelectorAll('[data-dk]').forEach(b => b.onclick = () => { UI.deck = b.dataset.dk; UI.lvF = 'all'; UI.ci = 0; re(); });
@@ -253,6 +255,12 @@
       say(); countCard();
     };
     body.querySelector('#cSay').onclick = say;
+    // 作答題：從目前篩選的牌抽 10 張四選一（答對、答錯才記進度；困難／普通／簡單只是牌的分類）
+    const qz = body.querySelector('#cQuiz');
+    if (qz) qz.onclick = () => {
+      const pick = App.shuffle(list.slice()).slice(0, 10).map(x => ({ id: x.id, jp: x.jp, kana: x.kana, romaji: x.romaji, zh: x.zh, hint: x.hint, emoji: x.emoji || '', lv: x.lv && x.lv !== 'x' ? x.lv : '', type: x.kind === 'kana' ? 'kana' : 'vocab', source: x.source || '字卡' }));
+      App.go('act', { steps: [{ type: 'choice', items: pick, params: { mode: KANA_DECK[UI.deck] ? 'kana' : 'mix', retry: false, pool: list }, title: '字卡小考' }], title: '🎴 字卡小考', back: { route: 'cards', label: '回字卡' } });
+    };
     body.querySelector('#cPrev').onclick = () => { UI.ci = (UI.ci - 1 + list.length) % list.length; re(); };
     body.querySelector('#cNext').onclick = () => { UI.ci = (UI.ci + 1) % list.length; re(); };
     body.querySelector('#cTrack').onclick = () => {

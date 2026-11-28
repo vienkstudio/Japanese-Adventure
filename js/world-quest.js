@@ -327,7 +327,7 @@
   function mapPage(el) {
     const n = next();
     el.innerHTML = `<section class="jp-page">
-      <h2 class="jp-t">🗾 日本地圖</h2>
+      <h2 class="jp-t">🗾 冒險地圖・選地區</h2>
       <button type="button" class="jp-cont" id="jp-next"><span>▶</span><span>${esc(n.label)}<small>${esc(n.sub || '')}</small></span></button>
       <div id="jp-mapbox"></div>
       <div class="jp-grid"><button type="button" class="jp-tile" id="jp-gs">⛩️ 御朱印帳<small>${stampCount()}／${allShops().length} 間店</small></button></div>
@@ -372,7 +372,7 @@
     if (w.nextShop && w.nextShop.s && !w.stamps[w.nextShop.s]) return { label: '下一間店', sub: w.nextShop.label, route: 'play', params: go(w.nextShop) };
     const c = nextOpen();
     if (c) return { label: stampCount() ? '下一間店' : '開始冒險', sub: c.label, route: 'play', params: go(c) };
-    return { label: '自由逛', sub: '🗾 日本地圖（全部店都蓋過印了！）', route: 'play', params: { map: 1 } };
+    return { label: '自由逛', sub: '🗾 冒險地圖（全部店都蓋過印了！）', route: 'play', params: { map: 1 } };
   }
   Object.assign(World, { japan, mapPage, goshuin, next, stampCount, missionsOf, progress, goalsOf });
   App.addUnlock(() => []);

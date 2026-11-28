@@ -5,7 +5,8 @@
    - 文法卡正面問「什麼意思？怎麼接？」；答案面一律顯示讀音（「不要提示」也顯示）
    params：{zhFirst?:bool（預設讀 localStorage jpq.act.zhFirst）, speak?:bool（自動念，預設 true）,
             teach?:'auto'|true|false（auto＝依 Learn 紀錄；true 全部先教（今日課新學）；false 全部先考（複習、今日課到期））,
-            tog?:bool（顯示「中文先」切換，預設 true）} */
+            tog?:bool（顯示「中文先」切換，預設 true）,
+            teachOnly?:bool（單元先教：只看答案按「下一張」，不自評、不記進度；學會與否由後面的小考決定）} */
 (function () {
   'use strict';
   const PREF = 'jpq.act.zhFirst';
@@ -52,6 +53,15 @@
           const it = items[i];
           if (!it) return resolve({ results: ctx.results, meta: { n: items.length } });
           ctx.progress(i, items.length);
+          if (p.teachOnly) {
+            const last = i === items.length - 1;
+            el.innerHTML = `${Activity.card(it, { face: 'back', isNew: !seen(it.id), ex: pickEx(it, ctx) })}
+              <div class="ac-act ac-dock"><button type="button" class="btn primary block" id="acNext">${last ? '看完了，開始小考 ›' : '下一張 ›'}</button></div>`;
+            const b = el.querySelector('.ac-say'); if (b) b.onclick = () => ctx.say(it);
+            el.querySelector('#acNext').onclick = () => { i++; show(); };
+            if (autoSay) ctx.say(it);
+            return;
+          }
           if (teach[it.id]) {
             // 先教：直接看答案
             el.innerHTML = `${Activity.card(it, { face: 'back', isNew: true, ex: pickEx(it, ctx) })}

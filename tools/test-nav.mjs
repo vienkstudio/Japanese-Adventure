@@ -65,26 +65,6 @@ N.SECTIONS.forEach(sec => [[sec, null, sec.tools || []]].concat((sec.goals || []
   const L = N.locate(t.route, t.params || {}); ok(L && L.sec === s0 && (!g || L.goal === g), `${id}：路由 ${t.route} 定位到 ${L && L.sec && L.sec.id}/${L && L.goal && L.goal.id}，應在 ${s0.id}/${g ? g.id : ''}`);
 })));
 
-// 3) 推薦
-const rec = (lv, goals, placed = true) => { state.profile = { lv, goals, placed }; state.nav = {}; return N.forMe(4).map(t => t.id); };
-const CASES = [
-  ['零基礎旅客', 'zero', ['travel'], ['kana-guide', 'kana-test', 'cards', 'phrasebook']],
-  ['N5 旅客', 'n5', ['travel'], ['phrasebook', 'play', 'boot']],
-  ['N3 日檢', 'n3', ['exam'], ['dict~1', 'cards', 'chal']],
-  ['N1 日檢', 'n1', ['exam'], ['chal', 'dict~1', 'read']],
-  ['N1 商務', 'n1', ['work'], ['dict~2', 'read~2', 'work']],
-  ['N4 歌曲', 'n4', ['fun'], ['songs', 'read', 'read~1']]
-];
-CASES.forEach(([n, lv, g, want]) => { const got = rec(lv, g); ok(want.every((w, i) => got[i] === w), `${n}：推薦 ${got.join(',')}，預期開頭 ${want.join(',')}`); ok(!got.some(x => ['today', 'today~0'].includes(x)), `${n}：推薦不該有今日課／路線／複習`); });
-const multi = rec('n3', ['travel', 'exam', 'work', 'fun']); ok(multi.join() === 'phrasebook,dict~1,dict~2,songs', '多目的：' + multi.join());
-const unplaced = rec('zero', ['travel'], false); ok(unplaced.join() === 'phrasebook,dict~1,dict~2,songs', '未定位＝多目的：' + unplaced.join());
-// 釘選優先、上次用的放第 4 格、不依次數重排
-state.profile = { lv: 'n5', goals: ['travel'], placed: true }; state.nav = {};
-N.pin('songs'); let r = N.forMe(4).map(t => t.id); ok(r[0] === 'songs' && r.length === 4, '釘選優先：' + r.join());
-N.note('dict~3', null); r = N.forMe(4).map(t => t.id); ok(r[3] === 'dict~3', '上次用的在第 4 格：' + r.join());
-N.note('dict~3', null); N.note('dict~3', null); const r2 = N.forMe(4).map(t => t.id); ok(r2.join() === r.join(), '次數不影響排序');
-N.pin('songs'); ok(!N.pinned('songs'), '再點一次取消釘選');
-
 // 4) 搜尋：第一筆
 const Q = [
   ['五十音', 'kana'], ['假名表', 'kana'], ['あいうえお', 'kana'], ['aiueo', 'kana'], ['hiragana', 'kana'], ['katakana', 'kana'],

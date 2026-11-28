@@ -1,12 +1,11 @@
 /* =========================================================
-   導引 window.NAV（v14）：全站功能清單的單一來源＋依使用者推薦＋功能搜尋。由「查」頁（js/lookup.js）延遲載入。
+   導引 window.NAV（v14）：全站功能清單的單一來源＋功能搜尋＋側邊樹與麵包屑。由「查」頁（js/lookup.js）延遲載入。
    NAV.TOOLS：工具 [{ id, cat, icon, name, desc, kw[], route?, params?, run?, sub? }]；場景模擬（對話、情境任務）只在學習 › 旅遊的場景單元裡，不另設工具；sub＝子入口（byId('工具~序號')）
    NAV.PLACES：學習的 6 個目的分頁（五十音、旅遊、日檢、商務、閱讀、歌曲），可被搜尋
      route：App.go(route, params)；run：動作（備份、御朱印帳…不是路由）；
-   NAV.forMe() -> 推薦 4 張：☆ 釘選 ＞ 身分預設（goals × lv，固定不依次數重排）；第 4 格＝上次用的（不重複）。
    NAV.search(q) -> {top:[≤3 功能：名稱或同義詞完全相同／開頭相同], more:[其他功能命中]}
-   NAV.go(t)、NAV.note(id, params)、NAV.pin(id)、NAV.pinned(id)、NAV.CATS
-   狀態存 App.state.nav = { pin:[id], last:{id, params} }（隨備份、雲端走）。
+   NAV.go(t)、NAV.note(id, params)、NAV.CATS
+   狀態存 App.state.nav = { last:{id, params} }（隨備份、雲端走）。
    舊模組（trip、practice-map、stage、scene、town、quest）已刪除。分類原則見 docs/詞庫與分類/01-工具分類.md 第 3 節。
    ========================================================= */
 (function () {
@@ -67,43 +66,8 @@
   const byId = id => { id = OLD_ID[id] || id; const m = String(id || '').match(/^(.+)~(\d+)$/); if (m) return subOf(TOOLS.find(t => t.id === m[1]), +m[2]); return TOOLS.find(t => t.id === id) || PLACES.find(t => t.id === id) || null; };
 
   /* ---------- 狀態 ---------- */
-  const st = () => { const S = App.state; if (!S.nav || typeof S.nav !== 'object') S.nav = {}; if (!Array.isArray(S.nav.pin)) S.nav.pin = []; S.nav.pin = S.nav.pin.filter(byId); return S.nav; };
+  const st = () => { const S = App.state; if (!S.nav || typeof S.nav !== 'object') S.nav = {}; return S.nav; };
   function note(id, params) { if (!byId(id)) return; st().last = { id, params: params || null }; App.save(); }
-  const pinned = id => st().pin.includes(id);
-  function pin(id) { const s = st(); if (!byId(id)) return false; const i = s.pin.indexOf(id); if (i >= 0) s.pin.splice(i, 1); else { s.pin.push(id); if (s.pin.length > 4) s.pin.shift(); } App.save(); return i < 0; }
-
-  /* ---------- 推薦（固定）：☆ ＞ 身分預設；第 4 格＝上次用的 ---------- */
-  const PRESET = {
-    zero: ['kana-guide', 'kana-test', 'cards'],
-    travel: ['phrasebook', 'play', 'boot'],
-    examLo: ['dict~1', 'cards', 'chal'], examHi: ['chal', 'dict~1', 'read'],
-    work: ['dict~2', 'read~2', 'work'],
-    fun: ['songs', 'read', 'read~1']
-  };
-  function preset() {
-    const raw = (App.state && App.state.profile) || {}, p = App.profile();
-    const known = ['travel', 'exam', 'work', 'fun'];
-    const gs = raw.placed && Array.isArray(raw.goals) && raw.goals.length ? raw.goals.filter(g => known.includes(g)) : known;   // 沒定位／沒選目的＝多目的
-    const lv = p.lv, hi = lv === 'n2' || lv === 'n1';
-    const one = g => g === 'exam' ? PRESET[hi ? 'examHi' : 'examLo'] : PRESET[g] || [];
-    if (lv === 'zero' && raw.placed) return PRESET.zero.concat(gs.includes('travel') ? ['phrasebook'] : []);
-    if (gs.length === 1) return one(gs[0]).slice();
-    return gs.map(g => one(g)[0]).concat(gs.map(g => one(g)[1]));   // 多目的：各目的第 1 名，再補第 2 名
-  }
-  const lastTxt = l => { const k = l && l.params && l.params.pack, pk = k && packs().find(x => x[0] === k); return '上次：' + (pk ? pk[2] : '用過的'); };
-  function forMe(n) {
-    n = n || 4;
-    const s = st(), out = [], has = t => out.some(x => x.id === t.id), add = id => { const t = byId(id); if (t && !has(t)) out.push(t); };
-    s.pin.forEach(add);
-    const base = preset().filter(id => id !== 'today');
-    for (const id of base) { if (out.length >= n - 1) break; add(id); }
-    const L = s.last && byId(s.last.id);
-    const LL = L && Object.assign({}, L, { last: s.last, lastTxt: lastTxt(s.last) });
-    if (L && has(L)) out[out.findIndex(x => x.id === L.id)] = LL;   // 上次用的已在推薦裡：原位改成帶參數的「上次」卡，不重複
-    else if (L && out.length < n) out.push(LL);
-    for (const id of base) { if (out.length >= n) break; add(id); }
-    return out.slice(0, n);
-  }
 
   /* ---------- 功能搜尋 ---------- */
   const norm = s => String(s || '').toLowerCase().normalize('NFKC').replace(/[\s'’\-・。、！？!?〜~～「」（）()／/]/g, '');
@@ -188,8 +152,7 @@
     if (/^(songs|song)$/.test(name)) return G('song');
     if (/^(read|read-article)$/.test(name)) return G('fun');
     if (/^(challenge|challenge-play)$/.test(name)) return G('exam', T('chal'));
-    if (/^(play|event|map)$/.test(name)) return G('travel', T('play'));
-    if (name === 'drill') return G('travel');
+    if (/^(play|event)$/.test(name)) return G('travel', T('play'));
     if (name === 'menu') return G('travel');
     if (/^(boot|boot-play)$/.test(name)) return G('travel', T('boot'));
     if (/^(kb|kb-page|mind|mind3d|tree)$/.test(name) || (name === 'lookup' && /^(gram|keigo)$/.test(p.view || ''))) return { sec: sec('lookup'), tool: byId('dict') };
@@ -244,7 +207,6 @@
   const nodeBtn = (o, act) => `<button type="button" class="nv-n${act ? ' on' : ''}" data-r="${esc(o.route || '')}" data-p="${esc(JSON.stringify(o.params || {}))}"${o.tool ? ` data-t="${esc(o.tool)}"` : ''}><span aria-hidden="true">${esc(o.icon || '•')}</span><span>${esc(o.name)}</span></button>`;
   function groupHTML(sec) {
     const k = sec.id + ':g', open = OPEN.has(k);
-    if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open || (curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))) ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
     if (sec.group === 'packsFlat') return `<p class="nv-lab">🏫 場景包</p>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}<p class="nv-lab">🧰 工具</p>`;
     if (sec.group === 'biz') return nodeBtn({ route: 'biz', icon: '🗂️', name: '商務閱讀' }, curName === 'biz');
     if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
@@ -266,7 +228,7 @@
     return `<div class="nv-head"><b>🗂️ 全部內容</b><button type="button" class="nv-x" data-x aria-label="關閉選單">✕</button></div>
       <nav class="nv-tree" aria-label="全部內容">${SECTIONS.map(sec => {
         const open = OPEN.has(sec.id) || hs === sec.id;
-        const head = sec.id === 'learn' ? '' : nodeBtn({ route: sec.route, icon: sec.id === 'me' ? '📊' : sec.id === 'home' ? '🏠' : '🔍', name: sec.id === 'me' ? '學習紀錄' : sec.id === 'home' ? '今天' : '搜尋' }, curName === sec.route && !(here && here.tool) && !(curP && (curP.view || curP.pick)));
+        const head = sec.id === 'learn' ? '' : nodeBtn({ route: sec.route, icon: sec.id === 'me' ? '📊' : sec.id === 'home' ? '🏠' : '🔍', name: sec.id === 'me' ? '學習紀錄' : sec.id === 'home' ? '首頁' : '搜尋' }, curName === sec.route && !(here && here.tool) && !(curP && (curP.view || curP.pick)));
         return `<details class="nv-sec" data-s="${sec.id}"${open ? ' open' : ''}><summary class="${hs === sec.id ? 'on' : ''}"><span aria-hidden="true">${sec.icon}</span>${esc(sec.name)}</summary>
           ${head}${sec.goals ? sec.goals.map(goalHTML).join('') : tools(sec.tools)}</details>`;
       }).join('')}</nav>`;
@@ -343,10 +305,8 @@
     if (isWide()) { ensureDrawer(); if (!document.body.classList.contains('nv-open')) { document.body.classList.add('nv-open', 'nv-wide'); drawer.setAttribute('aria-hidden', 'false'); drawer.inert = false; paintTree(); } }
   });
   try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); drawer.inert = false; paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); if (drawer) drawer.inert = true; } }); } catch (e) { }
-  // 首頁用：主選項（每類的進度與下一步由首頁自己算）
-  const mainSections = () => GOALS;   // 首頁卡＝學習的 5 個目的分頁捷徑（今天、查、我的已在底部導覽）
   // 頁面自己換分頁（學習頁的分頁鈕）時更新麵包屑與側邊樹
   function refresh(name, p) { curName = name; curP = p || {}; try { topBar(); } catch (e) { } if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree(); }
 
-  window.NAV = { TOOLS, PLACES, GOALS, CATS, byId, forMe, preset, search, go, note, pin, pinned, packs, SECTIONS, mainSections, locate, crumb, cont, open, close, refresh };
+  window.NAV = { TOOLS, PLACES, GOALS, CATS, byId, search, go, note, packs, SECTIONS, locate, crumb, cont, open, close, refresh };
 })();

@@ -1418,7 +1418,7 @@
     const R = regionOf(D.region), ds = R.order.map(id => W.districts[id]).filter(Boolean);
     const el = sheet(`<h3 class="wd-h">🚉 要去哪裡？<small lang="ja">どこへ行きますか</small></h3>
       <div class="wd-pick wd-list">${ds.map(d => `<button type="button" data-d="${esc(d.id)}" ${d.id === D.id ? 'disabled' : ''}><span class="e">${esc(d.icon)}</span><span class="wd-tx"><b>${esc(d.name)}</b><i class="wd-k" lang="ja">${esc(d.jp)}（${esc(d.kana)}）</i><i class="wd-z">${d.id === D.id ? '目前所在地' : esc(d.desc)}</i></span></button>`).join('')}
-      <button type="button" data-d=""><span class="e">🗾</span><span class="wd-tx"><b>日本地圖</b><i class="wd-z">換一個地區（全部開放）</i></span></button></div>`);
+      <button type="button" data-d=""><span class="e">🗾</span><span class="wd-tx"><b>選地區</b><i class="wd-z">回冒險地圖換一個地區（全部開放）</i></span></button></div>`);
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { if (b.dataset.d) App.go('play', { r: D.region, d: b.dataset.d }); else App.go('play', { map: 1 }); });
   });
   function spotSheet(key, p) {

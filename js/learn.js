@@ -122,6 +122,17 @@
     return e;
   }
   const emit = (id, e) => { try { document.dispatchEvent(new CustomEvent('learnchange', { detail: { id, e } })); } catch (er) { } };
+  // 分散到期：間隔 ≥1 天的卡，如果那天已排滿 DUE_CAP 張，往後順延（最多間隔的 3 成、至少 2 天），避免一次學 26 個隔天全部到期
+  function spread(t, stab, self) {
+    if (!(stab >= 0.5)) return t;
+    const LL = L(), d0 = new Date(t); d0.setHours(0, 0, 0, 0);
+    const day = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); };
+    const load = {};
+    for (const k in LL) { const e = LL[k]; if (k === self || !e || e.s === 'new' || !e.due) continue; const dd = day(e.due); load[dd] = (load[dd] || 0) + 1; }
+    const max = Math.max(2, Math.round(stab * 0.3));
+    for (let i = 0; i <= max; i++) { const dd = d0.getTime() + i * DAY; if ((load[dd] || 0) < DUE_CAP) return t + i * DAY; }
+    return t;
+  }
   // grade：0 忘了／答錯、1 困難、2 普通／答對、3 簡單；ctx.retryAt（答錯時的到期時間，毫秒）
   function record(id, grade, ctx) {
     ctx = ctx || {};
@@ -142,7 +153,7 @@
       }
       e.diff = clamp((e.diff || 5) - (g - 2) * 0.8, 1, 10);
       e.str = (e.str || 0) + 1;
-      e.due = now + Math.max(0.02, e.stab) * DAY - (e.stab >= 1 ? 36e5 : 0);
+      e.due = spread(now + Math.max(0.02, e.stab) * DAY - (e.stab >= 1 ? 36e5 : 0), e.stab, id);
       e.s = stOfStab(e.stab);
     }
     e.last = now; if (ctx.src) e.src = ctx.src;
@@ -229,7 +240,7 @@
     }
     return m;
   }
-  const SRC_NAME = { chal: '🏆 挑戰', card: '🎴 字卡', kb: '📚 知識庫', world: '🗾 冒險', review: '📌 複習', mind: '📚 知識庫' };
+  const SRC_NAME = { chal: '🏆 挑戰', card: '🎴 字卡', kb: '📘 辭典', world: '🗾 冒險', review: '📌 複習', mind: '📘 辭典' };
   function view(id) {
     id = idOf(id); if (!id) return null;
     const e = L()[id]; if (!e) return null;
@@ -497,7 +508,7 @@
   // 知識庫 id → 顯示資料（給 Learn 存 m）
   function kbItem(k) {
     if (!k) return null;
-    if (k.startsWith('w:')) { const p = k.split(':'), r = lexRow(p[1], p[2]), f = r && lexForm(r); return r ? { jp: f.jp, kana: f.kana, zh: r[2] || '', lv: p[1], source: '知識庫 ' + p[1] } : null; }
+    if (k.startsWith('w:')) { const p = k.split(':'), r = lexRow(p[1], p[2]), f = r && lexForm(r); return r ? { jp: f.jp, kana: f.kana, zh: r[2] || '', lv: p[1], source: '辭典 ' + p[1] } : null; }
     if (k.startsWith('gram:')) { const g = window.MIND && MIND.gram && MIND.gram.find(x => x.id === k); return g ? { jp: g.pat, zh: g.zh, lv: g.lv, source: '📐 文法' } : { jp: k.slice(5), source: '📐 文法' }; }
     return null;
   }

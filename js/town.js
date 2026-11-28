@@ -1,6 +1,6 @@
 /* =========================================================
    日語冒險 — 場景互動 town.js
-   路由：drill（場景包的對話、口說、單字測驗）；TownAPI 提供對話與測驗元件給 menu（js/practice.js）
+   沒有自己的路由；TownAPI 提供對話與測驗元件給 menu（js/practice.js）
    ========================================================= */
 (function () {
   'use strict';
@@ -126,11 +126,6 @@
 
   // 「＋不會清單」按鈕改用 core 的共用 App.trackBtn（點擊由 core 統一處理）
   const bindTrack = () => { };
-  function errorView(el, title, msg) {
-    el.innerHTML = `<div class="panel t-err"><div class="t-big">🧭</div><h2>${esc(title)}</h2><p class="muted">${esc(msg)}</p>
-      <button class="btn primary" id="tBack">↩ 回上一頁</button></div>`;
-    el.querySelector('#tBack').onclick = () => App.back();
-  }
   function starsOf(ratio) { return ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : ratio >= 0.4 ? 1 : 0; }
 
   /* ---------------- 對話演練 ---------------- */
@@ -332,75 +327,6 @@
     };
     one();
   }
-
-  /* ---------------- 路由：drill（自由練習，不受解鎖限制） ----------------
-     params: {scenes:[id], kind:'word'|'phrase'|'mix'|'dialog'|'speak', count, title, dialog?:index} */
-  function runDialogs(pane, list, onAll, opts) {
-    const queue = [];
-    list.forEach(({ sc, d }) => { if (arr(d.steps).length) queue.push({ sc, d }); });
-    const total = queue.reduce((n, x) => n + x.d.steps.length, 0);
-    let first = 0; const wrong = [];
-    const next = k => {
-      if (k >= queue.length) return onAll({ total, first, wrong });
-      const { sc, d } = queue[k];
-      pane.innerHTML = `<div class="t-dbar"><h3 style="margin:0">${esc(sc.icon || '')} ${esc(d.title || '對話')}</h3><span class="muted">第 ${k + 1} / ${queue.length} 段</span></div><div id="tRun"></div>`;
-      runDialogue(pane.querySelector('#tRun'), sc, d, res => {
-        first += res.first;
-        res.wrong.forEach(w => { if (!wrong.some(x => x.id === w.id)) wrong.push(w); });
-        const box = document.createElement('div'); box.className = 't-sum';
-        box.innerHTML = `<p>本段一次答對 <b>${res.first}</b> / ${res.total}</p><button class="btn primary">${k + 1 < queue.length ? '下一段 ➜' : '查看結果 🏁'}</button>`;
-        pane.querySelector('#tRun').appendChild(box);
-        box.querySelector('button').onclick = () => next(k + 1);
-        box.scrollIntoView && box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, opts);
-    };
-    if (!queue.length) { pane.innerHTML = '<p class="muted center">這裡還沒有對話資料。</p>'; return; }
-    next(0);
-  }
-  App.register('drill', {
-    title: '對話', icon: '🎭', nav: false, navParent: 'path',
-    render(el, params) {
-      params = params || {};
-      const list = arr(params.scenes).map(findScene).filter(Boolean);
-      if (!list.length) return errorView(el, '沒有選到場景', '請回「練習」重新選擇。');
-      let kind0 = params.kind || 'mix';
-      if (kind0 === 'speak' && !srOK()) kind0 = 'shadow';
-      const KN = { word: '📚 單字測驗', phrase: '💬 句子測驗', mix: '⚡ 綜合測驗', dialog: '🎭 對話演練', speak: '🎤 口說對話', shadow: '🔁 跟讀練習' };
-      const kind = kind0;
-      const one = list.length === 1 ? list[0] : null;
-      el.innerHTML = `<div class="panel t-head" style="--tc:${esc(one ? one.color || 'var(--pri)' : 'var(--pri)')}">
-          <div class="t-icon">${esc(one ? one.icon : '🗾')}</div>
-          <div class="t-info"><h2>${esc(params.title || (one ? one.name : list.length + ' 個場景'))}</h2><div class="muted">${KN[kind] || ''}${one ? '' : '・' + list.map(s => s.name).join('、')}</div></div></div>
-        <div class="panel" id="tPane"></div>`;
-      const home = { label: '回上一頁' }, saveSit = () => { };
-      const toHome = () => App.back();
-      const pane = el.querySelector('#tPane');
-      const again = () => App.go('drill', params);
-      if (kind === 'dialog' || kind === 'speak' || kind === 'shadow') {
-        const ds = list.flatMap(sc => arr(sc.dialogues).map((d, i) => ({ sc, d, i }))).filter(x => params.dialog == null || x.i === +params.dialog);
-        const pick = params.dialog != null ? ds : App.sample(ds, Math.min(params.count || 3, ds.length));
-        runDialogs(pane, pick, res => {
-          const stars = starsOf(res.total ? res.first / res.total : 0);
-          saveSit(stars);
-          list.forEach(sc => { if (!App.state.sceneDone) App.state.sceneDone = {}; App.state.sceneDone[sc.id] = true; });
-          App.save();
-          const r = App.reward('drill:' + kind + ':' + list.map(s => s.id).join(',') + ':' + (params.dialog != null ? params.dialog : 'r'), stars, KN[kind].replace(/^\S+\s/, ''));
-          pane.innerHTML = `<div class="t-sum"><div class="t-big">${stars ? '🎉' : '💪'}</div><h3>練習完成</h3><p>一次答對 ${res.first} / ${res.total}</p>
-            <button class="btn" id="tRe">🔄 再練一次</button><button class="btn primary" id="tPr">${esc(home.label)}</button></div>`;
-          pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = toHome;
-          App.showResult({ title: stars ? '對話練習完成！' : '再練練看！', stars, correct: res.first, total: res.total, gained: r.gained, wrong: res.wrong, retry: again, back: home });
-        }, { mic: kind === 'speak', shadow: kind === 'shadow' });
-        return;
-      }
-      const P = poolOf(list, kind === 'word' ? ['word'] : kind === 'phrase' ? ['phrase'] : ['word', 'phrase']);
-      if (P.length < 2) { pane.innerHTML = '<p class="muted center">資料不足，無法出題。</p>'; return; }
-      quizRun(pane, P, {
-        count: params.count || 10, reason: (KN[kind] || '⚡ 測驗').replace(/^\S+\s/, ''), id: 'drill:' + kind + ':' + list.map(s => s.id).join(','), onStars: saveSit,
-        onEnd: () => { pane.innerHTML = `<div class="t-sum"><div class="t-big">🏁</div><h3>測驗結束</h3><button class="btn" id="tRe">🔄 再來一次</button><button class="btn primary" id="tPr">${esc(home.label)}</button></div>`; pane.querySelector('#tRe').onclick = again; pane.querySelector('#tPr').onclick = toHome; },
-        retry: again, back: home
-      });
-    }
-  });
 
   window.TownAPI = { scenes, findScene, isUnlocked: unlocked, runDialogue, quizRun, poolOf, listenJP, bestMatch, micErr, get hasSR() { return srOK(); }, lvOf };
 })();

@@ -35,7 +35,7 @@ Home.needSrc([js…], [css…]) -> Promise / Home.loadCSS(href) -> Promise
 | `tree`、`mind3d`（轉址） | data/mind/{conj,grammar}、mind-tree.js | kb.css |
 | `read`（nav 3）、`read-article`、`songs`、`song` | PH、LO、SC、data/reading/daily.js、data/reading/biz.js、jp-text、link-import、reader、songs | reader.css |
 | `biz`、`biz-unit`、`biz-read` | PH、data/biz/units-1..4、data/reading/biz.js、biz.js | biz.css（biz.js 也會自行插入） |
-| `menu`、`drill` | SC、data/cards.js、data/menus.js、PH、LO、town.js、practice.js | world.css |
+| `menu` | SC、data/cards.js、data/menus.js、PH、LO、town.js、practice.js | world.css |
 
 ## core.js API
 ```js
@@ -143,25 +143,29 @@ migrate 也會修正型別：`xp` 非有限數字→0（負數→0）、`cleared
 ## 返回鍵
 頂列 `#backBtn` 是全站**唯一**返回鍵（首頁不顯示、不佔位）；各頁內容區不要再放 ← 按鈕。
 
-## 路由一覽
-底部導覽 4 鈕（第二階段，2026-11-19）：`home`(1) 今天、`path`(2) 路線、`lookup`(3) 查、`me`(4) 我的；`play`／`challenge*`／`boot*`／`biz*`／`act` 歸路線，`read*`／`songs`／`song`／`kb*`／`mind3d`／`phrasebook` 歸查，`review`／`cards`／`settings`／`classic` 歸我的；其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。
+## 路由一覽（2026-11-28，V3.19.0）
+底部導覽 4 鈕：`home`(1) 首頁、`path`(2) 學習、`lookup`(3) 查、`me`(4) 我的。學習頁分頁固定順序：五十音、旅遊、日檢、商務、歌曲、閱讀（歌曲＝`songs`、閱讀＝`read`，是獨立頁，點了離開學習頁，底部仍亮「學習」）。`kb*`／`tree`／`phrasebook` 歸查；`review`／`cards`／`settings` 歸我的；`act` 依 `back` 參數定位。其餘 `nav:false`，用 `navParent` 指定點亮哪一鈕（沒指定＝點亮首頁）。頂列 ☰ 開側邊樹（≥1024px 常駐左側）、內頁顯示麵包屑（js/nav.js）。
+
 | 路由 | 模組 | 說明 |
 |---|---|---|
-| `home`（nav 1） | home.js | 「今天」：唯一主按鈕「▶ 開始今天的課（約 8 分鐘）」→ `today`；多目的的人主按鈕下有 1 顆「今天練：⇄ 換」切換今天的目的；連勝與今日進度（複習／新學／應用，不可點）。v48 起（使用者決定）首頁＝主按鈕＋「⏯ 繼續上次」＋「全部內容」7 張分類卡（自己的目的排前面）；頂列 ☰ 開側邊樹（≥1024px 常駐左側）、內頁顯示麵包屑（js/nav.js）。未定位（`profile.placed` false）先顯示程度選擇→字級→目的，body 加 `.ob-mode` |
-| `today` | home.js | 今日課 params `{goal:'travel'|'exam'|'fun'|'work'|'kana'}`。零基礎且平假名未學完（Learn 的 `kana:` 項目＜46）＝`kana`，不分目的。流程：`Learn.prepare` → ① 到期複習 ≤15（看答案→忘了 0／記得 2／很簡單 3）→ ② 新學 5–8 張卡（日文、讀音、羅馬字 `Phrase.romaji`、中文、🔊）→ ③ 小測驗（第一次答對 2、答錯 0 並在最後重考一次、重考答對 1）→ 結算（學會 N、複習、明天到期 M、連勝；+XP）＋「▶ 用出來」應用：travel＝`World.next()` 下一間店；exam＝`challenge-play {lv, t:'mix'}`；fun＝`read-article {daily}` 今日短文；work＝`BIZ.next()`（`biz-unit`）；kana＝`phrasebook {tab:'kana', sub:'quiz'}`。每題都 `Learn.record(id, grade, {src:'today'})`。fun 的新學不足時用今日短文段落補、work 用 `BIZ.units` 的 vocab／phrases 補 |
-| `settings` | home.js | 設定頁：程度、目的、外觀、語音、其他（音效、頭像、備份）、清除 |
-| `play`（nav 2） | world.js | 冒險世界：params `{r, d, s}`；地圖頁（無 d/s）底部有「🏯 經典練習」入口（home.js 附加） |
-| `event` | world-quest.js | 店家狀況題（需 TravelData，延遲載入） |
-| `read`（nav 3）、`read-article`、`songs`、`song` | reader.js、songs.js | 閱讀、歌曲；文章分頁另有「💼 商務」一節（`BIZ_READING`，點了到 `biz-read`） |
-| `kb`（nav 4）、`kb-page`、`tree` | kb.js、mind-tree.js | 知識庫；`tree`＝相依樹：文法 `pre`（先修）與動詞變化 `from` 畫成可展開的樹，`{focus:id}` 顯示先學／後續；舊 `mind3d` 轉址 |
-| `review`（nav 5）、`cards` | review.js、practice.js | 複習（單一 SRS）、字卡 |
-| `phrasebook` | phrasebook.js | 會話手冊＋五十音講義與小考。params `{q}`、`{cat}`、`{tab:'kana', sub:'quiz'}` |
-| `challenge`、`challenge-play` | challenge.js | JLPT 題型挑戰 |
-| `biz`、`biz-unit`、`biz-read` | biz.js（C） | 商務日語：單元列表、單元流程 `{id}`、商務短文 `{id}`；`BIZ.next()` → `{label, sub, route:'biz-unit', params:{id}, icon}`；`BIZ.load()` 載入 data/biz/* |
-| `boot`、`boot-play` | drill.js | 實戰特訓（經典練習內） |
-| `menu` | practice.js | 情境任務小遊戲 `menu {id, m}`（入口：場景單元的練習卡，PathExtra） |
-| `drill` | town.js | 場景包的對話／口說／單字測驗 `drill {scenes:[id], kind}` |
-
+| `home`（nav 1） | home.js | 首頁 5 區（V3.16.0，使用者指定）：①目前程度＋「⇄ 切換」（點了展開程度直接改）②學習目標：有目標＝進度％＋倒數＋「▶ 今日練習」（多目的有「今天練：⇄ 換」）；沒目標＝「設定學習目標」一行 ③繼續上次（只記作答過的）、到期複習 ④功能入口 8 格：五十音、旅遊場景、日檢、商務、閱讀、歌曲、查單字、字卡複習 ⑤⚙️ 設定、🔄 新開始（重選程度與目的，進度保留，可取消）。未定位（`profile.placed` false）先選程度→目的，body 加 `.ob-mode` |
+| `today` | home.js | 今日練習（沒設學習目標＝提示去設定）：`Learn.prepare(goal)` → ①字卡（到期複習自評 2 鍵：記得／看答案→想起來了／忘了；新學先教）→ ②小測驗（新學全部四選一）→ 結算＋「用出來」一個應用（旅遊進店 1 任務、日檢 5 題、商務一段、五十音下一行）。每天新學量＝依目標（剩下字詞÷剩下天數），明天到期超過 20 會少排 |
+| `settings` | home.js | 設定頁：學習目標（最上面）、程度、目的、外觀、語音、其他、清除 |
+| `path`（nav 2）、`path-unit` | path.js | 學習分頁與單元。單元流程：①先看一遍（字卡只看答案、按「下一張」，不自評）→②小考（每一項都考；學會＝最後一次答對）→ 旅遊另有排句子、進店實戰 |
+| `act` | activity.js | 活動框架 `{steps, title, back, next, lv}`；結算 `Activity.endScreen`。`App.showResult` 用同一套版面 |
+| `play`、`event` | world.js、world-quest.js | 冒險地圖：params `{r, d, s}` 或 `{map:1}`（選地區）；狀況題 |
+| `songs`、`song` | songs.js | 歌曲：熱門歌、我的歌、跟唱 |
+| `read`、`read-article` | reader.js | 閱讀：文章、新聞、匯入網址 |
+| `lookup`（nav 3） | lookup.js | 查：先出單字（含變化形還原，例：食べました→食べる；常用詞補充），再地名、文法、句子、外來語、歌曲 |
+| `kb`、`kb-page`、`tree` | kb.js、mind-tree.js | 辭典；`tree`＝相依樹。舊 `mind`、`mind3d`（`#mind3d` 深連結）轉址保留 |
+| `phrasebook` | phrasebook.js | 旅遊手冊：常用句、緊急、大字給店員看 |
+| `review`、`cards` | review.js、practice.js | 到期複習（單一 SRS）；字卡牌組（翻卡、標難度、「考考看」四選一） |
+| `challenge`、`challenge-play` | challenge.js | 日檢挑戰：JLPT 題型（漢字讀音題放進句子並畫線） |
+| `biz`、`biz-unit`、`biz-read` | biz.js | 商務閱讀（入口只在學習 › 商務）；單元流程 `{id}` |
+| `boot`、`boot-play` | drill.js | 聽力特訓（入口在旅遊分頁） |
+| `menu` | practice.js（＋town.js 的 TownAPI 元件） | 情境任務小遊戲 `menu {id, m}`（入口：場景單元的練習卡）；舊 `drill` 路由已刪 |
+| `kana-guide`、`kana-drill`、`kana-quiz` | kana-guide.js、kana-lesson.js | 入門講義、50 音訓練表、假名測驗 |
+| `me` | me.js | 我的：學習紀錄、字卡、設定、備份 |
 練習答錯一律 `Learn.record(item.id, 0, {src:'town'|'menu'|'boot'|'world', item})`（會進不會清單，與 `Tracker.add` 效果相同）。舊模組 trip、practice-map、stage、scene、town、quest、3D 心智圖已於 V3.11.0 刪除；存檔的 `trip`、`sit`、`sceneDone`、`mind` 欄位保留不讀。
 
 ## 狀況題格式（data/travel*.js）

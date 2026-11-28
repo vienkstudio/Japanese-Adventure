@@ -1,7 +1,7 @@
 /* =========================================================
    日語冒險 — 間隔複習 review.js
    路由：review（nav:false，navParent me；從「我的」今日到期進入）
-   複習一律走統一活動框架（act 路由：flashcard 自評 4 鍵／choice 四選一，由 runner 呼叫 Learn.record）；
+   複習一律走統一活動框架（act 路由：flashcard 自評 2 鍵（記得／忘了）／choice 四選一，由 runner 呼叫 Learn.record）；
    今日到期＝Learn.due(15)（與首頁今日課同一函式）。清單、篩選、匯出入、列印收在「⋯ 更多」。
    依賴：App、Learn、Tracker（core.js）
    ========================================================= */
@@ -194,7 +194,7 @@
         <h2 class="rv-h">📌 複習</h2>
         <div class="rv-stats"><div class="rv-stat"><b>${r.early ? 0 : n}</b>今天到期</div><div class="rv-stat"><b>${Math.max(0, st.total - st.new - st.known)}</b>學習中</div><div class="rv-stat"><b>${st.known}</b>已學會 ✓</div></div>
         ${r.early ? `<div class="rv-next">🎉 今天到期的都複習完了！${nd ? `下一個：<b class="jp" lang="ja">${esc(nd.jp)}</b>（${when}）` : ''}</div>` : ''}
-        ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：想一想→翻面→自評 4 級</small></button>
+        ${n ? `<button type="button" class="btn primary block rv-go" data-run="flashcard">▶ ${r.early ? '提前複習' : '開始複習'} ${n} 個<small>字卡：先想→「記得」或「看答案」→「想起來了／忘了」</small></button>
         <button type="button" class="btn block rv-alt" data-run="choice">✏️ 改用選擇題複習<small>閱讀、歌曲收的字會用原句填空</small></button>` : `<button type="button" class="btn primary block rv-go" data-go="path">🧭 去學習新的</button>`}
         <p class="rv-info">答對越多次，隔越久再出現；每日練習、學習、店家學過的到期都會排進來。</p>
         <button type="button" class="btn block" data-go="cards">🎴 字卡牌組<small>五十音・日檢・不會清單</small></button>

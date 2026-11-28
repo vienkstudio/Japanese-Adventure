@@ -344,20 +344,20 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       const items = examItems(P.L, P.i, P.sup); if (!items) return null;
       const ids = items.map(x => x.id), t = examName(P.L, P.i, P.sup), ng = items.filter(x => x.type === 'grammar').length;
       return {
-        id, kind: 'exam', icon: '📝', title: t, sub: (items.length - ng) + ' 個單字' + (ng ? '＋' + ng + ' 個文法' : '') + '・小考 ' + Q_N + ' 題', items, lv: P.L,
+        id, kind: 'exam', icon: '📝', title: t, sub: (items.length - ng) + ' 個單字' + (ng ? '＋' + ng + ' 個文法' : '') + '・小考 ' + items.length + ' 題', items, lv: P.L,
         steps: [
-          { type: 'flashcard', items, title: t + '：字卡', learn: true },
-          { type: 'choice', items, params: { lv: P.L, kind: ng ? ['form', 'mean', 'kanji', 'form', 'ctx'] : ['mean', 'kanji', 'ctx', 'mean', 'spell'], n: Math.min(Q_N, ids.length), ids, quiz: true, retry: false, avoid: quizAvoid(items) }, title: t + '：小考' }
+          { type: 'flashcard', items, params: { teachOnly: true }, title: t + '：先看一遍' },
+          { type: 'choice', items, params: { lv: P.L, kind: ng ? ['form', 'mean', 'kanji', 'form', 'ctx'] : ['mean', 'kanji', 'ctx', 'mean', 'spell'], n: ids.length, ids, quiz: true, retry: false, avoid: quizAvoid(items) }, title: t + '：小考' }
         ]
       };
     }
     if (P.kind === 'kana' && window.KanaLesson && KanaLesson.unitInfo) {
       const u = KanaLesson.unitInfo(P.k); if (!u) return null;
-      const q = App.shuffle ? App.shuffle(u.items.slice()).slice(0, Q_N) : u.items.slice(0, Q_N);
+      const q = App.shuffle ? App.shuffle(u.items.slice()) : u.items.slice();   // 每個假名都考（學會＝小考答對）
       return {
         id, kind: 'kana', icon: '🔤', title: u.title, sub: u.chars.length + ' 個假名・聽音 ' + q.length + ' 題', items: u.items, intro: u.intro, more: u.more,
         steps: [
-          { type: 'flashcard', items: u.items, title: '五十音：' + u.title, learn: true },
+          { type: 'flashcard', items: u.items, params: { teachOnly: true }, title: '五十音：' + u.title },
           { type: 'listen', items: q, params: { mode: 'word', retry: false }, title: u.title + '：聽音選字' }
         ]
       };
@@ -369,12 +369,12 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       const used = new Set(items.filter(x => x.type !== 'vocab').map(x => arr(x.ex)[0] && x.ex[0].jp).filter(Boolean));
       items.forEach(x => { if (x.type !== 'vocab' || lvI(lv) < 0) return; const e = exFor(x, lv, used); x.ex = e || []; if (e && e[0]) used.add(e[0].jp); });
       const ph = items.filter(x => x.type === 'phrase'), other = items.filter(x => x.type !== 'phrase');
-      const steps = [{ type: 'flashcard', items, title: t, learn: true }];
-      if (part.k === 'v') steps.push({ type: 'choice', items: (App.shuffle ? App.shuffle(items.slice()) : items).slice(0, Q_N), params: { retry: false, pool: arr(bu.vocab).map(x => ({ jp: x.jp, kana: x.kana, zh: x.zh, lv, type: 'vocab' })) }, title: t + '：選選看' });
+      const steps = [{ type: 'flashcard', items, params: { teachOnly: true }, title: t + '：先看一遍' }];
+      if (part.k === 'v') steps.push({ type: 'choice', items: App.shuffle ? App.shuffle(items.slice()) : items.slice(), params: { retry: false, pool: arr(bu.vocab).map(x => ({ jp: x.jp, kana: x.kana, zh: x.zh, lv, type: 'vocab' })) }, title: t + '：選選看' });
       else {
         const wb = ph.slice().sort((a, b) => a.jp.length - b.jp.length).slice(0, 2);
         if (wb.length) steps.push({ type: 'wordbank', items: wb, params: { max: 5, retry: false }, title: t + '：排句子' });
-        const rest = other.concat(ph.filter(x => !wb.includes(x))).slice(0, Q_N - wb.length);
+        const rest = other.concat(ph.filter(x => !wb.includes(x)));   // 每一項都考（學會＝小考答對）
         if (rest.length) steps.push({ type: 'choice', items: rest, params: { retry: false, pool: ph.concat(other) }, title: t + '：選選看' });
       }
       const qn = steps.slice(1).reduce((n, s) => n + s.items.length, 0);

@@ -66,6 +66,59 @@
     }));
     return out.sort((a, b) => a[0] - b[0]).slice(0, n).map(x => x[1]);
   }
+
+  /* ---------- 動詞・形容詞變化還原（查「食べました」也找得到 食べる） ---------- */
+  const I2U = { い: 'う', き: 'く', ぎ: 'ぐ', し: 'す', ち: 'つ', に: 'ぬ', び: 'ぶ', み: 'む', り: 'る' };
+  const A2U = { わ: 'う', か: 'く', が: 'ぐ', さ: 'す', た: 'つ', な: 'ぬ', ば: 'ぶ', ま: 'む', ら: 'る' };
+  // [語尾, 還原方式, 說明]：ichi＝去尾＋る；i＝去尾後最後一個 い段→う段；a＝あ段→う段；te＝た／て形；adj＝＋い
+  const DEINF = [
+    ['ませんでした', 'masu', '禮貌否定過去'], ['ましょう', 'masu', '禮貌邀約'], ['ました', 'masu', '禮貌過去'], ['ません', 'masu', '禮貌否定'], ['ます', 'masu', '禮貌形'],
+    ['たかった', 'masu', '想要（過去）'], ['たくない', 'masu', '不想'], ['たい', 'masu', '想要'], ['なさい', 'masu', '命令'],
+    ['なかった', 'nai', '否定過去'], ['ない', 'nai', '否定'],
+    ['かった', 'adj', '形容詞過去'], ['くない', 'adj', '形容詞否定'], ['くて', 'adj', '形容詞て形'], ['く', 'adj', '形容詞副詞形'],
+    ['った', 'tt', '過去'], ['って', 'tt', 'て形'], ['んだ', 'nd', '過去'], ['んで', 'nd', 'て形'], ['いた', 'it', '過去'], ['いて', 'it', 'て形'], ['いだ', 'id', '過去'], ['いで', 'id', 'て形'],
+    ['した', 'sh', '過去'], ['して', 'sh', 'て形'], ['た', 'ichi', '過去'], ['て', 'ichi', 'て形'],
+    ['られる', 'ichi', '被動／可能'], ['させる', 'ichi', '使役'], ['れば', 'ba', '假定'], ['よう', 'ichi', '意向']
+  ];
+  function deinf(s) {
+    s = String(s || '').trim(); const out = [], add = (b, l) => { if (b && b !== s && !out.some(x => x[0] === b)) out.push([b, l]); };
+    if (!/[぀-ゟ]$/.test(s) || s.length < 2) return out;
+    if (/^(しました|します|しない|した|して|しません|しませんでした)$/.test(s)) add('する', 'する的變化');
+    if (/^(きました|きます|こない|きた|きて|きません)$/.test(s)) add('くる', '来る的變化');
+    if (/(しました|します|しない|した|して|しません|しませんでした|しよう)$/.test(s)) add(s.replace(/(しました|します|しない|した|して|しません|しませんでした|しよう)$/, 'する'), 'する動詞');
+    for (const [end, how, lb] of DEINF) {
+      if (!s.endsWith(end) || s.length <= end.length) continue;
+      const st = s.slice(0, -end.length), last = st.slice(-1), head = st.slice(0, -1);
+      if (how === 'masu') { add(st + 'る', lb); if (I2U[last]) add(head + I2U[last], lb); }
+      else if (how === 'nai') { add(st + 'る', lb); if (A2U[last]) add(head + A2U[last], lb); }
+      else if (how === 'adj') add(st + 'い', lb);
+      else if (how === 'tt') { add(st + 'う', lb); add(st + 'つ', lb); add(st + 'る', lb); if (st.endsWith('行')) add(st + 'く', lb); }
+      else if (how === 'nd') { add(st + 'む', lb); add(st + 'ぶ', lb); add(st + 'ぬ', lb); }
+      else if (how === 'it') add(st + 'く', lb);
+      else if (how === 'id') add(st + 'ぐ', lb);
+      else if (how === 'sh') add(st + 'す', lb);
+      else if (how === 'ichi') add(st + 'る', lb);
+      else if (how === 'ba') { add(st + 'る', lb); if (({ け: 'く', せ: 'す', て: 'つ', ね: 'ぬ', め: 'む', べ: 'ぶ', げ: 'ぐ', え: 'う' })[last]) add(head + ({ け: 'く', せ: 'す', て: 'つ', ね: 'ぬ', め: 'む', べ: 'ぶ', げ: 'ぐ', え: 'う' })[last], lb); }
+    }
+    return out;
+  }
+  // 變化形 → 辭典形的單字（只取完全相同的）
+  function findBase(raw) {
+    const hit = [];
+    for (const [b, lb] of deinf(raw)) {
+      const q = norm(b), qh = toHira(q);
+      LVS.forEach(lv => words(lv).forEach(w => { if ((w.nj === q || w.nk === qh) && !hit.some(x => x.id === w.id)) hit.push(Object.assign({}, w, { via: lb })); }));
+      if (hit.length >= 3) break;
+    }
+    return hit.slice(0, 3);
+  }
+  /* ---------- 詞庫沒收的常用詞（交通 IC 卡、水果…）：補在這裡，查得到、可發音 ---------- */
+  const EXTRA = [
+    { jp: 'スイカ', kana: 'すいか', zh: '西瓜；Suica（JR 東日本的交通 IC 卡，搭車、便利商店付款）', al: ['suica', 'suika', 'スイカ', 'すいか', '西瓜', 'ic卡', '交通卡', '悠遊卡'] },
+    { jp: '西瓜', kana: 'すいか', zh: '西瓜（水果）', al: ['西瓜', 'すいか', 'suika'] },
+    { jp: 'ICカード', kana: 'あいしーかーど', zh: '交通 IC 卡（Suica、ICOCA、PASMO…）', al: ['icカード', 'ic卡', '交通卡', '悠遊卡', 'icoca', 'pasmo', 'suica'] }
+  ].map(x => Object.assign(x, { nal: x.al.map(a => norm(a)) }));
+  const findExtra = q => EXTRA.filter(x => x.nal.some(a => a === q || (q.length >= 2 && a.startsWith(q))));
   function findGram(q, qa, n) {
     if (qa) return [];
     const out = [];
@@ -284,11 +337,13 @@
     const pb = PB();
     const ph = pb && pb.search ? pb.search(raw) : [];
     const pl = findPlace(q, qh, qa, 4);
-    const ws = findWords(q, qh, qa, 4), gm = findGram(q, qa, 3), ln = findLoan(q, qa, 2), my = findMine(q, 2), hot = findHot(q, 3);
+    const base = qa ? [] : findBase(raw), ex0 = findExtra(q);
+    const ws = base.concat(findWords(q, qh, qa, 4).filter(w => !base.some(b => b.id === w.id))).slice(0, 5), gm = findGram(q, qa, 3), ln = findLoan(q, qa, 2), my = findMine(q, 2), hot = findHot(q, 3);
     HOTK = hot;
     const hotH = hot.length ? `<h2 class="lk-h">🎵 熱門歌<small>點一下匯入歌詞、開始跟唱</small></h2><div class="lk-list">${hot.map((x, i) => `<button type="button" class="lk-w" data-hot="${i}"><span aria-hidden="true">🎵</span><b lang="ja">${esc(x.t)}</b><span class="zh" lang="ja">${esc(x.a)}</span><span class="go" aria-hidden="true">▶</span></button>`).join('')}</div>` : '';
     let h = '';
-    if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;   // 單字排最前（查「水」先看到 みず）
+    if (ws.length) h += `<h2 class="lk-h">📘 單字</h2><div class="lk-list">${ws.map(w => `<button type="button" class="lk-w" data-kb="${esc(w.id)}"><b lang="ja">${esc(w.jp)}</b>${w.kana !== w.jp ? `<small lang="ja">${esc(w.kana)}</small>` : ''}<span class="zh">${w.via ? `<em class="lk-via">「${esc(raw.trim())}」是${esc(w.via)}・</em>` : ''}${esc(w.zh)}</span>${lvB(w.lv)}</button>`).join('')}</div>`;
+    if (ex0.length) h = `<h2 class="lk-h">📘 常用詞</h2><div class="lk-list">${ex0.map(x => `<button type="button" class="lk-w" data-say="${key({ jp: x.jp, kana: x.kana })}"><b lang="ja">${esc(x.jp)}</b>${x.kana !== x.jp ? `<small lang="ja">${esc(x.kana)}</small>` : ''}<span class="zh">${esc(x.zh)}</span><span class="go" aria-hidden="true">🔊</span></button>`).join('')}</div>` + h;   // 單字排最前（查「水」先看到 みず）
     if (pl.length) h += `<h2 class="lk-h">📍 地名・景點<small>點一下放大給司機、店員看</small></h2><div class="lk-list">${pl.map(plRow).join('')}</div>`;
     // 目的是日檢、或查的字就是文法句型本身：文法排在句子前（「ように」不先出旅遊句「プレゼント用に」；評審 v15 P1-11）
     const gm0 = gm.length && ((App.profile().goals || []).includes('exam') || gm.some(g => g.nj === q));

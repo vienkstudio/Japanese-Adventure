@@ -52,6 +52,8 @@
   }
   // 已掌握：統一進度 App.state.learn（Learn）中，該級單字／文法狀態 ≥ review 的數量（與知識庫、複習同一份）
   function masteredCount(L) { const a = Learn.stats({ lv: L, type: 'v' }), b = Learn.stats({ lv: L, type: 'g' }); return a.known + b.known; }
+  // 已學：和學習分頁的「已學 n／m」同一個定義（最後一次答對，或已進入複習）
+  function studiedCount(L) { const LL = App.state.learn || {}; let n = 0; for (const id in LL) { const e = LL[id]; if (/^(v|g):/.test(id) && e && e.m && e.m.lv === L && (e.s === 'review' || e.s === 'mastered' || (e.reps > 0 && e.g > 0))) n++; } return n; }
   // 作答記進 Learn：第一次就答對＝本來就會（3 簡單）；之後答對 2；答錯 0
   function recordAns(q, L, ok) {
     if (!q.item) return;
@@ -344,10 +346,20 @@
       const real = B.words.filter(x => x.kj && x.pos === w.pos && !bad.has(x.kana) && Math.abs(x.kana.length - w.kana.length) <= 1).map(x => x.kana);
       const dis = [];
       const add = k => { if (dis.length < 3 && !dis.includes(k) && k !== w.kana && !bad.has(k)) dis.push(k); };
-      shuf(fake).slice(0, 2).forEach(add);
-      shuf(real).forEach(add);
+      // 干擾項照日檢：先用長音、促音、濁音、拗音只差一點的假讀音，不夠才用其他詞的讀音（同長度、同開頭優先）
       shuf(fake).forEach(add);
-      return build({ k: 'kanji', key: 'w' + w.i, ask: '畫線的字怎麼念？', body: `<div class="ch-big jp"><u>${esc(w.jp)}</u></div>`, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.kana, dis);
+      shuf(real).sort((a, b) => (b[0] === w.kana[0]) - (a[0] === w.kana[0])).forEach(add);
+      // 題目放進句子裡、畫線（文法例句或更多例句中最短、出現一次的那句）；找不到才只出單字
+      const M = window.MIND || {}, sents = [];
+      // 本級以下文法的例句優先（N4 題盡量不出 N1 句型的句子），其次較高級的短句
+      const pen = g => lvN(g.lv) >= 0 && lvN(g.lv) <= lvN(B.L) ? 0 : 1000;
+      (M.gram || []).forEach(g => { if (g.ex && g.ex[0]) sents.push([g.ex[0], pen(g)]); if (M.GEX) (M.GEX[g.id] || []).forEach(e => { if (e && e[0]) sents.push([e[0], pen(g)]); }); });
+      // 每日短文（本站原創）的句子：短文級數 ≤ 本級優先
+      const RD = window.READING && READING.daily;
+      if (Array.isArray(RD)) RD.forEach(a => { const al = a.lv === 'zero' ? 'N5' : String(a.lv || '').toUpperCase(), p = lvN(al) >= 0 && lvN(al) <= lvN(B.L) ? 0 : 1000; (a.p || []).forEach(pp => String(pp[0] || '').split(/(?<=[。！？])/).forEach(s => { s = s.trim(); if (s) sents.push([s, p]); })); });
+      const sn0 = sents.filter(([s, p]) => { const k = s.indexOf(w.jp); return k >= 0 && s.indexOf(w.jp, k + 1) < 0 && s.length <= (p ? 28 : 40) && !avoided(s) && !KJ.test(s[k - 1] || '') && !KJ.test(s[k + w.jp.length] || ''); }).sort((a, b) => a[1] + a[0].length - b[1] - b[0].length)[0], sn = sn0 ? sn0[0] : null;
+      const body = sn ? `<div class="ch-sent jp">${esc(sn.slice(0, sn.indexOf(w.jp)))}<u>${esc(w.jp)}</u>${esc(sn.slice(sn.indexOf(w.jp) + w.jp.length))}</div>` : `<div class="ch-big jp"><u>${esc(w.jp)}</u></div>`;
+      return build({ k: 'kanji', key: 'w' + w.i, ask: '畫線的字怎麼念？', body, explain: wordExplain(w), item: wordItem(w, B.L), mk: ['w', w.i] }, w.kana, dis);
     },
     // 表記：假名寫成漢字
     spell(B, used) {
@@ -561,7 +573,7 @@
       <div class="tabs ch-tabs" role="group" aria-label="選擇等級">${LVS.map(l => `<button type="button" data-lv="${l}" class="${l === L ? 'on' : ''}" aria-pressed="${l === L}">${l}<small>${sumStars(l) ? ` ⭐${sumStars(l)}` : ''}${c.pass[l] ? ' 🎓' : ''}</small></button>`).join('')}</div>
       <div class="panel ch-lv">
         <div class="ch-lvh"><span class="ch-badge" style="background:var(--${L.toLowerCase()})">${L}</span><b>${esc(LV_TIP[L])}</b></div>
-        <div class="ch-row"><span>已掌握</span><b>${pct}%</b><small class="muted">${got}／${tot} 個單字與文法</small></div>
+        <div class="ch-row"><span>已掌握</span><b>${pct}%</b><small class="muted">${got}／${tot} 個單字與文法・已學 ${studiedCount(L)} 個（隔天以上還記得才算掌握）</small></div>
         <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div style="width:${pct}%"></div></div>
         <div class="ch-row"><span>星數</span><b>⭐ ${sumStars(L)}／${TYPES.length * 3}</b><small class="muted">模擬考：${passed ? '🎓 合格' : mockBest != null ? `最佳 ${mockBest}%・未合格` : '尚未挑戰'}</small></div>
       </div>

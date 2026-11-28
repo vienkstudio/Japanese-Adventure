@@ -68,7 +68,7 @@
   L([r('biz', '商務日語', '💼', { navParent: 'path' }), r('biz-unit', '商務日語', '💼', { navParent: 'path' }), r('biz-read', '商務閱讀', '💼', { navParent: 'path' })],
     PH.concat(['data/biz/units-1.js', 'data/biz/units-2.js', 'data/biz/units-3.js', 'data/biz/units-4.js', 'data/reading/biz.js', 'js/biz.js']), ['css/biz.css']);
   // 場景包的練習（入口：js/classic.js 的 PathExtra）：情境任務 menu（practice.js）、對話／口說／單字測驗 drill（town.js）
-  L([r('menu', '情境任務', '🧾', { navParent: 'path' }), r('drill', '對話', '🎭', { navParent: 'path' })], SC.concat(['data/cards.js', 'data/menus.js'], PH, LO, ['js/town.js', 'js/practice.js']), ['css/world.css']);
+  L([r('menu', '情境任務', '🧾', { navParent: 'path' })], SC.concat(['data/cards.js', 'data/menus.js'], PH, LO, ['js/town.js', 'js/practice.js']), ['css/world.css']);
 })(Home.lazy);
 App.start();
 try { if ('serviceWorker' in navigator && location.protocol.startsWith('http') && window.self === window.top) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { }

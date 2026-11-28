@@ -62,8 +62,8 @@
   const needFor = id => id && id.startsWith('w:') ? loadLv(id.split(':')[1]) : Promise.resolve();
   const romaji = k => { try { if (!/^[ぁ-ゟ゠-ヿー・\s]+$/.test(k)) return ''; if (window.Phrase && Phrase.romaji) return Phrase.romaji(k); return window.ReviewAPI ? ReviewAPI.kanaToRomaji(k) : ''; } catch (e) { return ''; } };
   const isVerb = w => w.pos === 'v' || w.grp === 's';
-  const trackItem = it => it.kind === 'word' ? { id: 'word:' + it.jp, jp: it.jp, kana: it.kana, zh: it.zh, source: '知識庫 ' + it.lv }
-    : { id: 'gram:' + it.jp, jp: it.jp, zh: it.zh, source: '知識庫 ' + (it.lv || '') + ' 文法' };
+  const trackItem = it => it.kind === 'word' ? { id: 'word:' + it.jp, jp: it.jp, kana: it.kana, zh: it.zh, source: '辭典 ' + it.lv }
+    : { id: 'gram:' + it.jp, jp: it.jp, zh: it.zh, source: '辭典 ' + (it.lv || '') + ' 文法' };
 
   /* ---------------- 篩選／排序／分組 ---------------- */
   const has = (a, v) => Array.isArray(a) && a.length && a.includes(v);
@@ -238,7 +238,7 @@
   const homeOpen = lv => PR.home && PR.home[lv] !== undefined ? !!PR.home[lv] : lv === profLv();
   function renderHome(el) {
     const me = profLv();
-    const c = shell(el, 'home', [['知識庫', {}]]);
+    const c = shell(el, 'home', [['辭典', {}]]);
     const lvCard = lv => {
       const big = homeOpen(lv);
       const wl = learnedCount(lv, 'word'), gl = learnedCount(lv, 'gram'), wt = total(lv, 'word'), gt = total(lv, 'gram');
@@ -250,7 +250,7 @@
           <button type="button" class="kb-lvl" data-nav="db" data-kind="gram" data-lv="${lv}"><span>📗 文法</span><span>${gl}/${gt}</span>${bar(gl, gt)}</button>
           ${ready ? `<p class="kb-ready">✨ 已學 80%，可挑戰 ${LV[LVI[lv] + 1]}</p>` : ''}</div>` : ''}</div>`;
     };
-    c.innerHTML = `<h1 class="kb-h1">📚 知識庫</h1>
+    c.innerHTML = `<h1 class="kb-h1">📘 辭典</h1>
       ${nextCard()}
       <div class="kb-sec">各等級進度</div>
       ${LV.map(lvCard).join('')}
@@ -266,7 +266,7 @@
 
   /* ---------------- 等級頁 ---------------- */
   function renderLv(el, lv) {
-    const c = shell(el, lv, [['知識庫', {}], [lv, { p: 'lv', lv }]]);
+    const c = shell(el, lv, [['辭典', {}], [lv, { p: 'lv', lv }]]);
     const wl = learnedCount(lv, 'word'), gl = learnedCount(lv, 'gram'), wt = total(lv, 'word'), gt = total(lv, 'gram');
     c.innerHTML = `<h1 class="kb-h1"><i class="kb-dot ${lv.toLowerCase()}"></i>${lv}</h1>
       <div class="kb-lvc open"><div class="kb-lvb">
@@ -289,7 +289,7 @@
     DB = { kind, special: null };
     LIM = {}; PAGE = 0;
     const lvs = v.f.lv.length === 1 ? v.f.lv[0] : '多個等級';
-    const c = shell(el, (v.f.lv.length === 1 ? v.f.lv[0] : 'all') + '/' + kind, [['知識庫', {}], [lvs, v.f.lv.length === 1 ? { p: 'lv', lv: v.f.lv[0] } : {}], [KIND[kind].name, { p: 'db', kind }]]);
+    const c = shell(el, (v.f.lv.length === 1 ? v.f.lv[0] : 'all') + '/' + kind, [['辭典', {}], [lvs, v.f.lv.length === 1 ? { p: 'lv', lv: v.f.lv[0] } : {}], [KIND[kind].name, { p: 'db', kind }]]);
     c.innerHTML = `<h1 class="kb-h1">${KIND[kind].icon} ${lvs} ${KIND[kind].name}<small class="kb-cnt"></small></h1>
       ${kind === 'gram' ? nextCard(true, v.f.lv.length === 1 ? v.f.lv[0] : null) : ''}
       <div class="kb-views" role="tablist">${VIEWS.map(x => `<button type="button" role="tab" class="kb-vt${v.view === x[0] ? ' on' : ''}" data-view="${x[0]}" aria-selected="${v.view === x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join('')}</div>
@@ -309,7 +309,7 @@
     DB = { kind: 'mix', special: which };
     LIM = {}; PAGE = 0;
     const t = which === 'fav' ? '⭐ 收藏' : '🕘 最近開啟';
-    const c = shell(el, which, [['知識庫', {}], [t.slice(2), { p: which }]]);
+    const c = shell(el, which, [['辭典', {}], [t.slice(2), { p: which }]]);
     c.innerHTML = `<h1 class="kb-h1">${t}</h1><div class="kb-body"><p class="muted center">載入中…</p></div>`;
     let ids = which === 'fav' ? null : ST.recent.slice();
     const favLv = Learn.views(e => e.fav).map(v => v.lv).filter(l => LV.includes(l));
@@ -409,7 +409,7 @@
   /* ---------------- 動詞變化頁 ---------------- */
   function renderConj(el) {
     DB = { kind: 'conj', special: 'conj' };
-    const c = shell(el, 'conj', [['知識庫', {}], ['動詞變化', { p: 'conj' }]]);
+    const c = shell(el, 'conj', [['辭典', {}], ['動詞變化', { p: 'conj' }]]);
     const KN = { form: '變化形', tense: '時態', aspect: '體貌' };
     c.innerHTML = `<h1 class="kb-h1">🔁 動詞變化<small class="kb-cnt">${CONJ.length} 項</small></h1>
       ${['form', 'tense', 'aspect'].map((k, i) => { const items = CONJ.filter(x => x.ref.kind === k); return items.length ? `<section class="kb-grp open"><div class="kb-gh static"><span class="kb-gn">${KN[k]}</span><span class="kb-gc">${items.length}</span></div><div class="kb-list">${items.map(rowHTML).join('')}</div></section>` : ''; }).join('')}`;
@@ -420,14 +420,15 @@
   function formTable(f) { return `<table class="kb-ft">${M.CONJ.filter(c => f[c.id]).map(c => `<tr><th><button type="button" class="kb-lnk" data-open="cj:${c.id}">${esc(c.name)}</button></th><td class="jp">${esc(f[c.id])}${sayB(f[c.id], 1)}</td></tr>`).join('')}</table>`; }
   function itemHTML(it, mode) {
     const s = stOf(it.id), r = it.ref;
-    const crumb = mode === 'full' ? crumbs([['知識庫', {}], ...(it.lv ? [[it.lv, { p: 'lv', lv: it.lv }]] : []), [KIND[it.kind].name, it.kind === 'conj' ? { p: 'conj' } : { p: 'db', kind: it.kind, lv: it.lv }], [it.jp, {}]]) : '';
+    const crumb = mode === 'full' ? crumbs([['辭典', {}], ...(it.lv ? [[it.lv, { p: 'lv', lv: it.lv }]] : []), [KIND[it.kind].name, it.kind === 'conj' ? { p: 'conj' } : { p: 'db', kind: it.kind, lv: it.lv }], [it.jp, {}]]) : '';
     let props = `${lvB(it.lv)}`, main = '', more = '';
     if (it.kind === 'word') {
       props += `<span class="kb-pp">${esc(scName(it.sc[0]))}</span>${it.sc.slice(1).filter(x => SCc[x]).map(x => `<span class="kb-pp">${esc(scName(x))}</span>`).join('')}<span class="kb-pp">${esc(M.POS[it.pos] || '')}${it.grp ? '・' + esc(M.GRP[it.grp] || '') : ''}</span>${it.core ? '<span class="kb-pp core">核心常用</span>' : ''}`;
       const ro = romaji(it.kana);
       const og = window.Loan ? Loan.get(it.jp) : null;
       main = `<dl class="kb-dl"><dt>讀音</dt><dd class="jp kb-kana">${esc(it.kana)}</dd>${ro ? `<dt>羅馬字</dt><dd>${esc(ro)}</dd>` : ''}<dt>中文</dt><dd>${esc(it.zh)}</dd>${og && og.src ? `<dt>語源</dt><dd>🌐 ${esc(og.name)}：<b lang="en">${esc(og.src)}</b>${og.note ? `<small class="muted">（${esc(og.note)}）</small>` : ''}</dd>` : ''}${it.raw !== it.jp ? `<dt>寫法</dt><dd class="jp">${esc(it.raw)}</dd>` : ''}</dl>`;
-      const ex = it.jp.length >= 2 ? M.gram.find(g => g.ex && g.ex[0] && g.ex[0].includes(it.jp)) : null;
+      // 例句先挑基本用法：文法級數低（N5 起）、句子短的優先，不拿高級句型的例句當第一句
+      const ex = it.jp.length >= 2 ? M.gram.filter(g => g.ex && g.ex[0] && g.ex[0].includes(it.jp)).map(g => [(['N5', 'N4', 'N3', 'N2', 'N1'].indexOf(g.lv) + 1 || 6) * 100 + g.ex[0].length, g]).sort((a, b) => a[0] - b[0]).map(x => x[1])[0] || null : null;
       if (ex) main += `<div class="kb-ex"><div class="kb-exj jp">${esc(ex.ex[0])}${sayB(ex.ex[0], 1)}</div><div class="muted">${esc(ex.ex[1] || '')}</div><button type="button" class="kb-lnk" data-open="${esc(ex.id)}">出自文法 ${esc(ex.pat)}</button></div>`;
       if (isVerb(it) && M.conjugate) { const f = M.conjugate(it.jp, it.grp); if (f) more += tog('conj', '🔁 動詞變化表', formTable(f), false); }
       else if (M.adjForms) { const a = M.adjForms(it.jp, it.pos); if (a) more += tog('adj', '🔁 形容詞變化', `<table class="kb-ft">${Object.keys(a).map(k => `<tr><th>${esc(k)}</th><td class="jp">${esc(a[k])}</td></tr>`).join('')}</table>`, false); }
@@ -494,7 +495,7 @@
     needFor(id).then(() => {
       if (!el.isConnected) return;
       const it = getItem(id);
-      const c = shell(el, it ? (it.lv ? it.lv + '/' + it.kind : it.kind) : '', [['知識庫', {}]]);
+      const c = shell(el, it ? (it.lv ? it.lv + '/' + it.kind : it.kind) : '', [['辭典', {}]]);
       ROOT.classList.add('full');
       if (!it) { c.innerHTML = '<p class="kb-empty">找不到這個項目。</p>'; return; }
       touch(id);

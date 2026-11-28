@@ -6,7 +6,7 @@
 (function () {
   const KEY = 'jpQuest.v1';
   // App 版本（V主.次.修）：和 sw.js 的 VERSION（'jpq-v' + 版本）必須一致，tools/check-version.mjs 會檢查；規則見 CONTRACT.md「版本編號」
-  const APP_VERSION = '3.18.0';
+  const APP_VERSION = '3.19.0';
   const SCHEMA = 2;
   const MIGS = [];
   const DEF = { v: SCHEMA, xp: 0, cleared: {}, learn: {}, log: [], streak: { last: null, days: 0, freezeWeek: null }, sceneDone: {} };
@@ -370,16 +370,20 @@
    * 標準結果畫面（另支援 note：額外說明 HTML；ok：沒有 back/next 時的確定鈕文字）
    * opts: {title, stars, correct, total, gained, wrong:[trackerItem], retry:fn, next:{label, route, params}, back:{label, route, params}}
    */
+  //   和活動框架的結算（Activity endScreen）同一套版面：大表情＋標題＋答對／答對率／明天到期／連勝＋星星＋XP＋要再記的字
   function showResult(opts) {
-    const stars = [0, 1, 2].map(i => `<span class="s">${i < (opts.stars || 0) ? '⭐' : '☆'}</span>`).join('');
-    const wrong = (opts.wrong || []);
-    const html = `<div class="result">
-      <div class="stars">${stars}</div>
-      <h2>${esc(opts.title || (opts.stars ? '過關！' : '再試一次'))}</h2>
-      ${opts.total != null ? `<p>答對 <b>${opts.correct}</b> / ${opts.total}</p>` : ''}
-      ${opts.gained ? `<p class="xpgain">+${opts.gained} XP</p>` : ''}
+    const wrong = (opts.wrong || []), n = opts.stars || 0, tot = opts.total, rate = tot ? Math.round((opts.correct || 0) / tot * 100) : null;
+    if (!document.querySelector('link[href="css/activity.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'css/activity.css'; document.head.appendChild(l); }
+    let dueT = 0; try { dueT = window.Learn && Learn.dueTomorrow ? Learn.dueTomorrow() : 0; } catch (e) { }
+    const sk = (window.App && App.streakInfo) ? App.streakInfo().days : 0;
+    const html = `<div class="result ac-end${n >= 3 ? ' ac-gold' : ''}">
+      <p class="ac-big" aria-hidden="true">${n >= 2 || (rate != null && rate >= 70) ? '🎉' : n ? '🙂' : '💪'}</p>
+      <h2>${esc(opts.title || (n ? '過關！' : '再試一次'))}</h2>
+      <div class="ac-sum">${tot != null ? `<div><b>${opts.correct}／${tot}</b><small>答對</small></div><div><b>${rate}%</b><small>答對率</small></div>` : ''}<div><b>${dueT}</b><small>明天到期</small></div><div><b>🔥${sk}</b><small>連勝天數</small></div></div>
+      <div class="ac-stars" role="img" aria-label="${n} 顆星">${[0, 1, 2].map(i => `<span class="ac-star${i < n ? ' on' : ''}" style="--i:${i}" aria-hidden="true">${i < n ? '⭐' : '☆'}</span>`).join('')}</div>
+      ${opts.gained ? `<p class="ac-xp">+${opts.gained} XP</p>` : ''}
       ${opts.note ? `<p class="result-note">${opts.note}</p>` : ''}
-      ${wrong.length ? `<div class="muted">答錯的已自動加入 📌不會清單：</div><div class="chips">${wrong.map(w => `<span class="chip">${esc(w.jp)} <small>${esc(w.zh || w.romaji || '')}</small></span>`).join('')}</div>` : ''}
+      ${wrong.length ? `<div class="ac-wrong"><p>要再記一下（已排進複習）</p><ul>${wrong.slice(0, 6).map(w => `<li><span class="jp" lang="ja">${esc(w.jp)}</span><small>${esc(w.zh || w.romaji || '')}</small></li>`).join('')}</ul></div>` : ''}
     </div>`;
     const btns = [];
     if (opts.retry) btns.push({ label: '🔄 再玩一次', onClick: opts.retry });
