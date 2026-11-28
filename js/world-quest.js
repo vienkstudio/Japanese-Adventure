@@ -10,7 +10,6 @@
   const W = window.WORLD, { X, Q, st, lv, li, tx, item } = World, esc = App.esc, G = X.G;
   const key = (shop, mid) => `w:${shop.id}:${mid}`;
   const starsOf = (shop, mid) => App.stars(key(shop, mid));
-  const sceneOf = s => s.scene ? (window.SCENES || []).find(x => x.id === s.scene) : null;
   const yen = n => '¥' + n.toLocaleString('en-US');
 
   /* ---------------- 主要任務：每間店一個（買東西／點餐／辦手續），完成就蓋御朱印 ---------------- */
@@ -70,10 +69,8 @@
      ========================================================= */
   function missionsOf(s) {
     if (s._m) return s._m;
-    const m = [];   // 只留旅伴請託、對話、狀況題（其餘和主要任務、問店員重複）
+    const m = [];   // 只留旅伴請託、狀況題（對話在學習 › 旅遊的場景裡）
     (s.quests || []).forEach(q => m.push({ id: 'q-' + q.id, type: 'shop', icon: s.kind === 'eat' ? '🍽️' : s.kind === 'service' ? '🛎️' : '🛍️', title: q.title, sub: '旅伴的請託', quest: q }));
-    const dl = (s.dialogues && s.dialogues.length ? s.dialogues : (sceneOf(s) || {}).dialogues || []).slice(0, 2);
-    dl.forEach((d, i) => m.push({ id: 'talk' + i, type: 'talk', icon: '🎭', title: '對話：' + (d.title || '第 ' + (i + 1) + ' 段'), sub: '完整走一遍對話', dialog: d }));
     if (s.scene) m.push({ id: 'ev', type: 'event', icon: '⚡', title: '狀況題', sub: '旅途中的突發狀況' });
     return (s._m = m);
   }
@@ -165,35 +162,6 @@
         } else X.paintBar();
       };
       m.brief();
-    },
-    talk(m) {
-      const d = m.def.dialog, s = m.shop;
-      const run = X.flow(async () => {
-        for (let i = 0; i < d.steps.length; i++) {
-          const stp = d.steps[i], me = stp.speaker === '你', opts = App.shuffle(stp.choices);
-          await X.step(`<p class="wd-goal">🎭 ${esc(d.title || '')}　${i + 1}/${d.steps.length}</p>
-            ${me ? `<div class="wd-note">🙋 ${esc(stp.zh)}</div>` : X.bubble({ who: stp.speaker, emoji: stp.emoji, clerk: /店|員|服務|櫃台/.test(stp.speaker) }, stp)}
-            <div class="wd-opts">${opts.map((o, j) => `<button type="button" class="wd-opt" data-i="${j}">${tx(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>
-            <div class="wd-acts"><button type="button" class="btn primary" id="wd-ok" hidden>繼續 ➜</button></div>`, (el, done) => {
-            if (!me) { App.speak(stp.jp); X.bindSpk(el, stp); }
-            const fb = el.querySelector('.wd-fb');
-            el.querySelectorAll('.wd-opt').forEach(b => b.onclick = e => {
-              if (e.target.closest('.wd-peek')) return;
-              const o = opts[+b.dataset.i];
-              fb.className = 'wd-fb ' + (o.correct ? 'ok' : 'ng'); fb.textContent = (o.correct ? '✓ ' : '✗ ') + o.feedback;
-              if (!o.correct) { b.disabled = true; b.classList.add('ng'); m.mistakes++; G.sfx('ng'); X.mood('puzzled', 'え？'); ((w) => Learn.record(w.id, 0, { src: 'world', item: w }))(item(stp.choices.find(c => c.correct), s.name, 'phrase')); return; }
-              b.classList.add('ok'); G.sfx('ok'); G.bump('ok'); App.speak(o.jp); X.mood('happy');
-              el.querySelectorAll('.wd-opt').forEach(x => { x.disabled = true; });
-              el.querySelector('#wd-ok').hidden = false;
-            });
-            el.querySelector('#wd-ok').onclick = () => done();
-          });
-        }
-        Q.on('said', { intent: 'talk', id: m.def.id });
-        finish();
-      });
-      m.text = () => '對話中';
-      run().then(() => { if (M === m) { M = null; X.paintBar(); } });
     },
     event(m) { const p = X.PARAMS; M = null; App.go('event', { r: p.r, d: p.d, s: p.s }); }
   };

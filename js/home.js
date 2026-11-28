@@ -157,7 +157,7 @@
   const TILES = [['🔤', '五十音', '平假名・片假名，依行學', 'path', { tab: 'kana' }], ['🧳', '旅遊場景', '和店員對話、聽力、選句', 'path', { tab: 'travel' }],
     ['📝', '日檢', 'N5–N1 單字與文法', 'path', { tab: 'exam' }], ['💼', '商務', '敬語、電話、Email、開會', 'path', { tab: 'work' }],
     ['📚', '閱讀', '短文、新聞、匯入文章', 'read', {}], ['🎵', '歌曲', '熱門歌跟唱、看懂歌詞', 'songs', {}],
-    ['🔍', '查單字', '日文、假名、羅馬字、中文', 'lookup', {}], ['🎴', '字卡複習', '翻卡複習、不會清單', 'cards', {}]];
+    ['🔍', '查單字', '日文、假名、羅馬字、中文', 'lookup', {}], ['🔁', '複習', '', 'review', {}]];   // 複習＝到期佇列（字卡牌組在「我的」）
   let lvOpen = false;
   function render(el) {
     const p = App.profile();
@@ -182,8 +182,7 @@
       ${lvOpen ? `<div class="hm-lvs" role="group" aria-label="選程度">${App.LV_IDS.map(id => `<button type="button" data-lv="${id}" class="${p.lv === id ? 'on' : ''}" aria-pressed="${p.lv === id}">${LV_ICON[id]} ${esc(App.LV_NAMES[id])}${LV_N[id] ? ' ' + LV_N[id] : ''}</button>`).join('')}</div>` : ''}
       ${goalHTML}
       ${contHTML()}
-      ${dueAll ? `<button type="button" class="hm-cont" id="hm-due"><span class="ic" aria-hidden="true">🔁</span><span><b>${dueAll} 個字詞到期該複習</b><small>到期複習</small></span><span aria-hidden="true">›</span></button>` : ''}
-      <div class="hm-tiles">${TILES.map(([ic, n, ds], i) => `<button type="button" class="hm-tile" data-tile="${i}"><span class="ic" aria-hidden="true">${ic}</span><b>${n}</b><small>${ds}</small></button>`).join('')}</div>
+      <div class="hm-tiles">${TILES.map(([ic, n, ds, r], i) => { const rv = r === 'review', dn = rv && window.Learn && Learn.dueCount ? Learn.dueCount() : 0, tm = rv && !dn && window.Learn && Learn.dueTomorrow ? Learn.dueTomorrow() : 0; return `<button type="button" class="hm-tile${rv && dn ? ' hot' : ''}" data-tile="${i}"><span class="ic" aria-hidden="true">${ic}</span><b>${n}${rv && dn ? ` <em class="hm-badge">${dn}</em>` : ''}</b><small>${rv ? (dn ? `今天 ${dn} 個到期` : tm ? `今天沒有到期・明天 ${tm} 個` : '今天沒有到期 ✓') : ds}</small></button>`; }).join('')}</div>
       <div class="hm-foot"><button type="button" class="btn ghost" id="hm-st">⚙️ 設定</button><button type="button" class="btn ghost" id="hm-new">🔄 新開始</button></div>
     </section>`;
     const q = s => el.querySelector(s), on = (s, f) => { const x = q(s); if (x) x.onclick = f; };
@@ -194,7 +193,6 @@
     on('#hm-main', () => App.go('today', Object.assign({ goal: q('#hm-main').dataset.g2 }, d.done && d.applied ? { more: 1 } : {})));
     on('#hm-goal', () => { const lg = lessonGoals(p), i = lg.indexOf(curGoal(p)); d.goal = lg[(i + 1) % lg.length]; App.save(); render(el); });
     on('#hm-cont', () => { const c = window.NAV && NAV.cont(); if (c) App.go(c.name, c.params || {}); });
-    on('#hm-due', () => App.go('review'));
     el.querySelectorAll('[data-tile]').forEach(b => b.onclick = () => { const t = TILES[+b.dataset.tile]; App.go(t[3], Object.assign({}, t[4])); });
     on('#hm-st', () => App.go('settings'));
     on('#hm-new', () => { restart = true; document.body.classList.add('ob-mode'); onboard(el, true); });

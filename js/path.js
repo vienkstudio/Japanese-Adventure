@@ -32,7 +32,8 @@
   const seq = list => list.reduce((p, s) => p.then(() => App.loadScript(s)), Promise.resolve());
   const jp0 = s => window.Learn && Learn.jp0 ? Learn.jp0(s) : String(s || '');
   const normP = s => window.Learn && Learn.normP ? Learn.normP(s) : String(s || '');
-  const learned = id => { const e = Learn.get(id); return !!e && (e.s !== 'new' || e.reps > 0); };
+  // 學會：最後一次作答答對（答錯、小考沒過的不算），或已進入複習／掌握
+const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review' || e.s === 'mastered' || (e.reps > 0 && e.g > 0)); };
   const fresh = id => !learned(id);
   const stored = id => App.stars ? App.stars('path:' + id) : 0;
   const segs = z => String(z || '').replace(/（[^）]*）|\([^)]*\)/g, '').split(/[；;，,、／/・。]/).map(s => s.trim()).filter(Boolean);
@@ -394,11 +395,11 @@
 
   /* ---------------- 單元列表（給路線頁與其他組） ---------------- */
   // stars：只看「整個單元做完」時的獎勵（App.reward('path:<id>')）；中途離開不給星
-  // complete：拿過星，或（沒有實戰步驟的單元）每張卡都學過
+  // complete：有實戰步驟的看星（實戰做完才給）；其他看每一項都學會（小考答錯的不算，星數只代表做過）
   function row(id, icon, title, sub, ids, extra) {
     const total = ids ? ids.length : null, done = ids ? ids.filter(learned).length : null, st = stored(id);
     const o = Object.assign({ id, icon, title, sub, total, done, stars: st }, extra || {});
-    if (o.complete == null) o.complete = st > 0 || (!o.hasShop && !!total && done >= total);
+    if (o.complete == null) o.complete = o.hasShop ? st > 0 : !!total && done >= total;
     return o;
   }
   const kanaDone = () => window.Learn && Learn.kanaLearned ? Learn.kanaLearned().length : 0;
@@ -508,8 +509,9 @@
   }
   function renderPath(el, params) {
     params = params || {};
-    if ((params.tab || params.goal) === 'song') return App.go('songs');
-    if ((params.tab || params.goal) === 'fun') return App.go('read');   // 閱讀只有一個地方：閱讀頁（短文、新聞、我的文章）
+    // 歌曲、閱讀是獨立頁：換掉這筆歷史紀錄再顯示（不留 path 紀錄，否則按 ← 回來又被轉走、出不去）
+    const to = { song: 'songs', fun: 'read' }[params.tab || params.goal];
+    if (to) { App.replaceEntry(to, {}); return App.go(to, {}, true); }   // 閱讀只有一個地方：閱讀頁（短文、新聞、我的文章）
     const T = tabs();
     if (params.goal && !params.tab) params = Object.assign({}, params, { tab: params.goal });   // 相容 {goal}
     if (params.tab && T.all.some(t => t[0] === params.tab)) UI.tab = params.tab;
@@ -618,7 +620,7 @@
     const pct = Math.round(d / ids.length * 100);
     const list = units(goalOf(u), { lv: u.lv, all: true }), k = list.findIndex(x => x.id === u.id), after = list.slice(k + 1).filter(x => !x.noNext);
     const nxt = u.kind === 'biz' ? after[0] : (after.find(x => !x.route && !x.complete) || after[0]);
-    const complete = st > 0 || (!u.hasShop && d >= ids.length);
+    const complete = u.hasShop ? st > 0 : d >= ids.length;
     const pr = u.hasShop && !complete && d >= ids.length ? `句子 ${d}／${ids.length}・還差：進店用出來` : `已學 ${d}／${ids.length}`;
     let shops = '', sibs = '';
     if (u.kind === 'travel' && u.pack) {

@@ -539,3 +539,5 @@ body.ob-mode .nv-drawer,body.ob-mode .nv-menu,body.ob-mode .nv-crumb{display:non
 [data-fs=xl] .hm-tile .ic{font-size:1.2em}
 [data-fs=xl] .hm-foot .btn{min-height:40px}
 [data-fs=xl] .hm{gap:var(--sp-2)}
+.hm-tile.hot{box-shadow:inset 0 0 0 2px var(--pri),var(--shadow)}
+.hm-badge{display:inline-block;min-width:1.5em;padding:0 6px;border-radius:999px;background:var(--pri);color:var(--on-pri);font-style:normal;font-size:var(--fs-xs);text-align:center;vertical-align:middle}

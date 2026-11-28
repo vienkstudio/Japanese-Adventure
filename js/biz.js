@@ -145,35 +145,18 @@
   const secCount = P => (P && P.n) || Math.ceil(((P && P.cards) || []).length / 12) + 2;
   const doneCount = P => ((P && P.done) || []).filter(Boolean).length;
 
-  /* ================= 路由 biz：單元列表 ================= */
+  /* ================= 路由 biz：商務閱讀（情境只在「學習 › 商務」分頁，這裡不重列） ================= */
   function renderList(el) {
     if (!needData(el, 'biz', {}, renderList)) return;
-    const p = B.progress(), nx = B.next(), lvNow = String(prof().lv || '').toUpperCase();
-    const units = META.map(m => unitOf(m.id)).filter(Boolean);
     const arts = window.BIZ_READING || [];
     el.innerHTML = `<div class="bz">
-      <div class="bz-hero">
-        <div class="bz-hero-t"><span class="bz-hero-i">💼</span><div><h2>商務日語</h2><p class="muted">真實職場說法：敬語、電話、Email、開會、報連相</p></div></div>
-        <div class="bz-prog"><div class="bar"><div style="width:${Math.round(p.done / p.total * 100)}%"></div></div><span>${p.done} / ${p.total} 個情境完成</span></div>
-        ${nx.route === 'biz-unit' ? `<button type="button" class="btn primary block bz-go" data-unit="${esc(nx.params.id)}">▶ ${esc(nx.label.replace(/^商務日語(複習)?：/, ''))}<small>${esc(nx.sub)}</small></button>` : ''}
-      </div>
-      <h3 class="bz-sec">情境</h3>
-      <div class="bz-units">${units.map((u, i) => {
-        const s = starsOf(u.id), P = runOf(u.id);
-        return `<button type="button" class="bz-unit${s ? ' done' : ''}" data-unit="${esc(u.id)}">
-          <span class="bz-u-i">${u.icon}</span>
-          <span class="bz-u-tx"><b>${esc(u.title)}</b><small>${esc(u.zh)}</small>
-            <span class="bz-u-meta">${lvB(u.lv)}${P ? `<span class="bz-rec">續做 ${doneCount(P)}/${secCount(P)}</span>` : u.lv === lvNow ? '<span class="bz-rec">適合你</span>' : ''}<span class="bz-stars" aria-label="${s} 星">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span>
-        </button>`;
-      }).join('')}</div>
-      <h3 class="bz-sec">商務閱讀</h3>
+      <div class="bz-hero"><div class="bz-hero-t"><span class="bz-hero-i">💼</span><div><h2>商務閱讀</h2><p class="muted">職場短文：公告、Email、會議紀錄</p></div></div></div>
       <div class="bz-arts">${arts.map(a => {
         const s = rStars(a.id);
         return `<button type="button" class="bz-art${s ? ' done' : ''}" data-art="${esc(a.id)}"><span class="bz-u-i">${a.icon}</span>
           <span class="bz-u-tx"><b class="jp">${esc(a.title)}</b><small>${esc(a.zh)}</small><span class="bz-u-meta">${lvB(a.lv.toUpperCase())}<span class="bz-stars">${'⭐'.repeat(s)}${'☆'.repeat(3 - s)}</span></span></span></button>`;
       }).join('')}</div>
     </div>`;
-    el.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => App.go('biz-unit', { id: b.dataset.unit }));
     el.querySelectorAll('[data-art]').forEach(b => b.onclick = () => App.go('biz-read', { id: b.dataset.art }));
   }
 
@@ -313,7 +296,7 @@
     const bindHome = () => {
       el.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => begin(+b.dataset.sec));
       const k = el.querySelector('[data-skipcards]'); if (k) k.onclick = skipCards;
-      const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('biz');
+      const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('path', { tab: 'work' });
     };
     // 單元首頁：小節進度（可中途離開，回來從未完成的小節繼續）
     if (R.cur < 0) {
@@ -485,18 +468,18 @@
     const i = META.findIndex(m => m.id === u.id), nx = META[i + 1];
     const el = document.getElementById('main');
     if (el && onRoute('biz-unit')) el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${u.icon}</div><h2>${esc(u.title)}</h2><p class="bz-stars" aria-label="${stars} 星">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p><p>完成！答對 ${P.ok}／${P.total}${R.best >= 2 ? `・最佳連擊 🔥${R.best}` : ''}</p>
-      <p><button type="button" class="btn" data-again>🔄 再做一次</button><button type="button" class="btn primary" data-list>情境列表</button></p></div></div>`;
+      <p><button type="button" class="btn" data-again>🔄 再做一次</button><button type="button" class="btn primary" data-list>回商務</button></p></div></div>`;
     try { const G = window.Game; if (G) { G.sfx(stars >= 2 ? 'win' : 'star'); if (stars >= 2 && G.confetti && !(G.reduced && G.reduced())) G.confetti(70); } } catch (e) { }
     if (el) {
       const a = el.querySelector('[data-again]'); if (a) a.onclick = () => renderUnit(el, { id: u.id });
-      const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('biz');
+      const l = el.querySelector('[data-list]'); if (l) l.onclick = () => App.go('path', { tab: 'work' });
     }
     App.showResult({
       title: stars === 3 ? '完美！商務達人' : stars === 2 ? '過關！' : '完成！再練一次會更好',
       stars, correct: P.ok, total: P.total, gained: r.gained, wrong: P.wrong.slice(0, 8),
       note: `<span class="muted">對話 ${u.dialogue.steps.length} 輪＋Email ${u.email.blanks.length} 格＋測驗 ${u.quiz.length} 題・新卡片記住 ${P.known} 張</span>`,
       retry: () => { const m = document.getElementById('main'); if (m) renderUnit(m, { id: u.id }); },
-      back: { label: '情境列表', route: 'biz' },
+      back: { label: '回商務', route: 'path', params: { tab: 'work' } },
       next: nx ? { label: '下一個情境 ➜', route: 'biz-unit', params: { id: nx.id } } : { label: '商務閱讀 ➜', route: 'biz' }
     });
   }
@@ -562,7 +545,7 @@
       const arts = window.BIZ_READING || [], k = arts.findIndex(x => x.id === A.id), nx = arts[k + 1];
       el.innerHTML = `<div class="bz"><div class="card bz-card bz-intro"><div class="bz-intro-i">${A.icon}</div><h2 class="jp">${esc(A.title)}</h2><p>讀完了！</p></div></div>`;
       App.showResult({ title: stars === 3 ? '全對！' : '讀完了！', stars, correct: S.ok, total: n, gained: r.gained,
-        retry: () => renderRead(el, params), back: { label: '商務日語', route: 'biz' },
+        retry: () => renderRead(el, params), back: { label: '商務閱讀', route: 'biz' },
         next: nx ? { label: '下一篇 ➜', route: 'biz-read', params: { id: nx.id } } : null });
       return;
     }

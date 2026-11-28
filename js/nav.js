@@ -237,7 +237,7 @@
     const k = sec.id + ':g', open = OPEN.has(k);
     if (sec.group === 'packs') return `<details class="nv-g" data-g="${k}"${open || (curName === 'path-unit' && /^tr-/.test(String(curP.id || ''))) ? ' open' : ''}><summary>🧳 場景包（14）</summary>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}</details>`;
     if (sec.group === 'packsFlat') return `<p class="nv-lab">🏫 場景包</p>${packs().map(([id, ic, n]) => nodeBtn({ route: 'path-unit', params: { id: 'tr-' + id }, icon: ic, name: n }, curName === 'path-unit' && String(curP.id || '').startsWith('tr-' + id))).join('')}<p class="nv-lab">🧰 工具</p>`;
-    if (sec.group === 'biz') return nodeBtn({ route: 'biz', icon: '🗂️', name: '商務情境與文章' }, curName === 'biz');
+    if (sec.group === 'biz') return nodeBtn({ route: 'biz', icon: '🗂️', name: '商務閱讀' }, curName === 'biz');
     if (sec.group === 'levels') return `<details class="nv-g" data-g="${k}"${open ? ' open' : ''}><summary>🪜 N5–N1</summary>${LVL.map(L => nodeBtn({ route: 'path', params: { tab: 'exam', lv: L }, icon: '🪜', name: L + ' 單元' }, curName === 'path' && String(curP.lv || '').toUpperCase() === L)).join('')}</details>`;
     if (sec.group === 'kana') {
       const KU = window.Path && Path.units ? (() => { try { return Path.units('kana'); } catch (e) { return []; } })() : [];
@@ -319,7 +319,7 @@
     }
     let cb = document.getElementById('nvCrumb');
     const logo = top.querySelector('.logo');
-    if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => { const L = locate(curName, curP); if (!L || !L.sec) return; if (L.goal) App.go('path', { tab: L.goal.id }); else App.go(L.sec.route); }; if (logo) logo.after(cb); else top.appendChild(cb); }
+    if (!cb) { cb = document.createElement('button'); cb.id = 'nvCrumb'; cb.type = 'button'; cb.className = 'nv-crumb'; cb.onclick = () => { const L = locate(curName, curP); if (!L || !L.sec) return; if (L.goal) App.go(L.goal.route || 'path', L.goal.route && L.goal.route !== 'path' ? (L.goal.params || {}) : { tab: L.goal.id }); else App.go(L.sec.route); }; if (logo) logo.after(cb); else top.appendChild(cb); }
     const c = crumb(curName, curP);
     const L0 = locate(curName, curP), xl = document.documentElement.dataset.fs === 'xl';
     cb.textContent = xl && L0 && L0.sec ? where(L0).icon + ' ›' : c; cb.hidden = !c || /^(home|path|lookup|me)$/.test(curName); cb.setAttribute('aria-label', c ? '目前位置：' + c + '（回上層）' : '');
