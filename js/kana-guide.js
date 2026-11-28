@@ -97,7 +97,7 @@
     const then = params.then || '';
     // 下一步：今日課；或路線上下一個還沒學完的分行（あ行、か行都學過就不再寫「第一課」）
     const nx = (() => { try { return window.Path && Path.nextUnit ? Path.nextUnit('kana') : null; } catch (e) { return null; } })();
-    const startTxt = then === 'today' ? '開始今天的課' : then ? '回到單元' : nx ? '開始 ' + String(nx.title).split('：')[0] : '開始あ行';
+    const startTxt = then === 'today' ? '開始今日練習' : then ? '回到這一行' : nx ? '開始 ' + String(nx.title).split('：')[0] : '開始あ行';
     const goStart = () => then && then !== 'today' ? App.go('path-unit', { id: then }) : then === 'today' ? App.go('today') : App.go('path-unit', { id: nx ? nx.id : 'kana-k1' });
     if (name === 'kana-guide') {
       next.innerHTML = `<button type="button" class="btn primary block" data-n="drill">下一步：50 音訓練表 →</button>`;

@@ -216,7 +216,7 @@
   }
   function gramRow(g) {
     return `<details class="lk-g"><summary><b lang="ja">${esc(g.pat)}</b><span class="zh">${esc(g.zh || '')}</span>${lvB(g.lv)}</summary>
-      <div class="lk-gd">${g.conn ? `<p><small>接續</small> ${esc(g.conn)}</p>` : ''}${g.ex.slice(0, 2).map(e => `<p class="ex"><span lang="ja">${esc(e[0])}</span><small>${esc(e[1] || '')}</small></p>`).join('')}${g.note ? `<p class="nt">💡 ${esc(g.note)}</p>` : ''}${g.unit ? `<p class="nt">出自商務單元：${esc(g.unit)}</p>` : ''}${g.id ? `<button type="button" class="lk-all" data-kb="${esc(g.id)}">完整說明與例句 ›</button>` : ''}</div></details>`;
+      <div class="lk-gd">${g.conn ? `<p><small>接續</small> ${esc(g.conn)}</p>` : ''}${g.ex.slice(0, 2).map(e => `<p class="ex"><span lang="ja">${esc(e[0])}</span><small>${esc(e[1] || '')}</small></p>`).join('')}${g.note ? `<p class="nt">💡 ${esc(g.note)}</p>` : ''}${g.unit ? `<p class="nt">出自商務情境：${esc(g.unit)}</p>` : ''}${g.id ? `<button type="button" class="lk-all" data-kb="${esc(g.id)}">完整說明與例句 ›</button>` : ''}</div></details>`;
   }
   function gramView(view) {
     const isG = view === 'gram';

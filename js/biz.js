@@ -343,7 +343,7 @@
     } else if (s.k === 'o') {
       body = orderHTML(s) + (s.done ? nextBtn(endLabel('下一題 ➜')) : '');
     }
-    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">第 ${R.cur + 1}/${R.secs.length} 段・${R.i - S0.from + 1} / ${S0.to - S0.from}</p></div>`;
+    el.innerHTML = `<div class="bz bz-run">${head}${body}<p class="bz-count muted">${R.cur + 1}/${R.secs.length}・${R.i - S0.from + 1} / ${S0.to - S0.from}</p></div>`;
     bindCommon(el);
     const nb = el.querySelector('[data-next]'); if (nb) nb.onclick = () => go(R.i + 1);
     el.querySelectorAll('[data-skipcards]').forEach(b => b.onclick = skipCards);

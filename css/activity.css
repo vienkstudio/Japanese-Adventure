@@ -145,3 +145,4 @@
 .sc-b em{font-style:normal;font-size:var(--fs-sm)}
 .sc-say{flex:none;align-self:center;width:40px;height:40px;border-radius:50%;border:none;background:var(--card);color:var(--text);box-shadow:var(--shadow);cursor:pointer;font-size:1.1em}
 .sc-oz{display:block;font-size:var(--fs-sm);color:var(--muted);font-weight:400;font-family:inherit}
+.sc-b .sc-ro{font-style:normal;font-size:var(--fs-xs);color:var(--muted)}

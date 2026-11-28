@@ -109,7 +109,7 @@
     App.state.lastDone.kana = App.today(); App.state.lastDoneAt = Date.now(); App.save();
     const seen = new Set(), wrong = Q.wrong.filter(k => !seen.has(k[0]) && seen.add(k[0])).map(itemOf);
     stage(root);
-    App.showResult({ title: stars ? '練習完成！' : '再練一次', stars, correct: ok, total: 10, gained: g && g.gained, wrong, retry: () => { qStart(); stage(root); }, back: { label: '回路線' } });
+    App.showResult({ title: stars ? '練習完成！' : '再練一次', stars, correct: ok, total: 10, gained: g && g.gained, wrong, retry: () => { qStart(); stage(root); }, back: { label: '回學習' } });
   }
   const stage = root => { const s = root.querySelector('.kn-stage'); if (s) s.innerHTML = quizStage(); };
 

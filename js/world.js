@@ -597,7 +597,7 @@
     const fresh = !!SIM && !alt && !ans.some(x => taught.has(strip(x.jp))) && !(SIM.seen || (SIM.seen = new Set())).has(a.id);
     if (fresh) SIM.seen.add(a.id);
     const T = o => tx(o, fresh);
-    return step(`${fresh ? '<p class="wd-new">🆕 單元沒教過的句子：先看中文和讀音再選</p>' : ''}<div class="wd-npc">${faceHTML(npc)}<div class="wd-bub"><small>${esc(npc.who || '')}</small>${T(Object.assign({}, line, { zh: line.zh || a.zh }))}<button type="button" class="wd-spk" data-spk aria-label="再聽一次">🔊</button></div></div>${wantA ? `<p class="wd-need">📋 旅伴想要：<b>${esc(wantA.brief)}</b></p>` : ''}
+    return step(`${fresh ? '<p class="wd-new">🆕 還沒學過的句子：先看中文和讀音再選</p>' : ''}<div class="wd-npc">${faceHTML(npc)}<div class="wd-bub"><small>${esc(npc.who || '')}</small>${T(Object.assign({}, line, { zh: line.zh || a.zh }))}<button type="button" class="wd-spk" data-spk aria-label="再聽一次">🔊</button></div></div>${wantA ? `<p class="wd-need">📋 旅伴想要：<b>${esc(wantA.brief)}</b></p>` : ''}
       <div class="wd-opts">${opts.map((o, i) => `<button type="button" class="wd-opt" data-i="${i}">${T(o)}</button>`).join('')}</div><p class="wd-fb" role="status"></p>`, (el, done) => {
       App.speak(line.jp); bindSpk(el, line);
       const fb = el.querySelector('.wd-fb');
@@ -781,7 +781,7 @@
     el.querySelector('#wd-zs').onclick = () => App.speak(z.jp);
     el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => itemsSheet(b.dataset.tab, tabs));
     const call = el.querySelector('#wd-call'); if (call) call.onclick = () => orderFlow();
-    const pay = el.querySelector('#wd-pay'); if (pay) pay.onclick = () => (RUN.basket.length ? checkout(counters()[0]) : App.toast('籃子還是空的，先點商品'));
+    const pay = el.querySelector('#wd-pay'); if (pay) pay.onclick = () => { if (RUN.basket.length) return checkout(counters()[0]); const on = el.querySelector('#wd-on'); if (on) { on.textContent = '👆 籃子是空的，先點上面的商品'; on.classList.add('wd-warn'); } App.toast('籃子還是空的，先點商品'); };
     const marks = () => {
       el.querySelectorAll('.wd-it').forEach((b, i) => { const k = inBasket(list[i]), em = b.querySelector('em'); em.hidden = !k; em.textContent = k ? '×' + k.n : ''; });
       const on = el.querySelector('#wd-on'); if (on) on.textContent = RUN.basket.length ? `${S.kind === 'eat' ? '點單' : '籃子'} ${basketN()} 件・${yen(total())}` : '';
@@ -1216,6 +1216,10 @@
       let pool = s.kind === 'eat' ? s.items.filter(i => zt(i) === (hasM ? 'machine' : 'menu')) : s.kind === 'service' ? s.items.filter(i => zt(i) === 'counter' || zt(i) === 'machine') : s.items.filter(i => zt(i) !== 'menu');
       pool = pool.filter(i => !i.soldOut && !(i.tags || []).includes('dest'));
       if (!pool.length) pool = s.items.filter(i => !i.soldOut);
+      // 單元句要用到的問句（例：要加熱嗎→便當）：清單挑會被問到的品項，不然旅伴的條件用不上
+      const want = new Set(s.asks.filter(a => alt && alt[a.id] && a.when !== 'always').map(a => String(a.when).slice(4)));
+      const fit = want.size ? pool.filter(i => (i.tags || []).some(t => want.has(t))) : [];
+      if (fit.length) pool = fit;
       o = { id: 'rand', title: s.kind === 'eat' ? '今天吃什麼' : '臨時採買', icon: '🎲', msg: '旅伴傳來一張清單。', needs: App.sample(pool, Math.min(pool.length, li() >= 1 ? 2 : 1)).map(it => ({ it, n: 1 })), prefs: {} };
     }
     o.needs = o.needs.filter(n => n.it && !(s.kind === 'eat' && zt(n.it) === 'counter'));
@@ -1276,7 +1280,8 @@
   function simHome() {
     if (!SIM || !S || !STAGE || !STAGE.isConnected || SIM.done) return;
     const g = SIM.goal, nx = simNext(false), greet = !RUN.greeted, line = greetLine();
-    const briefs = S.asks.filter(a => g.prefs[a.id] != null).map(a => a.a.find(x => x.val === String(g.prefs[a.id]))).filter(Boolean);
+    const tg = new Set(g.needs.flatMap(n => n.it.tags || []));   // 只列這次清單會被問到的條件（漫畫不會被問要不要加熱）
+    const briefs = S.asks.filter(a => g.prefs[a.id] != null && (a.when === 'always' || g.checkin || tg.has(String(a.when).slice(4)))).map(a => a.a.find(x => x.val === String(g.prefs[a.id]))).filter(Boolean);
     const chip = (t, ok) => `<span class="wd-chip${ok ? ' ok' : ''}">${ok ? '✓ ' : ''}${t}</span>`;
     const jpOnly = assist() === 'none' && g.jpMsg;
     const el = sheet(`${greet ? bubble(staff(), line) : ''}

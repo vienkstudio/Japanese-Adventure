@@ -273,7 +273,7 @@
         title: stars ? `${M.icon} ${M.name} 完成！` : '再練一次',
         stars, correct: R.pts, total: R.max, gained, wrong: R.wrong,
         retry: () => App.go('boot-play', params.from === 'path' ? { m: mode, f, from: 'path' } : { m: mode, f }),
-        back: params.from === 'path' ? { label: '回路線' } : { label: '回特訓', route: 'boot' }
+        back: params.from === 'path' ? { label: '回學習' } : { label: '回特訓', route: 'boot' }
       });
     }
     show();

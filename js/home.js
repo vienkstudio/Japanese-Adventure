@@ -419,7 +419,7 @@
     applyDone(dd);
     const left = A.route && !dd.applied, empty = !Q.due.length && !Q.fresh.length;
     el.innerHTML = `<section class="td td-end">
-      <p class="td-big" aria-hidden="true">${left ? '👍' : '🎉'}</p><h1>${empty ? '今天新學的量夠了' : left ? '主課完成，還差應用' : '今天的課完成！'}</h1>
+      <p class="td-big" aria-hidden="true">${left ? '👍' : '🎉'}</p><h1>${empty ? '今天新學的量夠了' : left ? '主課完成，還差應用' : '今日練習完成！'}</h1>
       ${empty ? `<p class="td-left">明天要複習的已經有 ${m} 個（上限 ${(window.Learn && Learn.DUE_CAP) || 20}），明天再學新的</p>` : left ? '<p class="td-left">複習＋新學做完了 ✓ 最後一步：把今天學的用出來</p>' : ''}
       <div class="td-sum">
         <div><b>${sm.learned}</b><small>新學答對</small></div>
@@ -466,7 +466,7 @@
   // 某級題目答錯 → 程度：假名錯＝完全沒學過；N5 題錯＝會五十音(≈N5)；N4 錯＝≈N5；N3 錯＝≈N4；N2 錯＝≈N3；N1 錯＝≈N2；全對＝≈N1
   const FAIL_AT = { kana: 'zero', n5: 'n5', n4: 'n5', n3: 'n4', n2: 'n3', n1: 'n2' };
   // 程度選項旁標 JLPT 對照
-  const LV_N = { zero: '', n5: '≈N5', n4: '≈N4', n3: '≈N3', n2: '≈N2', n1: '≈N1' };
+  const LV_N = { zero: '', n5: '準備 N5', n4: '準備 N4', n3: '準備 N3', n2: '準備 N2', n1: '' };   // 程度＝正在準備的級數
   const lvName = id => esc(App.LV_NAMES[id]) + (LV_N[id] ? `<em class="ob-n">${LV_N[id]}</em>` : '');
   let restart = false;   // 首頁「新開始」：重選程度＋目的，進度保留
   function onboard(el, retake) {
@@ -477,28 +477,31 @@
       <p class="lead">你的日文大概到哪裡？選一個最接近的（之後隨時能在「我的」→ 設定改，進度不會歸零）</p>
       <div class="ob-list">${App.LV_IDS.map(id => `<button type="button" class="ob-opt" data-lv="${id}"><span aria-hidden="true">${LV_ICON[id]}</span><span><b>${lvName(id)}</b><small>${esc(App.LV_DESC[id])}</small></span></button>`).join('')}</div>
       <button type="button" class="btn ob-skip" id="ob-quiz">🤔 不確定？做幾題幫你判斷（最多 ${QUIZ.length} 題）</button>
+      ${retake ? '<button type="button" class="btn ghost block" id="ob-cancel">取消，回首頁</button>' : ''}
     </section>`;
     el.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => choose(b.dataset.lv, el));
+    const cx = el.querySelector('#ob-cancel'); if (cx) cx.onclick = () => { restart = false; document.body.classList.remove('ob-mode'); render(el); };
     el.querySelector('#ob-quiz').onclick = () => quiz(el, 0);
   }
   function choose(lv, el) {
     const first = !App.profile().placed;
     App.setProfile({ lv });
     App.toast(`程度：${App.LV_NAMES[lv]}${lv === 'zero' ? '・先從五十音開始' : ''}`, 'ok');
-    if ((first || restart) && el) { restart = false; return goalAsk(el); }   // 首次或「新開始」：接著選目的
+    if ((first || restart) && el) { const re = restart; restart = false; return goalAsk(el, re); }   // 首次或「新開始」：接著選目的
     App.go('home');
   }
   // 首次開啟第二題：學日文的目的（可複選，存 profile.goals；決定首頁快查入口與推薦）
   const goalList = sel => GOALS.map(([id, ic, n, d]) => `<button type="button" class="ob-opt${sel.includes(id) ? ' on' : ''}" data-goal="${id}" aria-pressed="${sel.includes(id)}"><span aria-hidden="true">${ic}</span><span><b>${n}</b><small>${d}</small></span></button>`).join('');
-  function goalAsk(el) {
+  function goalAsk(el, re) {
     document.body.classList.add('ob-mode');
-    const sel = [];
+    const sel = re ? (App.profile().goals || []).filter(g => GOALS.some(x => x[0] === g)) : [];   // 新開始：預先勾選上次的目的
     el.innerHTML = `<section class="ob">
       <h1>學日文是為了？</h1>
       <p class="lead">可以選好幾個，首頁會依這個推薦（之後能在「我的」→ 設定改）</p>
       <div class="ob-list">${goalList(sel)}</div>
-      <button type="button" class="btn primary block" id="ob-go" disabled>選好了，開始！</button>
+      <button type="button" class="btn primary block" id="ob-go"${sel.length ? '' : ' disabled'}>選好了，開始！</button><p class="ob-hint muted center"${sel.length ? ' hidden' : ''}>至少選一個</p>
       <button type="button" class="btn ghost block" id="ob-any">還不確定，先都看看</button>
+      ${re ? '<button type="button" class="btn ghost block" id="ob-cancel">取消，回首頁</button>' : ''}
     </section>`;
     const go = el.querySelector('#ob-go');
     el.querySelector('#ob-any').onclick = () => { App.setProfile({ goals: GOALS.map(g => g[0]) }); App.go('home'); };   // 評審 v18：目的頁加「還不確定」
@@ -506,8 +509,9 @@
       const g = b.dataset.goal, i = sel.indexOf(g);
       if (i < 0) sel.push(g); else sel.splice(i, 1);
       b.classList.toggle('on', i < 0); b.setAttribute('aria-pressed', i < 0);
-      go.disabled = !sel.length;
+      go.disabled = !sel.length; el.querySelector('.ob-hint').hidden = !!sel.length;
     });
+    const cx = el.querySelector('#ob-cancel'); if (cx) cx.onclick = () => { document.body.classList.remove('ob-mode'); App.go('home'); render(el); };
     go.onclick = () => { App.setProfile({ goals: sel.slice() }); App.go('home'); };
   }
   function quiz(el, i) {

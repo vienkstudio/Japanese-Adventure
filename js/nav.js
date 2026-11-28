@@ -37,9 +37,9 @@
     T('songs', 'song', '🎶', '跟唱', '熱門歌、我的歌、貼 YouTube 跟唱、看懂歌詞', ['歌', '歌曲', '歌詞', '跟唱', '唱歌', '日文歌', '翻唱', 'cover', '卡拉ok', 'karaoke', 'youtube', '動漫', '动漫', 'anime', 'song', 'music'], { route: 'songs' }),
     T('read', 'fun', '📄', '文章・新聞', '每日短文、新聞、商務文章、匯入網址', ['閱讀', '阅读', '文章', '短文', '我的文章', 'reading', '新聞', '新闻', 'news', 'nhk', 'yahoo', '網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link', '商務閱讀', '商業文章', '職場文章'], { route: 'read', params: { sec: 'art' },
       sub: [{ name: '新聞', route: 'read', params: { sec: 'news' }, kw: ['新聞', '新闻', 'news', 'nhk', 'yahoo'] }, { name: '匯入網址', route: 'read', params: { mode: 'url' }, kw: ['網址', '网址', '網頁', '連結', '链接', '匯入', '貼上', 'url', 'link'] },
-        { name: '商務文章', kw: ['商務閱讀', '商業文章', '職場文章'], run: () => { App.go('biz'); let n = 0; const tick = () => { const a = document.querySelector('#main [data-art]'); if (a) { a.scrollIntoView({ block: 'center' }); return; } if (++n < 40) setTimeout(tick, 150); }; setTimeout(tick, 200); } }] }),
+        { name: '商務閱讀', kw: ['商務閱讀', '商業文章', '職場文章', '商務文章'], route: 'biz' }] }),
     T('dict', 'lookup', '📘', '辭典', 'N5–N1 單字、文法、敬語、活用；相依樹', ['辭典', '字典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab', '知識庫', '資料庫', '百科', 'database', '文法', '句型', '语法', '接續', 'grammar', '敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo', '心智圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'], { route: 'kb',
-      sub: [{ name: '單字', desc: 'N5–N1 單字：讀音、意思、例句', route: 'kb', params: { p: 'db', kind: 'word' }, kw: ['字典', '辭典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab'] }, { name: '文法句型', desc: '依級數查文法：接續、例句、相似文法', route: 'lookup', params: { view: 'gram' }, kw: ['文法', '句型', '语法', '接續', 'grammar'] },
+      sub: [{ name: '單字', desc: 'N5–N1 單字：讀音、意思、例句', route: 'kb', params: { p: 'db', kind: 'word' }, kw: ['字典', '辭典', '词典', '單字', '单词', '生字', 'dictionary', 'vocab'] }, { name: '文法句型', desc: '依級數查文法：接續、例句、相似文法', route: 'kb', params: { p: 'db', kind: 'gram' }, kw: ['文法', '句型', '语法', '接續', 'grammar'] },
         { name: '敬語', desc: '尊敬語、謙讓語、丁寧語對照', route: 'lookup', params: { view: 'keigo' }, kw: ['敬語', '敬语', '尊敬語', '謙讓語', '丁寧語', 'keigo'] }, { name: '相依樹', route: 'tree', kw: ['心智圖', '思維導圖', '相依', '先修', '樹狀', 'mindmap', '關聯圖'] }] }),
     T('phrasebook', 'lookup', '📖', '旅遊手冊', '點餐、購物、交通、住宿、緊急；大字給店員看', ['手冊', '旅遊手冊', '常用句', '旅遊句', '給店員看', '大字', '出示', 'phrase', '会话', '緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'], { route: 'phrasebook', params: { cat: 'must' },
       sub: [{ name: '緊急求助', icon: '🆘', route: 'phrasebook', params: { cat: 'emer' }, kw: ['緊急', '急救', '救命', '求救', '警察', '醫院', '医院', '生病', '受傷', '救護車', '110', '119', 'help', 'sos'] }] }),
@@ -50,8 +50,8 @@
   // 學習分頁（不是工具，是「學習」底下的 5 個目的）：供搜尋、查頁「全部功能」、首頁捷徑、側邊樹使用
   const PLACES = [
     T('kana', 'kana', '🔤', '五十音', '平假名・片假名表，依行學', ['五十音', '50音', '五十音表', '五十音图', '假名', '假名表', '平假名', '片假名', 'あいうえお', 'アイウエオ', 'aiueo', 'hiragana', 'katakana', 'kana', '注音'], { route: 'path', params: { tab: 'kana' }, place: true }),
-    T('travel', 'travel', '🧳', '旅遊', '14 個場景：和店員對話、聽力、選句完成對話', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊路線', 'travel', 'trip', '場景', '對話', '會話', '会话', '點菜', '店員', '口說', '開口', '情境任務', '狀況題', '拉麵', '結帳', '買票'], { route: 'path', params: { tab: 'travel' }, place: true }),
-    T('exam', 'exam', '📝', '日檢', 'N5–N1 單字與文法，依文法分組', ['日檢', '日檢課', '日檢路線', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
+    T('travel', 'travel', '🧳', '旅遊', '14 個場景：和店員對話、聽力、選句完成對話', ['旅遊', '旅行', '出國', '日本玩', '旅遊課', '旅遊場景', 'travel', 'trip', '場景', '對話', '會話', '会话', '點菜', '店員', '口說', '開口', '情境任務', '狀況題', '拉麵', '結帳', '買票'], { route: 'path', params: { tab: 'travel' }, place: true }),
+    T('exam', 'exam', '📝', '日檢', 'N5–N1 單字與文法，依文法分組', ['日檢', '日檢課', '日檢單字', 'jlpt', 'n1', 'n2', 'n3', 'n4', 'n5', '考試', '检定'], { route: 'path', params: { tab: 'exam' }, place: true }),
     T('work', 'work', '💼', '商務', '敬語、電話、Email、開會、報連相', ['商務', '商務日語', '商用', '工作', '上班', '職場', 'email', 'mail', '信件', '開會', '會議', '电话', '電話', 'business'], { route: 'path', params: { tab: 'work' }, place: true }),
     T('song', 'song', '🎵', '歌曲', '熱門歌・我的歌：跟唱、看懂歌詞（不排進每日進度）', ['歌曲', '唱歌', '跟唱', '動漫', '娛樂', 'j-pop', 'jpop'], { route: 'songs', params: {}, place: true }),
     T('fun', 'fun', '📚', '閱讀', '每日短文、新聞、匯入文章（不排進每日進度）', ['閱讀', '文章', '短文', '新聞'], { route: 'read', params: {}, place: true })
@@ -146,7 +146,7 @@
   // 一條分類軸＝底部 4 鈕：首頁／學習（5 個目的分頁）／查／我的。tools 都是 NAV.TOOLS 的 id，每個工具只在一個地方。
   const GOALS = [
     { id: 'kana', group: 'kana', tools: ['kana-guide', 'kana-test'] },
-    { id: 'travel', group: 'packsFlat', tools: ['play', 'boot'] },   // 對話、情境任務在各場景的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
+    { id: 'travel', group: 'packsFlat', tools: ['play'] },   // 聽力特訓在各場景的「練習」裡   // 對話、情境任務在各場景的「練習」裡   // 評審 v18：場景包不再多摺一層（找觀光 5→4 步）
     { id: 'exam', group: 'levels', tools: ['chal'] },
     { id: 'work', group: 'biz', tools: ['dict~2'] },   // 評審 v18：商務底下直接有敬語、商務文章
     { id: 'song', tools: [] },   // 歌曲、閱讀分頁本身就是功能入口，不再重複列「跟唱」「文章・新聞」
@@ -166,6 +166,8 @@
     const G = (g, o) => Object.assign({ sec: sec('learn'), goal: goal(g) }, o || {});
     const T = (id, o) => Object.assign({ tool: byId(id) }, o || {});
     if (name === 'home') return { sec: sec('home') };
+    // 練習 act：位置跟著從哪裡來（結束後回去的頁），首頁進來就亮首頁、我的進來就亮我的
+    if (name === 'act') { const b = p.back || {}; return b.route && b.route !== 'act' ? locate(b.route, b.params || {}) : { sec: sec('learn') }; }
     if (name === 'today') return { sec: sec('home'), tool: byId('today') };
     if (name === 'review') return { sec: sec('me'), tool: Object.assign({}, byId('today~0'), { name: '到期複習' }) };
     if (name === 'cards') return { sec: sec('me'), tool: byId('cards') };
@@ -205,13 +207,20 @@
     return w.icon + ' ' + w.name + (t ? ' › ' + t : '');
   }
 
-  /* ---------- 繼續上次：最後一個「內容頁」（單元、講義、歌曲、文章、小遊戲…） ---------- */
+  /* ---------- 繼續上次：最後一個「真的作答過」的內容頁（只是打開看看不算）：先記成候選，作答（Learn 記錄）或拿到獎勵後才成立 ---------- */
+  let PEND = null;
+  function promote(force) {
+    if (!PEND || !PEND.title) return;
+    if (force || (App.state.lastDoneAt || 0) > PEND.t) { st().cont = PEND; PEND = null; App.save(); }
+  }
+  document.addEventListener('learnchange', () => promote(true));
   const CONT = /^(path-unit|kana-guide|kana-drill|kana-quiz|song|read-article|biz-unit|biz-read|challenge-play|menu|drill|boot-play|kb-page|tree|phrasebook|play)$/;
   const TITLE_SEL = ['.sg-head h2', '.rd-art h1', '.rd-title', '.pa-uh h1', '.bz-intro h2', '.bz h2', '.kg-host', '.lk-title', '.wd-title b', '#main h1', '#main h2'];
   function remember(name, p) {
     if (!CONT.test(name)) return;
     const where = crumb(name, p), sn = (locate(name, p) || {}).sec;
     let n = 0;
+    PEND = { name, params: p || {}, title: '', where, t: Date.now() };
     const tick = () => {
       if (curName !== name) return;   // 已經離開
       let title = name === 'play' ? '🗾 冒險地圖' : '';
@@ -222,7 +231,7 @@
         if (t && (!sn || t !== sn.name) && !/^載入中/.test(t)) { title = t.slice(0, 30); break; }
       }
       if (!title && ++n < 12) return setTimeout(tick, 500);
-      const s = st(); s.cont = { name, params: p || {}, title: title || where || name, where, t: Date.now() }; App.save();
+      if (PEND && PEND.name === name) PEND.title = title || where || name;
     };
     setTimeout(tick, 600);
   }
@@ -330,7 +339,7 @@
     if (!keep) { curName = d.name || 'home'; curP = d.params || {}; }
     try { topBar(); } catch (er) { }
     if (drawer && (isWide() || document.body.classList.contains('nv-open'))) paintTree();
-    remember(curName, curP);
+    promote(); remember(curName, curP);
     if (isWide()) { ensureDrawer(); if (!document.body.classList.contains('nv-open')) { document.body.classList.add('nv-open', 'nv-wide'); drawer.setAttribute('aria-hidden', 'false'); drawer.inert = false; paintTree(); } }
   });
   try { matchMedia('(min-width: 1024px)').addEventListener('change', ev => { if (ev.matches) { ensureDrawer(); document.body.classList.add('nv-open', 'nv-wide'); drawer.inert = false; paintTree(); } else { document.body.classList.remove('nv-open', 'nv-wide'); if (drawer) drawer.inert = true; } }); } catch (e) { }

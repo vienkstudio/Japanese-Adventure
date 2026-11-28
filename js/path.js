@@ -336,7 +336,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
         steps: [
           p.scenes.length ? { type: 'scene', items: [], params: { scenes: p.scenes, n: 4 }, title: p.name + '：和店員對話' } : { type: 'listen', items, params: { mode: 'mean', retry: false }, title: p.name + '：聽聽看' },
           { type: 'wordbank', items: wb, params: { max: 5 }, title: p.name + '：排句子' },
-          { type: 'shop', items, params: { shop, region: REGION(shop), goal: id }, title: p.name + '：進店用出來' }
+          { type: 'shop', items, params: { shop, region: REGION(shop), goal: id }, title: p.name + '：進店實戰' }
         ]
       };
     }
@@ -420,7 +420,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       const out = [];
       for (let i = 0; i < B.units; i++) {
         const gs = B.grams.slice(i * G_PER, i * G_PER + G_PER), ws = B.words.slice(i * W_PER, i * W_PER + W_PER);
-        out.push(row(L.toLowerCase() + '-u' + (i + 1), '📝', examName(L, i), ws.slice(0, 3).map(x => x.jp).concat(gs.slice(0, 1).map(x => x.jp)).join('・'), gs.concat(ws).map(x => x.id)));
+        out.push(row(L.toLowerCase() + '-u' + (i + 1), '📝', examName(L, i), (gs.map(x => String(x.zh || '').split(/[；;（(]/)[0]).filter(Boolean).join('／') || '') + '・' + ws.length + ' 個單字', gs.concat(ws).map(x => x.id)));
       }
       for (let i = 0; i < B.sup; i++) {
         const ws = B.extra.slice(i * W_PER, i * W_PER + W_PER);
@@ -489,7 +489,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
     const k = ['kana', '🔤', '五十音'];
     const main = (gs.length ? gs : GOALS.map(g => g[0])).map(g => GOALS.find(x => x[0] === g));   // 歌曲、閱讀是兩個功能，各一個分頁
     const rest = GOALS.filter(g => !main.includes(g));
-    if (zeroKana()) main.unshift(k); else main.push(k);   // 五十音常駐主分頁：零基礎第一、其他人最後
+    main.unshift(k);   // 五十音固定第一個分頁（切換程度不改分頁順序，只改預設選中的分頁）
     return { main, rest, all: main.concat(rest) };
   }
   const starTxt = n => n ? '★'.repeat(n) + '☆'.repeat(3 - n) : '';
@@ -521,7 +521,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
     const inRest = T.rest.some(t => t[0] === UI.tab), open = UI.open || inRest;
     const tb = ([id, ic, n]) => `<button type="button" role="tab" data-tab="${id}" class="${id === UI.tab ? 'on' : ''}" aria-selected="${id === UI.tab}"><span aria-hidden="true">${ic}</span> ${esc(n)}</button>`;
     el.innerHTML = `<div class="pa">
-      <div class="tabs pa-tabs" role="tablist">${(zeroKana() ? T.all : T.all.filter(t => t[0] !== 'kana').concat(T.all.filter(t => t[0] === 'kana'))).map(tb).join('')}</div>
+      <div class="tabs pa-tabs" role="tablist">${T.all.map(tb).join('')}</div>
       <div class="pa-body"><p class="center muted pa-load">載入中…</p></div></div>`;
     const body = el.querySelector('.pa-body');
     el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { if (b.dataset.tab === 'song') return App.go('songs'); if (b.dataset.tab === 'fun') return App.go('read'); UI.tab = b.dataset.tab; renderPath(el, {}); });
@@ -546,7 +546,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
     return { shown: list.slice(from, to), from, more: to < list.length ? `<button type="button" class="btn block pa-more" data-more="${key}">顯示更多（還有 ${list.length - to} 個）</button>` : '' };
   }
   // 「更多練習」：B 組 window.PathExtra（js/classic.js）提供；沒載入就延遲載入，失敗或沒有項目就不顯示
-  function extras(host, goal, key, kana) {
+  function extras(host, goal, key, kana, fold) {
     const run = () => {
       const X = window.PathExtra; if (!host.isConnected || !X) return;
       const kt = kana && host.querySelector('.pa-kt');
@@ -555,7 +555,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       let L = []; try { L = arr(X.list(goal, key)).filter(x => x && typeof x.go === 'function'); } catch (e) { L = []; }
       if (!L.length) { box.innerHTML = ''; return; }
       const cards = `<div class="pa-grid">${L.map((x, i) => `<button type="button" class="pa-card pa-xc" data-px="${i}"><span class="pa-ic" aria-hidden="true">${esc(x.icon || '🎮')}</span><span class="pa-t"><b>${esc(x.label || '')}</b><small>${esc(x.sub || '')}</small></span></button>`).join('')}</div>`;
-      box.innerHTML = `<h3 class="pa-xh">🎮 練習</h3>${cards}`;
+      box.innerHTML = fold ? `<details class="pa-more-d pa-xd"><summary>🎮 更多練習（${L.length}）</summary>${cards}</details>` : `<h3 class="pa-xh">🎮 練習</h3>${cards}`;   // 場景主流程還沒做完：收起來，先做「開始」
       box.querySelectorAll('[data-px]').forEach(b => b.onclick = e => { e.stopPropagation(); try { L[+b.dataset.px].go(); } catch (er) { } });
     };
     if (window.PathExtra) run(); else App.loadScript('js/classic.js').then(run, () => { });
@@ -572,7 +572,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       const mock = list[list.length - 1], lessons = list.slice(0, -1), w = windowed(lessons, nx, 'exam' + lv);
       const doneN = lessons.filter(u => u.complete).length;
       html = `<label class="pa-lv"><span>等級</span><select data-lvsel aria-label="日檢等級">${LVS.map(L => `<option value="${L}"${L === lv ? ' selected' : ''}>${L}${L === lvNow() ? '（我的程度）' : ''}</option>`).join('')}</select></label>
-        <p class="pa-note">已完成 ${doneN}／${lessons.length} 組</p>
+        <p class="pa-note">已完成 ${doneN}／${lessons.length}</p>
         ${grid(w.shown, nx)}${w.more}${grid([mock], null, true)}
         <div class="pa-x"></div>`;
     } else if (tab === 'work') {
@@ -584,7 +584,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
         html += `<button type="button" class="pa-grp${isOpen ? ' on' : ''}" data-bz="${esc(m.id)}" aria-expanded="${isOpen}"><span aria-hidden="true">${esc(m.icon)}</span><b>${esc(m.title)}</b><small>${esc(m.lv)}${lvI(m.lv) >= lvI(lvNow()) && cur === m.id ? '・適合你' : ''}・${dn}／${g.length}</small>${window.BIZ.stars(m.id) ? `<span class="pa-st">${starTxt(window.BIZ.stars(m.id))}</span>` : ''}</button>`;
         if (isOpen) html += grid(g, nx);
       });
-      html += '<button type="button" class="btn block pa-free" data-go="biz">📄 商務文章</button>';
+      html += '<button type="button" class="btn block pa-free" data-go="biz">📄 商務閱讀</button>';
     } else if (tab === 'fun') {
       // 閱讀（歌曲已獨立成「🎶 歌曲」）：想讀就讀，不排進每日進度
       const reads = list.filter(u => u.sec === 'read'), news = list.filter(u => u.sec === 'news');
@@ -621,7 +621,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
     const list = units(goalOf(u), { lv: u.lv, all: true }), k = list.findIndex(x => x.id === u.id), after = list.slice(k + 1).filter(x => !x.noNext);
     const nxt = u.kind === 'biz' ? after[0] : (after.find(x => !x.route && !x.complete) || after[0]);
     const complete = u.hasShop ? st > 0 : d >= ids.length;
-    const pr = u.hasShop && !complete && d >= ids.length ? `句子 ${d}／${ids.length}・還差：進店用出來` : `已學 ${d}／${ids.length}`;
+    const pr = u.hasShop && !complete && d >= ids.length ? `句子 ${d}／${ids.length}・還差：進店實戰` : `已學 ${d}／${ids.length}`;
     let shops = '', sibs = '';
     if (u.kind === 'travel' && u.pack) {
       const ps = list.filter(x => x.pack === u.pack);
@@ -635,7 +635,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       <div class="pa-uh"><span class="pa-ic" aria-hidden="true">${esc(u.icon)}</span><div><h1>${esc(u.title)}</h1><p class="muted">${esc(u.sub)}</p></div>${st ? `<span class="pa-st" aria-label="${st} 星">${starTxt(st)}</span>` : ''}</div>
       <div class="pa-prog"><span>${esc(pr)}</span><span class="pa-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></div>
       ${shops}
-      <button type="button" class="btn primary block pa-start" id="pa-start">${complete ? '▶ 再練一次' : d >= ids.length && u.hasShop ? '▶ 進店用出來' : d ? '▶ 繼續學' : '▶ 開始'}</button>
+      <button type="button" class="btn primary block pa-start" id="pa-start">${complete ? '▶ 再練一次' : d >= ids.length && u.hasShop ? '▶ 進店實戰' : d ? '▶ 繼續學' : '▶ 開始'}</button>
       ${u.kind === 'travel' ? '<div class="pa-x"></div>' : ''}
       ${u.intro ? `<div class="pa-intro">${u.intro}</div>` : ''}
       ${u.more ? `<details class="pa-more-d"><summary>📘 ${esc(u.more.title)}</summary><div class="kn">${u.more.html}</div></details>` : ''}
@@ -654,7 +654,7 @@ const learned = id => { const e = Learn.get(id); return !!e && (e.s === 'review'
       const n = e.target.closest('.pa-next[data-u]'); if (n) { if (nxt && nxt.route) App.go(nxt.route, nxt.params || {}); else App.go('path-unit', { id: n.dataset.u }); return; }
       const c = e.target.closest('.pa-card[data-u]'); if (c && c.dataset.u !== u.id) App.go('path-unit', { id: c.dataset.u });
     });
-    if (u.kind === 'travel' && u.pack) extras(root, 'travel', u.pack);
+    if (u.kind === 'travel' && u.pack && u.hasShop) extras(root, 'travel', u.pack, false, !complete);   // 練習格只在場景主頁（單字、更多說法頁不重複）
   }
   // 開始：交給 G1 的 act 路由（Activity.session 跑全部步驟、統一結算）；做完才給星（reward path:<id>），中途離開不給
   // 已學過的卡不再出現在字卡步驟（今日課學過的不重來）；「再練一次」才全部重看

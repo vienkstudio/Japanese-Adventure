@@ -422,3 +422,4 @@ button.wd-title{background:none;border:0;padding:0;font:inherit;color:inherit;te
 .wd-sim .wd-in>.wd-build>.wd-acts:last-child{margin-left:-14px;margin-right:-14px}
 .wd-sim .wd-hud{min-height:44px}
 .wd-miss-l{margin:6px 0;font-size:var(--fs-md);font-weight:800;color:var(--pri)}
+#wd-on.wd-warn{color:var(--pri-d);font-weight:700}

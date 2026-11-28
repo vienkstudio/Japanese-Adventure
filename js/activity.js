@@ -405,7 +405,7 @@
     const showStars = !s.unfinished && s.total > 0;
     root.className = 'ac ac-end' + (showStars && s.stars >= 3 ? ' ac-gold' : '');
     root.innerHTML = `<p class="ac-big" aria-hidden="true">${s.unfinished ? '🏪' : !s.total ? '🙂' : s.rate >= 70 ? '🎉' : '💪'}</p>
-      <h1>${esc(s.unfinished ? `「${s.unfinished}」還沒完成，下次從這裡繼續` : s.total ? (s.rate >= 70 ? '完成了！' : '完成！再複習一次會更熟') : '這一組沒有題目')}</h1>
+      <h1>${esc(s.unfinished ? `「${s.unfinished}」還沒完成，下次從這裡繼續` : s.total ? (s.rate >= 70 ? '完成了！' : s.rate >= 50 ? '完成！再複習一次會更熟' : `答對 ${s.rate}%，建議再練一次`) : '這一組沒有題目')}</h1>
       <div class="ac-sum">
         <div><b>${s.correct}／${s.total}</b><small>答對</small></div>
         <div><b>${s.rate}%</b><small>答對率</small></div>

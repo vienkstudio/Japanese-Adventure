@@ -25,9 +25,11 @@
         if (!ds.length) return resolve({ results: [] });
         const steps = ds.flatMap(({ sc, d }) => d.steps.filter(goodOf).map(s => Object.assign({ sc: sc.name, title: d.title }, s)));
         const it = (x, src) => ctx.item({ jp: x.jp, kana: x.kana, zh: x.zh, romaji: x.romaji, source: src }, 'phrase');
-        const aid = ctx.assist().kana;
+        const AS = ctx.assist(), aid = AS.kana, ro = AS.ro;   // 零基礎、全提示：另加羅馬字
+        const bare = t => String(t || '').replace(/[。、？！?!\s　]/g, '');
+        const roOf = x => x.romaji || (ctx.romaji ? ctx.romaji({ jp: x.jp, kana: x.kana || x.jp, type: 'phrase' }) : '');
         const line = (who, ic, x, me) => `<div class="sc-l${me ? ' me' : ''}"><span class="sc-who" aria-hidden="true">${esc(ic)}</span><div class="sc-b"><small>${esc(who)}</small>
-          <b class="jp" lang="ja">${esc(x.jp)}</b>${aid && x.kana && x.kana !== x.jp ? `<i class="jp" lang="ja">${esc(x.kana)}</i>` : ''}${aid ? `<em>${esc(x.zh || '')}</em>` : ''}</div>
+          <b class="jp" lang="ja">${esc(x.jp)}</b>${aid && x.kana && bare(x.kana) !== bare(x.jp) ? `<i class="jp" lang="ja">${esc(x.kana)}</i>` : ''}${ro && roOf(x) ? `<i class="sc-ro">${esc(roOf(x))}</i>` : ''}${aid ? `<em>${esc(x.zh || '')}</em>` : ''}</div>
           <button type="button" class="sc-say" data-say="${esc(x.kana || x.jp)}" aria-label="聽">🔊</button></div>`;
         const bindSay = host => host.querySelectorAll('[data-say]').forEach(b => b.onclick = () => ctx.say(b.dataset.say));
 
